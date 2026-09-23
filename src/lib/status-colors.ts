@@ -144,3 +144,79 @@ export const JOB_STATUS_INLINE: Record<number, { label: string; color: string; b
   4: { label: "Cancelled", color: "#f87171", bg: "rgba(248,113,113,0.15)" },
   5: { label: "Delivered", color: "#a78bfa", bg: "rgba(167,139,250,0.15)" },
 };
+
+// ============================================================================
+// Label-only maps — pages jo sirf STATUS_MAP[k] = "Label" use karte thein
+// (jobs, clients, export/print APIs, gemini-tools). Single source of truth.
+// ============================================================================
+
+/** Job status → plain label string (0-5) */
+export const STATUS_LABELS: Record<number, string> = Object.fromEntries(
+  Object.entries(JOB_STATUS).map(([k, v]) => [Number(k), v.label])
+);
+
+/** Job status → short Hinglish explanation (job detail view ke liye) */
+export const STATUS_EXPLANATIONS: Record<number, string> = {
+  0: "Kaam shuru nahi hua hai",
+  1: "Kaam chal raha hai, jald ready hoga",
+  2: "Kaam pura ho gaya hai",
+  3: "Bill chuka diya gaya hai",
+  4: "Transaction radd kar diya gaya hai",
+  5: "Aapko item mil chuka hai",
+};
+
+/**
+ * PHP-style badge color name → Tailwind (job view page legacy pattern).
+ * print/export routes isko inline CSS me map karte hain.
+ */
+export const BADGE_COLORS: Record<string, { bg: string; text: string; border: string }> = {
+  secondary: { bg: "bg-slate-600", text: "text-white", border: "border-slate-700" },
+  primary: { bg: "bg-blue-600", text: "text-white", border: "border-blue-700" },
+  info: { bg: "bg-cyan-500", text: "text-white", border: "border-cyan-600" },
+  success: { bg: "bg-green-600", text: "text-white", border: "border-green-700" },
+  danger: { bg: "bg-red-600", text: "text-white", border: "border-red-700" },
+  warning: { bg: "bg-yellow-500", text: "text-gray-900", border: "border-yellow-600" },
+};
+
+/** Status → PHP-style badge color name (view page legacy) */
+export const STATUS_BADGE_COLOR: Record<number, string> = {
+  0: "secondary",
+  1: "primary",
+  2: "info",
+  3: "success",
+  4: "danger",
+  5: "warning",
+};
+
+/** Delivery status (del_status) */
+export const DEL_STATUS: Record<number, string> = { 0: "In Shop", 1: "Delivered" };
+
+/**
+ * getLabel(status, fallback?) — null/undefined/unknown par fallback.
+ * Pages me jo `STATUS_MAP[txn.status] || String(txn.status)` pattern tha.
+ */
+export function getLabel(status: number | null | undefined, fallback = "?"): string {
+  if (status == null) return fallback;
+  return STATUS_LABELS[status] || fallback;
+}
+
+/**
+ * getBadge(status) — full StatusStyle with fallback to Pending style.
+ * Pages me jo `STATUS_MAP[job.status] || { label: ..., cls: ... }` tha.
+ */
+export function getBadge(status: number | null | undefined): StatusStyle {
+  return JOB_STATUS[status ?? 0] || JOB_STATUS[0];
+}
+
+/**
+ * getStatusStyle(status, map?) — map-aware lookup with Pending fallback.
+ * StatusBadge component isse use karta hai; PO/SERVICE maps pass kar sakte ho.
+ */
+export function getStatusStyle(
+  status: number | null | undefined,
+  map?: Record<number, StatusStyle>
+): StatusStyle {
+  const source = map || JOB_STATUS;
+  if (status != null && source[status]) return source[status];
+  return source[0] || JOB_STATUS[0];
+}

@@ -49,10 +49,39 @@ export function firmVars(info: Record<string, string>): TemplateVars {
 }
 
 /**
- * Open WhatsApp chat for a client with a rendered message.
- * Returns the wa.me URL (caller may also log to payment_reminders).
+ * Build wa.me link. India default (+91) — but double-91 bug safe:
+ *   - "919179105875" → 919179105875 (already has country code, don't prepend)
+ *   - "9179105875"   → 919179105875 (10-digit local, prepend 91)
+ *   - "+91 9179..."  → strips non-digits first
+ * Message optional (chat open hogi bina text ke).
+ *
+ * Ye function hi single source of truth hai — pages me inline `wa.me/91...`
+ * mat likho (double-91 bug ka risk). Pehle ~20 jagah inline the.
  */
-export function waLink(phone: string, message: string): string {
-  const clean = (phone || "").replace(/\D/g, "");
-  return `https://wa.me/91${clean}?text=${encodeURIComponent(message)}`;
+export function waLink(phone: string, message?: string): string {
+  let clean = (phone || "").replace(/\D/g, "");
+  if (!clean) return "https://wa.me/";
+  // Country code already hai to prepend mat karo (12 digit = 91 + 10)
+  if (clean.length === 12 && clean.startsWith("91")) {
+    // already 91 + 10-digit — ok
+  } else if (clean.length === 10) {
+    clean = `91${clean}`;
+  } else if (clean.length === 11 && clean.startsWith("9")) {
+    // e.g. 9179105875 style without leading 0 — treat as local 10-digit w/ leading 9?
+    // Actually 11-digit starting with 91 is country+9... leave as-is if starts 91
+    if (!clean.startsWith("91")) clean = `91${clean}`;
+  }
+  // >12 digits (international non-IN) — use as-is
+  const base = `https://wa.me/${clean}`;
+  return message ? `${base}?text=${encodeURIComponent(message)}` : base;
+}
+
+/** Back-compat alias — older code expected (phone, message) always with text. */
+export function waLinkText(phone: string, message: string): string {
+  return waLink(phone, message);
+}
+
+/** Open WhatsApp in new tab (window.open wrapper for client components). */
+export function openWhatsApp(phone: string, message?: string): void {
+  if (typeof window !== "undefined") window.open(waLink(phone, message), "_blank");
 }

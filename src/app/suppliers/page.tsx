@@ -9,6 +9,8 @@ import { safeImageSrc } from "@/lib/image-utils";
 import SupplierFormModal, { SupplierRow, ContactPerson, ContactPhone } from "@/components/SupplierFormModal";
 import Lightbox from "@/components/Lightbox";
 import { fetchSupplierDues } from "@/lib/supplierPayments";
+import { requireAdmin } from "@/lib/requireAdmin";
+import { waLink } from "@/lib/whatsapp";
 import {
   Search,
   Plus,
@@ -28,7 +30,6 @@ import {
   Phone,
 } from "lucide-react";
 
-const waLink = (phone: string) => `https://wa.me/91${phone.replace(/\D/g, "")}`;
 const telLink = (phone: string) => `tel:+91${phone.replace(/\D/g, "")}`;
 
 function PhoneChip({ phone, big = false }: { phone: string; big?: boolean }) {
@@ -240,20 +241,14 @@ export default function SuppliersPage() {
   };
 
   const handleDelete = async (id: number, name: string) => {
-    if (userRole !== "admin") {
-      alert("Sirf Admin delete kar sakta hai!");
-      return;
-    }
+    if (!requireAdmin(userRole, "delete")) return;
     if (!confirm(`"${name}" ko delete karna hai?`)) return;
     await supabase.from("suppliers").update({ delete_flag: 1 }).eq("id", id);
     fetchData();
   };
 
   const toggleStatus = async (s: SupplierRow) => {
-    if (userRole !== "admin") {
-      alert("Sirf Admin status change kar sakta hai!");
-      return;
-    }
+    if (!requireAdmin(userRole, "status")) return;
     await supabase
       .from("suppliers")
       .update({ status: s.status === 1 ? 0 : 1 })

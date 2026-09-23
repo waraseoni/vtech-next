@@ -26,6 +26,7 @@ import { todayIST, parseISTDate, toLocalStr } from "@/lib/dateUtils";
 import { substituteTemplate, firmVars, resolveTemplate } from "@/lib/whatsapp";
 import { pageAll } from "@/lib/fetch-all";
 import { buildDueMaps, balanceFromMaps } from "@/lib/client-due";
+import { toast } from "@/lib/toast";
 
 const inr = (n: number) => "₹" + (n || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 });
 
@@ -300,7 +301,10 @@ function DueRemindersContent() {
   // ── WhatsApp reminder ──
   const sendWhatsApp = async (r: DueRow) => {
     const clean = r.contact.replace(/\D/g, "");
-    if (clean.length < 10) return alert("Valid mobile number nahi mila!");
+    if (clean.length < 10) {
+      toast.error("Valid mobile number nahi mila!");
+      return;
+    }
     const dueInfo = r.payment_due_date
       ? ` Aapki promised due date ${new Intl.DateTimeFormat("en-IN", { day: "2-digit", month: "short", year: "numeric" }).format(parseISTDate(r.payment_due_date))} hai.`
       : "";
@@ -353,7 +357,7 @@ function DueRemindersContent() {
       setDueModal(null);
       fetchData();
     } catch (err) {
-      alert("Error: " + (err instanceof Error ? err.message : String(err)));
+      toast.error("Error: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       setSavingDue(false);
     }

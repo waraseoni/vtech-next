@@ -1,5 +1,6 @@
 import QRCode from "qrcode";
 import { encodeLocationToken, type LocationParts } from "@/lib/locations";
+import { toast } from "@/lib/toast";
 
 export interface BoxLabelItem {
   name: string;
@@ -301,7 +302,7 @@ window.onload=function(){setTimeout(function(){window.print();},400)};
 
   const win = window.open("", "_blank", "width=900,height=700");
   if (!win) {
-    alert("Popup blocked — popups allow kar ke dobara try karein.");
+    toast.warning("Popup blocked — popups allow kar ke dobara try karein.");
     return;
   }
   win.document.write(fullHtml);

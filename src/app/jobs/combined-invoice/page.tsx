@@ -22,6 +22,7 @@ import {
   X,
 } from "lucide-react";
 import { JOB_STATUS_INLINE } from "@/lib/status-colors";
+import { toast } from "@/lib/toast";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 interface Client {
@@ -177,7 +178,7 @@ export default function CombinedInvoicePage() {
   // ── Print combined invoice ───────────────────────────────────────
   const printCombinedInvoice = () => {
     if (selectedIds.size === 0) {
-      alert("Pehle koi job(s) select karo!");
+      toast.error("Pehle koi job(s) select karo!");
       return;
     }
     const ids = [...selectedIds].join(",");

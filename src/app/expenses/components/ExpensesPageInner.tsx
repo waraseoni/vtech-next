@@ -9,9 +9,8 @@ import { todayIST, startOfMonthIST, endOfMonthIST, parseISTDate, formatIST } fro
 import { openImageLightbox } from "@/components/ImageLightbox";
 import { safeImageSrc } from "@/lib/image-utils";
 import SearchableSelect from "@/components/SearchableSelect";
+import { toast } from "@/lib/toast";
 import {
-  AlertCircle,
-  CheckCircle2,
   ChevronLeft,
   ChevronRight,
   Clock,
@@ -47,11 +46,6 @@ type StaffPaymentForm = {
   amount: string;
   date_paid: string;
   reason: string;
-};
-
-type Toast = {
-  type: "success" | "error";
-  msg: string;
 };
 
 type TabId = "staff" | "shop";
@@ -185,7 +179,6 @@ export default function ExpensesPageInner({
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState("");
-  const [toast, setToast] = useState<Toast | null>(null);
 
   const [search, setSearch] = useState(urlSearch);
   const [categoryFilter, setCategoryFilter] = useState("");
@@ -201,12 +194,6 @@ export default function ExpensesPageInner({
   const [expenseModalOpen, setExpenseModalOpen] = useState(false);
   const [staffForm, setStaffForm] = useState<StaffPaymentForm>(emptyStaffForm());
   const [expenseForm, setExpenseForm] = useState<ExpenseForm>(emptyExpenseForm());
-
-  useEffect(() => {
-    if (!toast) return;
-    const timer = setTimeout(() => setToast(null), 3200);
-    return () => clearTimeout(timer);
-  }, [toast]);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -425,7 +412,7 @@ export default function ExpensesPageInner({
     const mechanicId = Number(staffForm.mechanic_id);
     const amount = Number(staffForm.amount);
     if (!mechanicId || !amount || amount <= 0) {
-      setToast({ type: "error", msg: "Staff select karo aur valid amount dalo." });
+      toast.error("Staff select karo aur valid amount dalo.");
       return;
     }
 
@@ -444,18 +431,18 @@ export default function ExpensesPageInner({
           .update(payload)
           .eq("id", staffForm.id);
         if (error) throw error;
-        setToast({ type: "success", msg: "Staff payment update ho gaya." });
+        toast.success("Staff payment update ho gaya.");
       } else {
         const { error } = await supabase.from("advance_payments").insert(payload);
         if (error) throw error;
-        setToast({ type: "success", msg: "Staff payment save ho gaya." });
+        toast.success("Staff payment save ho gaya.");
       }
 
       closeModals();
       await loadData();
     } catch (error) {
       console.error("staff payment save error:", error);
-      setToast({ type: "error", msg: "Staff payment save nahi hua." });
+      toast.error("Staff payment save nahi hua.");
     } finally {
       setSaving(false);
     }
@@ -465,7 +452,7 @@ export default function ExpensesPageInner({
     e.preventDefault();
     const amount = Number(expenseForm.amount);
     if (!expenseForm.category.trim() || !amount || amount <= 0) {
-      setToast({ type: "error", msg: "Category aur valid amount required hai." });
+      toast.error("Category aur valid amount required hai.");
       return;
     }
 
@@ -484,18 +471,18 @@ export default function ExpensesPageInner({
           .update(payload)
           .eq("id", expenseForm.id);
         if (error) throw error;
-        setToast({ type: "success", msg: "Shop expense update ho gaya." });
+        toast.success("Shop expense update ho gaya.");
       } else {
         const { error } = await supabase.from("expense_list").insert(payload);
         if (error) throw error;
-        setToast({ type: "success", msg: "Shop expense save ho gaya." });
+        toast.success("Shop expense save ho gaya.");
       }
 
       closeModals();
       await loadData();
     } catch (error) {
       console.error("expense save error:", error);
-      setToast({ type: "error", msg: "Shop expense save nahi hua." });
+      toast.error("Shop expense save nahi hua.");
     } finally {
       setSaving(false);
     }
@@ -506,11 +493,11 @@ export default function ExpensesPageInner({
     try {
       const { error } = await supabase.from("advance_payments").delete().eq("id", id);
       if (error) throw error;
-      setToast({ type: "success", msg: "Staff payment delete ho gaya." });
+      toast.success("Staff payment delete ho gaya.");
       await loadData();
     } catch (error) {
       console.error("staff payment delete error:", error);
-      setToast({ type: "error", msg: "Staff payment delete nahi hua." });
+      toast.error("Staff payment delete nahi hua.");
     }
   };
 
@@ -519,11 +506,11 @@ export default function ExpensesPageInner({
     try {
       const { error } = await supabase.from("expense_list").delete().eq("id", id);
       if (error) throw error;
-      setToast({ type: "success", msg: "Shop expense delete ho gaya." });
+      toast.success("Shop expense delete ho gaya.");
       await loadData();
     } catch (error) {
       console.error("expense delete error:", error);
-      setToast({ type: "error", msg: "Shop expense delete nahi hua." });
+      toast.error("Shop expense delete nahi hua.");
     }
   };
 
@@ -538,22 +525,6 @@ export default function ExpensesPageInner({
 
   return (
     <div className="space-y-3.5 w-full max-w-[1550px] mx-auto pb-12 px-2 sm:px-3 lg:px-4">
-      {toast && (
-        <div
-          className={`fixed bottom-5 right-5 z-50 flex items-center gap-2.5 px-4 py-2.5 rounded-xl shadow-2xl border text-xs font-bold backdrop-blur-md animate-in fade-in slide-in-from-bottom-5 duration-200 ${
-            toast.type === "success"
-              ? "bg-emerald-950/95 border-emerald-500/40 text-emerald-300"
-              : "bg-rose-950/95 border-rose-500/40 text-rose-300"
-          }`}
-        >
-          {toast.type === "success" ? <CheckCircle2 size={15} /> : <AlertCircle size={15} />}
-          <span>{toast.msg}</span>
-          <button onClick={() => setToast(null)} className="ml-1 text-white/60 hover:text-white">
-            <X size={12} />
-          </button>
-        </div>
-      )}
-
       {/* Top Header Card */}
       <div className="bg-[#161b27] border border-[#21293d] rounded-2xl p-3 sm:p-3.5 shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
         <div className="flex items-center gap-2.5">

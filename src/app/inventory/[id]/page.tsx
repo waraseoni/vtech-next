@@ -40,6 +40,7 @@ import { logActivity } from "@/lib/activity";
 import { printBarcodeLabels, safeBarcode } from "@/lib/barcodePrint";
 import { locPath, EMPTY_LOCATION, type LocationParts } from "@/lib/locations";
 import PageLoader from "@/components/PageLoader";
+import { toast } from "@/lib/toast";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface Product {
@@ -390,7 +391,7 @@ export default function ProductDetailPage() {
         `Product: ${product?.name || "Unknown"} | Removed ${entry?.quantity} units | Stock ID: ${id}`
       );
       fetchData();
-    } else alert("Failed to delete: " + error.message);
+    } else toast.error("Failed to delete: " + error.message);
   };
 
   // ── Computed ───────────────────────────────────────────────────────────────
@@ -638,7 +639,7 @@ export default function ProductDetailPage() {
                 onClick={() => {
                   const bc = safeBarcode(product.barcode);
                   if (!bc) {
-                    alert(
+                    toast.error(
                       "Is product ka koi barcode set nahi hai — pehle Products page me barcode add karein."
                     );
                     return;
@@ -811,7 +812,7 @@ export default function ProductDetailPage() {
                         setLocEditing(false);
                         fetchData();
                       } catch (err) {
-                        alert("Failed: " + (err as Error).message);
+                        toast.error("Failed: " + (err as Error).message);
                       }
                       setLocSaving(false);
                     }}

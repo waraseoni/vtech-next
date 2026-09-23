@@ -17,6 +17,7 @@ import {
   X,
 } from "lucide-react";
 import { DEFAULT_TEMPLATES, TEMPLATE_LABELS, PLACEHOLDERS } from "@/lib/whatsappTemplates";
+import { toast } from "@/lib/toast";
 
 type HistoryRow = {
   id: number;
@@ -43,14 +44,7 @@ export default function WhatsAppTemplatesPage() {
   const [history, setHistory] = useState<HistoryRow[]>([]);
   const [openCards, setOpenCards] = useState<Record<string, boolean>>({});
   const [saving, setSaving] = useState(false);
-  const [toast, setToast] = useState<{ type: "success" | "error"; msg: string } | null>(null);
   const [historyDetail, setHistoryDetail] = useState<HistoryRow | null>(null);
-
-  useEffect(() => {
-    if (!toast) return;
-    const t = setTimeout(() => setToast(null), 3000);
-    return () => clearTimeout(t);
-  }, [toast]);
 
   const fetchData = useCallback(async () => {
     const [infoRes, histRes] = await Promise.all([
@@ -76,7 +70,7 @@ export default function WhatsAppTemplatesPage() {
 
   const copyPlaceholder = (tag: string) => {
     navigator.clipboard.writeText(tag);
-    setToast({ type: "success", msg: `Copied: ${tag}` });
+    toast.success(`Copied: ${tag}`);
   };
 
   const updateTemplate = (key: string, value: string) => {
@@ -153,16 +147,13 @@ export default function WhatsAppTemplatesPage() {
       }
 
       if (errors.length > 0) {
-        setToast({ type: "error", msg: errors.join(" | ") });
+        toast.error(errors.join(" | "));
       } else {
-        setToast({
-          type: "success",
-          msg: applyCurrent ? "Templates saved + applied!" : "Defaults saved!",
-        });
+        toast.success(applyCurrent ? "Templates saved + applied!" : "Defaults saved!");
       }
       fetchData();
     } catch (err) {
-      setToast({ type: "error", msg: err instanceof Error ? err.message : String(err) });
+      toast.error(err instanceof Error ? err.message : String(err));
     } finally {
       setSaving(false);
     }
@@ -213,14 +204,14 @@ export default function WhatsAppTemplatesPage() {
       }
 
       if (errors.length > 0) {
-        setToast({ type: "error", msg: errors.join(" | ") });
+        toast.error(errors.join(" | "));
       } else {
         setTemplates({ ...DEFAULT_TEMPLATES });
-        setToast({ type: "success", msg: "Factory defaults restored!" });
+        toast.success("Factory defaults restored!");
       }
       fetchData();
     } catch (err) {
-      setToast({ type: "error", msg: err instanceof Error ? err.message : String(err) });
+      toast.error(err instanceof Error ? err.message : String(err));
     } finally {
       setSaving(false);
     }
@@ -228,20 +219,6 @@ export default function WhatsAppTemplatesPage() {
 
   return (
     <AdminPage title="WhatsApp Templates" subtitle="Configure default WhatsApp message templates">
-      {/* Toast */}
-      {toast && (
-        <div
-          className={`fixed top-4 right-4 z-[100] flex items-center gap-3 px-4 py-3 rounded-2xl shadow-2xl border text-sm font-bold ${
-            toast.type === "success"
-              ? "bg-emerald-500/15 border-emerald-500/30 text-emerald-400"
-              : "bg-red-500/15 border-red-500/30 text-red-400"
-          }`}
-        >
-          {toast.type === "success" ? <Check size={16} /> : <AlertCircle size={16} />}
-          {toast.msg}
-        </div>
-      )}
-
       {/* History Detail Modal */}
       {historyDetail && (
         <div

@@ -68,6 +68,7 @@ import { fetchClientContacts, telLink, smsLink, waChatLink } from "@/lib/clientC
 import type { ClientContact } from "@/lib/clientContacts";
 import JobSpotPicker from "@/components/JobSpotPicker";
 import PageLoader from "@/components/PageLoader";
+import { toast } from "@/lib/toast";
 
 // ─────────────────────────────────────────────────────────────
 // TYPES
@@ -683,7 +684,7 @@ export default function ViewClientProfile() {
 
   const bulkUpdateStatus = async (newStatus: number) => {
     if (selectedIds.size === 0) {
-      alert("Select jobs first!");
+      toast.error("Select jobs first!");
       return;
     }
     if (!confirm(`${selectedIds.size} jobs ka status change karein?`)) return;
@@ -742,7 +743,7 @@ export default function ViewClientProfile() {
         `${ids.length} job(s) updated to "${statusName}"`
       );
     } else {
-      alert("Bulk update failed: " + error.message);
+      toast.error("Bulk update failed: " + error.message);
     }
     setBulkActionLoading(false);
   };
@@ -750,7 +751,7 @@ export default function ViewClientProfile() {
   // ── BULK MOVE (jobs page parity) — selected jobs ka spot badlo ──
   const applyBulkMove = async () => {
     if (bulkMoveId == null) {
-      alert("Pehle spot chuno!");
+      toast.error("Pehle spot chuno!");
       return;
     }
     setBulkActionLoading(true);
@@ -781,7 +782,7 @@ export default function ViewClientProfile() {
       setBulkMoveId(null);
       setBulkMoveName("");
     } else {
-      alert("Move failed: " + error.message);
+      toast.error("Move failed: " + error.message);
     }
     setBulkActionLoading(false);
   };
@@ -815,7 +816,7 @@ export default function ViewClientProfile() {
       );
       setSpotEditJob(null);
     } else {
-      alert("Spot update failed: " + error.message);
+      toast.error("Spot update failed: " + error.message);
     }
     setSavingSpot(false);
   };
@@ -854,13 +855,13 @@ export default function ViewClientProfile() {
 
   const openBulkWhatsApp = () => {
     if (selectedIds.size === 0) {
-      alert("Select jobs first!");
+      toast.error("Select jobs first!");
       return;
     }
     const selected = filteredJobs.filter((j) => selectedIds.has(j.id));
     const phone = (client?.contact || "").replace(/\D/g, "");
     if (phone.length < 10) {
-      alert("Client ke paas valid mobile number nahi mila");
+      toast.error("Client ke paas valid mobile number nahi mila");
       return;
     }
     const groups = [{ phone, fullname: client?.fullName || "Client", rows: selected }];
@@ -903,7 +904,7 @@ export default function ViewClientProfile() {
 
   const openCombinedInvoice = (billType: "gst" | "non_gst") => {
     if (selectedIds.size === 0) {
-      alert("Select jobs first!");
+      toast.error("Select jobs first!");
       return;
     }
     const ids = [...selectedIds].join(",");
@@ -915,7 +916,7 @@ export default function ViewClientProfile() {
     if (!confirm("Kya aap yeh payment delete karna chahte hain?")) return;
     const { error } = await supabase.from("client_payments").delete().eq("id", id);
     if (error) {
-      alert("Error: " + error.message);
+      toast.error("Error: " + error.message);
       return;
     }
     setPayments((prev) => prev.filter((p) => p.id !== id));
@@ -959,7 +960,7 @@ export default function ViewClientProfile() {
       .update(updates)
       .eq("id", editingPayment.id);
     if (error) {
-      alert("Error: " + error.message);
+      toast.error("Error: " + error.message);
       return;
     }
     // Update local state (use editForm.payment_date for display consistency)
@@ -1003,7 +1004,7 @@ export default function ViewClientProfile() {
         `Client: ${client.fullName} | Due date set`
       );
     } catch (err) {
-      alert("Error: " + (err instanceof Error ? err.message : String(err)));
+      toast.error("Error: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       setSavingDue(false);
     }
@@ -2510,7 +2511,7 @@ export default function ViewClientProfile() {
             <button
               onClick={() => {
                 if (!bulkStatus) {
-                  alert("Please select a status first");
+                  toast.error("Please select a status first");
                   return;
                 }
                 bulkUpdateStatus(Number(bulkStatus));

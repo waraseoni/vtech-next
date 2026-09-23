@@ -22,6 +22,7 @@ import {
 import { logActivity } from "@/lib/activity";
 import { safeBack } from "@/lib/utils";
 import SearchableSelect from "@/components/SearchableSelect";
+import { toast } from "@/lib/toast";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface Product {
@@ -253,7 +254,7 @@ export default function SaleForm({ mode, saleId }: SaleFormProps) {
       .eq("id", saleId)
       .single();
     if (error) {
-      alert("Sale not found");
+      toast.error("Sale not found");
       router.push("/direct-sales");
       return;
     }

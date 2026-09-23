@@ -27,6 +27,7 @@ import {
 import { logActivity } from "@/lib/activity";
 import { todayIST } from "@/lib/dateUtils";
 import { inr, type Mechanic } from "./helpers";
+import { requireAdmin } from "@/lib/requireAdmin";
 
 function StatCard({
   icon,
@@ -235,10 +236,7 @@ export default function MechanicsBody({
   };
 
   const handleDelete = async (id: number, name: string) => {
-    if (userRole !== "admin") {
-      alert("Sirf Admin delete kar sakta hai!");
-      return;
-    }
+    if (!requireAdmin(userRole, "delete")) return;
     if (!confirm(`"${name}" ko delete karna hai?`)) return;
     const { error } = await supabase.from("mechanic_list").update({ delete_flag: 1 }).eq("id", id);
     if (!error) {
@@ -248,10 +246,7 @@ export default function MechanicsBody({
   };
 
   const toggleStatus = async (m: Mechanic) => {
-    if (userRole !== "admin") {
-      alert("Sirf Admin status change kar sakta hai!");
-      return;
-    }
+    if (!requireAdmin(userRole, "status")) return;
     const newStatus = m.status === 1 ? 0 : 1;
     const name = [m.firstname, m.lastname].join(" ");
     const { error } = await supabase

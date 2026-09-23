@@ -30,6 +30,7 @@ import {
 import { useSearchParams, useRouter } from "next/navigation";
 import AttendanceModal from "./AttendanceModal";
 import { currentMonthIST, parseISTDate, hoursBetweenIST, fmtTimeIST } from "@/lib/dateUtils";
+import { requireAdmin } from "@/lib/requireAdmin";
   import { openImageLightbox } from "@/components/ImageLightbox";
 
 interface Mechanic {
@@ -232,7 +233,7 @@ export default function MonthlyReport({
   };
 
   const handleDayClick = (mId: number, mName: string, dateStr: string) => {
-    if (userRole !== "admin") return;
+    if (!requireAdmin(userRole, "manage")) return;
     const md = mechanicsData.find((x) => x.mechanic.id === mId);
     const day = md?.days.find((d) => `${month}-${d.day.toString().padStart(2, "0")}` === dateStr);
     setSelected({

@@ -31,6 +31,7 @@ import {
   type BoxPrintOptions,
 } from "@/lib/boxPrint";
 import type { LocationParts } from "@/lib/locations";
+import { toast } from "@/lib/toast";
 
 /* ─── types ─────────────────────────────────────────────────────────────── */
 
@@ -166,7 +167,7 @@ export default function BoxLabelsPage() {
       setBoxes(existing);
       setPartsMap(Object.fromEntries(options.map((o) => [o.name, partsByBox[o.id] || null])));
     } catch (err) {
-      alert("Box load fail: " + (err instanceof Error ? err.message : String(err)));
+      toast.error("Box load fail: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       setLoadingBoxes(false);
     }
@@ -347,7 +348,7 @@ export default function BoxLabelsPage() {
 
   const handlePrint = useCallback(() => {
     if (!selectedBoxes.length) {
-      alert("Koi box select nahi hai.");
+      toast.error("Koi box select nahi hai.");
       return;
     }
     printBoxLabels(selectedBoxes, options, partsMap);

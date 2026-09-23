@@ -6,6 +6,7 @@ import AdminPage from "@/app/components/AdminPage";
 import { supabase } from "@/lib/supabase";
 import { pageAll } from "@/lib/fetch-all";
 import { buildDueMaps, balanceFromMaps } from "@/lib/client-due";
+import { toast } from "@/lib/toast";
 import {
   AlertCircle,
   CheckCircle2,
@@ -47,11 +48,6 @@ type ClientForm = {
   opening_balance: string;
 };
 
-type Toast = {
-  type: "success" | "error";
-  msg: string;
-};
-
 const card = "bg-[#161b27] border border-[#21293d] rounded-2xl";
 const input =
   "w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white outline-none focus:border-blue-500/60 transition-all placeholder:text-slate-700";
@@ -88,13 +84,6 @@ export default function ClientAmtPage() {
   const [search, setSearch] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState<ClientForm>(blankForm);
-  const [toast, setToast] = useState<Toast | null>(null);
-
-  useEffect(() => {
-    if (!toast) return;
-    const timer = setTimeout(() => setToast(null), 3500);
-    return () => clearTimeout(timer);
-  }, [toast]);
 
   const fetchClients = useCallback(async () => {
     setLoading(true);
@@ -155,7 +144,7 @@ export default function ClientAmtPage() {
       setClients(built);
     } catch (error) {
       console.error("clients-admin fetch error:", error);
-      setToast({ type: "error", msg: "Client amount list load nahi hui." });
+      toast.error("Client amount list load nahi hui.");
     } finally {
       setLoading(false);
     }
@@ -228,7 +217,7 @@ export default function ClientAmtPage() {
       !form.contact.trim() ||
       !form.address.trim()
     ) {
-      setToast({ type: "error", msg: "First name, last name, contact aur address required hain." });
+      toast.error("First name, last name, contact aur address required hain.");
       return;
     }
 
@@ -248,7 +237,7 @@ export default function ClientAmtPage() {
       if (form.id) {
         const { error } = await supabase.from("client_list").update(payload).eq("id", form.id);
         if (error) throw error;
-        setToast({ type: "success", msg: "Client update ho gaya." });
+        toast.success("Client update ho gaya.");
       } else {
         const { error } = await supabase.from("client_list").insert({
           ...payload,
@@ -256,14 +245,14 @@ export default function ClientAmtPage() {
           image_path: null,
         });
         if (error) throw error;
-        setToast({ type: "success", msg: "New client add ho gaya." });
+        toast.success("New client add ho gaya.");
       }
 
       closeModal();
       await fetchClients();
     } catch (error) {
       console.error("client save error:", error);
-      setToast({ type: "error", msg: "Client save nahi ho paya." });
+      toast.error("Client save nahi ho paya.");
     } finally {
       setSaving(false);
     }
@@ -278,18 +267,18 @@ export default function ClientAmtPage() {
         .update({ delete_flag: 1, date_updated: new Date().toISOString() })
         .eq("id", client.id);
       if (error) throw error;
-      setToast({ type: "success", msg: "Client delete ho gaya." });
+      toast.success("Client delete ho gaya.");
       await fetchClients();
     } catch (error) {
       console.error("client delete error:", error);
-      setToast({ type: "error", msg: "Client delete nahi hua." });
+      toast.error("Client delete nahi hua.");
     }
   };
 
   const sendReminder = (client: ClientRow) => {
     const phone = (client.contact || "").replace(/\D/g, "");
     if (phone.length < 10) {
-      setToast({ type: "error", msg: "Valid WhatsApp number nahi mila." });
+      toast.error("Valid WhatsApp number nahi mila.");
       return;
     }
     const text =
@@ -304,19 +293,6 @@ export default function ClientAmtPage() {
       title="Client Amount"
       subtitle="Opening balance, total receivable aur client amount adjustments manage karo."
     >
-      {toast && (
-        <div
-          className={`fixed top-4 right-4 z-[100] flex items-center gap-2 rounded-2xl border px-4 py-3 text-sm font-bold shadow-2xl ${
-            toast.type === "success"
-              ? "border-emerald-500/30 bg-emerald-500/15 text-emerald-400"
-              : "border-red-500/30 bg-red-500/15 text-red-400"
-          }`}
-        >
-          {toast.type === "success" ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
-          {toast.msg}
-        </div>
-      )}
-
       <div className="grid gap-3 mb-5 md:grid-cols-4">
         <StatCard
           label="Total Clients"

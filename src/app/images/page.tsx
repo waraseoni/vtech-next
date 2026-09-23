@@ -12,10 +12,9 @@ import {
   Copy,
   Check,
   Loader2,
-  AlertCircle,
-  CheckCircle,
   Link2,
 } from "lucide-react";
+import { toast } from "@/lib/toast";
 
 type BucketFile = {
   name: string;
@@ -54,13 +53,7 @@ export default function ImagesPage() {
   const [statusFilter, setStatusFilter] = useState<"all" | "referenced" | "orphan">("all");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [deleting, setDeleting] = useState(false);
-  const [toast, setToast] = useState<{ type: "success" | "error"; msg: string } | null>(null);
   const [copiedKey, setCopiedKey] = useState("");
-
-  const showToast = (type: "success" | "error", msg: string) => {
-    setToast({ type, msg });
-    setTimeout(() => setToast(null), 4000);
-  };
 
   // ── Admin guard ────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -154,15 +147,15 @@ export default function ImagesPage() {
         });
         const json = await res.json();
         if (json.status === "success") removed += json.removed;
-        else showToast("error", json.msg || `${b} delete fail`);
+        else toast.error(json.msg || `${b} delete fail`);
       }
       if (removed > 0) {
-        showToast("success", `${removed} image(s) delete ho gayi ✅`);
+        toast.success(`${removed} image(s) delete ho gayi ✅`);
         setSelected(new Set());
         load();
       }
     } catch (e) {
-      showToast("error", e instanceof Error ? e.message : "Delete failed");
+      toast.error(e instanceof Error ? e.message : "Delete failed");
     } finally {
       setDeleting(false);
     }
@@ -174,26 +167,12 @@ export default function ImagesPage() {
       setCopiedKey(k);
       setTimeout(() => setCopiedKey(""), 1500);
     } catch {
-      showToast("error", "Copy nahi ho paya");
+      toast.error("Copy nahi ho paya");
     }
   };
 
   return (
     <div className="min-h-screen bg-[#0d1117] font-sans pb-12">
-      {/* Toast */}
-      {toast && (
-        <div
-          className={`fixed top-4 right-4 z-[100] flex items-center gap-3 px-4 py-3 rounded-2xl shadow-2xl border text-sm font-bold max-w-sm ${
-            toast.type === "success"
-              ? "bg-emerald-500/15 border-emerald-500/30 text-emerald-400"
-              : "bg-red-500/15 border-red-500/30 text-red-400"
-          }`}
-        >
-          {toast.type === "success" ? <CheckCircle size={16} /> : <AlertCircle size={16} />}
-          {toast.msg}
-        </div>
-      )}
-
       <div className="max-w-5xl mx-auto px-4 pt-6 space-y-4">
         {/* Header */}
         <div className="bg-[#161b27] border border-[#21293d] rounded-2xl px-5 py-4">

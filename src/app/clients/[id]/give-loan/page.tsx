@@ -10,11 +10,11 @@ import {
   Clock,
   FileText,
   CheckCircle2,
-  AlertCircle,
   Loader2,
   TrendingDown,
 } from "lucide-react";
 import Link from "next/link";
+import { toast } from "@/lib/toast";
 
 function todayIST(): string {
   const parts = new Intl.DateTimeFormat("en-CA", {
@@ -47,19 +47,12 @@ export default function GiveLoanPage({ params }: { params: Promise<{ id: string 
   const [fetching, setFetching] = useState(true);
   const [clientName, setClientName] = useState("");
   const [balance, setBalance] = useState<number | null>(null);
-  const [toast, setToast] = useState<{ type: "success" | "error"; msg: string } | null>(null);
 
   const [principal, setPrincipal] = useState("");
   const [interestRate, setInterestRate] = useState("0");
   const [months, setMonths] = useState("1");
   const [loanDate, setLoanDate] = useState(todayIST);
   const [remarks, setRemarks] = useState("");
-
-  useEffect(() => {
-    if (!toast) return;
-    const t = setTimeout(() => setToast(null), 3500);
-    return () => clearTimeout(t);
-  }, [toast]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -135,11 +128,11 @@ export default function GiveLoanPage({ params }: { params: Promise<{ id: string 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (p <= 0) {
-      setToast({ type: "error", msg: "Principal amount valid rakho!" });
+      toast.error("Principal amount valid rakho!");
       return;
     }
     if (m < 1) {
-      setToast({ type: "error", msg: "Kist ki avadhi kam se kam 1 month honi chahiye!" });
+      toast.error("Kist ki avadhi kam se kam 1 month honi chahiye!");
       return;
     }
     setLoading(true);
@@ -158,13 +151,10 @@ export default function GiveLoanPage({ params }: { params: Promise<{ id: string 
         },
       ]);
       if (error) throw error;
-      setToast({ type: "success", msg: "Loan save ho gaya! ✅" });
+      toast.success("Loan save ho gaya! ✅");
       setTimeout(() => router.replace(`/clients/${clientId}/view`), 1000);
     } catch (err) {
-      setToast({
-        type: "error",
-        msg: err instanceof Error ? err.message : "Loan save mein galti!",
-      });
+      toast.error(err instanceof Error ? err.message : "Loan save mein galti!");
     } finally {
       setLoading(false);
     }
@@ -172,19 +162,6 @@ export default function GiveLoanPage({ params }: { params: Promise<{ id: string 
 
   return (
     <div className="min-h-screen bg-[#0d1117] text-white font-sans">
-      {toast && (
-        <div
-          className={`fixed top-4 right-4 z-50 flex items-center gap-3 px-4 py-3 rounded-2xl shadow-2xl border text-sm font-bold ${
-            toast.type === "success"
-              ? "bg-emerald-500/15 border-emerald-500/30 text-emerald-400"
-              : "bg-red-500/15 border-red-500/30 text-red-400"
-          }`}
-        >
-          {toast.type === "success" ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
-          {toast.msg}
-        </div>
-      )}
-
       <div className="max-w-2xl mx-auto p-4 md:p-6 space-y-4">
         {/* HEADER */}
         <div className="relative overflow-hidden bg-[#161b27] rounded-3xl border border-[#21293d] p-5">

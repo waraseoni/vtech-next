@@ -5,6 +5,7 @@ import AdminPage from "@/app/components/AdminPage";
 import { supabase, getCachedUser } from "@/lib/supabase";
 import { pageAll } from "@/lib/fetch-all";
 import { formatIST, toISTDatePart } from "@/lib/dateUtils";
+import { requireAdmin } from "@/lib/requireAdmin";
 import {
   Search,
   Plus,
@@ -255,20 +256,14 @@ export default function ClientLoansPage() {
   };
 
   const handleDelete = async (id: number) => {
-    if (userRole !== "admin") {
-      alert("Sirf Admin delete kar sakta hai!");
-      return;
-    }
+    if (!requireAdmin(userRole, "delete")) return;
     if (!confirm("Kya aap is loan ko delete karna chahte hain?")) return;
     await supabase.from("client_loans").delete().eq("id", id);
     fetchData();
   };
 
   const toggleStatus = async (loan: Loan) => {
-    if (userRole !== "admin") {
-      alert("Sirf Admin status change kar sakta hai!");
-      return;
-    }
+    if (!requireAdmin(userRole, "status")) return;
     await supabase
       .from("client_loans")
       .update({ status: loan.status === 1 ? 0 : 1 })

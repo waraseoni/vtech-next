@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { X } from "lucide-react";
+import { toast } from "@/lib/toast";
 
 type DbRow = ReturnType<typeof JSON.parse>;
 
@@ -63,7 +64,7 @@ export default function EditPaymentModal({ paymentId, onClose, onSaved }: EditPa
       onSaved();
       onClose();
     } catch (err) {
-      alert("Error: " + (err instanceof Error ? err.message : String(err)));
+      toast.error("Error: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       setSaving(false);
     }
@@ -77,7 +78,7 @@ export default function EditPaymentModal({ paymentId, onClose, onSaved }: EditPa
       onSaved();
       onClose();
     } catch (err) {
-      alert("Error: " + (err instanceof Error ? err.message : String(err)));
+      toast.error("Error: " + (err instanceof Error ? err.message : String(err)));
     }
   };
 

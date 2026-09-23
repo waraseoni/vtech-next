@@ -7,14 +7,13 @@ import {
   ShoppingCart,
   Plus,
   Trash2,
-  CheckCircle2,
-  AlertCircle,
   Loader2,
   Save,
   Package,
   IndianRupee,
 } from "lucide-react";
 import Link from "next/link";
+import { toast } from "@/lib/toast";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TIMEZONE HELPER
@@ -81,16 +80,8 @@ export default function AddDirectSalePage({ params }: { params: Promise<{ id: st
   const [saleCode, setSaleCode] = useState(generateSaleCode);
   const [paymentMode, setPaymentMode] = useState("Cash");
   const [remarks, setRemarks] = useState("");
-  const [toast, setToast] = useState<{ type: "success" | "error"; msg: string } | null>(null);
 
   const [items, setItems] = useState<SaleItem[]>([{ description: "", quantity: 1, price: 0 }]);
-
-  // Auto-dismiss toast
-  useEffect(() => {
-    if (!toast) return;
-    const t = setTimeout(() => setToast(null), 4000);
-    return () => clearTimeout(t);
-  }, [toast]);
 
   // ── FETCH CLIENT NAME ──────────────────────────────────────────────────
   useEffect(() => {
@@ -147,11 +138,11 @@ export default function AddDirectSalePage({ params }: { params: Promise<{ id: st
 
     const itemError = validateItems();
     if (itemError) {
-      setToast({ type: "error", msg: itemError });
+      toast.error(itemError);
       return;
     }
     if (totalAmount <= 0) {
-      setToast({ type: "error", msg: "Total amount 0 nahi ho sakta!" });
+      toast.error("Total amount 0 nahi ho sakta!");
       return;
     }
 
@@ -179,7 +170,7 @@ export default function AddDirectSalePage({ params }: { params: Promise<{ id: st
       if (saleErr) {
         // Retry with new sale_code if duplicate (race condition)
         if (saleErr.code === "23505") {
-          setToast({ type: "error", msg: "Sale code conflict — dobara try karo!" });
+          toast.error("Sale code conflict — dobara try karo!");
           setSaleCode(generateSaleCode());
           setLoading(false);
           return;
@@ -199,15 +190,12 @@ export default function AddDirectSalePage({ params }: { params: Promise<{ id: st
       const { error: itemsErr } = await supabase.from("direct_sale_items").insert(lineItems);
       if (itemsErr) throw itemsErr;
 
-      setToast({ type: "success", msg: "Sale save ho gayi! ✅" });
+      toast.success("Sale save ho gayi! ✅");
       // BUG FIX: router.replace instead of push+refresh (avoids unmount warning)
       setTimeout(() => router.replace(`/clients/${clientId}/view`), 1000);
     } catch (err) {
       console.error("sale error:", err instanceof Error ? err.message : JSON.stringify(err));
-      setToast({
-        type: "error",
-        msg: err instanceof Error ? err.message : "Sale save karne mein galti!",
-      });
+      toast.error(err instanceof Error ? err.message : "Sale save karne mein galti!");
     } finally {
       setLoading(false);
     }
@@ -219,20 +207,6 @@ export default function AddDirectSalePage({ params }: { params: Promise<{ id: st
   return (
     // BUG FIX: dark theme — was bg-white (light)
     <div className="min-h-screen bg-[#0d1117] text-white font-sans">
-      {/* Toast */}
-      {toast && (
-        <div
-          className={`fixed top-4 right-4 z-50 flex items-center gap-3 px-4 py-3 rounded-2xl shadow-2xl border text-sm font-bold ${
-            toast.type === "success"
-              ? "bg-emerald-500/15 border-emerald-500/30 text-emerald-400"
-              : "bg-red-500/15 border-red-500/30 text-red-400"
-          }`}
-        >
-          {toast.type === "success" ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
-          {toast.msg}
-        </div>
-      )}
-
       <div className="max-w-4xl mx-auto p-4 md:p-6 space-y-4">
         {/* ── HEADER ──────────────────────────────────────────────────── */}
         <div className="relative overflow-hidden bg-[#161b27] rounded-3xl border border-[#21293d] p-5">

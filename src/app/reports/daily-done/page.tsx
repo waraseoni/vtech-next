@@ -27,6 +27,7 @@ import { JOB_STATUS } from "@/lib/status-colors";
 import { openImageLightbox } from "@/components/ImageLightbox";
 import { safeImageSrc } from "@/lib/image-utils";
 import { resolveTemplate, substituteTemplate, firmVars } from "@/lib/whatsapp";
+import { toast } from "@/lib/toast";
 
 type DailyDoneItem = {
   id: string;
@@ -190,7 +191,10 @@ const fmtDateTime = (v: string) =>
 
 const sendDoneWA = (item: DailyDoneItem, firmInfo: Record<string, string>) => {
   const phone = (item.client_contact || "").replace(/\D/g, "");
-  if (phone.length < 10) { alert("Valid mobile number nahi mila!"); return; }
+  if (phone.length < 10) {
+    toast.error("Valid mobile number nahi mila!");
+    return;
+  }
   const amt = (item.amount || 0).toLocaleString("en-IN");
   const key = STATUS_WA_KEY[item.status] || "whatsapp_status_pending";
   const tpl = resolveTemplate(firmInfo, key);

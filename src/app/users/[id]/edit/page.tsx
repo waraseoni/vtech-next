@@ -13,8 +13,6 @@ import {
   ShieldCheck,
   Code2,
   Loader2,
-  CheckCircle,
-  AlertCircle,
   Wrench,
   Eye,
   EyeOff,
@@ -30,6 +28,7 @@ import { useImageUpload } from "@/lib/useImageUpload";
 import { openImageLightbox } from "@/components/ImageLightbox";
 import SearchableSelect from "@/components/SearchableSelect";
 import PageLoader from "@/components/PageLoader";
+import { toast } from "@/lib/toast";
 
 const inputCls =
   "w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white outline-none focus:border-blue-500/60 transition-all";
@@ -50,7 +49,6 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [mechanics, setMechanics] = useState<Mechanic[]>([]);
-  const [toast, setToast] = useState<{ type: "success" | "error"; msg: string } | null>(null);
 
   // Form fields — matching PHP manage_user.php
   const [fullName, setFullName] = useState("");
@@ -118,12 +116,6 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
     }
   };
 
-  useEffect(() => {
-    if (!toast) return;
-    const t = setTimeout(() => setToast(null), 3500);
-    return () => clearTimeout(t);
-  }, [toast]);
-
   // ── Fetch user data + master ───────────────────────────────────────────────
   useEffect(() => {
     (async () => {
@@ -162,7 +154,7 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
         .single();
 
       if (error || !profile) {
-        setToast({ type: "error", msg: "User nahi mila!" });
+        toast.error("User nahi mila!");
         router.push("/users");
         return;
       }
@@ -195,11 +187,11 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!fullName.trim()) {
-      setToast({ type: "error", msg: "Full name zaroori hai!" });
+      toast.error("Full name zaroori hai!");
       return;
     }
     if (newPassword && newPassword.length < 6) {
-      setToast({ type: "error", msg: "Password kam se kam 6 characters ka hona chahiye!" });
+      toast.error("Password kam se kam 6 characters ka hona chahiye!");
       return;
     }
 
@@ -236,12 +228,12 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
         if (!res.ok) throw new Error(data.error);
       }
 
-      setToast({ type: "success", msg: "User update ho gaya!" });
+      toast.success("User update ho gaya!");
       setTimeout(() => {
         router.push("/users");
       }, 1000);
     } catch (err: unknown) {
-      setToast({ type: "error", msg: err instanceof Error ? err.message : "Save failed!" });
+      toast.error(err instanceof Error ? err.message : "Save failed!");
     } finally {
       setSaving(false);
     }
@@ -251,20 +243,6 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
 
   return (
     <div className="min-h-screen bg-[#0d1117] font-sans pb-12">
-      {/* Toast */}
-      {toast && (
-        <div
-          className={`fixed top-4 right-4 z-[100] flex items-center gap-3 px-4 py-3 rounded-2xl shadow-2xl border text-sm font-bold ${
-            toast.type === "success"
-              ? "bg-emerald-500/15 border-emerald-500/30 text-emerald-400"
-              : "bg-red-500/15 border-red-500/30 text-red-400"
-          }`}
-        >
-          {toast.type === "success" ? <CheckCircle size={16} /> : <AlertCircle size={16} />}
-          {toast.msg}
-        </div>
-      )}
-
       <div className="max-w-md mx-auto px-4 pt-6 space-y-4">
         {/* Header */}
         <div className="bg-[#161b27] border border-[#21293d] rounded-2xl px-5 py-4 flex items-center justify-between">

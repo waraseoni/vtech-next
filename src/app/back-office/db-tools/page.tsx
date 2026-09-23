@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
+import { toast } from "@/lib/toast";
 import {
   Database,
   Download,
@@ -21,7 +22,6 @@ import {
   Check,
 } from "lucide-react";
 
-type Toast = { type: "success" | "error" | "info"; msg: string };
 type SchemaCheck = { name: string; status: "ok" | "missing" | "error"; detail: string };
 
 const SCHEMA_FILES = [
@@ -97,7 +97,6 @@ const DEPLOY_STEPS = [
 ];
 
 export default function DbToolsPage() {
-  const [toast, setToast] = useState<Toast | null>(null);
   const [schemaChecks, setSchemaChecks] = useState<SchemaCheck[]>([]);
   const [checking, setChecking] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -105,19 +104,14 @@ export default function DbToolsPage() {
   const [showSql, setShowSql] = useState<Record<string, boolean>>({});
   const [, setTableCount] = useState<number | null>(null);
 
-  const showToast = (type: Toast["type"], msg: string) => {
-    setToast({ type, msg });
-    setTimeout(() => setToast(null), 4000);
-  };
-
   const copyToClipboard = async (text: string, id: string) => {
     try {
       await navigator.clipboard.writeText(text);
       setCopiedId(id);
       setTimeout(() => setCopiedId(null), 2000);
-      showToast("success", "Copied!");
+      toast.success("Copied!");
     } catch {
-      showToast("error", "Copy failed");
+      toast.error("Copy failed");
     }
   };
 
@@ -236,22 +230,6 @@ export default function DbToolsPage() {
 
   return (
     <div className="min-h-screen bg-[#0d1117] font-sans pb-12">
-      {/* Toast */}
-      {toast && (
-        <div
-          className={`fixed top-4 right-4 z-[100] flex items-center gap-3 px-4 py-3 rounded-2xl shadow-2xl border text-sm font-bold max-w-sm ${
-            toast.type === "success"
-              ? "bg-emerald-500/15 border-emerald-500/30 text-emerald-400"
-              : toast.type === "info"
-                ? "bg-blue-500/15 border-blue-500/30 text-blue-400"
-                : "bg-red-500/15 border-red-500/30 text-red-400"
-          }`}
-        >
-          {toast.type === "success" ? <CheckCircle size={16} /> : <AlertCircle size={16} />}
-          {toast.msg}
-        </div>
-      )}
-
       <div className="max-w-4xl mx-auto px-4 pt-6 space-y-5">
         {/* Header */}
         <div className="flex items-center gap-4">

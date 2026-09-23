@@ -16,6 +16,7 @@ import {
 import { format } from "date-fns/format";
 import Link from "next/link";
 import { ExternalLink, Trash2, PlusCircle, Edit3, Eraser } from "lucide-react";
+import { toast } from "@/lib/toast";
 
 type LogEntry = {
   id: number;
@@ -76,10 +77,10 @@ export default function ActivityLogPage() {
         setCleanMsg(json.msg);
         fetchLogs();
       } else {
-        alert(json.msg || "Cleanup failed");
+        toast.error(json.msg || "Cleanup failed");
       }
     } catch {
-      alert("Cleanup failed");
+      toast.error("Cleanup failed");
     } finally {
       setCleaning(false);
     }
@@ -157,7 +158,7 @@ export default function ActivityLogPage() {
       console.error("Error fetching logs:", msg || err);
       // Extra check: If error contains 'relation "activity_logs" does not exist'
       if (msg.includes("activity_logs")) {
-        alert(
+        toast.error(
           "Error: 'activity_logs' table is missing in Supabase. Please run the SQL command provided in the previous step."
         );
       }

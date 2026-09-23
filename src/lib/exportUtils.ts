@@ -1,5 +1,6 @@
 import { toISTDatePart } from "./dateUtils";
 import { downloadBlob, nativePrintHtml } from "./nativePrint";
+import { toast } from "@/lib/toast";
 
 export function exportToCSV<T extends Record<string, unknown>>(
   data: T[],
@@ -7,7 +8,7 @@ export function exportToCSV<T extends Record<string, unknown>>(
   columns?: { key: keyof T; label: string }[]
 ) {
   if (!data.length) {
-    alert("No data to export");
+    toast.error("No data to export");
     return;
   }
 
@@ -39,7 +40,7 @@ export function exportToCSV<T extends Record<string, unknown>>(
 export function printTable(tableId: string, title?: string) {
   const table = document.getElementById(tableId);
   if (!table) {
-    alert("Table not found");
+    toast.error("Table not found");
     return;
   }
 

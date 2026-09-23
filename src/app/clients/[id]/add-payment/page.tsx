@@ -9,7 +9,6 @@ import {
   CreditCard,
   Receipt,
   CheckCircle2,
-  AlertCircle,
   Loader2,
   Wrench,
   ShoppingCart,
@@ -18,6 +17,7 @@ import {
   Save,
 } from "lucide-react";
 import Link from "next/link";
+import { toast } from "@/lib/toast";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TIMEZONE HELPERS — IST (UTC+5:30)
@@ -79,7 +79,6 @@ export default function AddPaymentPage({ params }: { params: Promise<{ id: strin
   const [balance, setBalance] = useState<number | null>(null);
   const [jobs, setJobs] = useState<JobOption[]>([]);
   const [directSales, setDirectSales] = useState<SaleOption[]>([]);
-  const [toast, setToast] = useState<{ type: "success" | "error"; msg: string } | null>(null);
 
   // BUG FIX 1: default date = todayIST(), not toISOString().split('T')[0]
   const [amount, setAmount] = useState("");
@@ -90,13 +89,6 @@ export default function AddPaymentPage({ params }: { params: Promise<{ id: strin
   const [referenceType, setReferenceType] = useState<"none" | "job" | "sale">("none");
   const [selectedJobId, setSelectedJobId] = useState("");
   const [billNo, setBillNo] = useState("");
-
-  // Auto-dismiss toast
-  useEffect(() => {
-    if (!toast) return;
-    const t = setTimeout(() => setToast(null), 3500);
-    return () => clearTimeout(t);
-  }, [toast]);
 
   // ── FETCH ──────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -187,7 +179,7 @@ export default function AddPaymentPage({ params }: { params: Promise<{ id: strin
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!amount || parseFloat(amount) <= 0) {
-      setToast({ type: "error", msg: "Valid amount enter karo!" });
+      toast.error("Valid amount enter karo!");
       return;
     }
     setLoading(true);
@@ -216,16 +208,13 @@ export default function AddPaymentPage({ params }: { params: Promise<{ id: strin
       const { error } = await supabase.from("client_payments").insert([paymentData]);
       if (error) throw error;
 
-      setToast({ type: "success", msg: "Payment save ho gayi! ✅" });
+      toast.success("Payment save ho gayi! ✅");
       // BUG FIX 11: don't push + refresh (causes warning on unmounted component)
       // Use replace — navigates cleanly without stacking history
       setTimeout(() => router.replace(`/clients/${clientId}/view`), 1000);
     } catch (err) {
       console.error("insert error:", err instanceof Error ? err.message : JSON.stringify(err));
-      setToast({
-        type: "error",
-        msg: err instanceof Error ? err.message : "Payment save mein galti!",
-      });
+      toast.error(err instanceof Error ? err.message : "Payment save mein galti!");
     } finally {
       setLoading(false);
     }
@@ -237,20 +226,6 @@ export default function AddPaymentPage({ params }: { params: Promise<{ id: strin
   return (
     // BUG FIX 13: dark theme — bg-[#0d1117] matching rest of app
     <div className="min-h-screen bg-[#0d1117] text-white font-sans">
-      {/* ── Toast notification ──────────────────────────────────────── */}
-      {toast && (
-        <div
-          className={`fixed top-4 right-4 z-50 flex items-center gap-3 px-4 py-3 rounded-2xl shadow-2xl border text-sm font-bold ${
-            toast.type === "success"
-              ? "bg-emerald-500/15 border-emerald-500/30 text-emerald-400"
-              : "bg-red-500/15 border-red-500/30 text-red-400"
-          }`}
-        >
-          {toast.type === "success" ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
-          {toast.msg}
-        </div>
-      )}
-
       <div className="max-w-2xl mx-auto p-4 md:p-6 space-y-4">
         {/* ── HEADER ──────────────────────────────────────────────────── */}
         <div className="relative overflow-hidden bg-[#161b27] rounded-3xl border border-[#21293d] p-5">

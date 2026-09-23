@@ -15,8 +15,6 @@ import {
   X,
   Eye,
   EyeOff,
-  CheckCircle,
-  AlertCircle,
   RefreshCw,
   Wrench,
   Edit3,
@@ -26,6 +24,7 @@ import { openImageLightbox } from "@/components/ImageLightbox";
 import PageLoader from "@/components/PageLoader";
 import { isOnline, lastSeenText, type Presence } from "@/lib/messaging";
 import { subscribePresence } from "@/lib/presence";
+import { toast } from "@/lib/toast";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface Profile {
@@ -38,8 +37,6 @@ interface Profile {
   avatar_url?: string | null;
   updated_at?: string; // actual column name in profiles table
 }
-type Toast = { type: "success" | "error"; msg: string };
-
 const inputCls =
   "w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white outline-none focus:border-blue-500/60 transition-all";
 const labelCls = "block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5";
@@ -64,7 +61,6 @@ export default function UsersPage() {
   const [presenceMap, setPresenceMap] = useState<Record<string, Presence>>({});
   const [loading, setLoading] = useState(true);
   const [myId, setMyId] = useState("");
-  const [toast, setToast] = useState<Toast | null>(null);
 
   // Reset password modal
   const [resetUser, setResetUser] = useState<Profile | null>(null);
@@ -98,12 +94,6 @@ export default function UsersPage() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  useEffect(() => {
-    if (!toast) return;
-    const t = setTimeout(() => setToast(null), 3500);
-    return () => clearTimeout(t);
-  }, [toast]);
 
   // ── Fetch users ────────────────────────────────────────────────────────────
   const fetchUsers = useCallback(async () => {
@@ -170,7 +160,7 @@ export default function UsersPage() {
       );
     } catch (err) {
       console.error("fetchUsers:", err);
-      setToast({ type: "error", msg: "Users load karne mein galti!" });
+      toast.error("Users load karne mein galti!");
     } finally {
       setLoading(false);
     }
@@ -184,15 +174,15 @@ export default function UsersPage() {
   const handleResetPassword = async () => {
     if (!resetUser || !myId) return;
     if (!newPassword) {
-      setToast({ type: "error", msg: "Naya password enter karo!" });
+      toast.error("Naya password enter karo!");
       return;
     }
     if (newPassword.length < 6) {
-      setToast({ type: "error", msg: "Password kam se kam 6 characters ka hona chahiye!" });
+      toast.error("Password kam se kam 6 characters ka hona chahiye!");
       return;
     }
     if (newPassword !== confirmPass) {
-      setToast({ type: "error", msg: "Dono passwords match nahi karte!" });
+      toast.error("Dono passwords match nahi karte!");
       return;
     }
 
@@ -206,15 +196,12 @@ export default function UsersPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
 
-      setToast({
-        type: "success",
-        msg: `${resetUser.full_name || "User"} ka password reset ho gaya!`,
-      });
+      toast.success(`${resetUser.full_name || "User"} ka password reset ho gaya!`);
       setResetUser(null);
       setNewPassword("");
       setConfirmPass("");
     } catch (err: unknown) {
-      setToast({ type: "error", msg: err instanceof Error ? err.message : "Reset failed!" });
+      toast.error(err instanceof Error ? err.message : "Reset failed!");
     } finally {
       setResetting(false);
     }
@@ -233,11 +220,11 @@ export default function UsersPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
 
-      setToast({ type: "success", msg: `${deleteUser.full_name || "User"} delete ho gaya!` });
+      toast.success(`${deleteUser.full_name || "User"} delete ho gaya!`);
       setDeleteUser(null);
       fetchUsers();
     } catch (err: unknown) {
-      setToast({ type: "error", msg: err instanceof Error ? err.message : "Delete failed!" });
+      toast.error(err instanceof Error ? err.message : "Delete failed!");
     } finally {
       setDeleting(false);
     }
@@ -300,20 +287,6 @@ export default function UsersPage() {
 
   return (
     <div className="min-h-screen bg-[#0d1117] font-sans pb-12">
-      {/* Toast */}
-      {toast && (
-        <div
-          className={`fixed top-4 right-4 z-[100] flex items-center gap-3 px-4 py-3 rounded-2xl shadow-2xl border text-sm font-bold ${
-            toast.type === "success"
-              ? "bg-emerald-500/15 border-emerald-500/30 text-emerald-400"
-              : "bg-red-500/15 border-red-500/30 text-red-400"
-          }`}
-        >
-          {toast.type === "success" ? <CheckCircle size={16} /> : <AlertCircle size={16} />}
-          {toast.msg}
-        </div>
-      )}
-
       <div className="max-w-4xl mx-auto px-4 pt-6 space-y-4">
         {/* Header */}
         <div className="bg-[#161b27] border border-[#21293d] rounded-2xl px-5 py-4 flex items-center justify-between flex-wrap gap-3">

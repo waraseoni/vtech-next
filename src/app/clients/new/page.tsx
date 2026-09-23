@@ -14,6 +14,7 @@ import {
 import Link from "next/link";
 import { logActivity } from "@/lib/activity";
 import { safeBack } from "@/lib/utils";
+import { toast } from "@/lib/toast";
 import PageLoader from "@/components/PageLoader";
 
 // ── DARK THEME CONSTANTS ──────────────────────────────────
@@ -101,7 +102,7 @@ export default function ManageClientPage() {
             opening_balance: data.opening_balance?.toString() || "0.00",
           });
       } catch (err) {
-        alert("Error loading client: " + (err instanceof Error ? err.message : String(err)));
+        toast.error("Error loading client: " + (err instanceof Error ? err.message : String(err)));
         safeBack(router, "/clients");
       } finally {
         setFetchLoading(false);
@@ -229,7 +230,7 @@ export default function ManageClientPage() {
       }
       router.replace("/clients");
     } catch (err) {
-      alert("Error: " + (err instanceof Error ? err.message : String(err)));
+      toast.error("Error: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       setLoading(false);
     }

@@ -80,6 +80,8 @@ import { openImageLightbox } from "@/components/ImageLightbox";
 import { safeImageSrc } from "@/lib/image-utils";
 import { JOB_STATUS } from "@/lib/status-colors";
 import { logger } from "@/lib/logger";
+import { toast } from "@/lib/toast";
+import { requireAdmin } from "@/lib/requireAdmin";
 
 // ─── WhatsApp status template keys (PHP: pending=0, repairing=1, ready=2, delivered=3/5, cancelled=4) ─
 const STATUS_WA_KEY: Record<number, string> = {
@@ -871,10 +873,7 @@ function JobsListContent() {
   // ── Actions ───────────────────────────────────────────────────────────────
   const handleDelete = useCallback(
     async (id: number) => {
-      if (userRole !== "admin") {
-        alert("Permission Denied: Sirf Admin hi delete kar sakta hai!");
-        return;
-      }
+      if (!requireAdmin(userRole, "delete")) return;
       if (!confirm("Kya aap pakka is job ko delete karna chahte hain?")) return;
       const { error } = await supabase
         .from("transaction_list")
@@ -883,7 +882,7 @@ function JobsListContent() {
       if (!error) {
         setTransactions((prev) => prev.filter((t) => t.id !== id));
         fetchStats();
-      } else alert("Delete failed: " + error.message);
+      } else toast.error("Delete failed: " + error.message);
     },
     [userRole, fetchStats]
   );
@@ -906,7 +905,7 @@ function JobsListContent() {
       );
       fetchStats();
     } else {
-      alert("Status update failed: " + error.message);
+      toast.error("Status update failed: " + error.message);
     }
     setStatusChangeLoading(null);
   };
@@ -931,7 +930,7 @@ function JobsListContent() {
 
   const bulkUpdateStatus = async (newStatus: number) => {
     if (selectedIds.size === 0) {
-      alert("Select jobs first!");
+      toast.error("Select jobs first!");
       return;
     }
     if (!confirm(`${selectedIds.size} jobs ka status change karein?`)) return;
@@ -991,7 +990,7 @@ function JobsListContent() {
       loadJobSpots();
       loadStale();
     } else {
-      alert("Bulk update failed: " + error.message);
+      toast.error("Bulk update failed: " + error.message);
     }
     setBulkActionLoading(false);
   };
@@ -999,7 +998,7 @@ function JobsListContent() {
   // ── Bulk Move: selected jobs ko dusre spot par le jao ──────────────
   const applyBulkMove = async () => {
     if (bulkMoveId == null) {
-      alert("Pehle spot chuno!");
+      toast.error("Pehle spot chuno!");
       return;
     }
     setBulkActionLoading(true);
@@ -1032,7 +1031,7 @@ function JobsListContent() {
       setBulkMoveName("");
       loadJobSpots();
     } else {
-      alert("Move failed: " + error.message);
+      toast.error("Move failed: " + error.message);
     }
     setBulkActionLoading(false);
   };
@@ -1069,7 +1068,7 @@ function JobsListContent() {
       setSpotEditTxn(null);
       loadJobSpots();
     } else {
-      alert("Spot update failed: " + error.message);
+      toast.error("Spot update failed: " + error.message);
     }
     setSavingSpot(false);
   };
@@ -1096,7 +1095,7 @@ function JobsListContent() {
       ]);
       const total = (cLoc || 0) + (cTxt || 0);
       if (total === 0) {
-        alert("Sab saaf hai! Koi delivered job aisa nahi jiski location abhi bachi ho.");
+        toast.success("Sab saaf hai! Koi delivered job aisa nahi jiski location abhi bachi ho.");
         return;
       }
       if (!confirm(`${total} delivered job(s) ki location abhi bhi lagi hai — sab clear kar dein?`))
@@ -1118,9 +1117,9 @@ function JobsListContent() {
       fetchStats();
       fetchPage();
       loadJobSpots();
-      alert(`${total} job(s) ki location clear ho gayi — spots ab bilkul saaf hain.`);
+      toast.success(`${total} job(s) ki location clear ho gayi — spots ab bilkul saaf hain.`);
     } catch (err) {
-      alert("Spot cleanup failed: " + (err as Error).message);
+      toast.error("Spot cleanup failed: " + (err as Error).message);
     } finally {
       setSpotCleaning(false);
     }
@@ -1160,7 +1159,7 @@ function JobsListContent() {
 
   const openBulkWhatsApp = () => {
     if (selectedIds.size === 0) {
-      alert("Select jobs first!");
+      toast.error("Select jobs first!");
       return;
     }
     const selected = transactions.filter((t) => selectedIds.has(t.id));
@@ -1178,7 +1177,7 @@ function JobsListContent() {
       g.rows.push(row);
     });
     if (groups.length === 0) {
-      alert("Selected jobs me koi valid mobile number nahi mila");
+      toast.error("Selected jobs me koi valid mobile number nahi mila");
       return;
     }
     setWaGroups(groups);
@@ -1222,7 +1221,7 @@ function JobsListContent() {
 
   const openCombinedInvoice = (billType: "gst" | "non_gst") => {
     if (selectedIds.size === 0) {
-      alert("Select jobs first!");
+      toast.error("Select jobs first!");
       return;
     }
     const ids = [...selectedIds].join(",");
@@ -1291,15 +1290,15 @@ function JobsListContent() {
   const handleQuickCreate = async () => {
     if (quickCreateRef.current) return;
     if (!quickForm.item.trim()) {
-      alert("Item/Model zaroori hai!");
+      toast.error("Item/Model zaroori hai!");
       return;
     }
     if (!quickForm.fault.trim()) {
-      alert("Fault description zaroori hai!");
+      toast.error("Fault description zaroori hai!");
       return;
     }
     if (!quickForm.mechanicId) {
-      alert("Mechanic select karo!");
+      toast.error("Mechanic select karo!");
       return;
     }
 
@@ -1350,7 +1349,7 @@ function JobsListContent() {
       fetchPage();
       router.push(`/jobs/${data.id}/edit`);
     } catch (e) {
-      alert("Error: " + (e instanceof Error && e.message ? e.message : "Unknown error"));
+      toast.error("Error: " + (e instanceof Error && e.message ? e.message : "Unknown error"));
     } finally {
       quickCreateRef.current = false;
       setQuickCreateLoading(false);
@@ -1360,7 +1359,7 @@ function JobsListContent() {
   const sendWA = (txn: Transaction) => {
     const phone = txn.client_contact?.replace(/\D/g, "");
     if (!phone || phone.length < 10) {
-      alert("Valid mobile number nahi mila!");
+      toast.error("Valid mobile number nahi mila!");
       return;
     }
     const name = getClientName(txn);
@@ -1394,7 +1393,7 @@ function JobsListContent() {
       const blob = await res.blob();
       downloadBlob(blob, `transactions_${todayIST()}.xls`);
     } else {
-      alert("Export fail hua. Dobara try karein.");
+      toast.error("Export fail hua. Dobara try karein.");
     }
   };
 
@@ -1511,7 +1510,7 @@ function JobsListContent() {
         <button
           onClick={() => {
             if (!bulkStatus) {
-              alert("Please select a status first");
+              toast.error("Please select a status first");
               return;
             }
             bulkUpdateStatus(Number(bulkStatus));

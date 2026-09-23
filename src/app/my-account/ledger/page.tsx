@@ -12,6 +12,7 @@ import {
   BookOpen,
   ArrowLeft,
 } from "lucide-react";
+import { toast } from "@/lib/toast";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // HELPERS
@@ -117,7 +118,7 @@ export default function MyLedgerPage() {
 
   const applyFilter = () => {
     if (from && to && from > to) {
-      alert("'From' date 'To' date se pehle hona chahiye!");
+      toast.error("'From' date 'To' date se pehle hona chahiye!");
       return;
     }
     setAppliedFrom(from);
@@ -173,7 +174,7 @@ export default function MyLedgerPage() {
     const cleanName = (data?.client.name || "client").replace(/[^a-zA-Z0-9]/g, "_");
     const win = window.open("", `Statement_${cleanName}`, "width=900,height=700,scrollbars=yes");
     if (!win) {
-      alert("Popup blocked! Browser settings mein popup allow karo.");
+      toast.warning("Popup blocked! Browser settings mein popup allow karo.");
       return;
     }
     win.document.write(`<!DOCTYPE html>

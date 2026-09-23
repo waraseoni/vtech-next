@@ -21,6 +21,7 @@ import Image from "next/image";
 import { openImageLightbox } from "@/components/ImageLightbox";
 import { safeImageSrc } from "@/lib/image-utils";
 import ProductFormModal from "@/components/ProductFormModal";
+import { requireAdmin } from "@/lib/requireAdmin";
 
 type Product = {
   id: number;
@@ -135,20 +136,14 @@ export default function ProductsPage() {
   };
 
   const handleDelete = async (id: number, name: string) => {
-    if (userRole !== "admin") {
-      alert("Sirf Admin delete kar sakta hai!");
-      return;
-    }
+    if (!requireAdmin(userRole, "delete")) return;
     if (!confirm(`"${name}" ko delete karna hai?`)) return;
     await supabase.from("product_list").update({ delete_flag: 1 }).eq("id", id);
     fetchData();
   };
 
   const toggleStatus = async (p: Product) => {
-    if (userRole !== "admin") {
-      alert("Sirf Admin status change kar sakta hai!");
-      return;
-    }
+    if (!requireAdmin(userRole, "status")) return;
     await supabase
       .from("product_list")
       .update({ status: p.status === 1 ? 0 : 1 })

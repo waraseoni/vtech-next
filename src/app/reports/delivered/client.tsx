@@ -33,6 +33,7 @@ import { openImageLightbox } from "@/components/ImageLightbox";
 import { safeImageSrc } from "@/lib/image-utils";
 import { resolveTemplate, substituteTemplate, firmVars } from "@/lib/whatsapp";
 import { buildDueMaps, balanceFromMaps } from "@/lib/client-due";
+import { toast } from "@/lib/toast";
 
 type Transaction = {
   id: number;
@@ -349,7 +350,10 @@ export default function DeliveredReportClient({ fromDate, toDate, clientId }: Pr
 
   const sendWA = (job: Transaction) => {
     const phone = job.client_contact.replace(/\D/g, "");
-    if (phone.length < 10) { alert("Valid mobile number nahi mila!"); return; }
+    if (phone.length < 10) {
+      toast.error("Valid mobile number nahi mila!");
+      return;
+    }
     const tpl = resolveTemplate(firmInfo, "whatsapp_status_delivered");
     const msg = substituteTemplate(tpl, {
       client_name: job.client_name,

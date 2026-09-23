@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import AdminPage from "@/app/components/AdminPage";
 import { supabase, getCachedUser } from "@/lib/supabase";
+import { requireAdmin } from "@/lib/requireAdmin";
 import {
   Search,
   Plus,
@@ -131,20 +132,14 @@ export default function ServicesPage() {
   };
 
   const handleDelete = async (id: number, name: string) => {
-    if (userRole !== "admin") {
-      alert("Sirf Admin delete kar sakta hai!");
-      return;
-    }
+    if (!requireAdmin(userRole, "delete")) return;
     if (!confirm(`"${name}" ko delete karna hai?`)) return;
     await supabase.from("service_list").update({ delete_flag: 1 }).eq("id", id);
     fetchData();
   };
 
   const toggleStatus = async (s: Service) => {
-    if (userRole !== "admin") {
-      alert("Sirf Admin status change kar sakta hai!");
-      return;
-    }
+    if (!requireAdmin(userRole, "status")) return;
     await supabase
       .from("service_list")
       .update({ status: s.status === 1 ? 0 : 1 })

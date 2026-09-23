@@ -30,6 +30,7 @@ import { getNextJobId, peekNextJobId, bumpJobCounter } from "@/lib/jobIdCounter"
 import SearchableSelect from "@/components/SearchableSelect";
 import JobSpotPicker from "@/components/JobSpotPicker";
 import { logger } from "@/lib/logger";
+import { toast } from "@/lib/toast";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // STYLES
@@ -68,8 +69,6 @@ type ProductRow = {
   price: number;
 };
 
-type Toast = { type: "success" | "error"; msg: string };
-
 // ─────────────────────────────────────────────────────────────────────────────
 // COMPONENT
 // ─────────────────────────────────────────────────────────────────────────────
@@ -101,7 +100,6 @@ function ManageJobPageInner({ params }: { params: Promise<{ id?: string }> }) {
   // Re-entrancy guard — double click / Enter double submit par duplicate row
   // nahi banegaa (handleSave in-flight ho to doosra call ignore hota hai).
   const savingRef = useRef(false);
-  const [toast, setToast] = useState<Toast | null>(null);
   const [currentUserId, setCurrentUserId] = useState<number>(0); // numeric user id from profiles
 
   // Master data
@@ -148,13 +146,6 @@ function ManageJobPageInner({ params }: { params: Promise<{ id?: string }> }) {
     address: "",
   });
   const [savingClient, setSavingClient] = useState(false);
-
-  // ── TOAST auto-dismiss ─────────────────────────────────────────────────
-  useEffect(() => {
-    if (!toast) return;
-    const t = setTimeout(() => setToast(null), 3500);
-    return () => clearTimeout(t);
-  }, [toast]);
 
   // ── CLIENT BALANCE ────────────────────────────────────────────────────
   // Canonical PHP formula (SalesTrait::get_client_balance): opening + delivered
@@ -362,7 +353,7 @@ function ManageJobPageInner({ params }: { params: Promise<{ id?: string }> }) {
         );
       } catch (e) {
         logger.error("load job:", e instanceof Error ? e.message : JSON.stringify(e));
-        setToast({ type: "error", msg: "Job load karne mein galti!" });
+        toast.error("Job load karne mein galti!");
         router.push("/jobs");
       } finally {
         setFetchLoading(false);
@@ -375,15 +366,15 @@ function ManageJobPageInner({ params }: { params: Promise<{ id?: string }> }) {
   const handleSaveNewClient = async () => {
     const { firstname, lastname, contact, address } = newClientForm;
     if (!firstname.trim()) {
-      setToast({ type: "error", msg: "First name zaroori hai!" });
+      toast.error("First name zaroori hai!");
       return;
     }
     if (!lastname.trim()) {
-      setToast({ type: "error", msg: "Last name zaroori hai!" });
+      toast.error("Last name zaroori hai!");
       return;
     }
     if (!contact.trim()) {
-      setToast({ type: "error", msg: "Contact number zaroori hai!" });
+      toast.error("Contact number zaroori hai!");
       return;
     }
 
@@ -429,13 +420,10 @@ function ManageJobPageInner({ params }: { params: Promise<{ id?: string }> }) {
         email: "",
         address: "",
       });
-      setToast({ type: "success", msg: "Naya client add ho gaya! ✅" });
+      toast.success("Naya client add ho gaya! ✅");
     } catch (e) {
       logger.error("save client error:", e instanceof Error ? e.message : e);
-      setToast({
-        type: "error",
-        msg: "Client save nahi hua: " + (e instanceof Error ? e.message : "Unknown error"),
-      });
+      toast.error("Client save nahi hua: " + (e instanceof Error ? e.message : "Unknown error"));
     } finally {
       setSavingClient(false);
     }
@@ -482,7 +470,7 @@ function ManageJobPageInner({ params }: { params: Promise<{ id?: string }> }) {
     const svc = services.find((s) => s.id === svcId);
     if (!svc) return;
     if (serviceRows.some((r) => r.service_id === svc.id)) {
-      setToast({ type: "error", msg: "Yeh service already add hai!" });
+      toast.error("Yeh service already add hai!");
       return;
     }
     setServiceRows((prev) => [
@@ -514,7 +502,7 @@ function ManageJobPageInner({ params }: { params: Promise<{ id?: string }> }) {
     const prd = products.find((p) => p.id === prdId);
     if (!prd) return;
     if (productRows.some((r) => r.product_id === prd.id)) {
-      setToast({ type: "error", msg: "Yeh product already add hai!" });
+      toast.error("Yeh product already add hai!");
       return;
     }
     setProductRows((prev) => [
@@ -534,7 +522,7 @@ function ManageJobPageInner({ params }: { params: Promise<{ id?: string }> }) {
   const addProductCustom = () => {
     const nm = customName.trim();
     if (!nm) {
-      setToast({ type: "error", msg: "Spare ka naam do!" });
+      toast.error("Spare ka naam do!");
       return;
     }
     const price = parseFloat(customPrice) || 0;
@@ -570,15 +558,15 @@ function ManageJobPageInner({ params }: { params: Promise<{ id?: string }> }) {
   const handleSave = async () => {
     if (savingRef.current) return;
     if (!selectedClient) {
-      setToast({ type: "error", msg: "Client select karo!" });
+      toast.error("Client select karo!");
       return;
     }
     if (!fault.trim()) {
-      setToast({ type: "error", msg: "Fault description zaroori hai!" });
+      toast.error("Fault description zaroori hai!");
       return;
     }
     if (!selectedMechanic) {
-      setToast({ type: "error", msg: "Mechanic select karo!" });
+      toast.error("Mechanic select karo!");
       return;
     }
 
@@ -723,14 +711,11 @@ function ManageJobPageInner({ params }: { params: Promise<{ id?: string }> }) {
         );
       }
 
-      setToast({
-        type: "success",
-        msg: isEdit ? "Job update ho gaya! ✅" : "Naya job create ho gaya! ✅",
-      });
+      toast.success(isEdit ? "Job update ho gaya! ✅" : "Naya job create ho gaya! ✅");
       setTimeout(() => router.replace(`/jobs/${txnId}/view`), 1000);
     } catch (e) {
       logger.error("save error:", e instanceof Error ? e.message : JSON.stringify(e));
-      setToast({ type: "error", msg: e instanceof Error ? e.message : "Save karne mein galti!" });
+      toast.error(e instanceof Error ? e.message : "Save karne mein galti!");
     } finally {
       savingRef.current = false;
       setSaving(false);
@@ -752,20 +737,6 @@ function ManageJobPageInner({ params }: { params: Promise<{ id?: string }> }) {
   // ─────────────────────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-[#0d1117] text-white font-sans">
-      {/* Toast */}
-      {toast && (
-        <div
-          className={`fixed top-4 right-4 z-50 flex items-center gap-3 px-4 py-3 rounded-2xl shadow-2xl border text-sm font-bold transition-all ${
-            toast.type === "success"
-              ? "bg-emerald-500/15 border-emerald-500/30 text-emerald-400"
-              : "bg-red-500/15 border-red-500/30 text-red-400"
-          }`}
-        >
-          {toast.type === "success" ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
-          {toast.msg}
-        </div>
-      )}
-
       {/* Add New Client Modal */}
       {showAddClientModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">

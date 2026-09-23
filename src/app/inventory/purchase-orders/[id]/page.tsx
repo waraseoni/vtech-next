@@ -8,6 +8,7 @@ import PageLoader from "@/components/PageLoader";
 import { supabase } from "@/lib/supabase";
 import { logActivity } from "@/lib/activity";
 import { todayIST } from "@/lib/dateUtils";
+import { toast } from "@/lib/toast";
 import {
   ArrowLeft,
   ClipboardList,
@@ -224,7 +225,7 @@ export default function PurchaseOrderDetailPage() {
       await logActivity("PO Status Updated", "Inventory", po.id, `PO: ${po.po_code} → ${status}`);
       fetchPO();
     } catch (err) {
-      alert("Failed: " + (err instanceof Error ? err.message : String(err)));
+      toast.error("Failed: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       setActing(false);
     }
@@ -240,7 +241,7 @@ export default function PurchaseOrderDetailPage() {
       await logActivity("PO Deleted", "Inventory", po.id, `PO: ${po.po_code} deleted`);
       router.push("/inventory/purchase-orders");
     } catch (err) {
-      alert("Failed: " + (err instanceof Error ? err.message : String(err)));
+      toast.error("Failed: " + (err instanceof Error ? err.message : String(err)));
       setActing(false);
     }
   };
@@ -273,7 +274,7 @@ export default function PurchaseOrderDetailPage() {
       setShowReceive(false);
       fetchPO();
     } catch (err) {
-      alert("Failed: " + (err instanceof Error ? err.message : String(err)));
+      toast.error("Failed: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       setActing(false);
     }

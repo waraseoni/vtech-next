@@ -31,6 +31,7 @@ import { todayIST, startOfMonthIST, endOfMonthIST, formatIST, parseISTDate } fro
 import { logActivity } from "@/lib/activity";
 import { substituteTemplate, firmVars, resolveTemplate } from "@/lib/whatsapp";
 import PageLoader from "@/components/PageLoader";
+import { toast } from "@/lib/toast";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface DirectSale {
@@ -357,7 +358,7 @@ function DirectSalesPageInner() {
     if (!error) {
       await logActivity("Deleted Direct Sale", "Sales", id, `Sale: ${saleToDelete?.sale_code}`);
       fetchSales();
-    } else alert("Delete failed: " + error.message);
+    } else toast.error("Delete failed: " + error.message);
   };
 
   const exportCSV = () => {

@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { JOB_STATUS_INLINE } from "@/lib/status-colors";
 import PageLoader from "@/components/PageLoader";
+import { toast } from "@/lib/toast";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // IST TIMEZONE HELPERS
@@ -439,7 +440,7 @@ export default function LedgerPrintPage({ params }: { params: Promise<{ id: stri
   // ── Apply filter ───────────────────────────────────────────────────────
   const applyFilter = () => {
     if (localFrom && localTo && localFrom > localTo) {
-      alert("'From' date, 'To' date se pehle hona chahiye!");
+      toast.error("'From' date, 'To' date se pehle hona chahiye!");
       return;
     }
     const statusStr = localStatus.join(",");
@@ -524,7 +525,7 @@ export default function LedgerPrintPage({ params }: { params: Promise<{ id: stri
     const cleanName = clientName.replace(/[^a-zA-Z0-9]/g, "_");
     const win = window.open("", `Statement_${cleanName}`, "width=900,height=700,scrollbars=yes");
     if (!win) {
-      alert("Popup blocked! Browser settings mein popup allow karo.");
+      toast.warning("Popup blocked! Browser settings mein popup allow karo.");
       return;
     }
 

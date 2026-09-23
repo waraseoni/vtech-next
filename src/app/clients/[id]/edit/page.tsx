@@ -9,8 +9,6 @@ import {
   UserCog,
   Loader2,
   Edit3,
-  CheckCircle2,
-  AlertCircle,
   Plus,
   Trash2,
   Star,
@@ -18,6 +16,7 @@ import {
 import Link from "next/link";
 import { safeBack } from "@/lib/utils";
 import PageLoader from "@/components/PageLoader";
+import { toast } from "@/lib/toast";
 import {
   CONTACT_LABELS,
   normalizeContacts,
@@ -89,7 +88,6 @@ export default function ManageClientPage() {
   const [fetchLoading, setFetchLoading] = useState(isEdit); // initial data load
   const [errors, setErrors] = useState<FieldErrors>({});
   const [submitted, setSubmitted] = useState(false);
-  const [toast, setToast] = useState<{ type: "success" | "error"; msg: string } | null>(null);
 
   const [form, setForm] = useState<FormState>({
     firstname: "",
@@ -112,13 +110,6 @@ export default function ManageClientPage() {
   const [rows, setRows] = useState<ContactRow[]>(() => [
     { key: 0, name: "", label: "Mobile", phone: "", is_primary: true },
   ]);
-
-  // Auto-dismiss toast
-  useEffect(() => {
-    if (!toast) return;
-    const t = setTimeout(() => setToast(null), 3500);
-    return () => clearTimeout(t);
-  }, [toast]);
 
   // ── FETCH EXISTING CLIENT (edit mode) ──────────────────────────────────
   useEffect(() => {
@@ -162,7 +153,7 @@ export default function ManageClientPage() {
         }
       } catch (err) {
         console.error("fetch error:", err instanceof Error ? err.message : JSON.stringify(err));
-        setToast({ type: "error", msg: "Client details load nahi ho paye!" });
+        toast.error("Client details load nahi ho paye!");
         router.push("/clients");
       } finally {
         setFetchLoading(false);
@@ -262,7 +253,7 @@ export default function ManageClientPage() {
           .eq("id", clientId);
         if (error) throw error;
         await syncClientContacts(clientId, contacts);
-        setToast({ type: "success", msg: "Client + contacts update ho gaye! ✅" });
+        toast.success("Client + contacts update ho gaye! ✅");
         setTimeout(() => router.replace("/clients"), 1000);
       } else {
         // BUG FIX — DUPLICATE KEY (client_list_pkey):
@@ -307,15 +298,12 @@ export default function ManageClientPage() {
           throw insErr;
         }
         await syncClientContacts(newId, contacts);
-        setToast({ type: "success", msg: "New client + contacts add ho gaye! ✅" });
+        toast.success("New client + contacts add ho gaye! ✅");
         setTimeout(() => router.replace("/clients"), 1000);
       }
     } catch (err) {
       console.error("save error:", err instanceof Error ? err.message : JSON.stringify(err));
-      setToast({
-        type: "error",
-        msg: err instanceof Error ? err.message : "Save karne mein galti!",
-      });
+      toast.error(err instanceof Error ? err.message : "Save karne mein galti!");
     } finally {
       setLoading(false);
     }
@@ -327,20 +315,6 @@ export default function ManageClientPage() {
   // ── RENDER ──────────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-[#0d1117] text-white font-sans p-4 md:p-8">
-      {/* Toast */}
-      {toast && (
-        <div
-          className={`fixed top-4 right-4 z-50 flex items-center gap-3 px-4 py-3 rounded-2xl shadow-2xl border text-sm font-bold ${
-            toast.type === "success"
-              ? "bg-emerald-500/15 border-emerald-500/30 text-emerald-400"
-              : "bg-red-500/15 border-red-500/30 text-red-400"
-          }`}
-        >
-          {toast.type === "success" ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
-          {toast.msg}
-        </div>
-      )}
-
       <div className="max-w-2xl mx-auto space-y-6">
         {/* Top Bar */}
         <div className="flex items-center justify-between">

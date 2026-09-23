@@ -12,8 +12,6 @@ import {
   Save,
   KeyRound,
   Loader2,
-  CheckCircle,
-  AlertCircle,
   Eye,
   EyeOff,
   Wrench,
@@ -26,6 +24,7 @@ import { openCamera } from "@/lib/nativeCamera";
 import { useImageUpload } from "@/lib/useImageUpload";
 import SearchableSelect from "@/components/SearchableSelect";
 import PageLoader from "@/components/PageLoader";
+import { toast } from "@/lib/toast";
 
 const inputCls =
   "w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white outline-none focus:border-blue-500/60 transition-all placeholder:text-slate-700";
@@ -37,7 +36,6 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [savingInfo, setSavingInfo] = useState(false);
   const [savingPass, setSavingPass] = useState(false);
-  const [toast, setToast] = useState<{ type: "success" | "error"; msg: string } | null>(null);
 
   // Profile data
   const [userId, setUserId] = useState("");
@@ -113,12 +111,6 @@ export default function ProfilePage() {
   const [showCurrent, setShowCurrent] = useState(false);
   const [showNew, setShowNew] = useState(false);
 
-  useEffect(() => {
-    if (!toast) return;
-    const t = setTimeout(() => setToast(null), 3500);
-    return () => clearTimeout(t);
-  }, [toast]);
-
   // ── Fetch ─────────────────────────────────────────────────────────────────
   useEffect(() => {
     (async () => {
@@ -171,7 +163,7 @@ export default function ProfilePage() {
   const handleSaveInfo = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!fullName.trim()) {
-      setToast({ type: "error", msg: "Naam zaroori hai!" });
+      toast.error("Naam zaroori hai!");
       return;
     }
     setSavingInfo(true);
@@ -192,9 +184,9 @@ export default function ProfilePage() {
       // Mechanic badge refresh
       const linked = mechanics.find((m) => String(m.id) === mechanicId);
       setMechanicName(linked ? linked.name : "");
-      setToast({ type: "success", msg: "Profile update ho gayi!" });
+      toast.success("Profile update ho gayi!");
     } catch (err: unknown) {
-      setToast({ type: "error", msg: err instanceof Error ? err.message : "Update failed!" });
+      toast.error(err instanceof Error ? err.message : "Update failed!");
     } finally {
       setSavingInfo(false);
     }
@@ -204,15 +196,15 @@ export default function ProfilePage() {
   const handleChangePass = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentPass) {
-      setToast({ type: "error", msg: "Pehle current password enter karo!" });
+      toast.error("Pehle current password enter karo!");
       return;
     }
     if (newPass.length < 6) {
-      setToast({ type: "error", msg: "Naya password kam se kam 6 characters ka hona chahiye!" });
+      toast.error("Naya password kam se kam 6 characters ka hona chahiye!");
       return;
     }
     if (newPass !== confirmPass) {
-      setToast({ type: "error", msg: "Dono passwords match nahi karte!" });
+      toast.error("Dono passwords match nahi karte!");
       return;
     }
 
@@ -224,7 +216,7 @@ export default function ProfilePage() {
         password: currentPass,
       });
       if (signInErr) {
-        setToast({ type: "error", msg: "Current password galat hai!" });
+        toast.error("Current password galat hai!");
         setSavingPass(false);
         return;
       }
@@ -233,15 +225,12 @@ export default function ProfilePage() {
       const { error: updateErr } = await supabase.auth.updateUser({ password: newPass });
       if (updateErr) throw updateErr;
 
-      setToast({ type: "success", msg: "Password change ho gaya!" });
+      toast.success("Password change ho gaya!");
       setCurrentPass("");
       setNewPass("");
       setConfirmPass("");
     } catch (err: unknown) {
-      setToast({
-        type: "error",
-        msg: err instanceof Error ? err.message : "Password change failed!",
-      });
+      toast.error(err instanceof Error ? err.message : "Password change failed!");
     } finally {
       setSavingPass(false);
     }
@@ -251,20 +240,6 @@ export default function ProfilePage() {
 
   return (
     <div className="min-h-screen bg-[#0d1117] font-sans pb-12">
-      {/* Toast */}
-      {toast && (
-        <div
-          className={`fixed top-4 right-4 z-[100] flex items-center gap-3 px-4 py-3 rounded-2xl shadow-2xl border text-sm font-bold ${
-            toast.type === "success"
-              ? "bg-emerald-500/15 border-emerald-500/30 text-emerald-400"
-              : "bg-red-500/15 border-red-500/30 text-red-400"
-          }`}
-        >
-          {toast.type === "success" ? <CheckCircle size={16} /> : <AlertCircle size={16} />}
-          {toast.msg}
-        </div>
-      )}
-
       <div className="max-w-lg mx-auto px-4 pt-6 space-y-4">
         {/* Profile header card */}
         <div className="bg-[#161b27] border border-[#21293d] rounded-2xl p-6 flex items-center gap-5">

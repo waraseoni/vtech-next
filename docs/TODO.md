@@ -321,6 +321,46 @@ Base messenger already live (`30aae41`). Ye round un requested features add kart
 
 ---
 
+## Project: UI/UX Architecture Revamp — Sprint 1
+
+### Plan
+Master plan: `docs/plans/ui_ux_architecture_complete_plan.md` (Parts 0–F, 4 sprints).
+Hard constraint: free/OSS only. 🛡️ Protected routes: `jobs/old` + `jobs/[id]/old` KEEP FOREVER
+(toast upgrade OK; never delete/redirect-remove) — see plan §PROTECTED ROUTES.
+User directive: **no commit/push** until told.
+
+### Todos — Sprint 1 (2026-09-23)
+
+#### 1. Single toast system + kill alert() ✅
+- [x] `src/lib/toast.ts` (sonner wrapper; error=∞, success=3s, warn=5s, info=4s)
+- [x] `src/lib/requireAdmin.ts` — pure `requireAdmin(userRole, action)`; deleted `useAdminGuard.ts`
+- [x] Migrate ~97 `alert()` → toast (print-route server templates `print-bill`/`print-purchase-order` intentional, kept)
+- [x] Migrate ~25 hand-rolled `const [toast, setToast]` banners → sonner (state + JSX + auto-clear effects removed; 0 left)
+- [x] Protected routes `jobs/old/page.tsx` + `jobs/[id]/old/page.tsx`: state/effect/banner removed, `toast.*` imported — **not deleted**
+- [x] Verify: `npx tsc --noEmit` OK · `npx eslint` 0 errors (2 pre-existing warnings: backup exhaustive-deps, users unused disable)
+
+#### 3. `ui/` kit ✅
+- [x] `src/components/ui/StatusBadge.tsx`, `EmptyState.tsx`, `ConfirmDialog.tsx`, `index.ts` barrel (re-exports legacy PageHeader)
+
+#### 4. Mobile input fundamentals ✅
+- [x] `globals.css` Sprint 1 block (~L3178): 16px iOS font floor (<1023px), safe-area utilities, `.h-dvh-safe`, keyboard-open FAB hide, coarse-pointer active opacity
+
+#### 5. Shared lib helpers ✅ (naming evolved from plan)
+- [x] `src/lib/status-colors.ts` — `STATUS_LABELS`, `STATUS_EXPLANATIONS`, `BADGE_COLORS`, `STATUS_BADGE_COLOR`, `DEL_STATUS`, `getLabel`/`getBadge`/`getStatusStyle` (+ legacy `JOB_STATUS`)
+- [x] `src/lib/whatsapp.ts` — canonical `waLink` (double-91 safe); local dupes removed (suppliers pages)
+- [x] `requireAdmin` migrated in: 7 admin pages (lenders/suppliers/services/client-loans/inventory/locations/products) + MechanicsBody + ClientsBody + `jobs/[id]/view` + attendance/MonthlyReport
+
+#### 2. Semantic tokens migration + `!important` delete 🔶
+- [x] Foundation: `globals.css` `@theme inline` me semantic color tokens (`--color-app-*` + short aliases → `bg-panel`, `text-muted` jaise Tailwind utilities) + helper classes `.card`/`.muted`/`.text-app`/`.bg-app`/`.bg-panel`
+- [ ] Codemod Phase 1a: top-20 hardcoded hex patterns → token classes across pages
+- [ ] Delete override-layer `!important` rules (~413 total; 311 in dark/light remap blocks L190–1800) — **only after pages migrate** (abhi layer valid hai)
+- Verify: `npx tsc --noEmit` OK · foundation eslint OK
+
+### Next after Sprint 1
+- Sprint 2: DataTable pilot, mobile bottom tab bar, route cleanup (skip protected), keyboard shortcuts, image compression on all uploads.
+
+---
+
 ## Open Questions / Notes
 - Comments Hinglish me; no emojis in UI.
 - Sanitized: migration must be re-run if any part fails midway (idempotent file).

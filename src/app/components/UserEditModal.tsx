@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { X } from "lucide-react";
+import { toast } from "@/lib/toast";
 
 interface UserRow {
   id: string;
@@ -53,11 +54,11 @@ export default function UserEditModal({ user, onClose, onSaved }: UserEditModalP
         throw new Error(errData.error || "Profile update failed");
       }
 
-      alert("User updated successfully!");
+      toast.success("User updated successfully!");
       onSaved(); // पैरेंट को रिफ्रेश करने के लिए कहें
       onClose();
     } catch (err) {
-      alert("Error: " + (err instanceof Error ? err.message : String(err)));
+      toast.error("Error: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       setLoading(false);
     }

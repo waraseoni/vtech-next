@@ -26,6 +26,7 @@ import InquiryModal from "./components/InquiryModal";
 import PageLoader from "@/components/PageLoader";
 
 import { formatIST, parseISTDate, startOfMonthIST, endOfMonthIST } from "@/lib/dateUtils";
+import { toast } from "@/lib/toast";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface Inquiry {
@@ -149,7 +150,7 @@ function InquiriesPageInner() {
     if (!confirm("Is inquiry ko permanently delete karna chahte hain?")) return;
     const { error } = await supabase.from("message_list").delete().eq("id", id);
     if (!error) fetchInquiries();
-    else alert("Delete failed");
+    else toast.error("Delete failed");
   };
 
   const handleView = (id: number) => {

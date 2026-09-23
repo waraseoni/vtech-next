@@ -8,14 +8,13 @@ import {
   Calendar,
   CreditCard,
   FileText,
-  CheckCircle2,
-  AlertCircle,
   Loader2,
   Banknote,
   Clock,
   IndianRupee,
 } from "lucide-react";
 import Link from "next/link";
+import { toast } from "@/lib/toast";
 
 function todayIST(): string {
   const parts = new Intl.DateTimeFormat("en-CA", {
@@ -61,19 +60,12 @@ export default function CollectEMIPage({ params }: { params: Promise<{ id: strin
   const [fetching, setFetching] = useState(true);
   const [clientName, setClientName] = useState("");
   const [loans, setLoans] = useState<ActiveLoan[]>([]);
-  const [toast, setToast] = useState<{ type: "success" | "error"; msg: string } | null>(null);
 
   const [selectedLoanId, setSelectedLoanId] = useState<string>(preselectedLoanId || "");
   const [amount, setAmount] = useState("");
   const [paymentDate, setPaymentDate] = useState(todayIST);
   const [paymentMode, setPaymentMode] = useState("Cash");
   const [remarks, setRemarks] = useState("");
-
-  useEffect(() => {
-    if (!toast) return;
-    const t = setTimeout(() => setToast(null), 3500);
-    return () => clearTimeout(t);
-  }, [toast]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -143,14 +135,11 @@ export default function CollectEMIPage({ params }: { params: Promise<{ id: strin
     e.preventDefault();
     const amt = parseFloat(amount) || 0;
     if (amt <= 0) {
-      setToast({ type: "error", msg: "Amount valid rakho!" });
+      toast.error("Amount valid rakho!");
       return;
     }
     if (selectedLoan && amt > selectedLoan.balance) {
-      setToast({
-        type: "error",
-        msg: `Balance se zyada nahi de sakte! Max: ${inr(selectedLoan.balance)}`,
-      });
+      toast.error(`Balance se zyada nahi de sakte! Max: ${inr(selectedLoan.balance)}`);
       return;
     }
     setLoading(true);
@@ -168,13 +157,10 @@ export default function CollectEMIPage({ params }: { params: Promise<{ id: strin
       }
       const { error } = await supabase.from("client_payments").insert([paymentData]);
       if (error) throw error;
-      setToast({ type: "success", msg: "EMI jama ho gayi! ✅" });
+      toast.success("EMI jama ho gayi! ✅");
       setTimeout(() => router.replace(`/clients/${clientId}/view`), 1000);
     } catch (err) {
-      setToast({
-        type: "error",
-        msg: err instanceof Error ? err.message : "Payment save mein galti!",
-      });
+      toast.error(err instanceof Error ? err.message : "Payment save mein galti!");
     } finally {
       setLoading(false);
     }
@@ -182,19 +168,6 @@ export default function CollectEMIPage({ params }: { params: Promise<{ id: strin
 
   return (
     <div className="min-h-screen bg-[#0d1117] text-white font-sans">
-      {toast && (
-        <div
-          className={`fixed top-4 right-4 z-50 flex items-center gap-3 px-4 py-3 rounded-2xl shadow-2xl border text-sm font-bold ${
-            toast.type === "success"
-              ? "bg-emerald-500/15 border-emerald-500/30 text-emerald-400"
-              : "bg-red-500/15 border-red-500/30 text-red-400"
-          }`}
-        >
-          {toast.type === "success" ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
-          {toast.msg}
-        </div>
-      )}
-
       <div className="max-w-2xl mx-auto p-4 md:p-6 space-y-4">
         {/* HEADER */}
         <div className="relative overflow-hidden bg-[#161b27] rounded-3xl border border-[#21293d] p-5">

@@ -8,10 +8,9 @@ import {
   RefreshCw,
   Unlock,
   Search,
-  CheckCircle,
-  AlertCircle,
   Timer,
 } from "lucide-react";
+import { toast } from "@/lib/toast";
 
 interface ThrottleRow {
   id: number;
@@ -22,8 +21,6 @@ interface ThrottleRow {
   lockout_until: string | null;
   last_attempt_at: string | null;
 }
-
-type Toast = { type: "success" | "error"; msg: string };
 
 function fmtDate(d: string | null | undefined) {
   if (!d) return "—";
@@ -53,13 +50,6 @@ export default function ThrottlePage() {
   const [q, setQ] = useState("");
   const [unlock, setUnlock] = useState<ThrottleRow | null>(null);
   const [busy, setBusy] = useState(false);
-  const [toast, setToast] = useState<Toast | null>(null);
-
-  useEffect(() => {
-    if (!toast) return;
-    const t = setTimeout(() => setToast(null), 3500);
-    return () => clearTimeout(t);
-  }, [toast]);
 
   const fetchRows = useCallback(async () => {
     setLoading(true);
@@ -88,7 +78,7 @@ export default function ThrottlePage() {
       if (!res.ok) throw new Error(data.error || "Load fail");
       setRows(data.rows || []);
     } catch (err) {
-      setToast({ type: "error", msg: err instanceof Error ? err.message : "Load fail hua" });
+      toast.error(err instanceof Error ? err.message : "Load fail hua");
     } finally {
       setLoading(false);
     }
@@ -109,11 +99,11 @@ export default function ThrottlePage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
-      setToast({ type: "success", msg: `${unlock.email} unlock ho gaya.` });
+      toast.success(`${unlock.email} unlock ho gaya.`);
       setUnlock(null);
       fetchRows();
     } catch (err) {
-      setToast({ type: "error", msg: err instanceof Error ? err.message : "Unlock fail hua" });
+      toast.error(err instanceof Error ? err.message : "Unlock fail hua");
     } finally {
       setBusy(false);
     }
@@ -125,19 +115,6 @@ export default function ThrottlePage() {
 
   return (
     <div className="min-h-screen bg-[#0d1117] font-sans pb-12">
-      {toast && (
-        <div
-          className={`fixed top-4 right-4 z-[100] flex items-center gap-3 px-4 py-3 rounded-2xl shadow-2xl border text-sm font-bold ${
-            toast.type === "success"
-              ? "bg-emerald-500/15 border-emerald-500/30 text-emerald-400"
-              : "bg-red-500/15 border-red-500/30 text-red-400"
-          }`}
-        >
-          {toast.type === "success" ? <CheckCircle size={16} /> : <AlertCircle size={16} />}
-          {toast.msg}
-        </div>
-      )}
-
       <div className="max-w-4xl mx-auto px-4 pt-6 space-y-4">
         <div className="bg-[#161b27] border border-[#21293d] rounded-2xl px-5 py-4 flex items-center justify-between flex-wrap gap-3">
           <div className="flex items-center gap-3">

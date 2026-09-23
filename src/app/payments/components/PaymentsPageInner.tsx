@@ -6,8 +6,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 import AdminPage from "@/app/components/AdminPage";
 import { supabase } from "@/lib/supabase";
 import {
-  AlertCircle,
-  CheckCircle2,
   ChevronLeft,
   ChevronRight,
   IndianRupee,
@@ -32,6 +30,7 @@ import {
 } from "@/lib/dateUtils";
 import { exportToCSV, printTable } from "@/lib/exportUtils";
 import SearchableSelect from "@/components/SearchableSelect";
+import { toast } from "@/lib/toast";
 
 type PaymentForm = {
   id: number | null;
@@ -42,7 +41,6 @@ type PaymentForm = {
   payment_mode: string;
   remarks: string;
 };
-type Toast = { type: "success" | "error"; msg: string };
 
 const istToday = todayIST();
 
@@ -72,7 +70,6 @@ export default function PaymentsPageInner({ initialClients, initialPayments }: P
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState("");
-  const [toast, setToast] = useState<Toast | null>(null);
   const [clients, setClients] = useState<Client[]>(initialClients);
   const [payments, setPayments] = useState<PaymentRow[]>(initialPayments);
   const [search, setSearch] = useState(searchParams.get("q") || "");
@@ -93,12 +90,6 @@ export default function PaymentsPageInner({ initialClients, initialPayments }: P
   const [receiptPayment, setReceiptPayment] = useState<PaymentRow | null>(null);
   const [itemsPerPage, setItemsPerPage] = useState(25);
   const [currentPage, setCurrentPage] = useState(1);
-
-  useEffect(() => {
-    if (!toast) return;
-    const t = setTimeout(() => setToast(null), 3000);
-    return () => clearTimeout(t);
-  }, [toast]);
 
   useEffect(() => {
     const params = new URLSearchParams();
@@ -240,7 +231,7 @@ export default function PaymentsPageInner({ initialClients, initialPayments }: P
     const cid = Number(form.client_id);
     const amt = Number(form.amount);
     if (!cid || !amt) {
-      setToast({ type: "error", msg: "Client & amount required" });
+      toast.error("Client & amount required");
       return;
     }
     setSaving(true);
@@ -257,12 +248,12 @@ export default function PaymentsPageInner({ initialClients, initialPayments }: P
         ? await supabase.from("client_payments").update(payload).eq("id", form.id)
         : await supabase.from("client_payments").insert(payload);
       if (error) throw error;
-      setToast({ type: "success", msg: form.id ? "Updated" : "Saved" });
+      toast.success(form.id ? "Updated" : "Saved");
       closeModal();
       await loadData();
     } catch (e) {
       console.error(e);
-      setToast({ type: "error", msg: "Save failed" });
+      toast.error("Save failed");
     } finally {
       setSaving(false);
     }
@@ -273,10 +264,10 @@ export default function PaymentsPageInner({ initialClients, initialPayments }: P
     try {
       const { error } = await supabase.from("client_payments").delete().eq("id", id);
       if (error) throw error;
-      setToast({ type: "success", msg: "Deleted" });
+      toast.success("Deleted");
       await loadData();
     } catch {
-      setToast({ type: "error", msg: "Delete failed" });
+      toast.error("Delete failed");
     }
   };
 
@@ -301,15 +292,6 @@ export default function PaymentsPageInner({ initialClients, initialPayments }: P
 
   return (
     <AdminPage title="Payments" subtitle="Client payments management">
-      {toast && (
-        <div
-          className={`fixed right-4 top-4 z-50 flex items-center gap-2 rounded-2xl border px-4 py-3 text-sm font-bold shadow-2xl ${toast.type === "success" ? "border-emerald-500/30 bg-emerald-500/15 text-emerald-400" : "border-red-500/30 bg-red-500/15 text-red-400"}`}
-        >
-          {toast.type === "success" ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
-          <span>{toast.msg}</span>
-        </div>
-      )}
-
       {/* Glassy Header */}
       <div className="relative overflow-hidden mb-6 border-b border-[#21293d] bg-gradient-to-b from-[#111520] to-[#0d1117] rounded-[2rem] p-6 md:p-8">
         <div className="absolute -top-24 -left-20 w-64 h-64 bg-emerald-600/10 blur-[100px] rounded-full" />

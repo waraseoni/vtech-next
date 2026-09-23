@@ -45,6 +45,7 @@ import {
   type PrintMargin,
   type BarcodeLabelItem,
 } from "@/lib/barcodePrint";
+import { toast } from "@/lib/toast";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface ProductStock {
@@ -394,7 +395,7 @@ export default function InventoryPage() {
 
   const openPrintModal = () => {
     if (!printableProducts.length) {
-      alert(
+      toast.error(
         "Filtered list me kisi product ka barcode set nahi hai. Pehle Products page me barcodes add karein."
       );
       return;
@@ -408,7 +409,7 @@ export default function InventoryPage() {
   const handlePrintModal = () => {
     if (totalLabels === 0) return;
     if (totalLabels > 1000) {
-      alert(`Bohot zyada labels (${totalLabels}) — total 1000 se kam rakhein.`);
+      toast.warning(`Bohot zyada labels (${totalLabels}) — total 1000 se kam rakhein.`);
       return;
     }
     const items: BarcodeLabelItem[] = [];

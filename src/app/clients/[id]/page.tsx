@@ -17,8 +17,6 @@ import {
   MessageCircle,
   X,
   Save,
-  CheckCircle2,
-  AlertTriangle,
   TrendingUp,
   Wrench,
   Package,
@@ -42,6 +40,8 @@ const fmtDate = (d: string | null) =>
 import { todayIST } from "@/lib/dateUtils";
 import SearchableSelect from "@/components/SearchableSelect";
 import PageLoader from "@/components/PageLoader";
+import { toast } from "@/lib/toast";
+import { requireAdmin } from "@/lib/requireAdmin";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Client = {
@@ -100,7 +100,6 @@ type DirectSale = {
   remarks?: string;
   date_created: string;
 };
-type Toast = { type: "success" | "error" | "info"; msg: string };
 
 const STATUS_MAP: Record<number, string> = {
   0: "Pending",
@@ -133,7 +132,6 @@ export default function ViewClientPage({ params }: { params: Promise<{ id: strin
   const [directSales, setDirectSales] = useState<DirectSale[]>([]);
   const [userRole, setUserRole] = useState<string>("staff");
   const [loading, setLoading] = useState(true);
-  const [toast, setToast] = useState<Toast | null>(null);
 
   // Tab
   const [activeTab, setActiveTab] = useState<"repairs" | "sales" | "payments" | "loans">("repairs");
@@ -162,13 +160,6 @@ export default function ViewClientPage({ params }: { params: Promise<{ id: strin
   const [emiAmount, setEmiAmount] = useState("");
   const [emiRemarks, setEmiRemarks] = useState("");
   const [savingEmi, setSavingEmi] = useState(false);
-
-  useEffect(() => {
-    if (toast) {
-      const t = setTimeout(() => setToast(null), 3500);
-      return () => clearTimeout(t);
-    }
-  }, [toast]);
 
   // Fetch all data
   const fetchData = useCallback(async () => {
@@ -291,7 +282,7 @@ export default function ViewClientPage({ params }: { params: Promise<{ id: strin
   const handleAddPayment = async () => {
     const amt = parseFloat(payAmount);
     if (isNaN(amt) || amt <= 0) {
-      setToast({ type: "error", msg: "Valid amount daalo!" });
+      toast.error("Valid amount daalo!");
       return;
     }
     setSavingPay(true);
@@ -303,9 +294,9 @@ export default function ViewClientPage({ params }: { params: Promise<{ id: strin
       remarks: payRemarks.trim() || null,
       payment_date: todayIST(),
     });
-    if (error) setToast({ type: "error", msg: "Payment save nahi hua: " + error.message });
+    if (error) toast.error("Payment save nahi hua: " + error.message);
     else {
-      setToast({ type: "success", msg: "Payment save ho gayi! ✅" });
+      toast.success("Payment save ho gayi! ✅");
       setShowPayModal(false);
       fetchData();
     }
@@ -316,7 +307,7 @@ export default function ViewClientPage({ params }: { params: Promise<{ id: strin
   const handleGiveLoan = async () => {
     const amt = parseFloat(loanAmount);
     if (isNaN(amt) || amt <= 0) {
-      setToast({ type: "error", msg: "Valid amount daalo!" });
+      toast.error("Valid amount daalo!");
       return;
     }
     setSavingLoan(true);
@@ -335,9 +326,9 @@ export default function ViewClientPage({ params }: { params: Promise<{ id: strin
       loan_date: todayIST(),
       status: 1,
     });
-    if (error) setToast({ type: "error", msg: "Loan save nahi hua: " + error.message });
+    if (error) toast.error("Loan save nahi hua: " + error.message);
     else {
-      setToast({ type: "success", msg: "Loan de di gayi! ✅" });
+      toast.success("Loan de di gayi! ✅");
       setShowLoanModal(false);
       fetchData();
     }
@@ -348,11 +339,11 @@ export default function ViewClientPage({ params }: { params: Promise<{ id: strin
   const handleCollectEmi = async () => {
     const amt = parseFloat(emiAmount);
     if (isNaN(amt) || amt <= 0) {
-      setToast({ type: "error", msg: "Valid amount daalo!" });
+      toast.error("Valid amount daalo!");
       return;
     }
     if (!selectedLoanId) {
-      setToast({ type: "error", msg: "Loan select karo!" });
+      toast.error("Loan select karo!");
       return;
     }
     setSavingEmi(true);
@@ -365,9 +356,9 @@ export default function ViewClientPage({ params }: { params: Promise<{ id: strin
       remarks: emiRemarks.trim() || null,
       payment_date: todayIST(),
     });
-    if (error) setToast({ type: "error", msg: "EMI save nahi hua: " + error.message });
+    if (error) toast.error("EMI save nahi hua: " + error.message);
     else {
-      setToast({ type: "success", msg: "EMI collect ho gayi! ✅" });
+      toast.success("EMI collect ho gayi! ✅");
       setShowEmiModal(false);
       fetchData();
     }
@@ -376,15 +367,12 @@ export default function ViewClientPage({ params }: { params: Promise<{ id: strin
 
   // Delete Payment
   const handleDeletePayment = async (id: number) => {
-    if (userRole !== "admin") {
-      setToast({ type: "error", msg: "Sirf Admin delete kar sakta hai!" });
-      return;
-    }
+    if (!requireAdmin(userRole, "delete")) return;
     if (!confirm("Payment delete karein?")) return;
     const { error } = await supabase.from("client_payments").delete().eq("id", id);
-    if (error) setToast({ type: "error", msg: "Delete nahi hua!" });
+    if (error) toast.error("Delete nahi hua!");
     else {
-      setToast({ type: "success", msg: "Payment delete ho gayi!" });
+      toast.success("Payment delete ho gayi!");
       fetchData();
     }
   };
@@ -393,9 +381,9 @@ export default function ViewClientPage({ params }: { params: Promise<{ id: strin
   const handleCloseLoan = async (id: number) => {
     if (!confirm("Loan close karein?")) return;
     const { error } = await supabase.from("client_loans").update({ status: 0 }).eq("id", id);
-    if (error) setToast({ type: "error", msg: "Loan close nahi hua!" });
+    if (error) toast.error("Loan close nahi hua!");
     else {
-      setToast({ type: "success", msg: "Loan close ho gaya!" });
+      toast.success("Loan close ho gaya!");
       fetchData();
     }
   };
@@ -409,22 +397,6 @@ export default function ViewClientPage({ params }: { params: Promise<{ id: strin
 
   return (
     <div className="min-h-screen theme-body text-slate-200 font-sans">
-      {/* Toast */}
-      {toast && (
-        <div
-          className={`fixed top-4 right-4 z-50 flex items-center gap-3 px-4 py-3 rounded-2xl shadow-2xl border text-sm font-bold ${
-            toast.type === "success"
-              ? "bg-emerald-500/15 border-emerald-500/30 text-emerald-400"
-              : toast.type === "error"
-                ? "bg-red-500/15 border-red-500/30 text-red-400"
-                : "bg-blue-500/15 border-blue-500/30 text-blue-400"
-          }`}
-        >
-          {toast.type === "success" ? <CheckCircle2 size={16} /> : <AlertTriangle size={16} />}
-          {toast.msg}
-        </div>
-      )}
-
       {/* ── HEADER ── */}
       <div className="sticky top-0 z-20 theme-topbar backdrop-blur border-b border-[#21293d] px-4 py-3">
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-4 flex-wrap">

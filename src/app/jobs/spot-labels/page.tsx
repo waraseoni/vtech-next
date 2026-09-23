@@ -25,6 +25,7 @@ import {
 import Image from "next/image";
 import SpotJobsModal from "@/components/SpotJobsModal";
 import { openImageLightbox } from "@/components/ImageLightbox";
+import { toast } from "@/lib/toast";
 
 type Spot = { id: number; name: string };
 type Orientation = "portrait" | "landscape";
@@ -147,7 +148,7 @@ export default function SpotLabelsPage() {
   const handleDeleteSpot = async (s: Spot) => {
     const used = refs[s.id] || 0;
     if (used > 0) {
-      alert(`"${s.name}" par ${used} job(s) hain.`);
+      toast.error(`"${s.name}" par ${used} job(s) hain.`);
       return;
     }
     if (!confirm(`"${s.name}" delete karein?`)) return;
@@ -158,12 +159,12 @@ export default function SpotLabelsPage() {
       .eq("location_id", s.id)
       .limit(1);
     if (anyRef && anyRef.length > 0) {
-      alert(`"${s.name}" linked hai.`);
+      toast.error(`"${s.name}" linked hai.`);
       setDeleting(null);
       return;
     }
     const { error } = await supabase.from("locations").delete().eq("id", s.id);
-    if (error) alert("Delete failed: " + error.message);
+    if (error) toast.error("Delete failed: " + error.message);
     else {
       setSpots((prev) => prev.filter((x) => x.id !== s.id));
       setUrls((prev) => {
@@ -186,12 +187,12 @@ export default function SpotLabelsPage() {
       const freshSpots = await loadSpotsAndRefs();
       const usedIds = await fetchAllLinkedLocationIds();
       if (!freshSpots.length) {
-        alert("Koi spot nahi.");
+        toast.info("Koi spot nahi.");
         return;
       }
       const emptyIds = freshSpots.filter((s) => !usedIds.has(s.id)).map((s) => s.id);
       if (emptyIds.length === 0) {
-        alert("Sabhi busy hain.");
+        toast.info("Sabhi busy hain.");
         return;
       }
       if (!confirm(`${emptyIds.length} khali spot(s) delete honge?`)) return;
@@ -206,7 +207,7 @@ export default function SpotLabelsPage() {
           .eq("zone", "")
           .in("id", chunk);
         if (error) {
-          alert(error.message);
+          toast.error(error.message);
           break;
         }
         chunk.forEach((id) => deletedIds.add(id));
@@ -221,9 +222,9 @@ export default function SpotLabelsPage() {
           Object.fromEntries(Object.entries(prev).filter(([id]) => !deletedIds.has(Number(id))))
         );
       }
-      alert(`${deleted} spot(s) delete ho gaye.`);
+      toast.success(`${deleted} spot(s) delete ho gaye.`);
     } catch (err) {
-      alert("Failed: " + (err instanceof Error ? err.message : String(err)));
+      toast.error("Failed: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       setBulkDeleting(false);
     }
@@ -312,7 +313,7 @@ html,body{width:100%;height:100%}
       win.focus();
       setTimeout(() => win.print(), 600);
     } else {
-      alert("Popup blocked — browser me popups allow karo.");
+      toast.warning("Popup blocked — browser me popups allow karo.");
     }
   }, [
     spots,

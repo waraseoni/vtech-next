@@ -6,6 +6,7 @@ import { todayIST } from "@/lib/dateUtils";
 import SearchableSelect from "@/components/SearchableSelect";
 import SupplierPicker from "@/components/SupplierPicker";
 import { logActivity } from "@/lib/activity";
+import { toast } from "@/lib/toast";
 import PageLoader from "@/components/PageLoader";
 import {
   Plus,
@@ -290,7 +291,7 @@ export default function PurchaseOrdersPage() {
       );
       fetchPos();
     } catch (err) {
-      alert("Failed: " + (err instanceof Error ? err.message : String(err)));
+      toast.error("Failed: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       setActing(null);
     }
@@ -336,7 +337,7 @@ export default function PurchaseOrdersPage() {
       setReceiveTarget(null);
       fetchPos();
     } catch (err) {
-      alert("Failed: " + (err instanceof Error ? err.message : String(err)));
+      toast.error("Failed: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       setActing(null);
     }
@@ -344,7 +345,7 @@ export default function PurchaseOrdersPage() {
 
   const deletePo = async (po: PO) => {
     if (po.status !== "pending") {
-      alert("Only pending POs can be deleted");
+      toast.warning("Only pending POs can be deleted");
       return;
     }
     if (!confirm(`Delete PO ${po.po_code}?`)) return;
@@ -352,7 +353,7 @@ export default function PurchaseOrdersPage() {
     if (!error) {
       await logActivity("PO Deleted", "Inventory", po.id, `PO: ${po.po_code} deleted`);
       fetchPos();
-    } else alert("Failed: " + error.message);
+    } else toast.error("Failed: " + error.message);
   };
 
   const buildWhatsAppMessage = (po: PO) => {

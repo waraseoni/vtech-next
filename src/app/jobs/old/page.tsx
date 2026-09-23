@@ -14,14 +14,13 @@ import {
   User,
   Hash,
   Loader2,
-  AlertTriangle,
-  CheckCircle,
   UserPlus,
   IndianRupee,
   ClipboardList,
 } from "lucide-react";
 import PageLoader from "@/components/PageLoader";
 import SearchableSelect from "@/components/SearchableSelect";
+import { toast } from "@/lib/toast";
 
 // ─── IST Helpers ─────────────────────────────────────────────────────────────
 function todayISTDateTime(): string {
@@ -127,14 +126,6 @@ export default function ManageJobPage() {
   // UI state
   const [loading, setLoading] = useState(isEdit);
   const [saving, setSaving] = useState(false);
-  const [toast, setToast] = useState<{ type: "success" | "error"; msg: string } | null>(null);
-
-  // Toast auto-dismiss
-  useEffect(() => {
-    if (!toast) return;
-    const t = setTimeout(() => setToast(null), 3500);
-    return () => clearTimeout(t);
-  }, [toast]);
 
   // ── Fetch master data ──────────────────────────────────────────────────────
   const fetchMaster = useCallback(async () => {
@@ -269,7 +260,7 @@ export default function ManageJobPage() {
     const svc = services.find((s) => s.id === svcId);
     if (!svc) return;
     if (selServices.find((s) => s.service_id === svc.id)) {
-      setToast({ type: "error", msg: "Service already added!" });
+      toast.error("Service already added!");
       return;
     }
     setSelServices((prev) => [
@@ -283,7 +274,7 @@ export default function ManageJobPage() {
     const prod = products.find((p) => p.id === prdId);
     if (!prod) return;
     if (selProducts.find((p) => p.product_id === prod.id)) {
-      setToast({ type: "error", msg: "Product already added!" });
+      toast.error("Product already added!");
       return;
     }
     setSelProducts((prev) => [
@@ -318,19 +309,19 @@ export default function ManageJobPage() {
   // ── Save ───────────────────────────────────────────────────────────────────
   const handleSave = async () => {
     if (!clientId) {
-      setToast({ type: "error", msg: "Client select karo!" });
+      toast.error("Client select karo!");
       return;
     }
     if (!item.trim()) {
-      setToast({ type: "error", msg: "Item naam likho!" });
+      toast.error("Item naam likho!");
       return;
     }
     if (!fault.trim()) {
-      setToast({ type: "error", msg: "Fault likho!" });
+      toast.error("Fault likho!");
       return;
     }
     if (!jobId.trim()) {
-      setToast({ type: "error", msg: "Job ID required!" });
+      toast.error("Job ID required!");
       return;
     }
 
@@ -420,11 +411,11 @@ export default function ManageJobPage() {
         );
       }
 
-      setToast({ type: "success", msg: isEdit ? "Job updated!" : "Job saved!" });
+      toast.success(isEdit ? "Job updated!" : "Job saved!");
       setTimeout(() => router.replace(`/jobs/${txnId}/view`), 800);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Save failed!";
-      setToast({ type: "error", msg });
+      toast.error(msg);
     } finally {
       setSaving(false);
     }
@@ -436,20 +427,6 @@ export default function ManageJobPage() {
   // ── Render ──────────────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-[#0d1117] font-sans pb-16">
-      {/* Toast */}
-      {toast && (
-        <div
-          className={`fixed top-4 right-4 z-[100] flex items-center gap-3 px-4 py-3 rounded-2xl shadow-2xl border text-sm font-bold ${
-            toast.type === "success"
-              ? "bg-emerald-500/15 border-emerald-500/30 text-emerald-400"
-              : "bg-red-500/15 border-red-500/30 text-red-400"
-          }`}
-        >
-          {toast.type === "success" ? <CheckCircle size={16} /> : <AlertTriangle size={16} />}
-          {toast.msg}
-        </div>
-      )}
-
       <div className="max-w-5xl mx-auto px-3 sm:px-5 pt-4 space-y-4">
         {/* Header */}
         <div className="bg-[#161b27] border border-[#21293d] rounded-2xl px-5 py-4 flex items-center justify-between flex-wrap gap-3">

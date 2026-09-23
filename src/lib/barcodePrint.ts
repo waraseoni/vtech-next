@@ -1,4 +1,5 @@
 import JsBarcode from "jsbarcode";
+import { toast } from "@/lib/toast";
 
 export type LabelSize = "medium" | "small" | "compact";
 export type Orientation = "portrait" | "landscape";
@@ -114,7 +115,7 @@ export function printBarcodeLabels(
 
   const w = window.open("", "_blank", "width=900,height=700");
   if (!w) {
-    alert("Popup blocked — popups allow kar ke dobara try karein.");
+    toast.warning("Popup blocked — popups allow kar ke dobara try karein.");
     return;
   }
 

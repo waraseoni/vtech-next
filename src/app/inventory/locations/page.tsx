@@ -7,6 +7,7 @@ import { supabase, getCachedUser } from "@/lib/supabase";
 import { LocationParts, locPath, encodeLocationToken } from "@/lib/locations";
 import { logActivity } from "@/lib/activity";
 import { openImageLightbox } from "@/components/ImageLightbox";
+import { requireAdmin } from "@/lib/requireAdmin";
 import {
   Search,
   Plus,
@@ -306,10 +307,7 @@ export default function LocationsPage() {
   /* ─── delete ────────────────────────────────────────────────────────── */
 
   const handleDelete = async (loc: LocRow) => {
-    if (userRole !== "admin") {
-      alert("Sirf Admin delete kar sakta hai!");
-      return;
-    }
+    if (!requireAdmin(userRole, "delete")) return;
     const path = locPath(toParts(loc));
     if (!confirm(`"${path || "Untitled"}" ko delete karna hai?`)) return;
 
@@ -325,10 +323,7 @@ export default function LocationsPage() {
   /* ─── toggle status ─────────────────────────────────────────────────── */
 
   const toggleStatus = async (loc: LocRow) => {
-    if (userRole !== "admin") {
-      alert("Sirf Admin status change kar sakta hai!");
-      return;
-    }
+    if (!requireAdmin(userRole, "status")) return;
     await fetch("/api/locations", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },

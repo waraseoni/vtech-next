@@ -5,12 +5,11 @@ import { supabase } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
 import { downloadBlob } from "@/lib/nativePrint";
 import { type SupabaseTableSchema, countPkViolations } from "@/lib/backupSchema";
+import { toast } from "@/lib/toast";
 import {
   Download,
   Upload,
   Database,
-  CheckCircle,
-  AlertCircle,
   Loader2,
   ShieldAlert,
   FileJson,
@@ -383,7 +382,6 @@ const SKIP_INVALID_FK: Record<string, { field: string; invalidValues: (number | 
   mechanic_commission_history: { field: "mechanic_id", invalidValues: [0] },
 };
 
-type Toast = { type: "success" | "error" | "info"; msg: string };
 type BackupData = Record<string, unknown[]>;
 type TableStats = { table: string; count: number };
 type BackupPreview = {
@@ -401,7 +399,6 @@ export default function BackupPage() {
   const [taking, setTaking] = useState(false);
   const [restoring, setRestoring] = useState(false);
   const [progress, setProgress] = useState("");
-  const [toast, setToast] = useState<Toast | null>(null);
   const [dragOver, setDragOver] = useState(false);
   const [tableStats, setTableStats] = useState<TableStats[]>([]);
   const [loadingStats, setLoadingStats] = useState(false);
@@ -427,9 +424,10 @@ export default function BackupPage() {
     error?: string;
   } | null>(null);
 
-  const showToast = (type: Toast["type"], msg: string) => {
-    setToast({ type, msg });
-    setTimeout(() => setToast(null), 5000);
+  const showToast = (type: "success" | "error" | "info", msg: string) => {
+    if (type === "success") toast.success(msg);
+    else if (type === "info") toast.info(msg);
+    else toast.error(msg);
   };
 
   // ── Live schema (admin API se) — backup/restore dynamic table+column use ──
@@ -1446,22 +1444,6 @@ export default function BackupPage() {
               </button>
             </div>
           </div>
-        </div>
-      )}
-
-      {/* Toast */}
-      {toast && (
-        <div
-          className={`fixed top-4 right-4 z-[100] flex items-center gap-3 px-4 py-3 rounded-2xl shadow-2xl border text-sm font-bold max-w-sm ${
-            toast.type === "success"
-              ? "bg-emerald-500/15 border-emerald-500/30 text-emerald-400"
-              : toast.type === "info"
-                ? "bg-blue-500/15 border-blue-500/30 text-blue-400"
-                : "bg-red-500/15 border-red-500/30 text-red-400"
-          }`}
-        >
-          {toast.type === "success" ? <CheckCircle size={16} /> : <AlertCircle size={16} />}
-          {toast.msg}
         </div>
       )}
 

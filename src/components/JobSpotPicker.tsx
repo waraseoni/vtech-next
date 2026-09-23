@@ -10,6 +10,7 @@ import { useCallback, useEffect, useState } from "react";
 import { MapPin, Plus, X } from "lucide-react";
 import SearchableSelect from "@/components/SearchableSelect";
 import { supabase } from "@/lib/supabase";
+import { toast } from "@/lib/toast";
 
 export type JobSpot = { id: number; name: string };
 
@@ -85,7 +86,7 @@ export default function JobSpotPicker({ value, onSelect }: Props) {
         .select("id, rack")
         .single();
       if (error) {
-        alert("Spot nahi bana: " + error.message);
+        toast.error("Spot nahi bana: " + error.message);
         setSaving(false);
         return;
       }

@@ -25,6 +25,7 @@ import {
 import Link from "next/link";
 import { formatIST, todayIST, currentMonthIST, parseISTDate } from "@/lib/dateUtils";
 import { JOB_STATUS } from "@/lib/status-colors";
+import { toast } from "@/lib/toast";
 
 const inr = (n: number) => "₹" + (n || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 });
 
@@ -317,7 +318,10 @@ function PendingJobsContent() {
 
   const sendWhatsApp = (job: DbRow) => {
     const phone = (job.client?.contact || "").replace(/\D/g, "");
-    if (phone.length < 10) return alert("Valid mobile number nahi mila!");
+    if (phone.length < 10) {
+      toast.error("Valid mobile number nahi mila!");
+      return;
+    }
 
     const clientName = `${job.client?.firstname || ""} ${job.client?.lastname || ""}`.trim();
     const amount = parseFloat(job.amount).toLocaleString("en-IN");

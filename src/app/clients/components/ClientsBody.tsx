@@ -38,6 +38,8 @@ import {
 } from "lucide-react";
 import { safeImageSrc } from "@/lib/image-utils";
 import { substituteTemplate, firmVars, resolveTemplate } from "@/lib/whatsapp";
+import { toast } from "@/lib/toast";
+import { requireAdmin } from "@/lib/requireAdmin";
 import { getBalanceMeta, daysSince, inr, type Client, type ClientContactLite } from "./clientListHelpers";
 import dynamic from "next/dynamic";
 
@@ -118,25 +120,19 @@ export default function ClientsBody({
   }, []);
 
   const handleDelete = async (id: number, name: string) => {
-    if (userRole !== "admin") {
-      alert("Permission Denied: Sirf Admin hi delete kar sakta hai!");
-      return;
-    }
+    if (!requireAdmin(userRole, "delete")) return;
     if (!confirm(`"${name}" ko delete karna chahte hain?`)) return;
     const { error } = await supabase.from("client_list").update({ delete_flag: 1 }).eq("id", id);
     if (!error) setClients((p) => p.filter((c) => c.id !== id));
-    else alert("Delete nahi ho paya!");
+    else toast.error("Delete nahi ho paya!");
   };
 
   // Portal access toggle (admin only). Client ko email OTP se login dene ke liye
   // uske email ka client_list me hona bhi zaroori hai.
   const handleToggleLogin = async (c: Client) => {
-    if (userRole !== "admin") {
-      alert("Permission Denied: Sirf Admin hi portal access de sakta hai!");
-      return;
-    }
+    if (!requireAdmin(userRole, "manage")) return;
     if (!c.email) {
-      alert(
+      toast.error(
         "Portal access ke liye client ka email hona zaroori hai — pehle Edit Client se email set karein."
       );
       return;
@@ -147,7 +143,7 @@ export default function ClientsBody({
       .update({ login_allowed: next })
       .eq("id", c.id);
     if (error) {
-      alert("Update nahi hua: " + error.message);
+      toast.error("Update nahi hua: " + error.message);
       return;
     }
     setClients((p) => p.map((x) => (x.id === c.id ? { ...x, login_allowed: next } : x)));
@@ -198,7 +194,7 @@ export default function ClientsBody({
   const sendWhatsApp = () => {
     const phone = waSelectedPhone || waClient?.contact || "";
     if (!phone) {
-      alert("Phone number nahi hai!");
+      toast.error("Phone number nahi hai!");
       return;
     }
     window.open(
@@ -226,7 +222,7 @@ export default function ClientsBody({
   };
   const openBulkWaModal = () => {
     if (selectedClients.size === 0) {
-      alert("Select clients pehle!");
+      toast.error("Select clients pehle!");
       return;
     }
     setBulkWaText("");
@@ -252,7 +248,7 @@ export default function ClientsBody({
   };
   const sendBulkWhatsApp = () => {
     if (!bulkWaText.trim()) {
-      alert("Message likho pehle!");
+      toast.error("Message likho pehle!");
       return;
     }
     const selected = clients.filter((c) => selectedClients.has(c.id));
@@ -279,7 +275,7 @@ export default function ClientsBody({
     window.open(`/api/print-clients?${params.toString()}`, "_blank");
   };
   const exportPDF = () => {
-    alert(
+    toast.info(
       "PDF Export: Use Print → Save as PDF option in the print dialog.\n\nअगर PDF में save करना है तो Print पर click करके printer dialog में 'Save as PDF' select करें।"
     );
     printReport();

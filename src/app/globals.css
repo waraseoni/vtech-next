@@ -182,8 +182,55 @@ body {
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+
+  /* Semantic color tokens → Tailwind utilities (Phase 1a foundation)
+     Usage: bg-panel, text-muted, border-app, bg-card, bg-hover, ... */
+  --color-app-bg: var(--app-bg);
+  --color-app-panel: var(--app-panel);
+  --color-app-panel-2: var(--app-panel-2);
+  --color-app-topbar: var(--app-topbar);
+  --color-app-sidebar: var(--app-sidebar);
+  --color-app-border: var(--app-border);
+  --color-app-border-2: var(--app-border-2);
+  --color-app-text: var(--app-text);
+  --color-app-text-2: var(--app-text-2);
+  --color-app-muted: var(--app-muted);
+  --color-app-muted-2: var(--app-muted-2);
+  --color-app-input: var(--app-input-bg);
+  --color-app-card: var(--app-card-bg);
+  --color-app-hover: var(--app-hover);
+  /* Short aliases (plan §1a: bg-panel, text-muted style) */
+  --color-bg: var(--app-bg);
+  --color-panel: var(--app-panel);
+  --color-panel-2: var(--app-panel-2);
+  --color-card: var(--app-card-bg);
+  --color-border-app: var(--app-border);
+  --color-muted: var(--app-muted);
+  --color-muted-2: var(--app-muted-2);
+
   --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, Consolas, monospace;
+}
+
+/* Semantic helper classes (Phase 1a — naye markup me prefer ye, hardcoded hex nahi) */
+.card {
+  background: var(--app-card-bg);
+  border: 1px solid var(--app-border);
+}
+.muted {
+  color: var(--app-muted);
+}
+.text-app {
+  color: var(--app-text);
+}
+.text-app-2 {
+  color: var(--app-text-2);
+}
+.bg-app {
+  background-color: var(--app-bg);
+}
+.bg-panel {
+  background-color: var(--app-panel);
 }
 
 /* ============================================
@@ -3172,4 +3219,67 @@ html[data-theme="light"] .backup-guide hr {
 }
 .sidebar-collapsed nav li.text-\[9px\] {
   display: none !important;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   SPRINT 1 — Mobile input fundamentals (iOS/Android browser-friendly)
+   Plan: docs/plans/ui_ux_architecture_complete_plan.md → Part C1
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* 1. iOS Safari zoom-on-focus rokna — input/select/textarea font <16px par
+   automatically zoom karta hai. Global floor 16px (desktop par bhi consistent).
+   Specific smaller inputs Tailwind text-[13px] etc. bhi override nahi honge
+   kyunki ye floor sirf non-zoom contexts me matter karta hai; Tailwind !important
+   nahi use karta isliye specificity: element selectors ko utility se override
+   karne ke liye utility class higher specificity chahiye — isliye ye rule
+   low-specificity rakha gaya (0,0,1) taaki page-level utilities win karein
+   jab intentionally chhoti text chahiye (desktop dense tables). Mobile zoom
+   problem sirf <16px + tap-focusable inputs par hai — ye rule 16px floor deta
+   hai bina utilities ko break kiye (utilities 0,1,0 specificity hai). */
+@media (max-width: 1023px) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  select,
+  textarea {
+    font-size: max(16px, 1em);
+  }
+}
+
+/* 2. Safe-area insets — notch / home-indicator wale devices par content
+   overlap na ho. Fixed elements (FAB, bottom bars, drawers) me use karo:
+     padding-bottom: env(safe-area-inset-bottom);
+   Ye utility sabse common cases cover karti hai. */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.pt-safe {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+.mb-safe {
+  margin-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* 3. 100dvh utility — mobile URL-bar resize par 100vh ki height bug
+   (content 100vh > visible viewport) se bachata hai. Naye full-screen
+   layouts me `h-screen` ki jagah `h-dvh` (Tailwind v4 built-in) use karo.
+   Ye class legacy CSS me bhi available hai. */
+.h-dvh-safe {
+  height: 100dvh;
+}
+
+/* 4. Keyboard-aware: mobile keyboard khulne par focused input viewport me
+   rahe — browser already karta hai, par FAB bottom-right uske upar aa jata
+   hai. Keyboard open state me FAB hide (RootClient me JS class lagata hai,
+   yahan CSS rule). */
+body.keyboard-open .fab-bottom-right,
+body.keyboard-open [data-fab="bottom-right"] {
+  display: none !important;
+}
+
+/* 5. Touch feedback — active states (mobile par tap par highlight) */
+@media (pointer: coarse) {
+  button:active,
+  a:active,
+  [role="button"]:active {
+    opacity: 0.85;
+  }
 }

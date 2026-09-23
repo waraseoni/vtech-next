@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, useMemo } from "react";
 import AdminPage from "@/app/components/AdminPage";
 import { supabase, getCachedUser } from "@/lib/supabase";
 import { formatIST, toISTDatePart } from "@/lib/dateUtils";
+import { requireAdmin } from "@/lib/requireAdmin";
 import {
   Search,
   Plus,
@@ -292,30 +293,21 @@ export default function LendersPage() {
   };
 
   const handleDeletePayment = async (id: number) => {
-    if (userRole !== "admin") {
-      alert("Sirf Admin delete kar sakta hai!");
-      return;
-    }
+    if (!requireAdmin(userRole, "delete")) return;
     if (!confirm("Kya aap is payment ko delete karna chahte hain?")) return;
     await supabase.from("loan_payments").delete().eq("id", id);
     fetchData();
   };
 
   const handleDelete = async (id: number, name: string) => {
-    if (userRole !== "admin") {
-      alert("Sirf Admin delete kar sakta hai!");
-      return;
-    }
+    if (!requireAdmin(userRole, "delete")) return;
     if (!confirm(`"${name}" ko delete karna hai?`)) return;
     await supabase.from("lender_list").delete().eq("id", id);
     fetchData();
   };
 
   const toggleStatus = async (l: Lender) => {
-    if (userRole !== "admin") {
-      alert("Sirf Admin status change kar sakta hai!");
-      return;
-    }
+    if (!requireAdmin(userRole, "status")) return;
     await supabase
       .from("lender_list")
       .update({ status: l.status === 1 ? 2 : 1 })

@@ -48,6 +48,8 @@ import PageLoader from "@/components/PageLoader";
 import SearchableSelect, { SearchableOption } from "@/components/SearchableSelect";
 import { fetchStockByProducts } from "@/lib/inventoryStock";
 import { alertThreshold } from "@/lib/inventory";
+import { toast } from "@/lib/toast";
+import { waLink } from "@/lib/whatsapp";
 
 const fmtCurrency = (v: number) =>
   `₹${v.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -61,7 +63,6 @@ const fmtDate = (d: string | null) =>
       })
     : "—";
 
-const waLink = (phone: string) => `https://wa.me/91${phone.replace(/\D/g, "")}`;
 const telLink = (phone: string) => `tel:+91${phone.replace(/\D/g, "")}`;
 
 function PaymentSummary({ amount, baseDue }: { amount: number; baseDue: number }) {
@@ -461,7 +462,7 @@ export default function SupplierDetailPage() {
       await fetchLinkedProducts();
       await fetchRecommended();
     } catch (e) {
-      alert("Link add fail: " + (e instanceof Error ? e.message : String(e)));
+      toast.error("Link add fail: " + (e instanceof Error ? e.message : String(e)));
     } finally {
       setLinkBusy(false);
       setShowLinkPicker(false);
@@ -481,7 +482,7 @@ export default function SupplierDetailPage() {
       await fetchLinkedProducts();
       await fetchRecommended();
     } catch (e) {
-      alert("Unlink fail: " + (e instanceof Error ? e.message : String(e)));
+      toast.error("Unlink fail: " + (e instanceof Error ? e.message : String(e)));
     } finally {
       setLinkBusy(false);
     }
@@ -553,7 +554,7 @@ export default function SupplierDetailPage() {
           paymentDate: payDate,
         });
         if (!expRes.created && expRes.error) {
-          alert("Payment save ho gaya, par expense entry nahi bani:\n" + expRes.error);
+          toast.warning("Payment save ho gaya, par expense entry nahi bani:\n" + expRes.error);
         }
       }
       setShowPayModal(false);
@@ -582,7 +583,7 @@ export default function SupplierDetailPage() {
       setPayments(fresh);
       return true;
     } catch (e) {
-      alert("Delete fail: " + (e instanceof Error ? e.message : String(e)));
+      toast.error("Delete fail: " + (e instanceof Error ? e.message : String(e)));
       return false;
     }
   };
@@ -1820,7 +1821,7 @@ function SupplierPaymentModal({
       paymentDate: payment.payment_date?.slice(0, 10),
     });
     setExpenseStatus(res.created ? "created" : "none");
-    if (!res.created && res.error) alert(res.error);
+    if (!res.created && res.error) toast.error(res.error);
   };
 
   const amt = parseFloat(amount) || 0;
@@ -1855,7 +1856,7 @@ function SupplierPaymentModal({
         paymentDate: date,
       });
       if (sync.error) {
-        alert("Payment save ho gaya, par expense sync nahi hua:\n" + sync.error);
+        toast.warning("Payment save ho gaya, par expense sync nahi hua:\n" + sync.error);
       }
       onSaved();
     } catch (e) {

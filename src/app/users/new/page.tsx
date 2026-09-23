@@ -15,10 +15,9 @@ import {
   ArrowLeft,
   Eye,
   EyeOff,
-  CheckCircle,
-  AlertCircle,
 } from "lucide-react";
 import PageLoader from "@/components/PageLoader";
+import { toast } from "@/lib/toast";
 
 const inputCls =
   "w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white outline-none focus:border-blue-500/60 transition-all";
@@ -35,13 +34,6 @@ export default function NewUserPage() {
   const [checking, setChecking] = useState(true);
   const [myId, setMyId] = useState("");
   const [devEnabled, setDevEnabled] = useState(false);
-  const [toast, setToast] = useState<{ type: "success" | "error"; msg: string } | null>(null);
-
-  useEffect(() => {
-    if (!toast) return;
-    const t = setTimeout(() => setToast(null), 3500);
-    return () => clearTimeout(t);
-  }, [toast]);
 
   // ── Admin check ────────────────────────────────────────────────────────
   useEffect(() => {
@@ -72,7 +64,7 @@ export default function NewUserPage() {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (password.length < 6) {
-      setToast({ type: "error", msg: "Password kam se kam 6 characters ka hona chahiye!" });
+      toast.error("Password kam se kam 6 characters ka hona chahiye!");
       return;
     }
     setLoading(true);
@@ -85,12 +77,12 @@ export default function NewUserPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
 
-      setToast({ type: "success", msg: "User successfully create ho gaya!" });
+      toast.success("User successfully create ho gaya!");
       setTimeout(() => {
         router.push("/users");
       }, 1200);
     } catch (err: unknown) {
-      setToast({ type: "error", msg: err instanceof Error ? err.message : "Create failed!" });
+      toast.error(err instanceof Error ? err.message : "Create failed!");
       setLoading(false);
     }
   };
@@ -99,20 +91,6 @@ export default function NewUserPage() {
 
   return (
     <div className="min-h-screen bg-[#0d1117] font-sans pb-12">
-      {/* Toast */}
-      {toast && (
-        <div
-          className={`fixed top-4 right-4 z-[100] flex items-center gap-3 px-4 py-3 rounded-2xl shadow-2xl border text-sm font-bold ${
-            toast.type === "success"
-              ? "bg-emerald-500/15 border-emerald-500/30 text-emerald-400"
-              : "bg-red-500/15 border-red-500/30 text-red-400"
-          }`}
-        >
-          {toast.type === "success" ? <CheckCircle size={16} /> : <AlertCircle size={16} />}
-          {toast.msg}
-        </div>
-      )}
-
       <div className="max-w-md mx-auto px-4 pt-6 space-y-4">
         {/* Header */}
         <div className="bg-[#161b27] border border-[#21293d] rounded-2xl px-5 py-4 flex items-center justify-between">

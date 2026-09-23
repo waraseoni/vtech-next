@@ -12,14 +12,13 @@ import {
   Wrench,
   Hash,
   Loader2,
-  AlertTriangle,
-  CheckCircle,
   RefreshCw,
   Users,
   ClipboardList,
 } from "lucide-react";
 import PageLoader from "@/components/PageLoader";
 import SearchableSelect from "@/components/SearchableSelect";
+import { toast } from "@/lib/toast";
 
 // ─── IST Helper ───────────────────────────────────────────────────────────────
 function nowIST(): string {
@@ -80,15 +79,6 @@ export default function BulkEditPage() {
   const [rowLoading, setRowLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [loaded, setLoaded] = useState(false);
-  const [toast, setToast] = useState<{ type: "success" | "error" | "warn"; msg: string } | null>(
-    null
-  );
-
-  useEffect(() => {
-    if (!toast) return;
-    const t = setTimeout(() => setToast(null), 3500);
-    return () => clearTimeout(t);
-  }, [toast]);
 
   // ── Fetch master data ──────────────────────────────────────────────────────
   const fetchMaster = useCallback(async () => {
@@ -123,7 +113,7 @@ export default function BulkEditPage() {
   // ── Load transactions for source client ────────────────────────────────────
   const loadTransactions = async () => {
     if (!sourceClient) {
-      setToast({ type: "warn", msg: "Pehle Source Client select karo!" });
+      toast.warning("Pehle Source Client select karo!");
       return;
     }
     setRowLoading(true);
@@ -161,10 +151,10 @@ export default function BulkEditPage() {
       setRows(tRows);
       setLoaded(true);
       if (tRows.length === 0)
-        setToast({ type: "warn", msg: "Is client ke koi transactions nahi mile." });
+        toast.warning("Is client ke koi transactions nahi mile.");
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Load failed!";
-      setToast({ type: "error", msg });
+      toast.error(msg);
     } finally {
       setRowLoading(false);
     }
@@ -187,16 +177,13 @@ export default function BulkEditPage() {
   // ── Save all ───────────────────────────────────────────────────────────────
   const handleSaveAll = async () => {
     if (rows.length === 0) {
-      setToast({ type: "warn", msg: "Pehle transactions load karo!" });
+      toast.warning("Pehle transactions load karo!");
       return;
     }
 
     const invalid = rows.filter((r) => !r.client_id.trim() || !r.item.trim() || !r.fault.trim());
     if (invalid.length > 0) {
-      setToast({
-        type: "error",
-        msg: `${invalid.length} row(s) mein Client/Item/Fault khaali hai!`,
-      });
+      toast.error(`${invalid.length} row(s) mein Client/Item/Fault khaali hai!`);
       return;
     }
 
@@ -218,11 +205,11 @@ export default function BulkEditPage() {
         if (error) throw new Error(`Transaction #${r.id} update failed: ${error.message}`);
         updated++;
       }
-      setToast({ type: "success", msg: `${updated} transactions update ho gaye! ✅` });
+      toast.success(`${updated} transactions update ho gaye! ✅`);
       setTimeout(() => router.replace("/jobs"), 1200);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Save failed!";
-      setToast({ type: "error", msg });
+      toast.error(msg);
     } finally {
       setSaving(false);
     }
@@ -239,22 +226,6 @@ export default function BulkEditPage() {
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-[#0d1117] font-sans pb-16">
-      {/* Toast */}
-      {toast && (
-        <div
-          className={`fixed top-4 right-4 z-[100] flex items-center gap-3 px-4 py-3 rounded-2xl shadow-2xl border text-sm font-bold ${
-            toast.type === "success"
-              ? "bg-emerald-500/15 border-emerald-500/30 text-emerald-400"
-              : toast.type === "warn"
-                ? "bg-amber-500/15 border-amber-500/30 text-amber-400"
-                : "bg-red-500/15 border-red-500/30 text-red-400"
-          }`}
-        >
-          {toast.type === "success" ? <CheckCircle size={16} /> : <AlertTriangle size={16} />}
-          {toast.msg}
-        </div>
-      )}
-
       <div className="max-w-[1300px] mx-auto px-3 sm:px-5 pt-4 space-y-4">
         {/* ── Header ── */}
         <div className="bg-[#161b27] border border-[#21293d] rounded-2xl px-5 py-4 flex items-center justify-between flex-wrap gap-3">

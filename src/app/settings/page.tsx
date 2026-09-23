@@ -35,6 +35,7 @@ import {
 } from "lucide-react";
 import NotificationSettings from "@/components/NotificationSettings";
 import PageLoader from "@/components/PageLoader";
+import { toast } from "@/lib/toast";
 
 const inputCls =
   "w-full px-3 py-2.5 bg-[#0d1117] border border-[#21293d] rounded-xl text-sm text-white outline-none focus:border-blue-500/60 transition-all placeholder:text-slate-700";
@@ -48,7 +49,6 @@ export default function SettingsPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [toast, setToast] = useState<{ type: "success" | "error"; msg: string } | null>(null);
 
   // Basic info
   const [name, setName] = useState("");
@@ -132,12 +132,6 @@ export default function SettingsPage() {
   const [licenseKey, setLicenseKey] = useState("");
   const [licenseBusy, setLicenseBusy] = useState(false);
 
-  useEffect(() => {
-    if (!toast) return;
-    const t = setTimeout(() => setToast(null), 3500);
-    return () => clearTimeout(t);
-  }, [toast]);
-
   // ── Fetch ─────────────────────────────────────────────────────────────────
   useEffect(() => {
     (async () => {
@@ -158,7 +152,7 @@ export default function SettingsPage() {
 
       if (error) {
         console.error("system_info fetch:", error.message);
-        setToast({ type: "error", msg: "Settings load nahi hui: " + error.message });
+        toast.error("Settings load nahi hui: " + error.message);
         setLoading(false);
         return;
       }
@@ -252,7 +246,7 @@ export default function SettingsPage() {
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) {
-      setToast({ type: "error", msg: "System name zaroori hai!" });
+      toast.error("System name zaroori hai!");
       return;
     }
     setSaving(true);
@@ -276,9 +270,9 @@ export default function SettingsPage() {
         upsertField("geofence_lng", gfLng.trim()),
         upsertField("geofence_radius_m", gfRadius.trim() || "200"),
       ]);
-      setToast({ type: "success", msg: "Settings save ho gayi! ✅" });
+      toast.success("Settings save ho gayi! ✅");
     } catch (err: unknown) {
-      setToast({ type: "error", msg: err instanceof Error ? err.message : "Save failed!" });
+      toast.error(err instanceof Error ? err.message : "Save failed!");
     } finally {
       setSaving(false);
     }
@@ -292,9 +286,9 @@ export default function SettingsPage() {
         upsertField("auto_logout_minutes", sessionNever ? "0" : sessionMinutes),
         upsertField("auto_logout_warn_minutes", warnMinutes.trim() || "2"),
       ]);
-      setToast({ type: "success", msg: "Auto Logoff settings save ho gayi! ✅" });
+      toast.success("Auto Logoff settings save ho gayi! ✅");
     } catch (err: unknown) {
-      setToast({ type: "error", msg: err instanceof Error ? err.message : "Save failed!" });
+      toast.error(err instanceof Error ? err.message : "Save failed!");
     } finally {
       setSessionSaving(false);
     }
@@ -312,9 +306,9 @@ export default function SettingsPage() {
         setAiKeyConfigured(true);
       }
       await upsertField("ai_model", aiModel);
-      setToast({ type: "success", msg: "AI settings saved ✅" });
+      toast.success("AI settings saved ✅");
     } catch (err: unknown) {
-      setToast({ type: "error", msg: err instanceof Error ? err.message : "Failed" });
+      toast.error(err instanceof Error ? err.message : "Failed");
     } finally {
       setSaving(false);
     }
@@ -323,7 +317,7 @@ export default function SettingsPage() {
   // ── Attendance Geofencing: fill current coordinates ─────────────
   const useMyLocation = () => {
     if (!("geolocation" in navigator)) {
-      setToast({ type: "error", msg: "Is browser me geolocation support nahi hai" });
+      toast.error("Is browser me geolocation support nahi hai");
       return;
     }
     setGfLocating(true);
@@ -332,14 +326,11 @@ export default function SettingsPage() {
         setGfLat(p.coords.latitude.toFixed(6));
         setGfLng(p.coords.longitude.toFixed(6));
         setGfLocating(false);
-        setToast({ type: "success", msg: "Current location set ✅" });
+        toast.success("Current location set ✅");
       },
       () => {
         setGfLocating(false);
-        setToast({
-          type: "error",
-          msg: "Location fetch nahi hui. Permission/Internet/GPS check karein.",
-        });
+        toast.error("Location fetch nahi hui. Permission/Internet/GPS check karein.");
       },
       { enableHighAccuracy: true, timeout: 10000 }
     );
@@ -364,10 +355,10 @@ export default function SettingsPage() {
       const json = await res.json();
       if (json.status === "success") {
         setSignature(json.url);
-        setToast({ type: "success", msg: "Signature uploaded ✅" });
+        toast.success("Signature uploaded ✅");
       } else throw new Error(json.msg);
     } catch (err: unknown) {
-      setToast({ type: "error", msg: err instanceof Error ? err.message : "Upload failed" });
+      toast.error(err instanceof Error ? err.message : "Upload failed");
     } finally {
       setSigSaving(false);
     }
@@ -382,10 +373,10 @@ export default function SettingsPage() {
       const json = await res.json();
       if (json.status === "success") {
         setSignature("");
-        setToast({ type: "success", msg: "Signature removed" });
+        toast.success("Signature removed");
       } else throw new Error(json.msg);
     } catch (err: unknown) {
-      setToast({ type: "error", msg: err instanceof Error ? err.message : "Failed" });
+      toast.error(err instanceof Error ? err.message : "Failed");
     } finally {
       setSigSaving(false);
     }
@@ -456,7 +447,7 @@ export default function SettingsPage() {
     const imageData = ctx.getImageData(0, 0, c.width, c.height);
     const blank = imageData.data.every((pixel) => pixel === 0);
     if (blank) {
-      setToast({ type: "error", msg: "Pehle signature draw karein!" });
+      toast.error("Pehle signature draw karein!");
       return;
     }
     setSigSaving(true);
@@ -468,10 +459,10 @@ export default function SettingsPage() {
       if (json.status === "success") {
         setSignature(json.url);
         setShowCanvas(false);
-        setToast({ type: "success", msg: "Signature saved ✅" });
+        toast.success("Signature saved ✅");
       } else throw new Error(json.msg);
     } catch (err: unknown) {
-      setToast({ type: "error", msg: err instanceof Error ? err.message : "Failed" });
+      toast.error(err instanceof Error ? err.message : "Failed");
     } finally {
       setSigSaving(false);
     }
@@ -497,20 +488,20 @@ export default function SettingsPage() {
           setLogo(reader.result as string);
           setLogoFile(null);
           setLogoFileName("");
-          setToast({ type: "success", msg: "Logo save ho gaya ✅" });
+          toast.success("Logo save ho gaya ✅");
         } catch (err: unknown) {
-          setToast({ type: "error", msg: err instanceof Error ? err.message : "Save failed" });
+          toast.error(err instanceof Error ? err.message : "Save failed");
         } finally {
           setLogoSaving(false);
         }
       };
       reader.onerror = () => {
-        setToast({ type: "error", msg: "Logo file read nahi hui" });
+        toast.error("Logo file read nahi hui");
         setLogoSaving(false);
       };
       reader.readAsDataURL(logoFile);
     } catch (err: unknown) {
-      setToast({ type: "error", msg: err instanceof Error ? err.message : "Save failed" });
+      toast.error(err instanceof Error ? err.message : "Save failed");
       setLogoSaving(false);
     }
   };
@@ -522,9 +513,9 @@ export default function SettingsPage() {
       setLogo("");
       setLogoFile(null);
       setLogoFileName("");
-      setToast({ type: "success", msg: "Logo remove ho gaya" });
+      toast.success("Logo remove ho gaya");
     } catch (err: unknown) {
-      setToast({ type: "error", msg: err instanceof Error ? err.message : "Failed" });
+      toast.error(err instanceof Error ? err.message : "Failed");
     } finally {
       setLogoSaving(false);
     }
@@ -550,20 +541,20 @@ export default function SettingsPage() {
           setCover(reader.result as string);
           setCoverFile(null);
           setCoverFileName("");
-          setToast({ type: "success", msg: "Cover save ho gaya ✅" });
+          toast.success("Cover save ho gaya ✅");
         } catch (err: unknown) {
-          setToast({ type: "error", msg: err instanceof Error ? err.message : "Save failed" });
+          toast.error(err instanceof Error ? err.message : "Save failed");
         } finally {
           setCoverSaving(false);
         }
       };
       reader.onerror = () => {
-        setToast({ type: "error", msg: "Cover file read nahi hui" });
+        toast.error("Cover file read nahi hui");
         setCoverSaving(false);
       };
       reader.readAsDataURL(coverFile);
     } catch (err: unknown) {
-      setToast({ type: "error", msg: err instanceof Error ? err.message : "Save failed" });
+      toast.error(err instanceof Error ? err.message : "Save failed");
       setCoverSaving(false);
     }
   };
@@ -575,9 +566,9 @@ export default function SettingsPage() {
       setCover("");
       setCoverFile(null);
       setCoverFileName("");
-      setToast({ type: "success", msg: "Cover remove ho gaya" });
+      toast.success("Cover remove ho gaya");
     } catch (err: unknown) {
-      setToast({ type: "error", msg: err instanceof Error ? err.message : "Failed" });
+      toast.error(err instanceof Error ? err.message : "Failed");
     } finally {
       setCoverSaving(false);
     }
@@ -602,14 +593,14 @@ export default function SettingsPage() {
       const json = await res.json();
       if (json.response?.includes("OK")) {
         setAiTestResult("✅ Working!");
-        setToast({ type: "success", msg: `AI API working with ${aiModel}` });
+        toast.success(`AI API working with ${aiModel}`);
       } else {
         setAiTestResult("❌ Failed");
-        setToast({ type: "error", msg: json.error || "API test failed" });
+        toast.error(json.error || "API test failed");
       }
     } catch {
       setAiTestResult("❌ Connection error");
-      setToast({ type: "error", msg: "AI API connection failed" });
+      toast.error("AI API connection failed");
     } finally {
       setAiTesting(false);
     }
@@ -621,7 +612,7 @@ export default function SettingsPage() {
   const handleActivateLicense = async (e?: React.SyntheticEvent) => {
     e?.preventDefault();
     if (!licenseKey.trim()) {
-      setToast({ type: "error", msg: "License key daalein!" });
+      toast.error("License key daalein!");
       return;
     }
     setLicenseBusy(true);
@@ -633,7 +624,7 @@ export default function SettingsPage() {
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "Activation failed");
-      setToast({ type: "success", msg: "License activate ho gaya ✅" });
+      toast.success("License activate ho gaya ✅");
       setLicenseKey("");
       setLicense({
         activated: true,
@@ -644,7 +635,7 @@ export default function SettingsPage() {
         activatedAt: new Date().toISOString(),
       });
     } catch (err: unknown) {
-      setToast({ type: "error", msg: err instanceof Error ? err.message : "Activation failed" });
+      toast.error(err instanceof Error ? err.message : "Activation failed");
     } finally {
       setLicenseBusy(false);
     }
@@ -654,19 +645,6 @@ export default function SettingsPage() {
 
   return (
     <div className="min-h-screen bg-[#0d1117] font-sans pb-12">
-      {toast && (
-        <div
-          className={`fixed top-4 right-4 z-[100] flex items-center gap-3 px-4 py-3 rounded-2xl shadow-2xl border text-sm font-bold ${
-            toast.type === "success"
-              ? "bg-emerald-500/15 border-emerald-500/30 text-emerald-400"
-              : "bg-red-500/15 border-red-500/30 text-red-400"
-          }`}
-        >
-          {toast.type === "success" ? <CheckCircle size={16} /> : <AlertCircle size={16} />}
-          {toast.msg}
-        </div>
-      )}
-
       <form onSubmit={handleSave}>
         <div className="max-w-2xl mx-auto px-4 pt-6 space-y-4">
           {/* Header */}

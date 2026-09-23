@@ -50,6 +50,8 @@ import { compressImage } from "@/lib/imageCompression";
 import { openCamera } from "@/lib/nativeCamera";
 import { JOB_STATUS } from "@/lib/status-colors";
 import { logger } from "@/lib/logger";
+import { toast } from "@/lib/toast";
+import { requireAdmin } from "@/lib/requireAdmin";
 
 // ─── IST HELPERS ─────────────────────────────────────────────────────────────
 // Legacy PHP/MariaDB activity logs predate the Next.js handover (Aug 15, 2026)
@@ -203,7 +205,6 @@ interface TransactionImage {
   image_path: string;
   date_created: string;
 }
-type Toast = { type: "success" | "error" | "info"; msg: string };
 
 // ─── STATUS CONFIG ────────────────────────────────────────────────────────────
 const STATUS_MAP: Record<
@@ -327,7 +328,6 @@ export default function JobDetailsPage() {
   const [userRole, setUserRole] = useState<string>("staff");
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
-  const [toast, setToast] = useState<Toast | null>(null);
   const [firmInfo, setFirmInfo] = useState<Record<string, string>>({});
   const [prevJob, setPrevJob] = useState<{ id: number; job_id: string } | null>(null);
   const [nextJob, setNextJob] = useState<{ id: number; job_id: string } | null>(null);
@@ -427,12 +427,6 @@ export default function JobDetailsPage() {
   const [payDate, setPayDate] = useState(todayISTStr());
   const [payRemarks, setPayRemarks] = useState("");
   const [savingPay, setSavingPay] = useState(false);
-
-  useEffect(() => {
-    if (!toast) return;
-    const t = setTimeout(() => setToast(null), 3500);
-    return () => clearTimeout(t);
-  }, [toast]);
 
   // ── ACTIVITY LOG ────────────────────────────────────────────────────────────
   // Fetches activity history for this job from BOTH modules:
@@ -661,7 +655,7 @@ export default function JobDetailsPage() {
     if (!job || !client) return;
     const phone = client.contact?.replace(/\D/g, "");
     if (!phone || phone.length < 10) {
-      setToast({ type: "error", msg: "Valid mobile number nahi mila!" });
+      toast.error("Valid mobile number nahi mila!");
       return;
     }
     const name = [client.firstname, client.middlename, client.lastname].filter(Boolean).join(" ");
@@ -707,7 +701,7 @@ export default function JobDetailsPage() {
     }
     const { error } = await supabase.from("transaction_list").update(updates).eq("id", job.id);
     if (error) {
-      setToast({ type: "error", msg: "Status update failed: " + error.message });
+      toast.error("Status update failed: " + error.message);
     } else {
       setJob({ ...job, ...updates } as JobDetail);
       await logActivity(
@@ -717,10 +711,7 @@ export default function JobDetailsPage() {
         `Job #${job.job_id} | ${STATUS_MAP[job.status]?.label} → ${STATUS_MAP[newStatus]?.label} | ${job.item}`
       );
       loadActivity(job);
-      setToast({
-        type: "success",
-        msg: `Status "${STATUS_MAP[newStatus]?.label}" update ho gaya!`,
-      });
+      toast.success(`Status "${STATUS_MAP[newStatus]?.label}" update ho gaya!`);
       setShowStatusModal(false);
     }
     setUpdatingStatus(false);
@@ -744,7 +735,7 @@ export default function JobDetailsPage() {
     };
     const { error } = await supabase.from("transaction_list").update(updates).eq("id", job.id);
     if (error) {
-      setToast({ type: "error", msg: "Spot update failed: " + error.message });
+      toast.error("Spot update failed: " + error.message);
     } else {
       setJob({ ...job, ...updates } as JobDetail);
       await logActivity(
@@ -753,7 +744,7 @@ export default function JobDetailsPage() {
         job.job_id,
         `Job #${job.job_id} → ${spotPickName || "No Spot"} | ${job.item}`
       );
-      setToast({ type: "success", msg: "Spot update ho gaya!" });
+      toast.success("Spot update ho gaya!");
       setShowSpotModal(false);
     }
     setSavingSpot(false);
@@ -765,7 +756,7 @@ export default function JobDetailsPage() {
     const amt = parseFloat(payAmount);
     const disc = parseFloat(payDiscount) || 0;
     if (isNaN(amt) || amt <= 0) {
-      setToast({ type: "error", msg: "Valid amount enter karo!" });
+      toast.error("Valid amount enter karo!");
       return;
     }
     setSavingPay(true);
@@ -781,7 +772,7 @@ export default function JobDetailsPage() {
       payment_date: payDate || `${todayISTStr()}T00:00:00+05:30`,
     });
     if (error) {
-      setToast({ type: "error", msg: "Payment save nahi hua: " + error.message });
+      toast.error("Payment save nahi hua: " + error.message);
     } else {
       await logActivity(
         "Added Job Payment",
@@ -790,7 +781,7 @@ export default function JobDetailsPage() {
         `Job #${job.job_id} | ₹${amt} (${payMode}, ${payType}) | Client: ${client.firstname} ${client.lastname}`
       );
       loadActivity(job);
-      setToast({ type: "success", msg: "Payment save ho gayi!" });
+      toast.success("Payment save ho gayi!");
       setShowPayModal(false);
       setPayAmount("");
       setPayDiscount("0");
@@ -805,10 +796,7 @@ export default function JobDetailsPage() {
 
   // ── DELETE ─────────────────────────────────────────────────────────────────
   const handleDelete = async () => {
-    if (userRole !== "admin") {
-      setToast({ type: "error", msg: "Sirf Admin delete kar sakta hai!" });
-      return;
-    }
+    if (!requireAdmin(userRole, "delete")) return;
     if (!confirm("Kya aap pakka is job ko delete karna chahte hain?")) return;
     setDeleting(true);
     const { error } = await supabase
@@ -824,7 +812,7 @@ export default function JobDetailsPage() {
       );
       router.replace("/jobs");
     } else {
-      setToast({ type: "error", msg: "Delete failed!" });
+      toast.error("Delete failed!");
       setDeleting(false);
     }
   };
@@ -842,7 +830,7 @@ export default function JobDetailsPage() {
         : "";
     const win = window.open("", `Bill_${job.job_id}`, "width=900,height=700");
     if (!win) {
-      alert("Popup blocked! Browser mein allow karo.");
+      toast.warning("Popup blocked! Browser mein allow karo.");
       return;
     }
     win.document
@@ -892,22 +880,6 @@ ${svcHtml}${prodHtml}
   // ── RENDER ─────────────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-[#0d1117] font-sans">
-      {/* Toast */}
-      {toast && (
-        <div
-          className={`fixed top-4 right-4 z-[100] flex items-center gap-3 px-4 py-3 rounded-lg shadow-2xl border text-sm font-semibold ${
-            toast.type === "success"
-              ? "bg-green-50 border-green-300 text-green-800"
-              : toast.type === "info"
-                ? "bg-blue-50 border-blue-300 text-blue-800"
-                : "bg-red-50 border-red-300 text-red-800"
-          }`}
-        >
-          {toast.type === "success" ? <CheckCircle size={16} /> : <AlertTriangle size={16} />}
-          {toast.msg}
-        </div>
-      )}
-
       {/* ── PAGE CONTENT ─────────────────────────────────────────────────────── */}
       <div className="py-4 px-3 md:px-6 text-slate-200">
         <div className="max-w-5xl mx-auto">
@@ -1180,7 +1152,13 @@ ${svcHtml}${prodHtml}
                   )}
 
                   {/* Required Saman / Waiting for Part Purchase */}
-                  <JobRequiredParts numId={job.id} jobStatus={job.status} onToast={setToast} />
+                  <JobRequiredParts
+                    numId={job.id}
+                    jobStatus={job.status}
+                    onToast={(t) =>
+                      t.type === "error" ? toast.error(t.msg) : toast.success(t.msg)
+                    }
+                  />
                 </div>
 
                 {/* ── RIGHT COLUMN (5/12) ────────────────────────────────── */}
