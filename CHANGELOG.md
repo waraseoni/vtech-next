@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.26.0](https://github.com/waraseoni/vtech-next/compare/v1.25.1...v1.26.0) (2026-09-23)
+
+### Features
+
+* **ui:** Sprint 1 foundation — single toast system, UI kit, mobile CSS, semantic tokens ([da5a7b1](https://github.com/waraseoni/vtech-next/commit/da5a7b1dcc696bed93c407b6d086ce7c272a5df5))
+
 ## [1.25.1](https://github.com/waraseoni/vtech-next/compare/v1.25.0...v1.25.1) (2026-09-20)
 
 ### Bug Fixes
