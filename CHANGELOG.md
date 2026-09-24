@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.38.1](https://github.com/waraseoni/vtech-next/compare/v1.38.0...v1.38.1) (2026-09-24)
+
+### Bug Fixes
+
+* direct-sales invalid tfoot-in-div causing hydration error, use plain footer div ([8c10281](https://github.com/waraseoni/vtech-next/commit/8c10281d5cb8dca9f50e78aa2005141c8bf4e89d))
+
 ## [1.38.0](https://github.com/waraseoni/vtech-next/compare/v1.37.2...v1.38.0) (2026-09-24)
 
 ### Features
