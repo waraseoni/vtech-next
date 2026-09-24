@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.28.0](https://github.com/waraseoni/vtech-next/compare/v1.27.0...v1.28.0) (2026-09-24)
+
+### Features
+
+* **ui:** theme contrast overhaul — better text/border readability ([7c00df8](https://github.com/waraseoni/vtech-next/commit/7c00df8ab642bdafa3c6cf0ed122c9fc1bf14de4)), closes [#475569](https://github.com/waraseoni/vtech-next/issues/475569) [#64748b](https://github.com/waraseoni/vtech-next/issues/64748b) [#b8c2d4](https://github.com/waraseoni/vtech-next/issues/b8c2d4) [#8899b0](https://github.com/waraseoni/vtech-next/issues/8899b0) [#5e7088](https://github.com/waraseoni/vtech-next/issues/5e7088) [#f0f4fa](https://github.com/waraseoni/vtech-next/issues/f0f4fa)
+
 ## [1.27.0](https://github.com/waraseoni/vtech-next/compare/v1.26.0...v1.27.0) (2026-09-23)
 
 ### Features
