@@ -32,6 +32,8 @@ import { logActivity } from "@/lib/activity";
 import { substituteTemplate, firmVars, resolveTemplate } from "@/lib/whatsapp";
 import PageLoader from "@/components/PageLoader";
 import { toast } from "@/lib/toast";
+import { DataTable } from "@/components/ui";
+import type { Column } from "@/components/ui";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface DirectSale {
@@ -392,6 +394,148 @@ function DirectSalesPageInner() {
   }
 
   const monthLabel = formatIST(dateFrom, { month: "long", year: "numeric" });
+
+  // ── DataTable columns ─────────────────────────────────────────────
+  const columns: Column<DirectSale>[] = [
+    {
+      key: "sale_code",
+      header: "Date & Code",
+      sortable: true,
+      render: (s) => (
+        <div>
+          <Link
+            href={`/direct-sales/${s.id}/view`}
+            className="text-blue-400 hover:text-blue-300 font-extrabold text-sm transition-colors leading-none"
+          >
+            {s.sale_code}
+          </Link>
+          <div className="flex items-center gap-1 mt-0.5">
+            <Clock size={9} className="text-app" />
+            <span className="text-[10px] text-muted-2 font-medium">
+              {fmtDateTime(s.date_created)}
+            </span>
+          </div>
+          {s.last_editor_name && (
+            <div className="text-[9px] text-app mt-0.5">
+              Edited: {s.last_editor_name}
+            </div>
+          )}
+        </div>
+      ),
+    },
+    {
+      key: "client_name",
+      header: "Client",
+      render: (s) => {
+        const clientId = s.client_id;
+        const clientName = s.client_name || "Walk-in";
+        const isWalkIn = !clientId;
+        return (
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 bg-slate-700/30 border border-app rounded-full flex items-center justify-center flex-shrink-0">
+              <User size={13} className="text-muted-2" />
+            </div>
+            <div className="min-w-0">
+              {clientId ? (
+                <Link
+                  href={`/clients/${clientId}/view`}
+                  className="block text-app-2 hover:text-blue-300 font-semibold text-xs truncate max-w-[140px] transition-colors"
+                  title={`${clientName} — view client`}
+                >
+                  {clientName}
+                </Link>
+              ) : (
+                <div className="text-app-2 font-semibold text-xs truncate max-w-[140px]">
+                  <span className="text-muted-2 italic">Walk-in</span>
+                </div>
+              )}
+              {s.client_due != null &&
+                (s.client_due > 0 ? (
+                  <div className="text-[9px] font-black text-red-400 mt-0.5">
+                    Due: ₹{Math.abs(s.client_due).toLocaleString("en-IN")}
+                  </div>
+                ) : (
+                  <div className="text-[9px] font-black text-emerald-500 mt-0.5">
+                    Clear
+                  </div>
+                ))}
+              {s.client_contact && (
+                <a
+                  href={waHref(s)}
+                  target="_blank"
+                  className="flex items-center gap-1 text-[10px] text-emerald-500 hover:text-emerald-400 transition-colors mt-0.5"
+                >
+                  <Send size={8} /> {s.client_contact}
+                </a>
+              )}
+            </div>
+          </div>
+        );
+      },
+    },
+    {
+      key: "staff_name",
+      header: "Staff",
+      render: (s) => (
+        <span className="text-xs text-muted font-medium">{s.staff_name}</span>
+      ),
+    },
+    {
+      key: "total_amount",
+      header: "Amount",
+      align: "right",
+      render: (s) => (
+        <div>
+          <span className="text-lg font-black text-white">
+            ₹{s.total_amount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+          </span>
+          {s.remarks && (
+            <div
+              className="text-[10px] text-muted-2 truncate max-w-[100px] ml-auto mt-0.5"
+              title={s.remarks}
+            >
+              {s.remarks}
+            </div>
+          )}
+        </div>
+      ),
+    },
+    {
+      key: "payment_mode",
+      header: "Payment",
+      render: (s) => <PayBadge mode={s.payment_mode} />,
+    },
+    {
+      key: "actions",
+      header: "Actions",
+      align: "center",
+      render: (s) => (
+        <div className="flex justify-center gap-1.5">
+          <Link
+            href={`/direct-sales/${s.id}/view`}
+            className="p-1.5 bg-panel-2 hover:bg-blue-600/30 border border-app hover:border-blue-500/40 rounded-lg text-muted-2 hover:text-blue-400 transition-all"
+            title="View"
+          >
+            <Eye size={13} />
+          </Link>
+          <Link
+            href={`/direct-sales/${s.id}/edit`}
+            className="p-1.5 bg-panel-2 hover:bg-amber-600/20 border border-app hover:border-amber-500/40 rounded-lg text-muted-2 hover:text-amber-400 transition-all"
+            title="Edit"
+          >
+            <Edit3 size={13} />
+          </Link>
+          <button
+            onClick={() => handleDelete(s.id)}
+            className="p-1.5 bg-panel-2 hover:bg-red-600/20 border border-app hover:border-red-500/40 rounded-lg text-muted-2 hover:text-red-400 transition-all"
+            title="Delete"
+          >
+            <Trash2 size={13} />
+          </button>
+        </div>
+      ),
+    },
+  ];
 
   // ══════════════════════════════════════════════════════════════════════════
   // ── MOBILE VIEW ──────────────────────────────────────────────────────────
@@ -921,187 +1065,34 @@ function DirectSalesPageInner() {
         </div>
 
         {/* ── TABLE ── */}
-        <div className="bg-panel border border-app rounded-2xl overflow-hidden">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="bg-panel-2 border-b border-app">
-                {["#", "Date & Code", "Client", "Staff", "Amount", "Payment", "Actions"].map(
-                  (h, i) => (
-                    <th
-                      key={h}
-                      className={`px-4 py-3 text-[10px] font-extrabold uppercase tracking-wider text-muted-2 ${
-                        i === 4 ? "text-right" : i === 6 ? "text-center" : "text-left"
-                      }`}
-                    >
-                      {h}
-                    </th>
-                  )
-                )}
+        <DataTable<DirectSale>
+          data={filteredSales}
+          columns={columns}
+          keyField="id"
+          totalItems={filteredSales.length}
+          emptyMessage="No sales in this period"
+        />
+        {sales.length > 0 && (
+          <div className="border-t border-app bg-panel-2">
+            <tfoot>
+              <tr>
+                <td
+                  colSpan={4}
+                  className="px-4 py-3 text-[10px] font-extrabold uppercase tracking-wider text-muted-2"
+                >
+                  {sales.length} sales · {formatIST(dateFrom, { day: "2-digit", month: "short" })}{" "}
+                  → {formatIST(dateTo, { day: "2-digit", month: "short", year: "numeric" })}
+                </td>
+                <td className="px-4 py-3 text-right font-black text-emerald-400 text-base">
+                  ₹{stats.totalAmount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                </td>
+                <td colSpan={2} className="px-4 py-3 text-xs text-muted-2 font-bold">
+                  Avg: ₹{stats.avgAmount.toFixed(0)}
+                </td>
               </tr>
-            </thead>
-
-            <tbody className="divide-y divide-[#21293d]">
-              {sales.map((s, idx) => (
-                <tr key={s.id} className="group hover:bg-white/[0.02] transition-colors">
-                  {/* # */}
-                  <td className="px-4 py-3.5 text-app text-xs">{idx + 1}</td>
-
-                  {/* Date & Code */}
-                  <td className="px-4 py-3.5">
-                    <Link
-                      href={`/direct-sales/${s.id}/view`}
-                      className="text-blue-400 hover:text-blue-300 font-extrabold text-sm transition-colors leading-none"
-                    >
-                      {s.sale_code}
-                    </Link>
-                    <div className="flex items-center gap-1 mt-1">
-                      <Clock size={9} className="text-app" />
-                      <span className="text-[10px] text-muted-2 font-medium">
-                        {fmtDateTime(s.date_created)}
-                      </span>
-                    </div>
-                    {s.last_editor_name && (
-                      <div className="text-[9px] text-app mt-0.5">
-                        Edited: {s.last_editor_name}
-                      </div>
-                    )}
-                  </td>
-
-                  {/* Client */}
-                  <td className="px-4 py-3.5">
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-8 h-8 bg-slate-700/30 border border-app rounded-full flex items-center justify-center flex-shrink-0">
-                        <User size={13} className="text-muted-2" />
-                      </div>
-                      <div className="min-w-0">
-                        {s.client_id ? (
-                          <Link
-                            href={`/clients/${s.client_id}/view`}
-                            className="block text-app-2 hover:text-blue-300 font-semibold text-xs truncate max-w-[140px] transition-colors underline-offset-2 hover:underline"
-                            title={`${s.client_name} — view client`}
-                          >
-                            {s.client_name}
-                          </Link>
-                        ) : (
-                          <div
-                            className="text-app-2 font-semibold text-xs truncate max-w-[140px]"
-                            title="Walk-in"
-                          >
-                            <span className="text-muted-2 italic">Walk-in</span>
-                          </div>
-                        )}
-                        {s.client_due != null &&
-                          (s.client_due > 0 ? (
-                            <div className="text-[9px] font-black text-red-400 mt-0.5">
-                              Due: ₹{Math.abs(s.client_due).toLocaleString("en-IN")}
-                            </div>
-                          ) : (
-                            <div className="text-[9px] font-black text-emerald-500 mt-0.5">
-                              Clear
-                            </div>
-                          ))}
-                        {s.client_contact && (
-                          <a
-                            href={waHref(s)}
-                            target="_blank"
-                            className="flex items-center gap-1 text-[10px] text-emerald-500 hover:text-emerald-400 transition-colors mt-0.5"
-                          >
-                            <Send size={8} /> {s.client_contact}
-                          </a>
-                        )}
-                      </div>
-                    </div>
-                  </td>
-
-                  {/* Staff */}
-                  <td className="px-4 py-3.5">
-                    <span className="text-xs text-muted font-medium">{s.staff_name}</span>
-                  </td>
-
-                  {/* Amount */}
-                  <td className="px-4 py-3.5 text-right">
-                    <span className="text-lg font-black text-white">
-                      ₹{s.total_amount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
-                    </span>
-                    {s.remarks && (
-                      <div
-                        className="text-[10px] text-muted-2 truncate max-w-[100px] ml-auto mt-0.5"
-                        title={s.remarks}
-                      >
-                        {s.remarks}
-                      </div>
-                    )}
-                  </td>
-
-                  {/* Payment */}
-                  <td className="px-4 py-3.5">
-                    <PayBadge mode={s.payment_mode} />
-                  </td>
-
-                  {/* Actions */}
-                  <td className="px-4 py-3.5">
-                    <div className="flex justify-center gap-1.5">
-                      <Link
-                        href={`/direct-sales/${s.id}/view`}
-                        className="p-1.5 bg-panel-2 hover:bg-blue-600/30 border border-app hover:border-blue-500/40 rounded-lg text-muted-2 hover:text-blue-400 transition-all"
-                        title="View"
-                      >
-                        <Eye size={13} />
-                      </Link>
-                      <Link
-                        href={`/direct-sales/${s.id}/edit`}
-                        className="p-1.5 bg-panel-2 hover:bg-amber-600/20 border border-app hover:border-amber-500/40 rounded-lg text-muted-2 hover:text-amber-400 transition-all"
-                        title="Edit"
-                      >
-                        <Edit3 size={13} />
-                      </Link>
-                      <button
-                        onClick={() => handleDelete(s.id)}
-                        className="p-1.5 bg-panel-2 hover:bg-red-600/20 border border-app hover:border-red-500/40 rounded-lg text-muted-2 hover:text-red-400 transition-all"
-                        title="Delete"
-                      >
-                        <Trash2 size={13} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-
-              {sales.length === 0 && (
-                <tr>
-                  <td colSpan={7} className="py-20 text-center">
-                    <ShoppingBag size={36} className="mx-auto text-app mb-3" />
-                    <p className="text-muted-2 font-bold text-sm">No sales in this period</p>
-                    <p className="text-app text-xs mt-1">
-                      Try changing the date range or filters
-                    </p>
-                  </td>
-                </tr>
-              )}
-            </tbody>
-
-            {/* Footer totals */}
-            {sales.length > 0 && (
-              <tfoot>
-                <tr className="bg-panel-2 border-t border-app">
-                  <td
-                    colSpan={4}
-                    className="px-4 py-3 text-[10px] font-extrabold uppercase tracking-wider text-muted-2"
-                  >
-                    {sales.length} sales · {formatIST(dateFrom, { day: "2-digit", month: "short" })}{" "}
-                    → {formatIST(dateTo, { day: "2-digit", month: "short", year: "numeric" })}
-                  </td>
-                  <td className="px-4 py-3 text-right font-black text-emerald-400 text-base">
-                    ₹{stats.totalAmount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
-                  </td>
-                  <td colSpan={2} className="px-4 py-3 text-xs text-muted-2 font-bold">
-                    Avg: ₹{stats.avgAmount.toFixed(0)}
-                  </td>
-                </tr>
-              </tfoot>
-            )}
-          </table>
-        </div>
+            </tfoot>
+          </div>
+        )}
       </div>
     </div>
   );
