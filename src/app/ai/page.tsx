@@ -363,7 +363,9 @@ export default function AIChatPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-app flex flex-col font-sans overflow-hidden pattern-bg">
+    // pb: mobile bottom tab-bar (~76px) composer ko na dabe — border-box me
+    // content box ghatta hai, scroll nahi badhta
+    <div className="min-h-screen bg-app flex flex-col font-sans overflow-hidden pattern-bg pb-[76px] md:pb-0">
       <style
         dangerouslySetInnerHTML={{
           __html: `

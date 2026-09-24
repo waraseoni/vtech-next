@@ -2119,6 +2119,14 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
             )}
           </PullToRefresh>
         </main>
+
+        {/* ── Bottom-bar spacer (mobile) ──
+            Tab bar fixed hai — bina spacer ke har page ka bottom uske peeche
+            dabta tha. AI (/ai) aur /messages ke fitted layouts alag handle
+            hote hain (neeche), isliye yahan exclude. */}
+        {!isAiPage && !pathname.startsWith("/messages") && (
+          <div aria-hidden className="h-[72px] pb-safe md:hidden shrink-0" />
+        )}
       </div>
 
       {/* Floating back FAB hata diya — bottom bar me Back tab hai (overlap fix) */}

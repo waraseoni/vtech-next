@@ -895,9 +895,10 @@ export default function MessagesPage() {
 
   // ── Responsive layout ──────────────────────────────────────────────
   if (isMobile) {
-    // mobile: list ya chat (ek time par ek)
+    // mobile: list ya chat (ek time par ek) — height me bottom tab-bar
+    // (~76px) ki katoti taaki input bar ke peeche na dabe
     return (
-      <div className="h-[calc(100vh-3.5rem)] flex">
+      <div className="h-[calc(100vh-3.5rem-76px)] flex">
         {chatPane ? chatPane : listPane}
       </div>
     );
