@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.38.2](https://github.com/waraseoni/vtech-next/compare/v1.38.1...v1.38.2) (2026-09-24)
+
+### Bug Fixes
+
+* **mobile:** back FAB removed from bottom bar overlap, Back tab first in bottom bar ([865135a](https://github.com/waraseoni/vtech-next/commit/865135a31bfaab8b962eac79ed9f80a84da3aec2))
+
 ## [1.38.1](https://github.com/waraseoni/vtech-next/compare/v1.38.0...v1.38.1) (2026-09-24)
 
 ### Bug Fixes
