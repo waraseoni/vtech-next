@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.29.0](https://github.com/waraseoni/vtech-next/compare/v1.28.0...v1.29.0) (2026-09-24)
+
+### Features
+
+* **ui:** Sprint 2 item 9 — keyboard shortcuts + skip-to-content ([eaa898e](https://github.com/waraseoni/vtech-next/commit/eaa898e6ce8198d6489ca766011eb8d9502a421d))
+
 ## [1.28.0](https://github.com/waraseoni/vtech-next/compare/v1.27.0...v1.28.0) (2026-09-24)
 
 ### Features
