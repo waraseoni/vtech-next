@@ -435,7 +435,7 @@ DataTable (server-paginated, sortable)
 
 | # | Item | Effort |
 |---|---|---|
-| 6 | `DataTable` (desktop table + mobile cards + sort/page) + pilot on 3 pages | 4 | ✅ **Component done** (`src/components/ui/DataTable.tsx`). Suppliers ✅ + direct-sales ✅ pilots done. Pending: payments pilot. |
+| 6 | `DataTable` (desktop table + mobile cards + sort/page) + pilot on 3 pages | 4 | ✅ **DONE** — `src/components/ui/DataTable.tsx` (generic, sortable, paginated) + pilots: suppliers ✅ (`f6d05d4`), direct-sales ✅ (`a10b487`), payments ✅ (`b336d0c`). |
 | 7 | Mobile bottom tab bar (Dashboard/Jobs/Sales/Clients/More) | 2 |
 | 8 | Route cleanup (old redirects, ledger/salary merge, Lightbox kill) | 1 | |
 | 9 | Keyboard shortcuts: g-prefix + `?` help + skip-to-content | 1 | ✅ `src/hooks/useKeyboardShortcuts.ts` + `ShortcutHelpOverlay.tsx` + focus-visible CSS + skip-to-content link — committed `eaa898e` |

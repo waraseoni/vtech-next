@@ -360,7 +360,7 @@ User directive: **no commit/push** until told.
 ### Sprint 2 (Week 2)
 - [x] #9 Keyboard shortcuts: g-prefix + `?` help + skip-to-content — `src/hooks/useKeyboardShortcuts.ts`, `ShortcutHelpOverlay.tsx`, committed `eaa898e`
 - [x] #10 Image compression on ALL uploads — `compressImage` already integrated in 8 call sites (imageCompression.ts + media.ts); no new work needed
-- [ ] #6 DataTable component + pilot 3 pages
+- [x] #6 DataTable component + pilot 3 pages — suppliers, direct-sales, payments ✅
 
 ---
 
