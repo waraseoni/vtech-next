@@ -357,8 +357,10 @@ User directive: **no commit/push** until told.
 - [x] `status-colors.ts` updated (`text-slate-400`→`text-muted` etc.)
 - [x] Verify: `npx tsc --noEmit` OK · ESLint 0 errors · committed `bd6d899`
 
-### Next after Sprint 1
-- Sprint 2: DataTable pilot, mobile bottom tab bar, route cleanup (skip protected), keyboard shortcuts, image compression on all uploads.
+### Sprint 2 (Week 2)
+- [x] #9 Keyboard shortcuts: g-prefix + `?` help + skip-to-content — `src/hooks/useKeyboardShortcuts.ts`, `ShortcutHelpOverlay.tsx`, committed `eaa898e`
+- [x] #10 Image compression on ALL uploads — `compressImage` already integrated in 8 call sites (imageCompression.ts + media.ts); no new work needed
+- [ ] #6 DataTable component + pilot 3 pages
 
 ---
 

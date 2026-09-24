@@ -19,3 +19,5 @@ export { ConfirmDialog } from "./ConfirmDialog";
 // Re-export legacy PageHeader (src/app/components/ui/PageHeader) — import path
 // stable rakha hai, actual file baad me yahan move hogi.
 export { PageHeader } from "@/app/components/ui/PageHeader";
+export { DataTable } from "./DataTable";
+export type { Column, DataTableProps } from "./DataTable";
