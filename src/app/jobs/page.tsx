@@ -59,8 +59,6 @@ import {
   User,
   PenSquare,
   FileText,
-  Copy,
-  Send,
   MessageCircle,
   Truck,
   LayoutGrid,
@@ -70,6 +68,7 @@ import {
   Briefcase,
 } from "lucide-react";
 import PageLoader from "@/components/PageLoader";
+import WaPreviewModal from "@/components/WaPreviewModal";
 import JobSpotPicker from "@/components/JobSpotPicker";
 import WaitingPartsBadge from "@/components/WaitingPartsBadge";
 import { fetchOpenPartCounts } from "@/lib/requiredParts";
@@ -554,6 +553,8 @@ function JobsListContent() {
   const [waGroups, setWaGroups] = useState<
     Array<{ phone: string; fullname: string; rows: Transaction[] }>
   >([]);
+  // Sprint 3 #14: single-send preview (row WA button → preview modal, not direct open)
+  const [singleWa, setSingleWa] = useState<{ phone: string; msg: string } | null>(null);
 
   // ── NEW: Quick Status Change ─────────────────────────────
   const [statusChangeLoading, setStatusChangeLoading] = useState<number | null>(null);
@@ -1249,19 +1250,6 @@ function JobsListContent() {
     setWaModal(false);
   };
 
-  const copyWAMessage = async () => {
-    try {
-      await navigator.clipboard.writeText(waText);
-    } catch {
-      const ta = document.createElement("textarea");
-      ta.value = waText;
-      document.body.appendChild(ta);
-      ta.select();
-      document.execCommand("copy");
-      document.body.removeChild(ta);
-    }
-  };
-
   const openCombinedInvoice = (billType: "gst" | "non_gst") => {
     if (selectedIds.size === 0) {
       toast.error("Select jobs first!");
@@ -1413,10 +1401,11 @@ function JobsListContent() {
       item: txn.item || "",
       job_id: txn.job_id,
       code: txn.code || "",
-      amount: "\u20B9" + (txn.amount || 0).toLocaleString("en-IN"),
+      amount: "₹" + (txn.amount || 0).toLocaleString("en-IN"),
       ...firmVars(sysInfo),
     });
-    window.open(`https://wa.me/91${phone}?text=${encodeURIComponent(msg)}`, "_blank");
+    // Sprint 3 #14: preview modal se guzro — direct open nahi
+    setSingleWa({ phone, msg });
   };
 
   const printReport = () => {
@@ -1750,59 +1739,39 @@ function JobsListContent() {
     </div>
   );
 
+  // Sprint 3 #14: shared preview modal (bubble preview + editor + Copy/Send)
   const bulkWaModal = waModal && (
-    <div className="fixed inset-0 bg-black/70 z-[70] flex items-center justify-center p-4 backdrop-blur-sm">
-      <div className="bg-white dark:bg-panel border border-app-2 dark:border-app rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl">
-        <div className="bg-emerald-600 px-5 py-3.5 flex items-center justify-between">
-          <h3 className="font-black !text-white text-sm flex items-center gap-2">
-            <MessageCircle size={16} className="!text-white" /> Send WhatsApp Message
-          </h3>
-          <button
-            onClick={() => setWaModal(false)}
-            className="!text-white/80 hover:!text-white transition-colors"
-          >
-            <X size={18} />
-          </button>
-        </div>
-        <div className="p-5 space-y-3">
-          {waGroups.length > 1 && (
-            <p className="text-[11px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 rounded-lg px-3 py-2">
-              Ye message {waGroups.length} clients ko send hoga — har client ko uski apni jobs ke
-              saath. Message edit karne par same text sabko jayega.
-            </p>
-          )}
-          <textarea
-            rows={10}
-            value={waText}
-            onChange={(e) => {
-              setWaText(e.target.value);
-              setWaEdited(true);
-            }}
-            className="w-full bg-slate-50 dark:bg-app border border-emerald-500/40 text-app dark:text-app-2 rounded-xl p-3 text-sm font-mono leading-relaxed outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/50 resize-none"
-          />
-        </div>
-        <div className="px-5 py-3.5 bg-slate-50 dark:bg-panel-2 flex items-center justify-end gap-2 border-t border-app-2 dark:border-app">
-          <button
-            onClick={() => setWaModal(false)}
-            className="px-4 py-2 rounded-xl text-sm font-bold text-app dark:text-muted bg-panel-2 hover:bg-panel-2 dark:bg-panel-2 dark:hover:bg-[#2a3550] transition-colors"
-          >
-            Close
-          </button>
-          <button
-            onClick={copyWAMessage}
-            className="px-4 py-2 rounded-xl text-sm font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-600/15 border border-blue-200 dark:border-blue-500/30 hover:bg-blue-100 dark:hover:bg-blue-600/25 transition-colors flex items-center gap-1.5"
-          >
-            <Copy size={13} /> Copy
-          </button>
-          <button
-            onClick={sendBulkWA}
-            className="px-4 py-2 rounded-xl text-sm font-bold !text-white bg-emerald-600 hover:bg-emerald-700 transition-colors flex items-center gap-1.5 shadow-sm"
-          >
-            <Send size={13} className="!text-white" /> Send
-          </button>
-        </div>
-      </div>
-    </div>
+    <WaPreviewModal
+      title="Send WhatsApp Message"
+      note={
+        waGroups.length > 1
+          ? `Ye message ${waGroups.length} clients ko send hoga — har client ko uski apni jobs ke saath. Message edit karne par same text sabko jayega.`
+          : undefined
+      }
+      message={waText}
+      onMessageChange={(v) => {
+        setWaText(v);
+        setWaEdited(true);
+      }}
+      onSend={() => sendBulkWA()}
+      onClose={() => setWaModal(false)}
+    />
+  );
+
+  const singleWaModal = singleWa && (
+    <WaPreviewModal
+      title="Send WhatsApp Message"
+      message={singleWa.msg}
+      onMessageChange={(v) => setSingleWa({ ...singleWa, msg: v })}
+      onSend={(finalText) => {
+        window.open(
+          `https://wa.me/91${singleWa.phone}?text=${encodeURIComponent(finalText)}`,
+          "_blank"
+        );
+        setSingleWa(null);
+      }}
+      onClose={() => setSingleWa(null)}
+    />
   );
 
   // ── Loading ───────────────────────────────────────────────────────────────
@@ -2430,6 +2399,7 @@ function JobsListContent() {
         </div>
         {bulkActionBar}
         {bulkWaModal}
+        {singleWaModal}
         {bulkMoveModal}
         {spotEditModal}
         {staleModal}
@@ -3176,6 +3146,7 @@ function JobsListContent() {
 
       {bulkActionBar}
       {bulkWaModal}
+      {singleWaModal}
       {bulkMoveModal}
       {spotEditModal}
       {staleModal}
