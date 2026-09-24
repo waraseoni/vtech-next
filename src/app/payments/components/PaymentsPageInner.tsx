@@ -31,6 +31,8 @@ import {
 import { exportToCSV, printTable } from "@/lib/exportUtils";
 import SearchableSelect from "@/components/SearchableSelect";
 import { toast } from "@/lib/toast";
+import { DataTable } from "@/components/ui";
+import type { Column } from "@/components/ui";
 
 type PaymentForm = {
   id: number | null;
@@ -531,73 +533,94 @@ export default function PaymentsPageInner({ initialClients, initialPayments }: P
           <div className="px-4 py-12 text-center text-sm text-muted">No payments found</div>
         ) : (
           <>
-            <div className="overflow-x-auto hidden lg:block" id="payments-table">
-              <table className="w-full text-sm">
-                <thead className="bg-panel-2">
-                  <tr className="text-[10px] font-black uppercase tracking-wider text-muted">
-                    <th className="px-4 py-3 text-left">ID</th>
-                    <th className="px-4 py-3 text-left">Date</th>
-                    <th className="px-4 py-3 text-left">Client</th>
-                    <th className="px-4 py-3 text-right">Amount</th>
-                    <th className="px-4 py-3 text-right">Discount</th>
-                    <th className="px-4 py-3 text-left">Mode</th>
-                    <th className="px-4 py-3 text-right">Action</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[#1a2234]">
-                  {paginated.map((p) => (
-                    <tr key={p.id} className="hover:bg-white/[0.02]">
-                      <td className="px-4 py-3">
-                        <button
-                          className="font-black text-purple-400 hover:text-purple-300"
-                          onClick={() => viewReceipt(p)}
-                        >
-                          {paymentCode(p.id)}
-                        </button>
-                      </td>
-                      <td className="px-4 py-3 text-muted">{fmtDate(p.payment_date)}</td>
-                      <td className="px-4 py-3 font-bold text-app-2">
-                        {clientName(clientMap.get(p.client_id))}
-                      </td>
-                      <td className="px-4 py-3 text-right font-black text-emerald-400">
-                        {fmtMoney(p.amount)}
-                      </td>
-                      <td className="px-4 py-3 text-right font-black text-amber-400">
-                        {fmtMoney(p.discount || 0)}
-                      </td>
-                      <td className="px-4 py-3">
-                        <span className="inline-flex rounded-full border border-blue-500/20 bg-blue-500/10 px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-blue-300">
-                          {p.payment_mode}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          <button
-                            onClick={() => viewReceipt(p)}
-                            className="p-2 hover:bg-panel-2 rounded-lg text-muted hover:text-white"
-                          >
-                            <Receipt size={14} />
-                          </button>
-                          <button
-                            onClick={() => openEdit(p)}
-                            className="p-2 hover:bg-panel-2 rounded-lg text-muted hover:text-white"
-                          >
-                            <Pencil size={14} />
-                          </button>
-                          <button
-                            onClick={() => deleteP(p.id)}
-                            className="p-2 hover:bg-panel-2 rounded-lg text-muted hover:text-red-400"
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
+            <DataTable<PaymentRow>
+              data={paginated}
+              columns={[
+                {
+                  key: "id",
+                  header: "ID",
+                  sortable: true,
+                  render: (p) => (
+                    <button
+                      className="font-black text-purple-400 hover:text-purple-300"
+                      onClick={() => viewReceipt(p)}
+                    >
+                      {paymentCode(p.id)}
+                    </button>
+                  ),
+                },
+                {
+                  key: "payment_date",
+                  header: "Date",
+                  sortable: true,
+                  render: (p) => <span className="text-muted">{fmtDate(p.payment_date)}</span>,
+                },
+                {
+                  key: "client_id",
+                  header: "Client",
+                  sortable: true,
+                  render: (p) => (
+                    <span className="font-bold text-app-2">
+                      {clientName(clientMap.get(p.client_id))}
+                    </span>
+                  ),
+                },
+                {
+                  key: "amount",
+                  header: "Amount",
+                  align: "right",
+                  render: (p) => (
+                    <span className="font-black text-emerald-400">{fmtMoney(p.amount)}</span>
+                  ),
+                },
+                {
+                  key: "discount",
+                  header: "Discount",
+                  align: "right",
+                  render: (p) => (
+                    <span className="font-black text-amber-400">{fmtMoney(p.discount || 0)}</span>
+                  ),
+                },
+                {
+                  key: "payment_mode",
+                  header: "Mode",
+                  render: (p) => (
+                    <span className="inline-flex rounded-full border border-blue-500/20 bg-blue-500/10 px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-blue-300">
+                      {p.payment_mode}
+                    </span>
+                  ),
+                },
+                {
+                  key: "actions",
+                  header: "Action",
+                  align: "right",
+                  render: (p) => (
+                    <div className="flex items-center justify-end gap-2">
+                      <button
+                        onClick={() => viewReceipt(p)}
+                        className="p-2 hover:bg-panel-2 rounded-lg text-muted hover:text-white"
+                      >
+                        <Receipt size={14} />
+                      </button>
+                      <button
+                        onClick={() => openEdit(p)}
+                        className="p-2 hover:bg-panel-2 rounded-lg text-muted hover:text-white"
+                      >
+                        <Pencil size={14} />
+                      </button>
+                      <button
+                        onClick={() => deleteP(p.id)}
+                        className="p-2 hover:bg-panel-2 rounded-lg text-muted hover:text-red-400"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  ),
+                },
+              ]}
+              keyField="id"
+              emptyMessage="No payments found"
+            />
             {/* Mobile Card View */}
             <div className="lg:hidden grid gap-3 p-3">
               {paginated.map((p) => (
