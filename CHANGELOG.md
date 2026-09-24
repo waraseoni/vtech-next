@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## [1.30.0](https://github.com/waraseoni/vtech-next/compare/v1.29.0...v1.30.0) (2026-09-24)
+
+### Features
+
+* **sprint2:** DataTable component + pilot on suppliers page ([f6d05d4](https://github.com/waraseoni/vtech-next/commit/f6d05d46dec0e2679b2c44bbf5823671d8e420e8))
+* **ui:** DataTable component — generic table with sort + pagination ([2ce5704](https://github.com/waraseoni/vtech-next/commit/2ce5704973a9d5518a8201a42b2ca1cf92fd07e3))
+
 ## [1.29.0](https://github.com/waraseoni/vtech-next/compare/v1.28.0...v1.29.0) (2026-09-24)
 
 ### Features
