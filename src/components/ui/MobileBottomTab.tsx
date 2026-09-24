@@ -2,6 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import {
+  ArrowLeft,
   LayoutDashboard,
   ClipboardList,
   ShoppingCart,
@@ -17,12 +18,22 @@ const TABS = [
   { key: "more", icon: MoreHorizontal, label: "More" },
 ];
 
-export function MobileBottomTab({ onMore }: { onMore?: () => void }) {
+export function MobileBottomTab({ onMore, onBack }: { onMore?: () => void; onBack?: () => void }) {
   const pathname = usePathname();
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden">
       <div className="flex items-center justify-around bg-panel border-t border-app backdrop-blur-xl px-2 py-1.5 pb-safe">
+        {/* Back — floating FAB ki jagah (overlap fix): Dashboard se pehle */}
+        <button
+          key="back"
+          onClick={() => onBack?.()}
+          aria-label="Back"
+          className="flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-all min-w-[52px] text-muted hover:text-app-2 hover:bg-white/[0.04] active:scale-95"
+        >
+          <ArrowLeft size={20} />
+          <span className="text-[9px] font-bold">Back</span>
+        </button>
         {TABS.map((tab) => {
           const isActive =
             tab.key === "dashboard"
@@ -40,7 +51,7 @@ export function MobileBottomTab({ onMore }: { onMore?: () => void }) {
                   window.location.href = tab.href || "/";
                 }
               }}
-              className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-all min-w-[60px] ${
+              className={`flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-xl transition-all min-w-[52px] ${
                 isActive
                   ? "bg-blue-600/10 text-blue-400"
                   : "text-muted hover:text-app-2 hover:bg-white/[0.04]"

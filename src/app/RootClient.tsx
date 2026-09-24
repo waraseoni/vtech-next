@@ -41,7 +41,6 @@ import {
   ChevronDown,
   ChevronRight,
   X,
-  ArrowLeft,
   Menu,
   BarChart2,
   RefreshCw,
@@ -2122,19 +2121,7 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
         </main>
       </div>
 
-      {/* ── Floating in-app back button (mobile) ── */}
-      {/* /messages par nahi — messenger input ke paperclip se overlap hota tha;
-          chat pane me apna header back-button already hai. */}
-      {!isClient && !isAiPage && !pathname.startsWith("/messages") && (
-        <button
-          onClick={goInAppBack}
-          className="fixed bottom-5 left-4 z-60 md:hidden w-11 h-11 glass border rounded-full flex items-center justify-center text-muted hover:text-white active:scale-95 transition-all shadow-lg"
-          title="Back"
-          aria-label="Back"
-        >
-          <ArrowLeft size={20} />
-        </button>
-      )}
+      {/* Floating back FAB hata diya — bottom bar me Back tab hai (overlap fix) */}
 
       {/* ── AI ASSISTANT RIGHT DRAWER ── */}
       {!isClient && !LITE_MODE && (
@@ -2227,7 +2214,7 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
         Skip to content
       </a>
       <ShortcutHelpOverlay open={helpOpen} onClose={() => setHelpOpen(false)} />
-      <MobileBottomTab onMore={() => setDrawerOpen(true)} />
+      <MobileBottomTab onMore={() => setDrawerOpen(true)} onBack={goInAppBack} />
     </>
   );
 }
