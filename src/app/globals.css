@@ -170,6 +170,13 @@ body {
     sans-serif;
 }
 
+/* Mobile bottom tab bar — keep content above it */
+@media (max-width: 767px) {
+  body {
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 56px);
+  }
+}
+
 .page-header {
   background-color: var(--app-panel);
   border-color: var(--app-border);

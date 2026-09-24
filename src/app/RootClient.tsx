@@ -89,6 +89,7 @@ import SwipeNavigation from "@/components/SwipeNavigation";
 import { ShortcutHelpOverlay } from "@/app/components/ui/ShortcutHelpOverlay";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { fetchUnreadCount, getMyId } from "@/lib/messaging";
+import { MobileBottomTab } from "@/components/ui/MobileBottomTab";
 import { locPath } from "@/lib/locations";
 
 // ─── Universal Search ────────────────────────────────────────────────────────
@@ -2219,6 +2220,7 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
         Skip to content
       </a>
       <ShortcutHelpOverlay open={helpOpen} onClose={() => setHelpOpen(false)} />
+      <MobileBottomTab />
     </>
   );
 }
