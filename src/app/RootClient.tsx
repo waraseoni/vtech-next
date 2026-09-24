@@ -1894,6 +1894,17 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
 
             {!isClient && <TeamOnline />}
 
+            {/* Version footer */}
+            <div className="flex items-center justify-between px-3 py-2 border-t border-app-2">
+              <span
+                className="text-[9px] text-muted font-black tracking-widest uppercase"
+                title={APP_COMMIT ? `Build ${APP_COMMIT.slice(0, 7)}` : undefined}
+              >
+                V-TECH PRO {APP_VERSION_LABEL}
+              </span>
+              <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
+            </div>
+
             {/* User info at drawer bottom */}
             <div className="px-3 py-3 border-t border-app-2">
               <div className="flex items-center gap-3 px-3 py-2.5 glass rounded-xl">
@@ -2117,7 +2128,7 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
       {!isClient && !isAiPage && !pathname.startsWith("/messages") && (
         <button
           onClick={goInAppBack}
-          className="fixed bottom-5 left-4 z-40 md:hidden w-11 h-11 glass border rounded-full flex items-center justify-center text-muted hover:text-white active:scale-95 transition-all shadow-lg"
+          className="fixed bottom-5 left-4 z-60 md:hidden w-11 h-11 glass border rounded-full flex items-center justify-center text-muted hover:text-white active:scale-95 transition-all shadow-lg"
           title="Back"
           aria-label="Back"
         >
@@ -2130,7 +2141,7 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
         <>
           {/* Floating Button Group - Bottom Right (hidden while AI window is open) */}
           {!aiDrawerOpen && !isAiPage && (
-            <div className="fixed bottom-20 right-4 z-40 flex flex-col gap-3">
+            <div className="fixed bottom-20 right-4 z-60 flex flex-col gap-3">
               {/* AI Assistant Button - positioned above Jobs FAB */}
               <button
                 onClick={() => {
