@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.31.0](https://github.com/waraseoni/vtech-next/compare/v1.30.0...v1.31.0) (2026-09-24)
+
+### Features
+
+* **sprint2:** DataTable pilot on direct-sales page ([a10b487](https://github.com/waraseoni/vtech-next/commit/a10b48778b0bd59abcdf0def9dd0d51b7f4d0f3d))
+
 ## [1.30.0](https://github.com/waraseoni/vtech-next/compare/v1.29.0...v1.30.0) (2026-09-24)
 
 ### Features
