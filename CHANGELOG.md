@@ -1,5 +1,16 @@
 # CHANGELOG
 
+## [1.39.0](https://github.com/waraseoni/vtech-next/compare/v1.38.2...v1.39.0) (2026-09-24)
+
+### Features
+
+* **sprint3:** [#15](https://github.com/waraseoni/vtech-next/issues/15) 2-step wizard + Quick Save on /jobs/new ([1c44616](https://github.com/waraseoni/vtech-next/commit/1c44616e9a253c3374e2931d87c39b87d057765e))
+
+### Bug Fixes
+
+* **jobs:** card view pagination via shared pager ([b200c73](https://github.com/waraseoni/vtech-next/commit/b200c73134ab89dba281f957509eee18a02d383b))
+* **mobile:** bottom-bar overlap - central spacer, messages/ai fitted layouts ([9352783](https://github.com/waraseoni/vtech-next/commit/93527837a9aa0a4e24fef0377fe3bda8b93c749d))
+
 ## [1.38.2](https://github.com/waraseoni/vtech-next/compare/v1.38.1...v1.38.2) (2026-09-24)
 
 ### Bug Fixes
