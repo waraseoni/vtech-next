@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.37.2](https://github.com/waraseoni/vtech-next/compare/v1.37.1...v1.37.2) (2026-09-24)
+
+### Bug Fixes
+
+* **sprint3:** [#14](https://github.com/waraseoni/vtech-next/issues/14) WA edit box dark-theme white-bg bug (dead dark: on plain classes) ([fcb5467](https://github.com/waraseoni/vtech-next/commit/fcb5467ccb51c52252c4cd68de9159034dd20faf))
+
 ## [1.37.1](https://github.com/waraseoni/vtech-next/compare/v1.37.0...v1.37.1) (2026-09-24)
 
 ### Bug Fixes
