@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.35.0](https://github.com/waraseoni/vtech-next/compare/v1.34.2...v1.35.0) (2026-09-24)
+
+### Features
+
+* **sprint3:** [#11](https://github.com/waraseoni/vtech-next/issues/11) dashboard Today's Board kanban strip below hero ([be6afae](https://github.com/waraseoni/vtech-next/commit/be6afaee6b1ac8ce02445ab3068a892b96ae54c6))
+
 ## [1.34.2](https://github.com/waraseoni/vtech-next/compare/v1.34.1...v1.34.2) (2026-09-24)
 
 ### Bug Fixes
