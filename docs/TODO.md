@@ -350,11 +350,12 @@ User directive: **no commit/push** until told.
 - [x] `src/lib/whatsapp.ts` — canonical `waLink` (double-91 safe); local dupes removed (suppliers pages)
 - [x] `requireAdmin` migrated in: 7 admin pages (lenders/suppliers/services/client-loans/inventory/locations/products) + MechanicsBody + ClientsBody + `jobs/[id]/view` + attendance/MonthlyReport
 
-#### 2. Semantic tokens migration + `!important` delete 🔶
+#### 2. Semantic tokens migration + `!important` delete ✅ (2026-09-23)
 - [x] Foundation: `globals.css` `@theme inline` me semantic color tokens (`--color-app-*` + short aliases → `bg-panel`, `text-muted` jaise Tailwind utilities) + helper classes `.card`/`.muted`/`.text-app`/`.bg-app`/`.bg-panel`
-- [ ] Codemod Phase 1a: top-20 hardcoded hex patterns → token classes across pages
-- [ ] Delete override-layer `!important` rules (~413 total; 311 in dark/light remap blocks L190–1800) — **only after pages migrate** (abhi layer valid hai)
-- Verify: `npx tsc --noEmit` OK · foundation eslint OK
+- [x] Codemod Phase 1a: top patterns hardcoded hex (`bg-[#0d1117]`, `bg-[#161b27]`, `border-[#21293d]`, etc.) + `text-slate-*`/`border-slate-*`/`bg-slate-*` → semantic token classes across **165 pages** (9,288 replacements)
+- [x] Delete dark/light `!important` override blocks (~380 lines removed). Remaining 299 `!important` = glass utilities + mobile CSS + select options (intentional, non-theme)
+- [x] `status-colors.ts` updated (`text-slate-400`→`text-muted` etc.)
+- [x] Verify: `npx tsc --noEmit` OK · ESLint 0 errors · committed `bd6d899`
 
 ### Next after Sprint 1
 - Sprint 2: DataTable pilot, mobile bottom tab bar, route cleanup (skip protected), keyboard shortcuts, image compression on all uploads.

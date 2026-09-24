@@ -27,10 +27,10 @@ export const ThemeChart: React.FC<ThemeChartProps> = ({ children, height = 350 }
   }, []);
 
   const chartColors = {
-    grid: theme === "dark" ? "#ffffff05" : "#00000008",
-    text: theme === "dark" ? "#64748b" : "#94a3b8",
-    tooltipBg: theme === "dark" ? "#161b27" : "#ffffff",
-    tooltipBorder: theme === "dark" ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.05)",
+    grid: theme === "dark" ? "#ffffff0a" : "#00000010",
+    text: theme === "dark" ? "#8899b0" : "#475569",
+    tooltipBg: theme === "dark" ? "#121a2a" : "#ffffff",
+    tooltipBorder: theme === "dark" ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.08)",
   };
 
   // Clone children to inject theme-aware props where applicable
@@ -63,7 +63,7 @@ export const ThemeChart: React.FC<ThemeChartProps> = ({ children, height = 350 }
           backgroundColor: chartColors.tooltipBg,
           border: `1px solid ${chartColors.tooltipBorder}`,
           borderRadius: "16px",
-          color: theme === "dark" ? "#fff" : "#0f172a",
+          color: theme === "dark" ? "#f0f4fa" : "#0a0f1a",
           boxShadow: "0 10px 30px rgba(0,0,0,0.1)",
           fontSize: "12px",
           fontWeight: "black",
