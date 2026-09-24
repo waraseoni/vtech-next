@@ -1088,6 +1088,9 @@ export default function Dashboard() {
         />
       </section>
 
+      {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━ TODAY'S BOARD (Sprint 3 #11) */}
+      <TodayBoardStrip stats={stats} recentJobs={recentJobs} />
+
       {waitingSummary.waitingJobs > 0 && (
         <Link
           href="/reports/parts-pending"
@@ -1732,6 +1735,123 @@ const STAT_C: Record<string, { border: string; icon: string; bg: string; value: 
     value: "text-muted-2 dark:text-app-2",
   },
 };
+
+// ─── Sprint 3 #11: Today's Board kanban strip ────────────────────────────────
+// Purely presentational — reuses already-fetched `stats` + `recentJobs`
+// (zero new RPCs). 4 status columns, each deep-links to /jobs?status=N
+// exactly like the hero StatCards above it.
+const BOARD_COLS: {
+  status: number;
+  label: string;
+  color: string;
+  icon: React.ReactNode;
+  href: string;
+  statKey: keyof Stat;
+}[] = [
+  {
+    status: 0,
+    label: "Pending",
+    color: "amber",
+    icon: <Clock size={14} />,
+    href: "/jobs?status=0",
+    statKey: "pendingJobs",
+  },
+  {
+    status: 1,
+    label: "Repairing",
+    color: "cyan",
+    icon: <Activity size={14} />,
+    href: "/jobs?status=1",
+    statKey: "inProgressJobs",
+  },
+  {
+    status: 2,
+    label: "Ready",
+    color: "emerald",
+    icon: <CheckCircle size={14} />,
+    href: "/jobs?status=2",
+    statKey: "finishedJobs",
+  },
+  {
+    status: 5,
+    label: "Delivered",
+    color: "violet",
+    icon: <ArrowRight size={14} />,
+    href: "/jobs?status=5",
+    statKey: "deliveredJobs",
+  },
+];
+
+function TodayBoardStrip({ stats, recentJobs }: { stats: Stat; recentJobs: RecentJob[] }) {
+  const active = BOARD_COLS.reduce((s, c) => s + n(stats[c.statKey]), 0);
+  if (active === 0) return null;
+  return (
+    <section className="glass rounded-3xl border theme-border overflow-hidden">
+      <div className="flex items-center justify-between px-5 py-3.5 border-b border-app-2 dark:border-app">
+        <div>
+          <h3 className="text-sm font-black text-app dark:text-white flex items-center gap-2">
+            <Layers size={13} className="text-cyan-400" /> Today&apos;s Board
+          </h3>
+          <p className="text-muted-2 text-[10px] font-bold uppercase tracking-wider">
+            Aaj ka kaam · {active} active jobs
+          </p>
+        </div>
+        <Link
+          href="/jobs"
+          className="flex items-center gap-1 text-blue-400 hover:text-blue-300 text-xs font-black transition no-underline uppercase tracking-wider"
+        >
+          All Jobs <ChevronRight size={12} />
+        </Link>
+      </div>
+      <div className="p-4 flex gap-3 overflow-x-auto">
+        {BOARD_COLS.map((col) => {
+          const c = STAT_C[col.color] ?? STAT_C.blue;
+          const count = n(stats[col.statKey]);
+          const chips = recentJobs.filter((j) => j.status === col.status).slice(0, 3);
+          const rest = Math.max(0, count - chips.length);
+          return (
+            <Link
+              key={col.status}
+              href={col.href}
+              className={`${c.bg} rounded-2xl border ${c.border} p-3.5 min-w-[210px] flex-1 hover:brightness-110 transition-all duration-200 no-underline block`}
+            >
+              <div className="flex items-center justify-between">
+                <span
+                  className={`flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider ${c.value}`}
+                >
+                  {col.icon} {col.label}
+                </span>
+                <span className={`text-xl font-black ${c.value} leading-none`}>{count}</span>
+              </div>
+              {chips.length > 0 ? (
+                <div className="mt-2.5 space-y-1.5">
+                  {chips.map((j) => (
+                    <div key={j.id} className="flex items-baseline justify-between gap-2 min-w-0">
+                      <span className="text-app dark:text-white text-xs font-bold truncate">
+                        {j.job_id ?? "N/A"}
+                        <span className="text-muted-2 font-semibold"> · {j.client_name}</span>
+                      </span>
+                      <span className="text-muted text-[11px] font-bold flex-shrink-0">
+                        {inr(j.amount)}
+                      </span>
+                    </div>
+                  ))}
+                  {rest > 0 && (
+                    <p className={`text-[10px] font-black ${c.value}`}>+{rest} more →</p>
+                  )}
+                </div>
+              ) : (
+                <p className="mt-2.5 text-[11px] font-bold text-muted-2">
+                  {count > 0 ? `${count} jobs →` : "Clear ✓"}
+                </p>
+              )}
+            </Link>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
 
 function StatCard({
   label,
