@@ -86,6 +86,8 @@ const NativePrintPreview = dynamic(
   { ssr: false }
 );
 import SwipeNavigation from "@/components/SwipeNavigation";
+import { ShortcutHelpOverlay } from "@/app/components/ui/ShortcutHelpOverlay";
+import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { fetchUnreadCount, getMyId } from "@/lib/messaging";
 import { locPath } from "@/lib/locations";
 
@@ -1441,6 +1443,14 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
     handleLogout,
   } = useAppBoot();
 
+  // Keyboard shortcuts (g-prefix + ? help + Escape)
+  const { helpOpen, setHelpOpen } = useKeyboardShortcuts({
+    dashboard: "/dashboard",
+    jobs: "/jobs",
+    clients: "/clients",
+    sales: "/direct-sales",
+  });
+
   // ── Unread messages badge (sidebar Messages icon) ─────────────────────────
   const [unreadCount, setUnreadCount] = useState(0);
   useEffect(() => {
@@ -2205,6 +2215,10 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
           </div>
         </div>
       )}
+      <a href="#main-content" className="skip-to-content">
+        Skip to content
+      </a>
+      <ShortcutHelpOverlay open={helpOpen} onClose={() => setHelpOpen(false)} />
     </>
   );
 }

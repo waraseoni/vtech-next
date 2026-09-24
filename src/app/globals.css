@@ -233,6 +233,32 @@ body {
   background-color: var(--app-panel);
 }
 
+/* ── Accessibility: focus-visible rings + skip-to-content ─────── */
+*:focus-visible {
+  outline: 2px solid var(--app-text);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.skip-to-content {
+  position: fixed;
+  top: -100px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 99999;
+  padding: 0.75rem 1.5rem;
+  background: var(--app-text);
+  color: var(--app-bg);
+  font-weight: 700;
+  font-size: 0.875rem;
+  border-radius: 0 0 0.5rem 0.5rem;
+  text-decoration: none;
+  transition: top 0.2s;
+}
+.skip-to-content:focus {
+  top: 0;
+}
+
 /* ============================================
    SHARED UTILITIES
    ============================================ */
