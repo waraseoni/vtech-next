@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.34.1](https://github.com/waraseoni/vtech-next/compare/v1.34.0...v1.34.1) (2026-09-24)
+
+### Bug Fixes
+
+* **sprint2:** mobile sidebar height + More tab opens drawer ([ed4d765](https://github.com/waraseoni/vtech-next/commit/ed4d76539817a60ef9f10427cefcdb3f314a93b3))
+
 ## [1.34.0](https://github.com/waraseoni/vtech-next/compare/v1.33.0...v1.34.0) (2026-09-24)
 
 ### Features
