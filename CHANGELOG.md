@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.33.0](https://github.com/waraseoni/vtech-next/compare/v1.32.0...v1.33.0) (2026-09-24)
+
+### Features
+
+* **sprint2:** [#7](https://github.com/waraseoni/vtech-next/issues/7) mobile bottom tab bar ([960c797](https://github.com/waraseoni/vtech-next/commit/960c7971e2fc8a1a7550953df04dcca682fe4a3c))
+
 ## [1.32.0](https://github.com/waraseoni/vtech-next/compare/v1.31.0...v1.32.0) (2026-09-24)
 
 ### Features
