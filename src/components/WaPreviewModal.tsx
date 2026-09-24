@@ -67,11 +67,12 @@ export default function WaPreviewModal({
             <p className="text-[10px] font-black uppercase tracking-wider text-muted-2 mb-1.5">
               Preview
             </p>
-            <div className="bg-[#dcf8c6] dark:bg-[#005c4b] rounded-xl rounded-tr-sm px-3.5 py-2.5 shadow-sm ml-6">
-              <p className="text-sm leading-relaxed whitespace-pre-wrap break-words text-slate-900 dark:text-slate-50">
+            {/* Rendered preview — theme-aware bubble (app token system) */}
+            <div className="bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 rounded-xl rounded-tr-sm px-3.5 py-2.5 shadow-sm ml-6">
+              <p className="text-sm leading-relaxed whitespace-pre-wrap break-words text-app dark:text-app-2">
                 {message || <span className="opacity-50 italic">Empty message…</span>}
               </p>
-              <p className="text-[10px] text-right mt-1 text-slate-500 dark:text-slate-300/70">
+              <p className="text-[10px] text-right mt-1 text-muted-2">
                 {message.length} chars
               </p>
             </div>
