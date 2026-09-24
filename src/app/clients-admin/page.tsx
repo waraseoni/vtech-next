@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import AdminPage from "@/app/components/AdminPage";
+import WaPreviewModal from "@/components/WaPreviewModal";
 import { supabase } from "@/lib/supabase";
 import { pageAll } from "@/lib/fetch-all";
 import { buildDueMaps, balanceFromMaps } from "@/lib/client-due";
@@ -83,6 +84,8 @@ export default function ClientAmtPage() {
   const [clients, setClients] = useState<ClientRow[]>([]);
   const [search, setSearch] = useState("");
   const [showModal, setShowModal] = useState(false);
+  // Sprint 3 #14: WA preview (direct open nahi)
+  const [waPreview, setWaPreview] = useState<{ phone: string; msg: string } | null>(null);
   const [form, setForm] = useState<ClientForm>(blankForm);
 
   const fetchClients = useCallback(async () => {
@@ -285,7 +288,8 @@ export default function ClientAmtPage() {
       client.balance > 0
         ? `Namaste ${fullName(client)} ji, aapka pending balance ${money(client.balance)} hai. Kripya bhugtan karein.`
         : `Namaste ${fullName(client)} ji, V-Tech me aapka account updated hai. Dhanyavaad.`;
-    window.open(`https://wa.me/91${phone}?text=${encodeURIComponent(text)}`, "_blank");
+    // Sprint 3 #14: preview modal se guzro — direct open nahi
+    setWaPreview({ phone, msg: text });
   };
 
   return (
@@ -543,6 +547,23 @@ export default function ClientAmtPage() {
             </form>
           </div>
         </div>
+      )}
+
+      {/* ══ WA PREVIEW (Sprint 3 #14) ══ */}
+      {waPreview && (
+        <WaPreviewModal
+          title="Send WhatsApp Message"
+          message={waPreview.msg}
+          onMessageChange={(v) => setWaPreview({ ...waPreview, msg: v })}
+          onSend={(finalText) => {
+            window.open(
+              `https://wa.me/91${waPreview.phone}?text=${encodeURIComponent(finalText)}`,
+              "_blank"
+            );
+            setWaPreview(null);
+          }}
+          onClose={() => setWaPreview(null)}
+        />
       )}
     </AdminPage>
   );

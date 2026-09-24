@@ -39,6 +39,7 @@ import {
   ClipboardList,
 } from "lucide-react";
 import PageLoader from "@/components/PageLoader";
+import WaPreviewModal from "@/components/WaPreviewModal";
 import JobSpotPicker from "@/components/JobSpotPicker";
 import JobRequiredParts from "@/components/JobRequiredParts";
 import WaitingPartsBadge from "@/components/WaitingPartsBadge";
@@ -411,6 +412,8 @@ export default function JobDetailsPage() {
 
   // Status modal
   const [showStatusModal, setShowStatusModal] = useState(false);
+  // Sprint 3 #14: WA preview (direct open nahi)
+  const [waPreview, setWaPreview] = useState<{ phone: string; msg: string } | null>(null);
   const [newStatus, setNewStatus] = useState(0);
   const [deliveryDate, setDeliveryDate] = useState(""); // for Delivered status
   const [deliveryTime, setDeliveryTime] = useState(""); // HH:MM
@@ -669,7 +672,8 @@ export default function JobDetailsPage() {
       amount: amt,
       ...firmVars(firmInfo),
     });
-    window.open(`https://wa.me/91${phone}?text=${encodeURIComponent(msg)}`, "_blank");
+    // Sprint 3 #14: preview modal se guzro — direct open nahi
+    setWaPreview({ phone, msg });
   };
 
   // ── UPDATE STATUS ──────────────────────────────────────────────────────────
@@ -1949,6 +1953,23 @@ ${svcHtml}${prodHtml}
             </button>
           </div>
         </div>
+      )}
+
+      {/* ══ WA PREVIEW (Sprint 3 #14) ═══════════════════════════════════════════ */}
+      {waPreview && (
+        <WaPreviewModal
+          title="Send WhatsApp Message"
+          message={waPreview.msg}
+          onMessageChange={(v) => setWaPreview({ ...waPreview, msg: v })}
+          onSend={(finalText) => {
+            window.open(
+              `https://wa.me/91${waPreview.phone}?text=${encodeURIComponent(finalText)}`,
+              "_blank"
+            );
+            setWaPreview(null);
+          }}
+          onClose={() => setWaPreview(null)}
+        />
       )}
     </div>
   );

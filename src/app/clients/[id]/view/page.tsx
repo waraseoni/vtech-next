@@ -39,8 +39,6 @@ import {
   Mail,
   CheckSquare,
   Square,
-  Copy,
-  Send,
   FileText,
   Camera,
   Loader,
@@ -67,6 +65,7 @@ import { fetchClientContacts, telLink, smsLink, waChatLink } from "@/lib/clientC
 import type { ClientContact } from "@/lib/clientContacts";
 import JobSpotPicker from "@/components/JobSpotPicker";
 import PageLoader from "@/components/PageLoader";
+import WaPreviewModal from "@/components/WaPreviewModal";
 import { toast } from "@/lib/toast";
 
 // ─────────────────────────────────────────────────────────────
@@ -886,19 +885,6 @@ export default function ViewClientProfile() {
       });
     }
     setWaModal(false);
-  };
-
-  const copyWAMessage = async () => {
-    try {
-      await navigator.clipboard.writeText(waText);
-    } catch {
-      const ta = document.createElement("textarea");
-      ta.value = waText;
-      document.body.appendChild(ta);
-      ta.select();
-      document.execCommand("copy");
-      document.body.removeChild(ta);
-    }
   };
 
   const openCombinedInvoice = (billType: "gst" | "non_gst") => {
@@ -2742,52 +2728,16 @@ export default function ViewClientProfile() {
 
       {/* ── WHATSAPP MODAL (PHP parity: jobs page) ── */}
       {waModal && (
-        <div className="fixed inset-0 bg-black/70 z-[70] flex items-center justify-center p-4 backdrop-blur-sm">
-          <div className="glass border border-[var(--glass-border)] rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl">
-            <div className="bg-emerald-600 px-5 py-3.5 flex items-center justify-between">
-              <h3 className="font-black !text-white text-sm flex items-center gap-2">
-                <MessageCircle size={16} className="!text-white" /> Send WhatsApp Message
-              </h3>
-              <button
-                onClick={() => setWaModal(false)}
-                className="!text-white/80 hover:!text-white transition-colors"
-              >
-                <X size={18} />
-              </button>
-            </div>
-            <div className="p-5 space-y-3">
-              <textarea
-                rows={10}
-                value={waText}
-                onChange={(e) => {
-                  setWaText(e.target.value);
-                  setWaEdited(true);
-                }}
-                className="w-full theme-input border-emerald-500/40 rounded-xl p-3 text-sm font-mono leading-relaxed outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/50 resize-none"
-              />
-            </div>
-            <div className="px-5 py-3.5 theme-card flex items-center justify-end gap-2 border-t border-white/10">
-              <button
-                onClick={() => setWaModal(false)}
-                className="px-4 py-2 rounded-xl text-sm font-bold theme-card theme-heading hover:opacity-80 transition-colors"
-              >
-                Close
-              </button>
-              <button
-                onClick={copyWAMessage}
-                className="px-4 py-2 rounded-xl text-sm font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-600/15 border border-blue-200 dark:border-blue-500/30 hover:bg-blue-100 dark:hover:bg-blue-600/25 transition-colors flex items-center gap-1.5"
-              >
-                <Copy size={13} /> Copy
-              </button>
-              <button
-                onClick={sendBulkWA}
-                className="px-4 py-2 rounded-xl text-sm font-bold !text-white bg-emerald-600 hover:bg-emerald-700 transition-colors flex items-center gap-1.5 shadow-sm"
-              >
-                <Send size={13} className="!text-white" /> Send
-              </button>
-            </div>
-          </div>
-        </div>
+        <WaPreviewModal
+          title="Send WhatsApp Message"
+          message={waText}
+          onMessageChange={(v) => {
+            setWaText(v);
+            setWaEdited(true);
+          }}
+          onSend={() => sendBulkWA()}
+          onClose={() => setWaModal(false)}
+        />
       )}
       {cropperEl}
     </div>

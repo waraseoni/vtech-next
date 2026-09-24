@@ -8,6 +8,7 @@ import SupplierPicker from "@/components/SupplierPicker";
 import { logActivity } from "@/lib/activity";
 import { toast } from "@/lib/toast";
 import PageLoader from "@/components/PageLoader";
+import WaPreviewModal from "@/components/WaPreviewModal";
 import {
   Plus,
   Trash2,
@@ -123,7 +124,6 @@ export default function PurchaseOrdersPage() {
   const [waModalOpen, setWaModalOpen] = useState(false);
   const [waMessage, setWaMessage] = useState("");
   const [waPhone, setWaPhone] = useState("");
-  const [waCopied, setWaCopied] = useState(false);
 
   const fetchPos = async (silent = false) => {
     if (!silent) setLoading(true);
@@ -389,30 +389,7 @@ export default function PurchaseOrdersPage() {
   const openWhatsApp = (po: PO) => {
     setWaMessage(buildWhatsAppMessage(po));
     setWaPhone(po.supplier_phone.replace(/[^0-9]/g, ""));
-    setWaCopied(false);
     setWaModalOpen(true);
-  };
-
-  const sendWhatsApp = () => {
-    window.open(`https://wa.me/${waPhone}?text=${encodeURIComponent(waMessage)}`, "_blank");
-  };
-
-  const copyWhatsApp = async () => {
-    try {
-      await navigator.clipboard.writeText(waMessage);
-      setWaCopied(true);
-      setTimeout(() => setWaCopied(false), 2000);
-    } catch {
-      // fallback
-      const ta = document.createElement("textarea");
-      ta.value = waMessage;
-      document.body.appendChild(ta);
-      ta.select();
-      document.execCommand("copy");
-      document.body.removeChild(ta);
-      setWaCopied(true);
-      setTimeout(() => setWaCopied(false), 2000);
-    }
   };
 
   const filtered = useMemo(() => {
@@ -836,69 +813,22 @@ export default function PurchaseOrdersPage() {
       )}
 
       {/* ── WHATSAPP MODAL ── */}
+      {/* ══ WHATSAPP MODAL (Sprint 3 #14: shared preview) ══ */}
       {waModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setWaModalOpen(false)} />
-          <div className="relative w-full max-w-lg bg-panel border border-app rounded-2xl overflow-hidden shadow-2xl shadow-black/50 max-h-[85vh] flex flex-col">
-            <div className="h-0.5 w-full bg-gradient-to-r from-green-500 to-emerald-600" />
-            <div className="flex items-center justify-between px-5 py-4 border-b border-app">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl flex items-center justify-center border bg-green-500/10 border-green-500/25">
-                  <MessageCircle size={16} className="text-green-400" />
-                </div>
-                <div>
-                  <h3 className="text-base font-extrabold text-white leading-none">WhatsApp Message</h3>
-                  <p className="text-[10px] text-muted-2 font-bold mt-0.5 uppercase tracking-wider">
-                    Edit, copy or send directly
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={() => setWaModalOpen(false)}
-                className="w-8 h-8 flex items-center justify-center rounded-lg bg-panel-2 hover:bg-white/5 text-muted hover:text-app-2 border border-app transition-all"
-              >
-                <X size={15} />
-              </button>
-            </div>
-
-            <div className="px-5 py-4 flex-1 overflow-y-auto">
-              <textarea
-                value={waMessage}
-                onChange={(e) => setWaMessage(e.target.value)}
-                rows={14}
-                className="w-full px-4 py-3 bg-panel-2 border border-app text-app-2 rounded-xl outline-none focus:border-green-500/60 text-sm font-mono resize-none leading-relaxed"
-              />
-            </div>
-
-            <div className="px-5 py-4 border-t border-app flex items-center gap-3">
-              <div className="flex-1 text-[10px] text-muted-2">
-                {waMessage.length} characters
-              </div>
-              <button
-                onClick={() => setWaModalOpen(false)}
-                className="px-4 py-2.5 bg-panel-2 hover:bg-white/5 border border-app text-muted hover:text-app-2 rounded-xl font-bold text-xs transition-all"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={copyWhatsApp}
-                className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl font-bold text-xs transition-all active:scale-95 border ${
-                  waCopied
-                    ? "bg-emerald-600/20 border-emerald-500/40 text-emerald-400"
-                    : "bg-panel-2 hover:bg-blue-600/30 border-app hover:border-blue-500/40 text-muted hover:text-blue-400"
-                }`}
-              >
-                {waCopied ? <><CheckCircle2 size={13} /> Copied!</> : "Copy"}
-              </button>
-              <button
-                onClick={sendWhatsApp}
-                className="flex items-center gap-1.5 px-5 py-2.5 bg-green-600 hover:bg-green-500 text-white rounded-xl font-bold text-xs transition-all active:scale-95 shadow-lg shadow-green-500/20"
-              >
-                <MessageCircle size={13} /> Send on WhatsApp
-              </button>
-            </div>
-          </div>
-        </div>
+        <WaPreviewModal
+          title="WhatsApp Message"
+          message={waMessage}
+          onMessageChange={(v) => setWaMessage(v)}
+          onSend={(finalText) => {
+            window.open(
+              `https://wa.me/${waPhone}?text=${encodeURIComponent(finalText)}`,
+              "_blank"
+            );
+            setWaModalOpen(false);
+          }}
+          onClose={() => setWaModalOpen(false)}
+          sendLabel="Send on WhatsApp"
+        />
       )}
     </div>
   );

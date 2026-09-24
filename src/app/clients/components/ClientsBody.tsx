@@ -25,7 +25,6 @@ import {
   Printer,
   FileSpreadsheet,
   FileText,
-  X,
   ArrowUpDown,
   ArrowUp,
   ArrowDown,
@@ -33,8 +32,8 @@ import {
   SlidersHorizontal,
   CheckSquare,
   Square,
-  Send,
 } from "lucide-react";
+import WaPreviewModal from "@/components/WaPreviewModal";
 import { safeImageSrc } from "@/lib/image-utils";
 import { substituteTemplate, firmVars, resolveTemplate } from "@/lib/whatsapp";
 import { toast } from "@/lib/toast";
@@ -1193,226 +1192,155 @@ export default function ClientsBody({
         )}
       </div>
 
-      {/* ━━━━━━ WHATSAPP MODAL ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+      {/* ━━━━━━ WHATSAPP MODAL (Sprint 3 #14: shared preview) ━━━━━━ */}
       {waModal && waClient && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm">
-          <div className="glass rounded-2xl shadow-2xl w-full max-w-md overflow-hidden border border-[var(--glass-border)]">
-            <div className="flex items-center justify-between px-5 py-4 bg-[#128C7E]">
-              <div className="flex items-center gap-2">
-                <MessageCircle className="!text-white" size={18} />
-                <span className="!text-white font-black text-sm">WhatsApp Message</span>
-              </div>
-              <button
-                onClick={() => setWaModal(false)}
-                className="!text-white/80 hover:!text-white hover:bg-white/10 p-1.5 rounded-lg transition cursor-pointer"
+        <WaPreviewModal
+          title={`Send WhatsApp to ${waClient.name}`}
+          message={waText}
+          onMessageChange={(v) => setWaText(v)}
+          onSend={() => sendWhatsApp()}
+          onClose={() => setWaModal(false)}
+          sendLabel="Open WhatsApp"
+        >
+          <div className="grid grid-cols-2 gap-3 theme-card p-3.5 rounded-xl">
+            <div>
+              <p className="text-[9px] font-extrabold text-muted dark:text-muted uppercase tracking-widest">
+                Client
+              </p>
+              <p className="font-extrabold theme-heading text-sm mt-0.5">{waClient.name}</p>
+            </div>
+            <div>
+              <p className="text-[9px] font-extrabold text-muted dark:text-muted uppercase tracking-widest">
+                Balance
+              </p>
+              <p
+                className={`font-extrabold text-sm mt-0.5 ${waClient.balance > 0 ? "text-red-500 dark:text-red-400" : "text-emerald-600 dark:text-emerald-400"}`}
               >
-                <X size={15} />
-              </button>
-            </div>
-            <div className="p-5 space-y-4">
-              <div className="grid grid-cols-2 gap-3 theme-card p-3.5 rounded-xl">
-                <div>
-                  <p className="text-[9px] font-extrabold text-muted dark:text-muted uppercase tracking-widest">
-                    Client
-                  </p>
-                  <p className="font-extrabold theme-heading text-sm mt-0.5">{waClient.name}</p>
-                </div>
-                <div>
-                  <p className="text-[9px] font-extrabold text-muted dark:text-muted uppercase tracking-widest">
-                    Balance
-                  </p>
-                  <p
-                    className={`font-extrabold text-sm mt-0.5 ${waClient.balance > 0 ? "text-red-500 dark:text-red-400" : "text-emerald-600 dark:text-emerald-400"}`}
-                  >
-                    {inr(waClient.balance)}
-                  </p>
-                </div>
-              </div>
-              <div>
-                <label className="text-[9px] font-extrabold text-muted dark:text-muted uppercase tracking-widest block mb-1.5">
-                  Message Type
-                </label>
-                <select
-                  value={waMsgType}
-                  onChange={(e) => handleWaTypeChange(e.target.value as typeof waMsgType)}
-                  className="w-full theme-input rounded-xl px-3 py-2.5 text-sm font-bold focus:outline-none focus:border-green-500 transition"
-                >
-                  <option value="welcome">Welcome Message</option>
-                  <option value="reminder">Balance Reminder</option>
-                  <option value="followup">Follow-up Message</option>
-                  <option value="offer">Special Offer</option>
-                  <option value="greeting">Greeting</option>
-                  <option value="custom">Custom</option>
-                </select>
-              </div>
-              <div>
-                <label className="text-[9px] font-extrabold text-muted dark:text-muted uppercase tracking-widest block mb-1.5">
-                  Message
-                </label>
-                <textarea
-                  value={waText}
-                  onChange={(e) => setWaText(e.target.value)}
-                  rows={7}
-                  className="w-full theme-input rounded-xl px-3 py-3 text-sm font-mono focus:outline-none focus:border-green-500 transition resize-none"
-                />
-              </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => navigator.clipboard.writeText(waText)}
-                  className="flex-1 py-2.5 theme-card theme-heading rounded-xl font-extrabold text-xs hover:opacity-80 transition cursor-pointer"
-                >
-                  Copy
-                </button>
-                <button
-                  onClick={sendWhatsApp}
-                  className="flex-1 py-2.5 bg-[#25D366] hover:bg-[#1DA851] !text-white rounded-xl font-extrabold text-xs flex items-center justify-center gap-2 transition cursor-pointer active:scale-95 shadow-sm"
-                >
-                  <MessageCircle size={14} className="!text-white" /> Open WhatsApp
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ━━━━━━ BULK WHATSAPP MODAL ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
-      {bulkWaModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm">
-          <div className="glass rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden border border-[var(--glass-border)]">
-            <div className="flex items-center justify-between px-5 py-4 bg-[#25D366]">
-              <div className="flex items-center gap-2">
-                <Send className="!text-white" size={18} />
-                <span className="!text-white font-black text-sm">
-                  Bulk WhatsApp — {selectedClients.size} Clients
-                </span>
-              </div>
-              <button
-                onClick={() => setBulkWaModal(false)}
-                className="!text-white/80 hover:!text-white hover:bg-white/10 p-1.5 rounded-lg transition cursor-pointer"
-              >
-                <X size={15} />
-              </button>
-            </div>
-            <div className="p-5 space-y-4">
-              <div className="theme-card rounded-xl p-3.5">
-                <p className="text-[9px] font-extrabold text-muted dark:text-muted uppercase tracking-widest mb-1">
-                  Selected Clients
-                </p>
-                <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto">
-                  {Array.from(selectedClients).map((id) => {
-                    const c = clients.find((x) => x.id === id);
-                    return c ? (
-                      <span
-                        key={id}
-                        className="px-2 py-0.5 bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 rounded text-[10px] font-bold"
-                      >
-                        {c.name} {c.contact && `(${c.contact})`}
-                      </span>
-                    ) : null;
-                  })}
-                </div>
-              </div>
-              <div>
-                <label className="text-[9px] font-extrabold text-muted dark:text-muted uppercase tracking-widest block mb-1.5">
-                  Message Type
-                </label>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                  {(
-                    ["reminder", "welcome", "followup", "offer", "greeting", "custom"] as const
-                  ).map((type) => (
-                    <button
-                      key={type}
-                      onClick={() => handleBulkWaTypeChange(type)}
-                      className={`py-2 rounded-xl text-xs font-bold border transition cursor-pointer ${
-                        bulkWaMsgType === type
-                          ? type === "reminder"
-                            ? "bg-red-600 border-red-600 !text-white"
-                            : type === "welcome"
-                              ? "bg-blue-600 border-blue-600 !text-white"
-                              : type === "followup"
-                                ? "bg-teal-600 border-teal-600 !text-white"
-                                : type === "offer"
-                                  ? "bg-purple-600 border-purple-600 !text-white"
-                                  : type === "greeting"
-                                    ? "bg-amber-600 border-amber-600 !text-white"
-                                    : "bg-slate-600 border-muted !text-white"
-                          : "theme-card text-muted-2 dark:text-muted hover:opacity-80"
-                      }`}
-                    >
-                      {type === "reminder"
-                        ? "Reminder"
-                        : type === "welcome"
-                          ? "Welcome"
-                          : type === "followup"
-                            ? "Follow-up"
-                            : type === "offer"
-                              ? "Offer"
-                              : type === "greeting"
-                                ? "Greeting"
-                                : "Custom"}
-                    </button>
-                  ))}
-</div>
-              </div>
-              <div>
-                <label className="text-[9px] font-extrabold text-muted dark:text-muted uppercase tracking-widest block mb-1.5">
-                  Send To
-                </label>
-                <select
-                  value={waSelectedPhone}
-                  onChange={(e) => setWaSelectedPhone(e.target.value)}
-                  className="w-full theme-input rounded-xl px-3 py-2.5 text-sm font-bold focus:outline-none focus:border-green-500 transition"
-                >
-                  {(() => {
-                    const opts: { label: string; phone: string }[] = (waClient?.contacts?.length
-                      ? waClient.contacts
-                      : waClient?.contact
-                        ? [({ name: null, label: "Mobile", phone: waClient.contact, is_primary: true } satisfies ClientContactLite)]
-                        : []
-                    ).map((c) => ({
-                      label: [c.name, c.label, c.is_primary ? "★" : ""].filter(Boolean).join(" · "),
-                      phone: c.phone,
-                    }));
-                    return opts.map((o) => (
-                      <option key={o.phone} value={o.phone}>
-                        {o.phone} — {o.label}
-                      </option>
-                    ));
-                  })()}
-                </select>
-              </div>
-              <div>
-                <label className="text-[9px] font-extrabold text-muted dark:text-muted uppercase tracking-widest block mb-1.5">
-                  Message Type
-                </label>
-                <textarea
-                  value={bulkWaText}
-                  onChange={(e) => setBulkWaText(e.target.value)}
-                  rows={6}
-                  placeholder="Type your message or select a template above..."
-                  className="w-full theme-input rounded-xl px-3 py-3 text-sm font-mono focus:outline-none focus:border-green-500 transition resize-none placeholder:text-muted dark:placeholder:text-muted"
-                />
-              </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => navigator.clipboard.writeText(bulkWaText)}
-                  className="flex-1 py-2.5 theme-card theme-heading rounded-xl font-extrabold text-xs hover:opacity-80 transition cursor-pointer"
-                >
-                  Copy
-                </button>
-                <button
-                  onClick={sendBulkWhatsApp}
-                  className="flex-1 py-2.5 bg-[#25D366] hover:bg-[#1DA851] !text-white rounded-xl font-extrabold text-xs flex items-center justify-center gap-2 transition cursor-pointer active:scale-95 shadow-sm"
-                >
-                  <Send size={14} className="!text-white" /> Send to All ({selectedClients.size})
-                </button>
-              </div>
-              <p className="text-[10px] text-muted text-center">
-                WhatsApp windows will open for each client. Allow popups if asked.
+                {inr(waClient.balance)}
               </p>
             </div>
           </div>
-        </div>
+          <div>
+            <label className="text-[9px] font-extrabold text-muted dark:text-muted uppercase tracking-widest block mb-1.5">
+              Message Type
+            </label>
+            <select
+              value={waMsgType}
+              onChange={(e) => handleWaTypeChange(e.target.value as typeof waMsgType)}
+              className="w-full theme-input rounded-xl px-3 py-2.5 text-sm font-bold focus:outline-none focus:border-green-500 transition"
+            >
+              <option value="welcome">Welcome Message</option>
+              <option value="reminder">Balance Reminder</option>
+              <option value="followup">Follow-up Message</option>
+              <option value="offer">Special Offer</option>
+              <option value="greeting">Greeting</option>
+              <option value="custom">Custom</option>
+            </select>
+          </div>
+        </WaPreviewModal>
+      )}
+
+      {/* ━━━━━━ BULK WHATSAPP MODAL (Sprint 3 #14: shared preview) ━━━━━━ */}
+      {bulkWaModal && (
+        <WaPreviewModal
+          title={`Bulk WhatsApp — ${selectedClients.size} Clients`}
+          message={bulkWaText}
+          onMessageChange={(v) => setBulkWaText(v)}
+          onSend={() => sendBulkWhatsApp()}
+          onClose={() => setBulkWaModal(false)}
+          sendLabel={`Send to All (${selectedClients.size})`}
+        >
+          <div className="theme-card rounded-xl p-3.5">
+            <p className="text-[9px] font-extrabold text-muted dark:text-muted uppercase tracking-widest mb-1">
+              Selected Clients
+            </p>
+            <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto">
+              {Array.from(selectedClients).map((id) => {
+                const c = clients.find((x) => x.id === id);
+                return c ? (
+                  <span
+                    key={id}
+                    className="px-2 py-0.5 bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 rounded text-[10px] font-bold"
+                  >
+                    {c.name} {c.contact && `(${c.contact})`}
+                  </span>
+                ) : null;
+              })}
+            </div>
+          </div>
+          <div>
+            <label className="text-[9px] font-extrabold text-muted dark:text-muted uppercase tracking-widest block mb-1.5">
+              Message Type
+            </label>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              {(
+                ["reminder", "welcome", "followup", "offer", "greeting", "custom"] as const
+              ).map((type) => (
+                <button
+                  key={type}
+                  onClick={() => handleBulkWaTypeChange(type)}
+                  className={`py-2 rounded-xl text-xs font-bold border transition cursor-pointer ${
+                    bulkWaMsgType === type
+                      ? type === "reminder"
+                        ? "bg-red-600 border-red-600 !text-white"
+                        : type === "welcome"
+                          ? "bg-blue-600 border-blue-600 !text-white"
+                          : type === "followup"
+                            ? "bg-teal-600 border-teal-600 !text-white"
+                            : type === "offer"
+                              ? "bg-purple-600 border-purple-600 !text-white"
+                              : type === "greeting"
+                                ? "bg-amber-600 border-amber-600 !text-white"
+                                : "bg-slate-600 border-muted !text-white"
+                      : "theme-card text-muted-2 dark:text-muted hover:opacity-80"
+                  }`}
+                >
+                  {type === "reminder"
+                    ? "Reminder"
+                    : type === "welcome"
+                      ? "Welcome"
+                      : type === "followup"
+                        ? "Follow-up"
+                        : type === "offer"
+                          ? "Offer"
+                          : type === "greeting"
+                            ? "Greeting"
+                            : "Custom"}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <label className="text-[9px] font-extrabold text-muted dark:text-muted uppercase tracking-widest block mb-1.5">
+              Send To
+            </label>
+            <select
+              value={waSelectedPhone}
+              onChange={(e) => setWaSelectedPhone(e.target.value)}
+              className="w-full theme-input rounded-xl px-3 py-2.5 text-sm font-bold focus:outline-none focus:border-green-500 transition"
+            >
+              {(() => {
+                const opts: { label: string; phone: string }[] = (waClient?.contacts?.length
+                  ? waClient.contacts
+                  : waClient?.contact
+                    ? [({ name: null, label: "Mobile", phone: waClient.contact, is_primary: true } satisfies ClientContactLite)]
+                    : []
+                ).map((c) => ({
+                  label: [c.name, c.label, c.is_primary ? "★" : ""].filter(Boolean).join(" · "),
+                  phone: c.phone,
+                }));
+                return opts.map((o) => (
+                  <option key={o.phone} value={o.phone}>
+                    {o.phone} — {o.label}
+                  </option>
+                ));
+              })()}
+            </select>
+          </div>
+          <p className="text-[10px] text-muted text-center">
+            WhatsApp windows will open for each client. Allow popups if asked.
+          </p>
+        </WaPreviewModal>
       )}
     </div>
   );

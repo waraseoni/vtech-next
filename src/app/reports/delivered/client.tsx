@@ -32,6 +32,7 @@ import SearchableSelect from "@/components/SearchableSelect";
 import { safeImageSrc } from "@/lib/image-utils";
 import { resolveTemplate, substituteTemplate, firmVars } from "@/lib/whatsapp";
 import { buildDueMaps, balanceFromMaps } from "@/lib/client-due";
+import WaPreviewModal from "@/components/WaPreviewModal";
 import { toast } from "@/lib/toast";
 
 type Transaction = {
@@ -154,6 +155,8 @@ export default function DeliveredReportClient({ fromDate, toDate, clientId }: Pr
   const [clientTotals, setClientTotals] = useState<Record<number, ClientTotals>>({});
   const [showDetailModal, setShowDetailModal] = useState<Transaction | null>(null);
   const [firmInfo, setFirmInfo] = useState<Record<string, string>>({});
+  // Sprint 3 #14: WA preview (direct open nahi)
+  const [waPreview, setWaPreview] = useState<{ phone: string; msg: string } | null>(null);
 
   useEffect(() => {
     setFrom(fromDate || todayIST());
@@ -361,7 +364,8 @@ export default function DeliveredReportClient({ fromDate, toDate, clientId }: Pr
       amount: job.amount.toLocaleString("en-IN"),
       ...firmVars(firmInfo),
     });
-    window.open(`https://wa.me/91${phone}?text=${encodeURIComponent(msg)}`, "_blank");
+    // Sprint 3 #14: preview modal se guzro — direct open nahi
+    setWaPreview({ phone, msg });
   };
 
   const getBalanceInfo = (clientId: number) => {
@@ -796,6 +800,23 @@ export default function DeliveredReportClient({ fromDate, toDate, clientId }: Pr
             </div>
           </div>
         </div>
+      )}
+
+      {/* ══ WA PREVIEW (Sprint 3 #14) ══ */}
+      {waPreview && (
+        <WaPreviewModal
+          title="Send WhatsApp Message"
+          message={waPreview.msg}
+          onMessageChange={(v) => setWaPreview({ ...waPreview, msg: v })}
+          onSend={(finalText) => {
+            window.open(
+              `https://wa.me/91${waPreview.phone}?text=${encodeURIComponent(finalText)}`,
+              "_blank"
+            );
+            setWaPreview(null);
+          }}
+          onClose={() => setWaPreview(null)}
+        />
       )}
     </div>
   );

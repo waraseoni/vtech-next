@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { formatIST, todayIST, currentMonthIST, parseISTDate } from "@/lib/dateUtils";
+import WaPreviewModal from "@/components/WaPreviewModal";
 import { JOB_STATUS } from "@/lib/status-colors";
 import { toast } from "@/lib/toast";
 
@@ -102,6 +103,8 @@ function PendingJobsContent() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
   const [mobileVisible, setMobileVisible] = useState(12);
+  // Sprint 3 #14: WA preview (direct open nahi)
+  const [waPreview, setWaPreview] = useState<{ phone: string; msg: string } | null>(null);
   const mobileSentinelRef = useRef<HTMLDivElement | null>(null);
 
   const applyAll = () => {
@@ -342,7 +345,8 @@ function PendingJobsContent() {
         msg = `Namaste ${clientName} ji 🙏!\n\nAapka Job ID: #${job.job_id} (${job.item}) pending status par hai. Hum jald hi sampark karenge. Dhanyavaad! ❤️\n\n${businessName}`;
     }
 
-    window.open(`https://wa.me/91${phone}?text=${encodeURIComponent(msg)}`, "_blank");
+    // Sprint 3 #14: preview modal se guzro — direct open nahi
+    setWaPreview({ phone, msg });
   };
 
   return (
@@ -933,6 +937,23 @@ function PendingJobsContent() {
           Total Shop Value: {inr(totalAmount)} | Period: {periodLabel}
         </p>
       </div>
+
+      {/* ══ WA PREVIEW (Sprint 3 #14) ══ */}
+      {waPreview && (
+        <WaPreviewModal
+          title="Send WhatsApp Message"
+          message={waPreview.msg}
+          onMessageChange={(v) => setWaPreview({ ...waPreview, msg: v })}
+          onSend={(finalText) => {
+            window.open(
+              `https://wa.me/91${waPreview.phone}?text=${encodeURIComponent(finalText)}`,
+              "_blank"
+            );
+            setWaPreview(null);
+          }}
+          onClose={() => setWaPreview(null)}
+        />
+      )}
     </div>
   );
 }

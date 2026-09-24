@@ -26,6 +26,7 @@ import { substituteTemplate, firmVars, resolveTemplate } from "@/lib/whatsapp";
 import { pageAll } from "@/lib/fetch-all";
 import { buildDueMaps, balanceFromMaps } from "@/lib/client-due";
 import { toast } from "@/lib/toast";
+import WaPreviewModal from "@/components/WaPreviewModal";
 
 const inr = (n: number) => "₹" + (n || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 });
 
@@ -157,6 +158,10 @@ function DueRemindersContent() {
   // Firm info for templates
   const [firmInfo, setFirmInfo] = useState<Record<string, string>>({});
   const [reminderTpl, setReminderTpl] = useState(FALLBACK_REMINDER);
+  // Sprint 3 #14: WA preview (log tabhi jab Send dabaye — preview kholne par nahi)
+  const [waPreview, setWaPreview] = useState<{ row: DueRow; phone: string; msg: string } | null>(
+    null
+  );
 
   // Due date modal
   const [dueModal, setDueModal] = useState<{ client: DueRow } | null>(null);
@@ -297,8 +302,8 @@ function DueRemindersContent() {
     router.replace("?" + p.toString(), { scroll: false });
   };
 
-  // ── WhatsApp reminder ──
-  const sendWhatsApp = async (r: DueRow) => {
+  // ── WhatsApp reminder (Sprint 3 #14: preview modal se guzro) ──
+  const sendWhatsApp = (r: DueRow) => {
     const clean = r.contact.replace(/\D/g, "");
     if (clean.length < 10) {
       toast.error("Valid mobile number nahi mila!");
@@ -317,17 +322,24 @@ function DueRemindersContent() {
         "आपका समय देने के लिए धन्यवाद!",
         `${dueInfo}\n\nआपका समय देने के लिए धन्यवाद!`
       );
-    window.open(`https://wa.me/91${clean}?text=${encodeURIComponent(msg)}`, "_blank");
+    setWaPreview({ row: r, phone: clean, msg });
+  };
+
+  const sendPreviewWA = async (finalText: string) => {
+    if (!waPreview) return;
+    const { row, phone } = waPreview;
+    window.open(`https://wa.me/91${phone}?text=${encodeURIComponent(finalText)}`, "_blank");
 
     // Log reminder to payment_reminders
     const { error } = await supabase.from("payment_reminders").insert({
-      client_id: r.id,
-      amount_due: r.balance,
+      client_id: row.id,
+      amount_due: row.balance,
       channel: "WhatsApp",
       status: "Sent",
       remarks: "Type: due_reminder",
     });
     if (error) console.error("log reminder:", error.message);
+    setWaPreview(null);
     fetchData();
   };
 
@@ -733,6 +745,17 @@ function DueRemindersContent() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* ══ WA PREVIEW (Sprint 3 #14) ══ */}
+      {waPreview && (
+        <WaPreviewModal
+          title="Send Due Reminder"
+          message={waPreview.msg}
+          onMessageChange={(v) => setWaPreview({ ...waPreview, msg: v })}
+          onSend={(finalText) => sendPreviewWA(finalText)}
+          onClose={() => setWaPreview(null)}
+        />
       )}
     </div>
   );

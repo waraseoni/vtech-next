@@ -32,6 +32,7 @@ import { compressImage } from "@/lib/imageCompression";
 import { openCamera } from "@/lib/nativeCamera";
 import { useImageUpload } from "@/lib/useImageUpload";
 import { logActivity } from "@/lib/activity";
+import WaPreviewModal from "@/components/WaPreviewModal";
 
 type Mechanic = {
   id: number;
@@ -121,6 +122,8 @@ export default function MechanicDetailPage() {
 
   const [loading, setLoading] = useState(true);
   const [mechanic, setMechanic] = useState<Mechanic | null>(null);
+  // Sprint 3 #14: WA preview (direct open nahi)
+  const [waPreview, setWaPreview] = useState<{ phone: string; msg: string } | null>(null);
   const [activeTab, setActiveTab] = useState<Tab>("work");
 
   // Date filter state
@@ -420,6 +423,10 @@ export default function MechanicDetailPage() {
 
   const shareWhatsApp = () => {
     if (!mechanic) return;
+    const phone = (mechanic.contact || "").replace(/\D/g, "");
+    if (phone.length < 10) return;
+    // Note: text yahan pre-encoded tha (%0A) — preview ke liye decode karo,
+    // send par encodeURIComponent se wapas encode hoga (behavior same).
     const text =
       `*Mechanic Report: ${name}*%0A` +
       `📅 Period: ${fromDate} to ${toDate}%0A%0A` +
@@ -429,7 +436,8 @@ export default function MechanicDetailPage() {
       `💸 Paid: ₹${stats.totalAdvance.toLocaleString("en-IN")}%0A%0A` +
       `⚖️ Balance: ₹${stats.periodBalance.toLocaleString("en-IN")}%0A%0A` +
       `📊 Overall: ₹${stats.overallBalance.toLocaleString("en-IN")}`;
-    window.open(`https://wa.me/91${mechanic.contact}?text=${text}`);
+    // Sprint 3 #14: preview modal se guzro — direct open nahi
+    setWaPreview({ phone, msg: decodeURIComponent(text) });
   };
 
   const tabs: { key: Tab; label: string; count: number }[] = [
@@ -1101,6 +1109,24 @@ export default function MechanicDetailPage() {
         </div>
       )}
       {cropperEl}
+
+      {/* ══ WA PREVIEW (Sprint 3 #14) ══ */}
+      {waPreview && (
+        <WaPreviewModal
+          title="Share on WhatsApp"
+          message={waPreview.msg}
+          onMessageChange={(v) => setWaPreview({ ...waPreview, msg: v })}
+          onSend={(finalText) => {
+            window.open(
+              `https://wa.me/91${waPreview.phone}?text=${encodeURIComponent(finalText)}`,
+              "_blank"
+            );
+            setWaPreview(null);
+          }}
+          onClose={() => setWaPreview(null)}
+          sendLabel="Share"
+        />
+      )}
     </div>
   );
 }

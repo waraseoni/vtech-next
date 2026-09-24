@@ -31,6 +31,7 @@ import { todayIST, startOfMonthIST, endOfMonthIST, formatIST, parseISTDate } fro
 import { logActivity } from "@/lib/activity";
 import { substituteTemplate, firmVars, resolveTemplate } from "@/lib/whatsapp";
 import PageLoader from "@/components/PageLoader";
+import WaPreviewModal from "@/components/WaPreviewModal";
 import { toast } from "@/lib/toast";
 import { DataTable } from "@/components/ui";
 import type { Column } from "@/components/ui";
@@ -138,7 +139,13 @@ function DirectSalesPageInner() {
     })();
   }, []);
 
-  const waHref = (s: DirectSale) => {
+  // Sprint 3 #14: message banao, open preview modal se hoga (direct open nahi)
+  const buildSaleWAMsg = (s: DirectSale): { phone: string; msg: string } | null => {
+    const phone = (s.client_contact || "").replace(/\D/g, "");
+    if (phone.length < 10) {
+      toast.error("Valid mobile number nahi mila!");
+      return null;
+    }
     const msg = substituteTemplate(resolveTemplate(sysInfo, "whatsapp_sale"), {
       client_name: s.client_name || "Customer",
       sale_code: s.sale_code,
@@ -146,7 +153,13 @@ function DirectSalesPageInner() {
         "₹" + (s.total_amount || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 }),
       ...firmVars(sysInfo),
     });
-    return `https://wa.me/91${(s.client_contact || "").replace(/\D/g, "")}?text=${encodeURIComponent(msg)}`;
+    return { phone, msg };
+  };
+  // Sprint 3 #14: WA preview (direct open nahi)
+  const [waPreview, setWaPreview] = useState<{ phone: string; msg: string } | null>(null);
+  const openWaPreview = (s: DirectSale) => {
+    const p = buildSaleWAMsg(s);
+    if (p) setWaPreview(p);
   };
 
   // Payment breakdown for mini chart
@@ -460,13 +473,12 @@ function DirectSalesPageInner() {
                   </div>
                 ))}
               {s.client_contact && (
-                <a
-                  href={waHref(s)}
-                  target="_blank"
+                <button
+                  onClick={() => openWaPreview(s)}
                   className="flex items-center gap-1 text-[10px] text-emerald-500 hover:text-emerald-400 transition-colors mt-0.5"
                 >
                   <Send size={8} /> {s.client_contact}
-                </a>
+                </button>
               )}
             </div>
           </div>
@@ -728,13 +740,12 @@ function DirectSalesPageInner() {
                       </div>
                     </div>
                     {s.client_contact && (
-                      <a
-                        href={waHref(s)}
-                        target="_blank"
+                      <button
+                        onClick={() => openWaPreview(s)}
                         className="flex items-center gap-1 text-[10px] text-emerald-400 font-bold flex-shrink-0"
                       >
                         <Send size={10} /> WA
-                      </a>
+                      </button>
                     )}
                   </div>
 
@@ -1094,6 +1105,23 @@ function DirectSalesPageInner() {
           </div>
         )}
       </div>
+
+      {/* ══ WA PREVIEW (Sprint 3 #14) ══ */}
+      {waPreview && (
+        <WaPreviewModal
+          title="Send WhatsApp Message"
+          message={waPreview.msg}
+          onMessageChange={(v) => setWaPreview({ ...waPreview, msg: v })}
+          onSend={(finalText) => {
+            window.open(
+              `https://wa.me/91${waPreview.phone}?text=${encodeURIComponent(finalText)}`,
+              "_blank"
+            );
+            setWaPreview(null);
+          }}
+          onClose={() => setWaPreview(null)}
+        />
+      )}
     </div>
   );
 }

@@ -26,6 +26,7 @@ import { todayIST, formatIST, parseISTDate } from "@/lib/dateUtils";
 import { JOB_STATUS } from "@/lib/status-colors";
 import { safeImageSrc } from "@/lib/image-utils";
 import { resolveTemplate, substituteTemplate, firmVars } from "@/lib/whatsapp";
+import WaPreviewModal from "@/components/WaPreviewModal";
 import { toast } from "@/lib/toast";
 
 type DailyDoneItem = {
@@ -188,11 +189,15 @@ const fmtTime = (v: string) => formatIST(v, { hour: "2-digit", minute: "2-digit"
 const fmtDateTime = (v: string) =>
   formatIST(v, { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit", hour12: true });
 
-const sendDoneWA = (item: DailyDoneItem, firmInfo: Record<string, string>) => {
+// Sprint 3 #14: message banao, open preview modal se hoga (direct open nahi)
+const buildDoneWAMsg = (
+  item: DailyDoneItem,
+  firmInfo: Record<string, string>
+): { phone: string; msg: string } | null => {
   const phone = (item.client_contact || "").replace(/\D/g, "");
   if (phone.length < 10) {
     toast.error("Valid mobile number nahi mila!");
-    return;
+    return null;
   }
   const amt = (item.amount || 0).toLocaleString("en-IN");
   const key = STATUS_WA_KEY[item.status] || "whatsapp_status_pending";
@@ -205,7 +210,7 @@ const sendDoneWA = (item: DailyDoneItem, firmInfo: Record<string, string>) => {
     amount: amt,
     ...firmVars(firmInfo),
   });
-  window.open(`https://wa.me/91${phone}?text=${encodeURIComponent(msg)}`, "_blank");
+  return { phone, msg };
 };
 
 export default function DailyDoneReportPage() {
@@ -216,6 +221,12 @@ export default function DailyDoneReportPage() {
   const [selectedMechanic, setSelectedMechanic] = useState<string>("all");
   const [err, setErr] = useState("");
   const [firmInfo, setFirmInfo] = useState<Record<string, string>>({});
+  // Sprint 3 #14: WA preview (direct open nahi)
+  const [waPreview, setWaPreview] = useState<{ phone: string; msg: string } | null>(null);
+  const openWaPreview = (item: DailyDoneItem) => {
+    const p = buildDoneWAMsg(item, firmInfo);
+    if (p) setWaPreview(p);
+  };
 
   const fetchMechanics = async () => {
     try {
@@ -635,7 +646,7 @@ export default function DailyDoneReportPage() {
                                       <a href={`tel:${item.client_contact.replace(/\D/g, "")}`} className="p-0.5 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 rounded-md text-emerald-400 transition-all" title="Call">
                                         <Phone size={9} />
                                       </a>
-                                      <button onClick={() => sendDoneWA(item, firmInfo)} className="p-0.5 bg-green-500/10 hover:bg-green-500/20 border border-green-500/20 rounded-md text-green-400 transition-all" title="WhatsApp">
+                                      <button onClick={() => openWaPreview(item)} className="p-0.5 bg-green-500/10 hover:bg-green-500/20 border border-green-500/20 rounded-md text-green-400 transition-all" title="WhatsApp">
                                         <MessageCircle size={9} />
                                       </button>
                                     </>
@@ -723,7 +734,7 @@ export default function DailyDoneReportPage() {
                                   <span className="truncate">{item.client_contact}</span>
                                 </a>
                                 <button
-                                  onClick={() => sendDoneWA(item, firmInfo)}
+                                  onClick={() => openWaPreview(item)}
                                   className="flex-shrink-0 w-5 h-5 flex items-center justify-center bg-green-500/10 hover:bg-green-500/20 border border-green-500/20 rounded-md text-green-400 transition-all"
                                   title="WhatsApp status"
                                 >
@@ -786,6 +797,23 @@ export default function DailyDoneReportPage() {
           </div>
         </div>
       </div>
+
+      {/* ══ WA PREVIEW (Sprint 3 #14) ══ */}
+      {waPreview && (
+        <WaPreviewModal
+          title="Send WhatsApp Message"
+          message={waPreview.msg}
+          onMessageChange={(v) => setWaPreview({ ...waPreview, msg: v })}
+          onSend={(finalText) => {
+            window.open(
+              `https://wa.me/91${waPreview.phone}?text=${encodeURIComponent(finalText)}`,
+              "_blank"
+            );
+            setWaPreview(null);
+          }}
+          onClose={() => setWaPreview(null)}
+        />
+      )}
     </AdminPage>
   );
 }

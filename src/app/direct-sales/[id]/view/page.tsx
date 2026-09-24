@@ -5,7 +5,9 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { numberToWords } from "@/lib/utils";
 import { substituteTemplate, firmVars, resolveTemplate } from "@/lib/whatsapp";
+import { toast } from "@/lib/toast";
 import PageLoader from "@/components/PageLoader";
+import WaPreviewModal from "@/components/WaPreviewModal";
 import {
   ArrowLeft,
   Edit3,
@@ -141,6 +143,24 @@ export default function ViewSalePage() {
   const [sale, setSale] = useState<Sale | null>(null);
   const [loading, setLoading] = useState(true);
   const [sysInfo, setSysInfo] = useState<Record<string, string>>({});
+  // Sprint 3 #14: WA preview (direct open nahi)
+  const [waPreview, setWaPreview] = useState<{ phone: string; msg: string } | null>(null);
+  const openWaPreview = () => {
+    if (!sale?.client_contact) return;
+    const phone = sale.client_contact.replace(/\D/g, "");
+    if (phone.length < 10) {
+      toast.error("Valid mobile number nahi mila!");
+      return;
+    }
+    const msg = substituteTemplate(resolveTemplate(sysInfo, "whatsapp_sale"), {
+      client_name: sale.client_name || "Customer",
+      sale_code: sale.sale_code,
+      total_amount:
+        "₹" + (sale.total_amount || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 }),
+      ...firmVars(sysInfo),
+    });
+    setWaPreview({ phone, msg });
+  };
 
   const fetchCompanyInfo = useCallback(async () => {
     const { data } = await supabase.from("system_info").select("meta_field, meta_value");
@@ -416,24 +436,12 @@ export default function ViewSalePage() {
                   value={
                     <div className="flex items-center gap-2">
                       <span>{sale.client_contact}</span>
-                      <a
-                        href={`https://wa.me/91${sale.client_contact.replace(/\D/g, "")}?text=${encodeURIComponent(
-                          substituteTemplate(resolveTemplate(sysInfo, "whatsapp_sale"), {
-                            client_name: sale.client_name || "Customer",
-                            sale_code: sale.sale_code,
-                            total_amount:
-                              "₹" +
-                              (sale.total_amount || 0).toLocaleString("en-IN", {
-                                minimumFractionDigits: 2,
-                              }),
-                            ...firmVars(sysInfo),
-                          })
-                        )}`}
-                        target="_blank"
+                      <button
+                        onClick={openWaPreview}
                         className="flex items-center gap-0.5 text-emerald-400 hover:text-emerald-300 transition-colors text-[10px] font-bold"
                       >
                         <Send size={9} /> WA
-                      </a>
+                      </button>
                     </div>
                   }
                 />
@@ -642,6 +650,23 @@ export default function ViewSalePage() {
           </p>
         </div>
       </div>
+
+      {/* ══ WA PREVIEW (Sprint 3 #14) ══ */}
+      {waPreview && (
+        <WaPreviewModal
+          title="Send WhatsApp Message"
+          message={waPreview.msg}
+          onMessageChange={(v) => setWaPreview({ ...waPreview, msg: v })}
+          onSend={(finalText) => {
+            window.open(
+              `https://wa.me/91${waPreview.phone}?text=${encodeURIComponent(finalText)}`,
+              "_blank"
+            );
+            setWaPreview(null);
+          }}
+          onClose={() => setWaPreview(null)}
+        />
+      )}
     </div>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { MessageCircle, X, Copy, Send, Check } from "lucide-react";
 
 /**
@@ -12,6 +12,7 @@ import { MessageCircle, X, Copy, Send, Check } from "lucide-react";
 export default function WaPreviewModal({
   title = "Send WhatsApp Message",
   note,
+  children,
   message,
   editable = true,
   onMessageChange,
@@ -21,6 +22,8 @@ export default function WaPreviewModal({
 }: {
   title?: string;
   note?: string;
+  /** Optional extra UI (e.g. bulk message-type chips) — note ke neeche render hota hai */
+  children?: ReactNode;
   message: string;
   editable?: boolean;
   onMessageChange?: (v: string) => void;
@@ -62,6 +65,7 @@ export default function WaPreviewModal({
               {note}
             </p>
           )}
+          {children}
           {/* Rendered preview — client ko exactly aisa dikhega */}
           <div>
             <p className="text-[10px] font-black uppercase tracking-wider text-muted-2 mb-1.5">
