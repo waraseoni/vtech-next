@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.36.0](https://github.com/waraseoni/vtech-next/compare/v1.35.0...v1.36.0) (2026-09-24)
+
+### Features
+
+* **sprint3:** [#13](https://github.com/waraseoni/vtech-next/issues/13) optimistic status updates + skeleton loaders on jobs list ([88e1839](https://github.com/waraseoni/vtech-next/commit/88e1839e806ca50f6aba660fb6aa121db5d10056))
+
 ## [1.35.0](https://github.com/waraseoni/vtech-next/compare/v1.34.2...v1.35.0) (2026-09-24)
 
 ### Features
