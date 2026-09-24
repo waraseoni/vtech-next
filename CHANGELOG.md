@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.32.0](https://github.com/waraseoni/vtech-next/compare/v1.31.0...v1.32.0) (2026-09-24)
+
+### Features
+
+* **sprint2:** DataTable pilot on payments page ([b336d0c](https://github.com/waraseoni/vtech-next/commit/b336d0cf56a1b945eb5e01ba9bf0d3a30738b255))
+
 ## [1.31.0](https://github.com/waraseoni/vtech-next/compare/v1.30.0...v1.31.0) (2026-09-24)
 
 ### Features
