@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.34.0](https://github.com/waraseoni/vtech-next/compare/v1.33.0...v1.34.0) (2026-09-24)
+
+### Features
+
+* **sprint2:** [#8](https://github.com/waraseoni/vtech-next/issues/8) Lightbox kill — removed ImageLightbox system from 39 files ([e95c2b7](https://github.com/waraseoni/vtech-next/commit/e95c2b7537830ee875f3ded3caeba040e2916a7b))
+
 ## [1.33.0](https://github.com/waraseoni/vtech-next/compare/v1.32.0...v1.33.0) (2026-09-24)
 
 ### Features
