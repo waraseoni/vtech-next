@@ -1,5 +1,14 @@
 # CHANGELOG
 
+## [1.34.2](https://github.com/waraseoni/vtech-next/compare/v1.34.1...v1.34.2) (2026-09-24)
+
+### Bug Fixes
+
+* FAB z-60 above mobile tab bar z-50 ([40cd765](https://github.com/waraseoni/vtech-next/commit/40cd7654d1e435e43f882a241824687c205263d2))
+* page FABs bottom-[136px] stack above global AI FAB (no overlap) ([ff7125e](https://github.com/waraseoni/vtech-next/commit/ff7125ef92cbb02452818af784cd8773b4fd088f))
+* page FABs z-[60] above mobile tab bar z-50 ([0c88fa2](https://github.com/waraseoni/vtech-next/commit/0c88fa2b999ce33e15f1ac7eec380669d4fea82e))
+* raise mobile FABs to bottom-20 above tab bar height ([4af8a95](https://github.com/waraseoni/vtech-next/commit/4af8a959b734a87cc98d4b0cdc433800164d87ec))
+
 ## [1.34.1](https://github.com/waraseoni/vtech-next/compare/v1.34.0...v1.34.1) (2026-09-24)
 
 ### Bug Fixes
