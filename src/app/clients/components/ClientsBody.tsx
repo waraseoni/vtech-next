@@ -5,7 +5,6 @@ import { todayIST } from "@/lib/dateUtils";
 import { downloadBlob } from "@/lib/nativePrint";
 import Link from "next/link";
 import Image from "next/image";
-import { openImageLightbox } from "@/components/ImageLightbox";
 import {
   Users,
   UserPlus,
@@ -654,10 +653,9 @@ export default function ClientsBody({
                             alt={client.name}
                             width={56}
                             height={56}
-                            className="w-14 h-14 rounded-xl object-cover flex-shrink-0 border border-app cursor-zoom-in"
+                            className="w-14 h-14 rounded-xl object-cover flex-shrink-0 border border-app"
                             onDoubleClick={(e) => {
                               e.stopPropagation();
-                              openImageLightbox(client.image_path, client.name);
                             }}
                             onError={(e) => {
                               (e.currentTarget as HTMLImageElement).style.display = "none";
@@ -941,10 +939,9 @@ export default function ClientsBody({
                               alt={client.name}
                               width={48}
                               height={48}
-                              className="w-12 h-12 rounded-xl object-cover flex-shrink-0 border border-app cursor-zoom-in"
+                              className="w-12 h-12 rounded-xl object-cover flex-shrink-0 border border-app"
                               onDoubleClick={(e) => {
                                 e.stopPropagation();
-                                openImageLightbox(client.image_path, client.name);
                               }}
                               onError={(e) => {
                                 (e.currentTarget as HTMLImageElement).style.display = "none";

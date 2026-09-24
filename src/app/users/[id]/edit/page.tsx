@@ -25,7 +25,6 @@ import {
 import { compressImage } from "@/lib/imageCompression";
 import { openCamera } from "@/lib/nativeCamera";
 import { useImageUpload } from "@/lib/useImageUpload";
-import { openImageLightbox } from "@/components/ImageLightbox";
 import SearchableSelect from "@/components/SearchableSelect";
 import PageLoader from "@/components/PageLoader";
 import { toast } from "@/lib/toast";
@@ -254,8 +253,8 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
                   alt={fullName || "User"}
                   width={40}
                   height={40}
-                  className="w-10 h-10 rounded-xl object-cover flex-shrink-0 border border-white/10 cursor-zoom-in"
-                  onDoubleClick={() => openImageLightbox(avatarUrl, fullName || "User")}
+                  className="w-10 h-10 rounded-xl object-cover flex-shrink-0 border border-white/10"
+                  
                   onError={(e) => {
                     (e.currentTarget as HTMLImageElement).style.display = "none";
                   }}

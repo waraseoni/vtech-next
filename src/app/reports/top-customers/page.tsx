@@ -3,7 +3,6 @@ import { useState, useEffect, useCallback, Suspense } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import Image from "next/image";
-import { openImageLightbox } from "@/components/ImageLightbox";
 import { safeImageSrc } from "@/lib/image-utils";
 import { Loader2, Printer, Star, X } from "lucide-react";
 import { todayIST, formatIST, startOfMonthIST, endOfMonthIST } from "@/lib/dateUtils";
@@ -37,7 +36,7 @@ const ClientAvatar = ({
       width={32}
       height={32}
       className={`${cls} rounded-full object-cover flex-shrink-0 border border-white/10 cursor-zoom-in`}
-      onDoubleClick={() => openImageLightbox(src, name)}
+      
       onError={(e) => {
         (e.currentTarget as HTMLImageElement).style.display = "none";
       }}

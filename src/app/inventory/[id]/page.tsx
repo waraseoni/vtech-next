@@ -3,7 +3,6 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { openImageLightbox } from "@/components/ImageLightbox";
 import { safeImageSrc } from "@/lib/image-utils";
 import { supabase, getCachedUser } from "@/lib/supabase";
 import { stockStatusStyle, alertThreshold, stockValue } from "@/lib/inventory";
@@ -553,8 +552,8 @@ export default function ProductDetailPage() {
                       alt={product.name}
                       width={64}
                       height={64}
-                      className="w-16 h-16 rounded-2xl object-cover border border-app cursor-zoom-in"
-                      onDoubleClick={() => openImageLightbox(product.image_path, product.name)}
+                      className="w-16 h-16 rounded-2xl object-cover border border-app"
+                      
                     />
                     <span
                       className={`absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full border-2 border-app ${st.bar}`}

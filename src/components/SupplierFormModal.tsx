@@ -5,7 +5,6 @@ import Image from "next/image";
 import { supabase } from "@/lib/supabase";
 import { compressImage } from "@/lib/imageCompression";
 import { openCamera } from "@/lib/nativeCamera";
-import { openImageLightbox } from "@/components/ImageLightbox";
 import { useImageUpload } from "@/lib/useImageUpload";
 import {
   X,
@@ -505,8 +504,8 @@ export default function SupplierFormModal({ open, editing, onClose, onSaved }: P
                     alt="Visiting card"
                     width={112}
                     height={112}
-                    className="w-28 h-28 rounded-xl object-cover border border-app cursor-zoom-in"
-                    onDoubleClick={() => openImageLightbox(previewSrc, "Visiting Card Preview")}
+                    className="w-28 h-28 rounded-xl object-cover border border-app"
+                    
                   />
                 ) : (
                   <div className="w-28 h-28 rounded-xl bg-white/5 border border-dashed border-app-2 flex items-center justify-center">

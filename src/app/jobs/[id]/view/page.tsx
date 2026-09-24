@@ -6,7 +6,6 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { safeBack } from "@/lib/utils";
 import Image from "next/image";
-import { openImageLightbox } from "@/components/ImageLightbox";
 import { safeImageSrc } from "@/lib/image-utils";
 import {
   ArrowLeft,
@@ -1265,8 +1264,8 @@ ${svcHtml}${prodHtml}
                               alt="Item"
                               width={640}
                               height={128}
-                              className="w-full h-32 object-cover rounded-lg border border-app hover:opacity-80 transition-opacity cursor-zoom-in"
-                              onDoubleClick={() => openImageLightbox(img.image_path, "Job Photo")}
+                              className="w-full h-32 object-cover rounded-lg border border-app hover:opacity-80 transition-opacity"
+                              
                               onError={(e) => {
                                 (e.target as HTMLImageElement).style.display = "none";
                               }}

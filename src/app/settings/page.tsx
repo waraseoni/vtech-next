@@ -4,7 +4,6 @@ import { supabase, getCachedUser } from "@/lib/supabase";
 import { openCamera } from "@/lib/nativeCamera";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { openImageLightbox } from "@/components/ImageLightbox";
 import { APP_VERSION_FULL } from "@/lib/app-version";
 import {
   Settings2,
@@ -751,8 +750,8 @@ export default function SettingsPage() {
                         alt="Logo"
                         width={200}
                         height={64}
-                        className="max-h-16 max-w-[200px] object-contain bg-white rounded-lg p-1 cursor-zoom-in"
-                        onDoubleClick={() => openImageLightbox(logo, "System Logo")}
+                        className="max-h-16 max-w-[200px] object-contain bg-white rounded-lg p-1"
+                        
                       />
                     ) : (
                       <div className="w-24 h-16 rounded-lg bg-white/5 border border-dashed border-app-2 flex items-center justify-center">
@@ -860,8 +859,8 @@ export default function SettingsPage() {
                         alt="Cover"
                         width={260}
                         height={112}
-                        className="max-h-28 max-w-[260px] object-cover rounded-lg border border-app cursor-zoom-in"
-                        onDoubleClick={() => openImageLightbox(cover, "Website Cover")}
+                        className="max-h-28 max-w-[260px] object-cover rounded-lg border border-app"
+                        
                       />
                     ) : (
                       <div className="w-36 h-24 rounded-lg bg-white/5 border border-dashed border-app-2 flex items-center justify-center">
@@ -1314,8 +1313,8 @@ export default function SettingsPage() {
                     alt="Signature"
                     width={200}
                     height={64}
-                    className="max-h-16 object-contain cursor-zoom-in"
-                    onDoubleClick={() => openImageLightbox(signature, "Invoice Signature")}
+                    className="max-h-16 object-contain"
+                    
                   />
                   <button
                     type="button"
@@ -1699,8 +1698,8 @@ export default function SettingsPage() {
                   alt="Logo"
                   width={160}
                   height={48}
-                  className="max-h-12 max-w-[160px] object-contain bg-white rounded-lg p-0.5 cursor-zoom-in"
-                  onDoubleClick={() => openImageLightbox(logo, "System Logo")}
+                  className="max-h-12 max-w-[160px] object-contain bg-white rounded-lg p-0.5"
+                  
                 />
               )}
               <p className="text-white font-black text-base">{name || "System Name"}</p>

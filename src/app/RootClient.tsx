@@ -2,7 +2,6 @@
 import PWAHead from "../components/PWAHead";
 import LiveClock from "../components/LiveClock";
 import LicenseGate from "../components/LicenseGate";
-import { ImageLightbox, openImageLightbox } from "../components/ImageLightbox";
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -1732,8 +1731,7 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
   return (
     <>
       <PWAHead />
-      <ImageLightbox />
-      <Toaster theme="dark" position="top-right" richColors closeButton />
+            <Toaster theme="dark" position="top-right" richColors closeButton />
       <NativePrintPreview />
       <SwipeNavigation
         onBack={goInAppBack}
@@ -1772,8 +1770,8 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
                     alt="Logo"
                     width={40}
                     height={40}
-                    className="w-full h-full object-contain rounded-xl cursor-zoom-in"
-                    onDoubleClick={() => openImageLightbox(brandLogo, "System Logo")}
+                    className="w-full h-full object-contain rounded-xl"
+                    
                   />
                 ) : (
                   <Sparkles size={20} className="text-white" />
@@ -1857,8 +1855,8 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
                       alt="Logo"
                       width={36}
                       height={36}
-                      className="w-full h-full object-contain rounded-xl cursor-zoom-in"
-                      onDoubleClick={() => openImageLightbox(brandLogo, "System Logo")}
+                      className="w-full h-full object-contain rounded-xl"
+                      
                     />
                   ) : (
                     <Sparkles size={18} className="text-white" />
@@ -1905,10 +1903,9 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
                     alt={displayName}
                     width={32}
                     height={32}
-                    className="w-8 h-8 rounded-lg object-cover flex-shrink-0 border border-white/10 cursor-zoom-in"
+                    className="w-8 h-8 rounded-lg object-cover flex-shrink-0 border border-white/10"
                     onDoubleClick={(e) => {
                       e.stopPropagation();
-                      openImageLightbox(profile.avatar_url, displayName);
                     }}
                     onError={(e) => {
                       (e.currentTarget as HTMLImageElement).style.display = "none";
@@ -2032,10 +2029,9 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
                     alt={displayName}
                     width={36}
                     height={36}
-                    className="w-9 h-9 rounded-xl object-cover shadow-md flex-shrink-0 border border-white/10 cursor-zoom-in"
+                    className="w-9 h-9 rounded-xl object-cover shadow-md flex-shrink-0 border border-white/10"
                     onDoubleClick={(e) => {
                       e.stopPropagation();
-                      openImageLightbox(profile.avatar_url, displayName);
                     }}
                     onError={(e) => {
                       (e.currentTarget as HTMLImageElement).style.display = "none";

@@ -18,8 +18,6 @@ import {
   CalendarDays,
 } from "lucide-react";
 import Link from "next/link";
-import { openImageLightbox } from "@/components/ImageLightbox";
-
 const JOB_STATUS: Record<number, { label: string; cls: string }> = {
   0: { label: "Pending", cls: "bg-muted/15 text-app-2 border-muted/30" },
   1: { label: "In Progress", cls: "bg-sky-500/15 text-sky-300 border-sky-500/30" },
@@ -288,10 +286,8 @@ export default function PartsPendingReport() {
                             <img
                               src={p.photo_url}
                               alt={p.product_name}
-                              className="w-9 h-9 rounded-lg object-cover border border-app flex-shrink-0 cursor-zoom-in"
-                              onDoubleClick={() =>
-                                openImageLightbox(p.photo_url, `Spare: ${p.product_name}`)
-                              }
+                              className="w-9 h-9 rounded-lg object-cover border border-app flex-shrink-0"
+                              
                             />
                           ) : (
                             <div className="w-9 h-9 rounded-lg bg-app border border-app flex items-center justify-center flex-shrink-0">

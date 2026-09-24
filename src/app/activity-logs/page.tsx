@@ -19,8 +19,7 @@ import {
 } from "lucide-react";
 import { formatIST } from "@/lib/dateUtils";
 import PageLoader from "@/components/PageLoader";
-  import { openImageLightbox } from "@/components/ImageLightbox";
-import Link from "next/link";
+  import Link from "next/link";
 
 interface LogEntry {
   id: number;
@@ -60,7 +59,7 @@ const UserAvatar = ({
       width={32}
       height={32}
       className={`${cls} rounded-full object-cover flex-shrink-0 border border-white/10 cursor-zoom-in`}
-      onDoubleClick={() => openImageLightbox(image, name || "User")}
+      
       onError={(e) => {
         (e.currentTarget as HTMLImageElement).style.display = "none";
       }}

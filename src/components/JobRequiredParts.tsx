@@ -4,7 +4,6 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { supabase } from "@/lib/supabase";
-import { openImageLightbox } from "@/components/ImageLightbox";
 import { safeImageSrc } from "@/lib/image-utils";
 import {
   Plus,
@@ -311,8 +310,8 @@ export default function JobRequiredParts({ numId, jobStatus, onToast }: Props) {
                         alt="Spare"
                         width={64}
                         height={64}
-                        className="w-16 h-16 object-cover rounded-lg border border-app cursor-zoom-in"
-                        onDoubleClick={() => openImageLightbox(part.photo_url!, "Required Spare")}
+                        className="w-16 h-16 object-cover rounded-lg border border-app"
+                        
                         onError={(e) => {
                           (e.target as HTMLImageElement).style.visibility = "hidden";
                         }}
@@ -649,8 +648,8 @@ export default function JobRequiredParts({ numId, jobStatus, onToast }: Props) {
                       alt="New spare"
                       width={64}
                       height={64}
-                      className="w-16 h-16 object-cover rounded-lg border border-app cursor-zoom-in"
-                      onDoubleClick={() => openImageLightbox(photoPreview, "New Spare Photo")}
+                      className="w-16 h-16 object-cover rounded-lg border border-app"
+                      
                     />
                     <button
                       type="button"

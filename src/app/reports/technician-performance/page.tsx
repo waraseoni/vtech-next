@@ -4,7 +4,6 @@ import { useEffect, useState, useCallback } from "react";
 import AdminPage from "@/app/components/AdminPage";
 import { supabase } from "@/lib/supabase";
 import Image from "next/image";
-import { openImageLightbox } from "@/components/ImageLightbox";
 import { safeImageSrc } from "@/lib/image-utils";
 import {
   Loader2,
@@ -197,8 +196,8 @@ export default function TechnicianPerformancePage() {
                         alt={m.name}
                         width={40}
                         height={40}
-                        className="w-10 h-10 rounded-full object-cover border border-white/10 flex-shrink-0 cursor-zoom-in"
-                        onDoubleClick={() => openImageLightbox(m.image_path, m.name)}
+                        className="w-10 h-10 rounded-full object-cover border border-white/10 flex-shrink-0"
+                        
                         onError={(e) => {
                           (e.currentTarget as HTMLImageElement).style.display = "none";
                         }}

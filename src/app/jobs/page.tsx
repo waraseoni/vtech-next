@@ -76,7 +76,6 @@ import { fetchOpenPartCounts } from "@/lib/requiredParts";
 import { substituteTemplate, firmVars, resolveTemplate } from "@/lib/whatsapp";
 import { logActivity } from "@/lib/activity";
 import { getNextJobId, bumpJobCounter } from "@/lib/jobIdCounter";
-import { openImageLightbox } from "@/components/ImageLightbox";
 import { safeImageSrc } from "@/lib/image-utils";
 import { JOB_STATUS } from "@/lib/status-colors";
 import { logger } from "@/lib/logger";
@@ -181,8 +180,8 @@ const ClientMiniAvatar = ({ image, name }: { image?: string; name: string }) => 
         alt={name}
         width={32}
         height={32}
-        className="w-8 h-8 rounded-full object-cover flex-shrink-0 cursor-zoom-in border border-white/10"
-        onDoubleClick={() => openImageLightbox(src, name)}
+        className="w-8 h-8 rounded-full object-cover flex-shrink-0border border-white/10"
+        
         onError={(e) => {
           (e.currentTarget as HTMLImageElement).style.display = "none";
         }}

@@ -34,8 +34,6 @@ import {
   Link as LinkIcon,
 } from "lucide-react";
 import PageLoader from "@/components/PageLoader";
-import { openImageLightbox } from "@/components/ImageLightbox";
-
 // ─── Types ────────────────────────────────────────────────────────────────────
 type LocGroup = {
   parts: LocationParts;
@@ -984,7 +982,7 @@ export default function LocatePage() {
             </p>
             <div className="mt-4 bg-white rounded-2xl p-3 inline-block mx-auto">
               {qrUrl ? (
-                <Image src={qrUrl} alt="QR" width={176} height={176} className="w-44 h-44 cursor-zoom-in" onDoubleClick={() => openImageLightbox(qrUrl, "Shelf Location QR")} />
+                <Image src={qrUrl} alt="QR" width={176} height={176} className="w-44 h-44"  />
               ) : (
                 <Loader2 size={40} className="animate-spin text-muted" />
               )}

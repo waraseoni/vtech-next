@@ -31,9 +31,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import AttendanceModal from "./AttendanceModal";
 import { currentMonthIST, parseISTDate, hoursBetweenIST, fmtTimeIST } from "@/lib/dateUtils";
 import { requireAdmin } from "@/lib/requireAdmin";
-  import { openImageLightbox } from "@/components/ImageLightbox";
-
-interface Mechanic {
+  interface Mechanic {
   id: number;
   name: string;
   image: string | null;
@@ -78,7 +76,7 @@ const MechAvatar = ({
       width={28}
       height={28}
       className={`${cls} rounded-full object-cover flex-shrink-0 border border-white/10 ring-1 ring-blue-500/10 cursor-zoom-in`}
-      onDoubleClick={() => openImageLightbox(image, name)}
+      
       onError={(e) => {
         (e.currentTarget as HTMLImageElement).style.display = "none";
       }}

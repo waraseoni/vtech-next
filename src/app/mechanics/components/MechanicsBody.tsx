@@ -4,7 +4,6 @@ import { useState, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
 import Image from "next/image";
-import { openImageLightbox } from "@/components/ImageLightbox";
 import { safeImageSrc } from "@/lib/image-utils";
 import {
   Search,
@@ -391,10 +390,9 @@ export default function MechanicsBody({
                               alt={name}
                               width={36}
                               height={36}
-                              className="w-9 h-9 rounded-xl object-cover flex-shrink-0 border border-app cursor-zoom-in"
+                              className="w-9 h-9 rounded-xl object-cover flex-shrink-0 border border-app"
                               onDoubleClick={(e) => {
                                 e.stopPropagation();
-                                openImageLightbox(m.image_path, name);
                               }}
                               onError={(e) => {
                                 (e.currentTarget as HTMLImageElement).style.display = "none";

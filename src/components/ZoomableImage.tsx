@@ -1,8 +1,6 @@
 "use client";
 
 import Image from "next/image";
-import { openImageLightbox } from "@/components/ImageLightbox";
-
 type Props = {
   src: string;
   alt: string;
@@ -20,7 +18,7 @@ export default function ZoomableImage({ src, alt, className, ...rest }: Props) {
       alt={alt}
       {...rest}
       className={`${className || ""} cursor-zoom-in`}
-      onDoubleClick={() => openImageLightbox(src, alt)}
+      
     />
   );
 }

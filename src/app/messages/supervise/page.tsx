@@ -12,8 +12,6 @@ import {
   type ProfileLite,
 } from "@/lib/messaging";
 import { mediaPublicUrl } from "@/lib/media";
-import { openImageLightbox } from "@/components/ImageLightbox";
-
 const fmtTime = (s: string) =>
   new Date(s).toLocaleTimeString("en-IN", {
     timeZone: "Asia/Kolkata",
@@ -42,8 +40,8 @@ function Avatar({ name, url, size = 36 }: { name: string | null | undefined; url
         src={src}
         alt={name || "avatar"}
         style={{ width: size, height: size }}
-        className="rounded-full object-cover bg-slate-700 shrink-0 cursor-zoom-in"
-        onDoubleClick={() => openImageLightbox(src, name || "User")}
+        className="rounded-full object-cover bg-slate-700 shrink-0"
+        
       />
     );
   }
@@ -301,15 +299,9 @@ export default function SupervisePage() {
                             <img
                               src={mediaPublicUrl(m.media_url!)}
                               alt={m.media_name || "media"}
-                              className="max-h-48 w-auto rounded-lg border border-black/20 cursor-zoom-in"
+                              className="max-h-48 w-auto rounded-lg border border-black/20"
                               loading="lazy"
-                              onDoubleClick={() =>
-                                openImageLightbox(
-                                  mediaPublicUrl(m.media_url!),
-                                  m.media_name || "Chat Image",
-                                )
-                              }
-                            />
+                               />
                           ) : (
                             <a
                               href={mediaPublicUrl(m.media_url!)}

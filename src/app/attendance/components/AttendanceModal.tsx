@@ -25,9 +25,7 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import { deriveStatusFromTimes, hoursBetweenIST } from "@/lib/dateUtils";
-  import { openImageLightbox } from "@/components/ImageLightbox";
-
-interface Props {
+  interface Props {
   mechanicId: number;
   mechanicName: string;
   mechanicImage?: string | null;
@@ -217,8 +215,8 @@ export default function AttendanceModal({
                   alt={mechanicName}
                   width={32}
                   height={32}
-                  className="w-8 h-8 rounded-full object-cover flex-shrink-0 border border-white/10 cursor-zoom-in"
-                  onDoubleClick={() => openImageLightbox(mechanicImage, mechanicName)}
+                  className="w-8 h-8 rounded-full object-cover flex-shrink-0 border border-white/10"
+                  
                   onError={(e) => {
                     (e.currentTarget as HTMLImageElement).style.display = "none";
                   }}

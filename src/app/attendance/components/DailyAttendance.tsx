@@ -41,8 +41,7 @@ import {
   deriveStatusFromTimes,
 } from "@/lib/dateUtils";
 import { verifyAttendanceLocation, geoErrorMessage } from "@/lib/geofence";
-  import { openImageLightbox } from "@/components/ImageLightbox";
-import { format } from "date-fns/format";
+  import { format } from "date-fns/format";
 
 interface Mechanic {
   id: number;
@@ -75,7 +74,7 @@ const MechAvatar = ({
       width={32}
       height={32}
       className={`${cls} rounded-full object-cover flex-shrink-0 border border-white/10 ring-1 ring-blue-500/10 cursor-zoom-in`}
-      onDoubleClick={() => openImageLightbox(image, name)}
+      
       onError={(e) => {
         (e.currentTarget as HTMLImageElement).style.display = "none";
       }}

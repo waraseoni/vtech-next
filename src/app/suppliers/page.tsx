@@ -336,7 +336,7 @@ export default function SuppliersPage() {
                               setZoomSrc(safeImageSrc(s.photo_url))
                             }
                             title="Visiting card bada karke dekho"
-                            className="flex-shrink-0 rounded-lg border border-transparent p-0.5 hover:border-blue-500/50 hover:scale-105 transition-all cursor-zoom-in"
+                            className="flex-shrink-0 rounded-lg border border-transparent p-0.5 hover:border-blue-500/50 hover:scale-105 transition-all"
                           >
                             <Image
                               src={safeImageSrc(s.photo_url)}
@@ -508,7 +508,7 @@ export default function SuppliersPage() {
                               type="button"
                               onClick={() => setZoomSrc(safeImageSrc(s.photo_url))}
                               title="Visiting card bada karke dekho"
-                              className="flex-shrink-0 rounded-lg border border-transparent p-0.5 hover:border-blue-500/50 transition-all cursor-zoom-in"
+                              className="flex-shrink-0 rounded-lg border border-transparent p-0.5 hover:border-blue-500/50 transition-all"
                             >
                               <Image
                                 src={safeImageSrc(s.photo_url)}

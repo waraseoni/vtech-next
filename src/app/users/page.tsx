@@ -20,7 +20,6 @@ import {
   Edit3,
   Trash2,
 } from "lucide-react";
-import { openImageLightbox } from "@/components/ImageLightbox";
 import PageLoader from "@/components/PageLoader";
 import { isOnline, lastSeenText, type Presence } from "@/lib/messaging";
 import { subscribePresence } from "@/lib/presence";
@@ -261,10 +260,9 @@ export default function UsersPage() {
         alt={name || "User"}
         width={36}
         height={36}
-        className="w-9 h-9 rounded-xl object-cover flex-shrink-0 border border-app cursor-zoom-in"
+        className="w-9 h-9 rounded-xl object-cover flex-shrink-0 border border-app"
         onDoubleClick={(e) => {
           e.stopPropagation();
-          openImageLightbox(avatarUrl, name || "User");
         }}
         onError={(e) => {
           (e.target as HTMLImageElement).style.display = "none";
