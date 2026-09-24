@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.37.1](https://github.com/waraseoni/vtech-next/compare/v1.37.0...v1.37.1) (2026-09-24)
+
+### Bug Fixes
+
+* **sprint3:** [#14](https://github.com/waraseoni/vtech-next/issues/14) WA preview bubble theme-aware via app tokens ([d42b780](https://github.com/waraseoni/vtech-next/commit/d42b780bf4d2923db402b623dc8fb5cb694b5151))
+
 ## [1.37.0](https://github.com/waraseoni/vtech-next/compare/v1.36.0...v1.37.0) (2026-09-24)
 
 ### Features
