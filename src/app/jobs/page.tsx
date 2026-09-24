@@ -1784,6 +1784,49 @@ function JobsListContent() {
   }
 
   // ══════════════════════════════════════════════════════════════════
+  // -- Shared pagination (table + mobile card view dono me same pager) --
+  const paginationBar = (
+    <div className="flex flex-wrap items-center justify-between gap-2 bg-panel-2 px-4 py-3">
+      <div className="flex items-center gap-2 text-xs text-muted">
+        <span>Show</span>
+        <select
+          value={pageSize}
+          onChange={(e) => {
+            setPageSize(Number(e.target.value));
+            setPageIndex(0);
+          }}
+          className="bg-app border border-app text-app-2 rounded-lg px-2 py-1 text-xs outline-none"
+        >
+          <option value={25}>25</option>
+          <option value={50}>50</option>
+          <option value={100}>100</option>
+        </select>
+        <span>
+          Page {pageIndex + 1} of {totalPages || 1} • {totalRows} Total Jobs
+        </span>
+      </div>
+      <div className="flex items-center gap-2 text-xs">
+        <button
+          onClick={() => setPageIndex((p) => Math.max(p - 1, 0))}
+          disabled={pageIndex === 0}
+          className="px-3 py-1.5 bg-panel-2 border border-app text-muted rounded-lg disabled:opacity-30 hover:bg-[#2a3550] transition-all"
+        >
+          ← Prev
+        </button>
+        <span className="text-muted px-2">
+          Page {pageIndex + 1} / {totalPages || 1}
+        </span>
+        <button
+          onClick={() => setPageIndex((p) => Math.min(p + 1, totalPages - 1))}
+          disabled={pageIndex >= totalPages - 1}
+          className="px-3 py-1.5 bg-panel-2 border border-app text-muted rounded-lg disabled:opacity-30 hover:bg-[#2a3550] transition-all"
+        >
+          Next →
+        </button>
+      </div>
+    </div>
+  );
+
   // -- Shared Table (desktop + mobile card/table toggle) ------------
   const tableSection = (
     <div className="bg-panel border border-app rounded-xl overflow-hidden">
@@ -2077,46 +2120,8 @@ function JobsListContent() {
         </table>
       </div>
 
-      {/* ── Pagination ── */}
-      <div className="flex items-center justify-between border-t border-app bg-panel-2 px-4 py-3">
-        <div className="flex items-center gap-2 text-xs text-muted">
-          <span>Show</span>
-          <select
-            value={pageSize}
-            onChange={(e) => {
-              setPageSize(Number(e.target.value));
-              setPageIndex(0);
-            }}
-            className="bg-app border border-app text-app-2 rounded-lg px-2 py-1 text-xs outline-none"
-          >
-            <option value={25}>25</option>
-            <option value={50}>50</option>
-            <option value={100}>100</option>
-          </select>
-          <span>
-            Page {pageIndex + 1} of {totalPages || 1} • {totalRows} Total Jobs
-          </span>
-        </div>
-        <div className="flex items-center gap-2 text-xs">
-          <button
-            onClick={() => setPageIndex((p) => Math.max(p - 1, 0))}
-            disabled={pageIndex === 0}
-            className="px-3 py-1.5 bg-panel-2 border border-app text-muted rounded-lg disabled:opacity-30 hover:bg-[#2a3550] transition-all"
-          >
-            ← Prev
-          </button>
-          <span className="text-muted px-2">
-            Page {pageIndex + 1} / {totalPages || 1}
-          </span>
-          <button
-            onClick={() => setPageIndex((p) => Math.min(p + 1, totalPages - 1))}
-            disabled={pageIndex >= totalPages - 1}
-            className="px-3 py-1.5 bg-panel-2 border border-app text-muted rounded-lg disabled:opacity-30 hover:bg-[#2a3550] transition-all"
-          >
-            Next →
-          </button>
-        </div>
-      </div>
+      {/* ── Pagination (shared) ── */}
+      <div className="border-t border-app">{paginationBar}</div>
     </div>
   );
   // DESKTOP VIEW
@@ -2883,6 +2888,12 @@ function JobsListContent() {
                 </div>
               );
             })
+          )}
+          {/* ── Card view pagination (table wala shared pager) ── */}
+          {!(loading && hasLoaded) && paginatedTransactions.length > 0 && (
+            <div className="rounded-2xl border border-app overflow-hidden">
+              {paginationBar}
+            </div>
           )}
         </div>
       )}
