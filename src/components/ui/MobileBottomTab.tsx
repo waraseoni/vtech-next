@@ -1,6 +1,6 @@
 "use client";
 
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   ClipboardList,
@@ -14,12 +14,11 @@ const TABS = [
   { key: "jobs", href: "/jobs", icon: ClipboardList, label: "Jobs" },
   { key: "sales", href: "/direct-sales", icon: ShoppingCart, label: "Sales" },
   { key: "clients", href: "/clients", icon: Users, label: "Clients" },
-  { key: "more", href: "/messages", icon: MoreHorizontal, label: "More" },
+  { key: "more", icon: MoreHorizontal, label: "More" },
 ];
 
-export function MobileBottomTab() {
+export function MobileBottomTab({ onMore }: { onMore?: () => void }) {
   const pathname = usePathname();
-  const router = useRouter();
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden">
@@ -28,15 +27,19 @@ export function MobileBottomTab() {
           const isActive =
             tab.key === "dashboard"
               ? pathname === "/dashboard"
-              : tab.key === "more"
-              ? !["/dashboard", "/jobs", "/direct-sales", "/clients"].some((p) =>
-                  pathname.startsWith(p)
-                )
-              : pathname.startsWith(tab.href);
+              : tab.href
+              ? pathname.startsWith(tab.href)
+              : false;
           return (
             <button
               key={tab.key}
-              onClick={() => router.push(tab.href)}
+              onClick={() => {
+                if (tab.key === "more") {
+                  onMore?.();
+                } else {
+                  window.location.href = tab.href || "/";
+                }
+              }}
               className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-all min-w-[60px] ${
                 isActive
                   ? "bg-blue-600/10 text-blue-400"

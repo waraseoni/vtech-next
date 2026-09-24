@@ -1834,7 +1834,7 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
           />
           {/* Full sidebar drawer — same content as desktop */}
           <aside
-            className={`fixed top-0 left-0 h-full w-[280px] glass border-r flex flex-col z-50 transition-transform duration-300 ease-out ${
+            className={`fixed top-0 left-0 h-[calc(100dvh-56px)] w-[280px] glass border-r flex flex-col z-50 transition-transform duration-300 ease-out ${
               drawerOpen ? "translate-x-0" : "-translate-x-full"
             }`}
           >
@@ -2216,7 +2216,7 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
         Skip to content
       </a>
       <ShortcutHelpOverlay open={helpOpen} onClose={() => setHelpOpen(false)} />
-      <MobileBottomTab />
+      <MobileBottomTab onMore={() => setDrawerOpen(true)} />
     </>
   );
 }
