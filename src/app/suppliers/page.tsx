@@ -29,6 +29,8 @@ import {
   Star,
   Phone,
 } from "lucide-react";
+import { DataTable } from "@/components/ui";
+import type { Column } from "@/components/ui";
 
 const telLink = (phone: string) => `tel:+91${phone.replace(/\D/g, "")}`;
 
@@ -318,147 +320,177 @@ export default function SuppliersPage() {
         ) : (
           <>
             {!isMobile && (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead className="bg-panel-2">
-                    <tr className="text-[10px] font-black uppercase tracking-widest text-muted-2">
-                      <th className="text-left px-4 py-3">Supplier Name</th>
-                      <th className="text-left px-4 py-3">Contact Numbers</th>
-                      <th className="text-left px-4 py-3">Email</th>
-                      <th className="text-left px-4 py-3">Address</th>
-                      <th className="text-center px-4 py-3">Status</th>
-                      <th className="text-center px-4 py-3">Due</th>
-                      <th className="text-center px-4 py-3">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-[#1a2234]">
-                    {filtered.map((s) => {
+              <DataTable<SupplierRow>
+                data={filtered}
+                columns={[
+                  {
+                    key: "name",
+                    header: "Supplier Name",
+                    sortable: true,
+                    render: (s) => (
+                      <div className="flex items-center gap-2.5">
+                        {safeImageSrc(s.photo_url) ? (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setZoomSrc(safeImageSrc(s.photo_url))
+                            }
+                            title="Visiting card bada karke dekho"
+                            className="flex-shrink-0 rounded-lg border border-transparent p-0.5 hover:border-blue-500/50 hover:scale-105 transition-all cursor-zoom-in"
+                          >
+                            <Image
+                              src={safeImageSrc(s.photo_url)}
+                              alt={`${s.name} visiting card`}
+                              width={48}
+                              height={48}
+                              className="w-12 h-12 rounded-xl object-cover border border-app"
+                            />
+                          </button>
+                        ) : (
+                          <div className="w-12 h-12 rounded-xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center flex-shrink-0">
+                            <Truck size={16} className="text-violet-500" />
+                          </div>
+                        )}
+                        <Link
+                          href={`/suppliers/${s.id}`}
+                          className="font-bold text-app-2 hover:text-emerald-400 hover:underline transition-colors"
+                        >
+                          {s.name}
+                        </Link>
+                      </div>
+                    ),
+                  },
+                  {
+                    key: "contact",
+                    header: "Contact Numbers",
+                    render: (s) => (
+                      <ContactBlock
+                        persons={personsOf(s)}
+                      />
+                    ),
+                  },
+                  {
+                    key: "email",
+                    header: "Email",
+                    sortable: true,
+                    render: (s) =>
+                      s.email ? (
+                        <a
+                          href={`mailto:${s.email}`}
+                          title={`Email: ${s.email}`}
+                          className="flex items-center gap-1.5 text-muted hover:text-blue-400 text-xs hover:underline transition-colors"
+                        >
+                          <Mail size={11} className="text-muted-2" />{" "}
+                          {s.email}
+                        </a>
+                      ) : (
+                        <span className="text-app text-xs">—</span>
+                      ),
+                  },
+                  {
+                    key: "address",
+                    header: "Address",
+                    render: (s) =>
+                      s.address ? (
+                        <div
+                          className="flex items-center gap-1.5 text-muted text-xs max-w-[200px] truncate"
+                          title={s.address}
+                        >
+                          <MapPin
+                            size={11}
+                            className="text-muted-2 flex-shrink-0"
+                          />{" "}
+                          {s.address}
+                        </div>
+                      ) : (
+                        <span className="text-app text-xs">—</span>
+                      ),
+                  },
+                  {
+                    key: "status",
+                    header: "Status",
+                    align: "center",
+                    render: (s) => (
+                      <button
+                        onClick={() => toggleStatus(s)}
+                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold border transition cursor-pointer ${
+                          s.status === 1
+                            ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20"
+                            : "bg-muted/10 border-muted/20 text-muted hover:bg-muted/20"
+                        }`}
+                      >
+                        {s.status === 1 ? (
+                          <ToggleRight size={14} />
+                        ) : (
+                          <ToggleLeft size={14} />
+                        )}
+                        {s.status === 1 ? "Active" : "Inactive"}
+                      </button>
+                    ),
+                  },
+                  {
+                    key: "due",
+                    header: "Due",
+                    align: "center",
+                    render: (s) => {
+                      const due = duesMap[s.id] ?? 0;
                       return (
-                        <tr key={s.id} className="hover:bg-white/[0.02] transition-colors">
-                          <td className="px-4 py-3.5">
-                            <div className="flex items-center gap-2.5">
-                              {safeImageSrc(s.photo_url) ? (
-                                <button
-                                  type="button"
-                                  onClick={() => setZoomSrc(safeImageSrc(s.photo_url))}
-                                  title="Visiting card bada karke dekho"
-                                  className="flex-shrink-0 rounded-lg border border-transparent p-0.5 hover:border-blue-500/50 hover:scale-105 transition-all cursor-zoom-in"
-                                >
-                                  <Image
-                                    src={safeImageSrc(s.photo_url)}
-                                    alt={`${s.name} visiting card`}
-                                    width={48}
-                                    height={48}
-                                    className="w-12 h-12 rounded-xl object-cover border border-app"
-                                  />
-                                </button>
-                              ) : (
-                                <div className="w-12 h-12 rounded-xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center flex-shrink-0">
-                                  <Truck size={16} className="text-violet-500" />
-                                </div>
-                              )}
-                              <Link
-                                href={`/suppliers/${s.id}`}
-                                className="font-bold text-app-2 hover:text-emerald-400 hover:underline transition-colors"
-                              >
-                                {s.name}
-                              </Link>
-                            </div>
-                          </td>
-                          <td className="px-4 py-3.5">
-                            <ContactBlock persons={personsOf(s)} />
-                          </td>
-                          <td className="px-4 py-3.5">
-                            {s.email ? (
-                              <a
-                                href={`mailto:${s.email}`}
-                                title={`Email: ${s.email}`}
-                                className="flex items-center gap-1.5 text-muted hover:text-blue-400 text-xs hover:underline transition-colors"
-                              >
-                                <Mail size={11} className="text-muted-2" /> {s.email}
-                              </a>
-                            ) : (
-                              <span className="text-app text-xs">—</span>
-                            )}
-                          </td>
-                          <td className="px-4 py-3.5">
-                            {s.address ? (
-                              <div
-                                className="flex items-center gap-1.5 text-muted text-xs max-w-[200px] truncate"
-                                title={s.address}
-                              >
-                                <MapPin size={11} className="text-muted-2 flex-shrink-0" />{" "}
-                                {s.address}
-                              </div>
-                            ) : (
-                              <span className="text-app text-xs">—</span>
-                            )}
-                          </td>
-                          <td className="px-4 py-3.5 text-center">
-                            <button
-                              onClick={() => toggleStatus(s)}
-                              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold border transition cursor-pointer ${
-                                s.status === 1
-                                  ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20"
-                                  : "bg-muted/10 border-muted/20 text-muted hover:bg-muted/20"
-                              }`}
-                            >
-                              {s.status === 1 ? (
-                                <ToggleRight size={14} />
-                              ) : (
-                                <ToggleLeft size={14} />
-                              )}
-                              {s.status === 1 ? "Active" : "Inactive"}
-                            </button>
-                          </td>
-                          <td className="px-4 py-3.5 text-center">
-                            {(() => {
-                              const due = duesMap[s.id] ?? 0;
-                              return (
-                                <span
-                                  className={`inline-block px-2.5 py-1 rounded-full text-[10px] font-bold border ${
-                                    due > 0
-                                      ? "bg-amber-500/10 border-amber-500/20 text-amber-400"
-                                      : due < 0
-                                        ? "bg-red-500/10 border-red-500/20 text-red-400"
-                                        : "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
-                                  }`}
-                                >
-                                  ₹{due.toLocaleString("en-IN", { maximumFractionDigits: 2 })}
-                                </span>
-                              );
-                            })()}
-                          </td>
-                          <td className="px-4 py-3.5 text-center">
-                            <div className="flex items-center justify-center gap-2">
-                              <Link
-                                href={`/suppliers/${s.id}`}
-                                className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 transition"
-                              >
-                                <Eye size={13} />
-                              </Link>
-                              <button
-                                onClick={() => openEdit(s)}
-                                className="p-1.5 rounded-lg bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 transition"
-                              >
-                                <Edit3 size={13} />
-                              </button>
-                              {userRole === "admin" && (
-                                <button
-                                  onClick={() => handleDelete(s.id, s.name)}
-                                  className="p-1.5 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 transition"
-                                >
-                                  <Trash2 size={13} />
-                                </button>
-                              )}
-                            </div>
-                          </td>
-                        </tr>
+                        <span
+                          className={`inline-block px-2.5 py-1 rounded-full text-[10px] font-bold border ${
+                            due > 0
+                              ? "bg-amber-500/10 border-amber-500/20 text-amber-400"
+                              : due < 0
+                              ? "bg-red-500/10 border-red-500/20 text-red-400"
+                              : "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
+                          }`}
+                        >
+                          ₹{due.toLocaleString("en-IN", {
+                            maximumFractionDigits: 2,
+                          })}
+                        </span>
                       );
-                    })}
-                  </tbody>
-                </table>
-              </div>
+                    },
+                  },
+                  {
+                    key: "actions",
+                    header: "Actions",
+                    align: "center",
+                    render: (s) => (
+                      <div className="flex items-center justify-center gap-2">
+                        <Link
+                          href={`/suppliers/${s.id}`}
+                          className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 transition"
+                        >
+                          <Eye size={13} />
+                        </Link>
+                        <button
+                          onClick={() => openEdit(s)}
+                          className="p-1.5 rounded-lg bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 transition"
+                        >
+                          <Edit3 size={13} />
+                        </button>
+                        {userRole === "admin" && (
+                          <button
+                            onClick={() =>
+                              handleDelete(s.id, s.name)
+                            }
+                            className="p-1.5 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 transition"
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        )}
+                      </div>
+                    ),
+                  },
+                ]}
+                keyField="id"
+                loading={loading}
+                emptyMessage="No suppliers found."
+                searchQuery={search}
+                setSearchQuery={setSearch}
+                totalItems={filtered.length}
+                onSort={(field) => console.log("sort", field)}
+              />
             )}
 
             {isMobile && (

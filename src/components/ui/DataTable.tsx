@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import {
   ChevronLeft,
   ChevronRight,
@@ -79,7 +79,7 @@ export function DataTable<T>({
   const safePage = Math.min(Math.max(1, localPage), pageCount);
 
   // Sync external page changes
-  useMemo(() => {
+  useEffect(() => {
     setLocalPage(page);
   }, [page]);
 
@@ -235,7 +235,7 @@ export function DataTable<T>({
             >
               <ChevronLeft size={14} />
             </button>
-            {pageNumbers.map((p, i) =>
+            {pageNumbers.map((p: number | string, i: number) =>
               typeof p === "string" ? (
                 <span key={`ellipsis-${i}`} className="px-2 py-1.5 text-muted text-xs">
                   …
