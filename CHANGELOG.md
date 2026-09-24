@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.37.0](https://github.com/waraseoni/vtech-next/compare/v1.36.0...v1.37.0) (2026-09-24)
+
+### Features
+
+* **sprint3:** [#14](https://github.com/waraseoni/vtech-next/issues/14) shared WA preview modal, wired into jobs bulk + single send ([02d1562](https://github.com/waraseoni/vtech-next/commit/02d1562e5f38d8672cb8580cf8172a831dd29373))
+
 ## [1.36.0](https://github.com/waraseoni/vtech-next/compare/v1.35.0...v1.36.0) (2026-09-24)
 
 ### Features
