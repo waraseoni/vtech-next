@@ -361,7 +361,8 @@ User directive: **no commit/push** until told.
 - [x] #9 Keyboard shortcuts: g-prefix + `?` help + skip-to-content — `src/hooks/useKeyboardShortcuts.ts`, `ShortcutHelpOverlay.tsx`, committed `eaa898e`
 - [x] #10 Image compression on ALL uploads — `compressImage` already integrated in 8 call sites (imageCompression.ts + media.ts); no new work needed
 - [x] #7 Mobile bottom tab bar — committed `960c797`
-- [ ] #8 Route cleanup (old redirects skip protected, ledger/salary merge, Lightbox kill from 17 files)
+- [x] #8 Lightbox kill — removed ImageLightbox from 39 files, committed `e95c2b7`
+- [ ] #8 remaining: old redirects (skip protected), ledger/salary merge
 
 ---
 
