@@ -1084,24 +1084,18 @@ function DirectSalesPageInner() {
           emptyMessage="No sales in this period"
         />
         {sales.length > 0 && (
-          <div className="border-t border-app bg-panel-2">
-            <tfoot>
-              <tr>
-                <td
-                  colSpan={4}
-                  className="px-4 py-3 text-[10px] font-extrabold uppercase tracking-wider text-muted-2"
-                >
-                  {sales.length} sales · {formatIST(dateFrom, { day: "2-digit", month: "short" })}{" "}
-                  → {formatIST(dateTo, { day: "2-digit", month: "short", year: "numeric" })}
-                </td>
-                <td className="px-4 py-3 text-right font-black text-emerald-400 text-base">
-                  ₹{stats.totalAmount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
-                </td>
-                <td colSpan={2} className="px-4 py-3 text-xs text-muted-2 font-bold">
-                  Avg: ₹{stats.avgAmount.toFixed(0)}
-                </td>
-              </tr>
-            </tfoot>
+          <div className="border-t border-app bg-panel-2 flex items-center gap-4 px-4 py-3">
+            {/* Totals footer — plain div (tfoot div ke andar invalid HTML hai → hydration error) */}
+            <p className="text-[10px] font-extrabold uppercase tracking-wider text-muted-2">
+              {sales.length} sales · {formatIST(dateFrom, { day: "2-digit", month: "short" })}{" "}
+              → {formatIST(dateTo, { day: "2-digit", month: "short", year: "numeric" })}
+            </p>
+            <p className="ml-auto text-right font-black text-emerald-400 text-base">
+              ₹{stats.totalAmount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+            </p>
+            <p className="text-xs text-muted-2 font-bold">
+              Avg: ₹{stats.avgAmount.toFixed(0)}
+            </p>
           </div>
         )}
       </div>
