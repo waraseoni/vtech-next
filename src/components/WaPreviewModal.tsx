@@ -67,9 +67,11 @@ export default function WaPreviewModal({
             <p className="text-[10px] font-black uppercase tracking-wider text-muted-2 mb-1.5">
               Preview
             </p>
-            {/* Rendered preview — theme-aware bubble (app token system) */}
+              {/* Rendered preview — theme-aware bubble (app token system) */}
             <div className="bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 rounded-xl rounded-tr-sm px-3.5 py-2.5 shadow-sm ml-6">
-              <p className="text-sm leading-relaxed whitespace-pre-wrap break-words text-app dark:text-app-2">
+              {/* NOTE: .text-app plain class hai (var-based, dono themes me sahi) —
+                  ispar dark: prefix mat lagao, dead code ban jata hai */}
+              <p className="text-sm leading-relaxed whitespace-pre-wrap break-words text-app">
                 {message || <span className="opacity-50 italic">Empty message…</span>}
               </p>
               <p className="text-[10px] text-right mt-1 text-muted-2">
@@ -82,11 +84,14 @@ export default function WaPreviewModal({
               <p className="text-[10px] font-black uppercase tracking-wider text-muted-2 mb-1.5">
                 Edit message
               </p>
+              {/* Edit box: plain theme-aware tokens (.bg-panel/.text-app-2).
+                  dark:bg-app / dark:text-app-2 DEAD hain (plain classes par
+                  dark: kaam nahi karta) — wahi purana white-bg bug tha. */}
               <textarea
                 rows={6}
                 value={message}
                 onChange={(e) => onMessageChange?.(e.target.value)}
-                className="w-full bg-slate-50 dark:bg-app border border-emerald-500/40 text-app dark:text-app-2 rounded-xl p-3 text-sm font-mono leading-relaxed outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/50 resize-none"
+                className="w-full bg-panel border border-emerald-500/40 text-app-2 rounded-xl p-3 text-sm font-mono leading-relaxed outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/50 resize-none"
               />
             </div>
           )}
