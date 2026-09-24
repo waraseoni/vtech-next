@@ -6,6 +6,7 @@ import Link from "next/link";
 import {
   Save,
   ArrowLeft,
+  ArrowRight,
   Loader2,
   Wrench,
   Package,
@@ -132,6 +133,8 @@ function ManageJobPageInner({ params }: { params: Promise<{ id?: string }> }) {
 
   // Custom (non-inventory) spare
   const [showCustom, setShowCustom] = useState(false);
+  // Sprint 3 #15: 2-step wizard (create mode only — edit me full form)
+  const [step, setStep] = useState(1);
   const [customName, setCustomName] = useState("");
   const [customPrice, setCustomPrice] = useState("");
 
@@ -555,6 +558,36 @@ function ManageJobPageInner({ params }: { params: Promise<{ id?: string }> }) {
       prev.map((r) => (r.tempId === tempId ? { ...r, price: parseFloat(val) || 0 } : r))
     );
 
+  // ── WIZARD (Sprint 3 #15, create mode) ───────────────────────────────────
+  // Step 1 gate: wahi 3 checks jo handleSave karta hai — Next aur Quick Save
+  // dono isi se guzarte hain (koi dheel nahi, billing optional hai).
+  const validateStep1 = () => {
+    if (!selectedClient) {
+      toast.error("Client select karo!");
+      return false;
+    }
+    if (!fault.trim()) {
+      toast.error("Fault description zaroori hai!");
+      return false;
+    }
+    if (!selectedMechanic) {
+      toast.error("Mechanic select karo!");
+      return false;
+    }
+    return true;
+  };
+  const goNext = () => {
+    if (!validateStep1()) return;
+    setStep(2);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+  // Quick Save: billing skip karke Pending job banao (amount 0) —
+  // naye client ki billing aksar kaam ke baad hoti hai, job view se bill hoga.
+  const quickSave = () => {
+    if (!validateStep1()) return;
+    handleSave();
+  };
+
   const handleSave = async () => {
     if (savingRef.current) return;
     if (!selectedClient) {
@@ -911,7 +944,40 @@ function ManageJobPageInner({ params }: { params: Promise<{ id?: string }> }) {
           </div>
         </div>
 
+        {/* ── WIZARD STEPS (Sprint 3 #15, create mode only) ──────────── */}
+        {!isEdit && (
+          <div className="flex items-center gap-2 bg-panel rounded-2xl border border-app px-4 py-3">
+            <button
+              type="button"
+              onClick={() => setStep(1)}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-black transition-all ${
+                step === 1
+                  ? "bg-blue-600 text-white shadow-lg shadow-blue-600/20"
+                  : "text-blue-400 hover:bg-blue-600/10"
+              }`}
+            >
+              <span className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center text-[10px]">
+                1
+              </span>
+              Job Details
+            </button>
+            <div className="flex-1 h-px bg-app" />
+            <div
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-black ${
+                step === 2 ? "bg-blue-600 text-white shadow-lg shadow-blue-600/20" : "text-muted-2"
+              }`}
+            >
+              <span className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center text-[10px]">
+                2
+              </span>
+              Billing
+            </div>
+          </div>
+        )}
+
         {/* ── SECTION 1: CLIENT + JOB NO + MECHANIC ─────────────────── */}
+        {(isEdit || step === 1) && (
+          <>
         <div className="bg-panel rounded-2xl border border-app p-5">
           <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-2 mb-4">
             1. Client & Assignment
@@ -1065,7 +1131,10 @@ function ManageJobPageInner({ params }: { params: Promise<{ id?: string }> }) {
             </div>
           </div>
         </div>
-
+          </>
+        )}
+        {(isEdit || step === 2) && (
+          <>
         {/* ── SECTION 3: SERVICES + PRODUCTS ───────────────────────── */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {/* SERVICES */}
@@ -1337,9 +1406,61 @@ function ManageJobPageInner({ params }: { params: Promise<{ id?: string }> }) {
             )}
           </div>
         </div>
+          </>
+        )}
+
+        {/* ── WIZARD NAV: NEXT (Sprint 3 #15, create step 1 only) ───── */}
+        {!isEdit && step === 1 && (
+          <div className="flex items-center gap-3 pb-4 flex-wrap">
+            <button
+              type="button"
+              onClick={quickSave}
+              disabled={saving}
+              title="Billing ke bina save — Pending job banegi, baad me bill karna"
+              className="px-5 py-3.5 bg-panel-2 border border-app hover:border-muted text-muted hover:text-white rounded-2xl font-bold text-sm transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed active:scale-95"
+            >
+              {saving ? (
+                <Loader2 size={16} className="animate-spin" />
+              ) : (
+                <Save size={16} />
+              )}
+              Quick Save
+            </button>
+            <Link
+              href="/jobs"
+              className="px-5 py-3.5 bg-panel-2 border border-app hover:border-muted text-muted hover:text-white rounded-2xl font-bold text-sm transition-all no-underline"
+            >
+              Cancel
+            </Link>
+            <div className="flex-1 text-xs text-muted-2 font-bold hidden lg:block truncate text-right">
+              {selectedClient ? `Client: ${selectedClient.fullname}` : "Client select karo"} ·{" "}
+              {item || "Item?"} · {fault || "Fault?"}
+            </div>
+            <button
+              type="button"
+              onClick={goNext}
+              className="flex-1 sm:flex-none sm:px-12 py-3.5 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl font-black flex items-center justify-center gap-2 transition-all shadow-lg shadow-blue-600/20 text-sm uppercase tracking-wide active:scale-95"
+            >
+              Next: Billing <ArrowRight size={17} strokeWidth={2.5} />
+            </button>
+          </div>
+        )}
 
         {/* ── SAVE BUTTON ───────────────────────────────────────────── */}
+        {(isEdit || step === 2) && (
         <div className="flex items-center gap-3 pb-4">
+          {!isEdit && (
+            <button
+              type="button"
+              onClick={() => {
+                setStep(1);
+                window.scrollTo({ top: 0, behavior: "smooth" });
+              }}
+              className="px-6 py-3.5 bg-panel-2 border border-app hover:border-muted text-muted hover:text-white rounded-2xl font-bold text-sm transition-all flex items-center gap-2"
+            >
+              <ArrowLeft size={16} /> Back
+            </button>
+          )}
           <button
             onClick={handleSave}
             disabled={saving}
@@ -1368,6 +1489,7 @@ function ManageJobPageInner({ params }: { params: Promise<{ id?: string }> }) {
             Cancel
           </Link>
         </div>
+        )}
       </div>
     </div>
   );
