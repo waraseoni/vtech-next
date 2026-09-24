@@ -980,7 +980,7 @@ export default function DailyAttendance({
         <button
           type="submit"
           disabled={saving}
-          className="md:hidden fixed bottom-4 right-4 z-[60] w-12 h-12 bg-gradient-to-br from-blue-600 to-blue-700 rounded-full shadow-xl shadow-blue-500/30 flex items-center justify-center text-white border border-blue-500/30 transition-all active:scale-95 disabled:opacity-50"
+          className="md:hidden fixed bottom-20 right-4 z-[60] w-12 h-12 bg-gradient-to-br from-blue-600 to-blue-700 rounded-full shadow-xl shadow-blue-500/30 flex items-center justify-center text-white border border-blue-500/30 transition-all active:scale-95 disabled:opacity-50"
         >
           {saving ? (
             <Loader2 className="animate-spin" size={22} />

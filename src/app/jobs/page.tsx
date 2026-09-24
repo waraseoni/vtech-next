@@ -2868,7 +2868,7 @@ function JobsListContent() {
       )}
 
       {/* ── FAB ── */}
-      <div ref={fabRef} className="fixed bottom-4 right-4 z-[60] flex flex-col gap-3 items-end">
+      <div ref={fabRef} className="fixed bottom-20 right-4 z-[60] flex flex-col gap-3 items-end">
         <button
           onClick={() => setFabOpen(!fabOpen)}
           className="w-12 h-12 bg-gradient-to-br from-blue-600 to-blue-700 rounded-full shadow-xl shadow-blue-500/30 flex items-center justify-center text-white border border-blue-500/30 transition-all active:scale-95"
