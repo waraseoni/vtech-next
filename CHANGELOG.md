@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.38.0](https://github.com/waraseoni/vtech-next/compare/v1.37.2...v1.38.0) (2026-09-24)
+
+### Features
+
+* **sprint3:** [#14](https://github.com/waraseoni/vtech-next/issues/14) WA preview everywhere - all send paths via shared WaPreviewModal ([f1d2adb](https://github.com/waraseoni/vtech-next/commit/f1d2adb932e7c19459737df467531b2a33f92a65))
+
 ## [1.37.2](https://github.com/waraseoni/vtech-next/compare/v1.37.1...v1.37.2) (2026-09-24)
 
 ### Bug Fixes
