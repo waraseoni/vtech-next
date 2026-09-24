@@ -200,6 +200,43 @@ const ClientMiniAvatar = ({ image, name }: { image?: string; name: string }) => 
   );
 };
 
+// ─── Sprint 3 #13: skeleton loaders (search/filter refetch — no full reload) ──
+const TableSkeletonRows = ({ rows = 8 }: { rows?: number }) => (
+  <>
+    {Array.from({ length: rows }).map((_, i) => (
+      <tr key={i} className="border-b border-app">
+        <td colSpan={10} className="px-3 py-3">
+          <div className="flex items-center gap-3 animate-pulse">
+            <div className="w-4 h-4 rounded bg-panel-2 flex-shrink-0" />
+            <div className="h-3 rounded bg-panel-2 flex-shrink-0 w-[7%]" />
+            <div className="h-3 rounded bg-panel-2 flex-shrink-0 w-[9%]" />
+            <div className="h-3 rounded bg-panel-2 w-[20%]" />
+            <div className="h-3 rounded bg-panel-2 flex-shrink-0 w-[10%] hidden sm:block" />
+            <div className="h-3 rounded bg-panel-2 flex-shrink-0 w-[8%] hidden md:block" />
+            <div className="h-5 rounded-full bg-panel-2 flex-shrink-0 w-[8%] ml-auto" />
+          </div>
+        </td>
+      </tr>
+    ))}
+  </>
+);
+
+const CardsSkeleton = ({ count = 4 }: { count?: number }) => (
+  <>
+    {Array.from({ length: count }).map((_, i) => (
+      <div key={i} className="bg-panel rounded-2xl border border-app p-3 animate-pulse">
+        <div className="h-4 rounded bg-panel-2 w-2/5" />
+        <div className="h-3 rounded bg-panel-2 w-3/5 mt-2" />
+        <div className="flex gap-2 mt-3">
+          <div className="h-6 rounded-lg bg-panel-2 w-20" />
+          <div className="h-6 rounded-lg bg-panel-2 w-20" />
+          <div className="h-6 rounded-full bg-panel-2 w-16 ml-auto" />
+        </div>
+      </div>
+    ))}
+  </>
+);
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 const fmtDate = (d: string) => formatIST(d, { day: "2-digit", month: "2-digit", year: "numeric" });
 
@@ -886,9 +923,10 @@ function JobsListContent() {
     [userRole, fetchStats]
   );
 
-  // ── Quick Status Change ────────────────────────────────────────────────────
+  // ── Quick Status Change (Sprint 3 #13: optimistic) ──────────────────────────
+  // UI turant update hoti hai; server fail ho to rollback + error toast.
   const quickStatusChange = async (id: number, newStatus: number) => {
-    setStatusChangeLoading(id);
+    const prevTxn = transactions.find((t) => t.id === id);
     const updates: Record<string, unknown> = {
       status: newStatus,
       date_updated: toISTString(),
@@ -896,14 +934,20 @@ function JobsListContent() {
     if (newStatus === 5) {
       updates.date_completed = toISTString();
     }
+    // Optimistic: pehle local state badlo, phir server confirm karo
+    setTransactions((prev) =>
+      prev.map((t) => (t.id === id ? ({ ...t, ...updates } as Transaction) : t))
+    );
+    setStatusChangeLoading(id);
     const { error } = await supabase.from("transaction_list").update(updates).eq("id", id);
 
     if (!error) {
-      setTransactions((prev) =>
-        prev.map((t) => (t.id === id ? ({ ...t, ...updates } as Transaction) : t))
-      );
       fetchStats();
     } else {
+      // Rollback: purana row wapas lao
+      if (prevTxn) {
+        setTransactions((prev) => prev.map((t) => (t.id === id ? prevTxn : t)));
+      }
       toast.error("Status update failed: " + error.message);
     }
     setStatusChangeLoading(null);
@@ -1827,7 +1871,9 @@ function JobsListContent() {
             </tr>
           </thead>
           <tbody className="divide-y divide-[#21293d]">
-            {paginatedTransactions.map((txn, idx) => {
+            {/* Sprint 3 #13: refetch par stale rows ki jagah skeleton */}
+            {!(loading && hasLoaded) &&
+              paginatedTransactions.map((txn, idx) => {
               const clientName = getClientName(txn);
               const balance = getClientBalance(txn);
               const phone = txn.client_contact?.replace(/\D/g, "") || "";
@@ -2048,7 +2094,8 @@ function JobsListContent() {
                 </tr>
               );
             })}
-            {filteredTransactions.length === 0 && (
+            {loading && hasLoaded && <TableSkeletonRows rows={8} />}
+            {!loading && filteredTransactions.length === 0 && (
               <tr>
                 <td colSpan={10} className="text-center py-16 text-muted-2">
                   <AlertCircle className="mx-auto mb-2 text-app" size={32} />
@@ -2576,7 +2623,10 @@ function JobsListContent() {
         <div className="p-3">{tableSection}</div>
       ) : (
         <div className="p-3 space-y-3">
-          {paginatedTransactions.length === 0 ? (
+          {/* Sprint 3 #13: refetch par skeleton cards */}
+          {loading && hasLoaded ? (
+            <CardsSkeleton count={4} />
+          ) : paginatedTransactions.length === 0 ? (
             <div className="bg-panel border border-app p-10 rounded-2xl text-center">
               <AlertCircle className="mx-auto text-app mb-2" size={36} />
               <p className="text-muted text-sm font-bold">No transactions found</p>
