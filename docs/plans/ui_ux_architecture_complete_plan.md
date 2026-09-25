@@ -455,7 +455,7 @@ DataTable (server-paginated, sortable)
 
 | # | Item | Effort |
 |---|---|---|
-| 16 | RootClient split (nav.config + search hook) | 3 |
+| 16 | RootClient split (nav.config + search hook) ✅ DONE + SidebarNav move ⏳ FUTURE-BACKLOG (neeche) | 3 |
 | 17 | G3 SSR: suppliers, direct-sales, inventory lists | 4 |
 | 18 | Loading skeletons + error.tsx all segments | 2 |
 | 19 | Desktop: master-detail wide screen + density toggle | 2 |
@@ -463,6 +463,12 @@ DataTable (server-paginated, sortable)
 
 **Carry-forward P2:** swipe actions on cards, drag-drop uploads, desktop
 notifications, virtualized lists, context menus, haptics, infinite scroll.
+
+**FUTURE-BACKLOG #16b (Sprint 4 #16 ka bacha hissa — nav.config + search hook DONE):**
+`SidebarNav` (~870L bespoke JSX: badges/role-gates/submenus) ko
+`components/SidebarNav.tsx` me verbatim move karna. Config-data banana NAHI
+(rewrite risk) — sirf component move. Tab uthana jab sidebar me naya section
+banana ho. Contract: desktop + mobile drawer dono same dikhein/chalein.
 
 **FUTURE-BACKLOG #12b (Sprint 3 #12 ka bacha hissa — hook DONE `useJobList.ts`):**
 jobs `page.tsx` se bade JSX blocks nikalna — table (~300L), mobile cards

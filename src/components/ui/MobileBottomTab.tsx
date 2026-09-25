@@ -1,22 +1,9 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import {
-  ArrowLeft,
-  LayoutDashboard,
-  ClipboardList,
-  ShoppingCart,
-  Users,
-  MoreHorizontal,
-} from "lucide-react";
-
-const TABS = [
-  { key: "dashboard", href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
-  { key: "jobs", href: "/jobs", icon: ClipboardList, label: "Jobs" },
-  { key: "sales", href: "/direct-sales", icon: ShoppingCart, label: "Sales" },
-  { key: "clients", href: "/clients", icon: Users, label: "Clients" },
-  { key: "more", icon: MoreHorizontal, label: "More" },
-];
+import { ArrowLeft } from "lucide-react";
+// Sprint 4 #16: tab items central nav.config se
+import { MOBILE_TABS } from "@/config/nav.config";
 
 export function MobileBottomTab({ onMore, onBack }: { onMore?: () => void; onBack?: () => void }) {
   const pathname = usePathname();
@@ -34,7 +21,7 @@ export function MobileBottomTab({ onMore, onBack }: { onMore?: () => void; onBac
           <ArrowLeft size={20} />
           <span className="text-[9px] font-bold">Back</span>
         </button>
-        {TABS.map((tab) => {
+        {MOBILE_TABS.map((tab) => {
           const isActive =
             tab.key === "dashboard"
               ? pathname === "/dashboard"

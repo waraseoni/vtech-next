@@ -14,7 +14,6 @@ import {
   Package,
   Settings,
   Wrench,
-  Search,
   User,
   LogOut,
   Sparkles,
@@ -55,7 +54,6 @@ import {
   FileText,
   Layers,
   MapPin,
-  LocateFixed,
   Terminal,
   ListChecks,
   PackageX,
@@ -67,7 +65,6 @@ import {
 import { isModuleEnabled, isRouteDisabled } from "@/lib/modules";
 import { LITE_MODE, LITE_MODULES, isLiteRouteAllowed } from "@/lib/lite";
 import { Toaster } from "sonner";
-import { logger } from "@/lib/logger";
 import { useAppBoot } from "./useAppBoot";
 import { hardReload } from "@/lib/hardRefresh";
 import { App } from "@capacitor/app";
@@ -86,377 +83,16 @@ const NativePrintPreview = dynamic(
 import SwipeNavigation from "@/components/SwipeNavigation";
 import { ShortcutHelpOverlay } from "@/app/components/ui/ShortcutHelpOverlay";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
+// Sprint 4 #16: shortcut routes central nav.config se
+import { SHORTCUT_ROUTES } from "@/config/nav.config";
 import { fetchUnreadCount, getMyId } from "@/lib/messaging";
 import { MobileBottomTab } from "@/components/ui/MobileBottomTab";
-import { locPath } from "@/lib/locations";
 
-// ─── Universal Search ────────────────────────────────────────────────────────
-type SearchResult = {
-  id: number | string;
-  title: string;
-  subtitle: string;
-  tag: string;
-  tagColor: string;
-  href: string;
-  icon: "client" | "job" | "product" | "mechanic" | "sale" | "location" | "spot";
-};
+// (Universal search — components/NavbarSearch + hooks/useNavbarSearch me.
+// Sprint 4 #16 split.)
+import { NavbarSearch } from "@/components/NavbarSearch";
 
-function NavbarSearch() {
-  const router = useRouter();
-  const [query, setQuery] = useState("");
-  const [results, setResults] = useState<SearchResult[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [open, setOpen] = useState(false);
-  const wrapRef = useRef<HTMLDivElement>(null);
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  // Close dropdown on outside click
-  useEffect(() => {
-    const h = (e: MouseEvent) => {
-      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setOpen(false);
-    };
-    document.addEventListener("mousedown", h);
-    return () => document.removeEventListener("mousedown", h);
-  }, []);
-
-  // Ctrl+K to open search
-  useEffect(() => {
-    const h = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === "k") {
-        e.preventDefault();
-        const input = document.querySelector("[data-search-input]") as HTMLInputElement;
-        if (input) input.focus();
-        setOpen(true);
-      }
-      if (e.key === "Escape") {
-        setOpen(false);
-        setQuery("");
-      }
-    };
-    document.addEventListener("keydown", h);
-    return () => document.removeEventListener("keydown", h);
-  }, []);
-
-  const runSearch = useCallback(async (q: string) => {
-    if (!q.trim()) {
-      setResults([]);
-      setOpen(false);
-      return;
-    }
-    setLoading(true);
-    setOpen(true);
-    const like = `%${q}%`;
-    const num = parseInt(q);
-
-    try {
-      const [clientRes, jobRes, prodRes, mechRes, saleRes, locRes, spotRes] = await Promise.all([
-        // Clients — name, contact, address
-        supabase
-          .from("client_list")
-          .select("id, firstname, middlename, lastname, contact, address")
-          .eq("delete_flag", 0)
-          .or(
-            `firstname.ilike.${like},middlename.ilike.${like},lastname.ilike.${like},contact.ilike.${like},address.ilike.${like}`
-          )
-          .limit(25),
-
-        // Jobs — item, fault, job_id, code, uniq_id
-        supabase
-          .from("transaction_list")
-          .select("id, job_id, item, fault, status, date_created")
-          .eq("del_status", 0)
-          .or(
-            `item.ilike.${like},fault.ilike.${like},job_id.ilike.${like},code.ilike.${like},uniq_id.ilike.${like}${!isNaN(num) ? `,job_id.eq.${q}` : ""}`
-          )
-          .limit(25),
-
-        // Products
-        supabase
-          .from("product_list")
-          .select("id, name, price")
-          .eq("delete_flag", 0)
-          .ilike("name", like)
-          .limit(25),
-
-        // Mechanics
-        supabase
-          .from("mechanic_list")
-          .select("id, firstname, lastname, designation, contact")
-          .eq("status", 1)
-          .or(`firstname.ilike.${like},lastname.ilike.${like},contact.ilike.${like}`)
-          .limit(25),
-
-        // Direct Sales — sale_code, remarks
-        supabase
-          .from("direct_sales")
-          .select("id, sale_code, total_amount, remarks, date_created")
-          .or(`sale_code.ilike.${like},remarks.ilike.${like}`)
-          .limit(25),
-
-        // Inventory Locations — zone, rack, bin, box, label, code
-        supabase
-          .from("locations")
-          .select("id, zone, rack, bin, box, label, code, kind")
-          .eq("kind", "inventory")
-          .eq("status", 1)
-          .eq("delete_flag", 0)
-          .or(
-            `zone.ilike.${like},rack.ilike.${like},bin.ilike.${like},box.ilike.${like},label.ilike.${like},code.ilike.${like}`
-          )
-          .limit(25),
-
-        // Job Spots — rack (spot name)
-        supabase
-          .from("locations")
-          .select("id, rack, kind")
-          .eq("kind", "job")
-          .eq("status", 1)
-          .eq("delete_flag", 0)
-          .ilike("rack", like)
-          .limit(25),
-      ]);
-
-      const STATUS_LABELS: Record<number, string> = {
-        0: "Pending",
-        1: "In Progress",
-        2: "Done",
-        3: "Paid",
-        4: "Cancelled",
-        5: "Delivered",
-      };
-      const STATUS_COLORS: Record<number, string> = {
-        0: "bg-muted/20 text-muted",
-        1: "bg-blue-500/20 text-blue-400",
-        2: "bg-teal-500/20 text-teal-400",
-        3: "bg-emerald-500/20 text-emerald-400",
-        4: "bg-red-500/20 text-red-400",
-        5: "bg-purple-500/20 text-purple-400",
-      };
-
-      const out: SearchResult[] = [];
-
-      (clientRes.data || []).forEach((r) => {
-        const name = [r.firstname, r.middlename, r.lastname].filter(Boolean).join(" ");
-        out.push({
-          id: r.id,
-          title: name,
-          subtitle: r.contact || r.address || "—",
-          tag: "Client",
-          tagColor: "bg-blue-500/20 text-blue-400",
-          href: `/clients/${r.id}/view`,
-          icon: "client",
-        });
-      });
-
-      (jobRes.data || []).forEach((r) => {
-        out.push({
-          id: r.id,
-          title: `Job #${r.job_id} — ${r.item}`,
-          subtitle: r.fault || "—",
-          tag: STATUS_LABELS[r.status] || "Job",
-          tagColor: STATUS_COLORS[r.status] || "bg-muted/20 text-muted",
-          href: `/jobs/${r.id}/view`,
-          icon: "job",
-        });
-      });
-
-      (prodRes.data || []).forEach((r) => {
-        out.push({
-          id: r.id,
-          title: r.name,
-          subtitle: `Rs.${r.price?.toFixed(2) || "0.00"}`,
-          tag: "Product",
-          tagColor: "bg-amber-500/20 text-amber-400",
-          href: `/inventory/${r.id}`,
-          icon: "product",
-        });
-      });
-
-      (mechRes.data || []).forEach((r) => {
-        const name = [r.firstname, r.lastname].filter(Boolean).join(" ");
-        out.push({
-          id: r.id,
-          title: name,
-          subtitle: `${r.designation || ""} ${r.contact ? "· " + r.contact : ""}`.trim(),
-          tag: "Mechanic",
-          tagColor: "bg-purple-500/20 text-purple-400",
-          href: `/mechanics`,
-          icon: "mechanic",
-        });
-      });
-
-      (saleRes.data || []).forEach((r) => {
-        out.push({
-          id: r.id,
-          title: `Sale ${r.sale_code}`,
-          subtitle: r.remarks || `Rs.${r.total_amount?.toFixed(2)}`,
-          tag: "Direct Sale",
-          tagColor: "bg-pink-500/20 text-pink-400",
-          href: `/direct-sales/${r.id}/view`,
-          icon: "sale",
-        });
-      });
-
-      (locRes.data || []).forEach((r) => {
-        const path = locPath({ zone: r.zone, rack: r.rack, bin: r.bin, box: r.box });
-        out.push({
-          id: `loc-${r.id}`,
-          title: path,
-          subtitle: [r.code, r.label].filter(Boolean).join(" · ") || "—",
-          tag: "Location",
-          tagColor: "bg-green-500/20 text-green-400",
-          href: `/inventory/locate?loc=${encodeURIComponent(path)}`,
-          icon: "location",
-        });
-      });
-
-      (spotRes.data || []).forEach((r) => {
-        out.push({
-          id: `spot-${r.id}`,
-          title: r.rack,
-          subtitle: "Job Spot",
-          tag: "Spot",
-          tagColor: "bg-orange-500/20 text-orange-400",
-          href: `/jobs?spot=${r.id}`,
-          icon: "spot",
-        });
-      });
-
-      setResults(out);
-    } catch (e) {
-      logger.error("Search error:", e);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value;
-    setQuery(val);
-    if (timerRef.current) clearTimeout(timerRef.current);
-    if (!val.trim()) {
-      setResults([]);
-      setOpen(false);
-      return;
-    }
-    timerRef.current = setTimeout(() => runSearch(val), 300);
-  };
-
-  const handleSelect = (href: string) => {
-    setQuery("");
-    setResults([]);
-    setOpen(false);
-    router.push(href);
-  };
-
-  const ICON_MAP = {
-    client: <Users size={13} className="text-blue-400 flex-shrink-0" />,
-    job: <Wrench size={13} className="text-muted flex-shrink-0" />,
-    product: <Package size={13} className="text-amber-400 flex-shrink-0" />,
-    mechanic: <User size={13} className="text-purple-400 flex-shrink-0" />,
-    sale: <ShoppingCart size={13} className="text-pink-400 flex-shrink-0" />,
-    location: <MapPin size={13} className="text-green-400 flex-shrink-0" />,
-    spot: <LocateFixed size={13} className="text-orange-400 flex-shrink-0" />,
-  };
-
-  return (
-    <div ref={wrapRef} className="relative w-full group">
-      {/* Input */}
-      <Search
-        size={14}
-        className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-2 group-focus-within:text-blue-400 transition-colors pointer-events-none z-10"
-      />
-      {loading && (
-        <Loader2
-          size={13}
-          className="absolute right-12 top-1/2 -translate-y-1/2 text-blue-400 animate-spin pointer-events-none z-10"
-        />
-      )}
-      {query && !loading && (
-        <button
-          onClick={() => {
-            setQuery("");
-            setResults([]);
-            setOpen(false);
-          }}
-          className="absolute right-12 top-1/2 -translate-y-1/2 text-muted-2 hover:text-muted transition-colors z-10"
-        >
-          <X size={13} />
-        </button>
-      )}
-      <input
-        type="text"
-        value={query}
-        data-search-input
-        onChange={handleChange}
-        onFocus={() => results.length > 0 && setOpen(true)}
-        placeholder="Search..."
-        className="w-full pl-9 pr-24 py-2.5 sm:py-2 bg-panel-2 border border-app rounded-xl text-sm text-app-2 placeholder:text-muted-2 outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 transition-all font-medium"
-      />
-      <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 pointer-events-none">
-        <kbd className="hidden sm:inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-panel-2 border border-app text-[10px] font-medium text-muted">
-          Ctrl
-        </kbd>
-        <kbd className="hidden sm:inline-flex items-center px-1.5 py-0.5 rounded bg-panel-2 border border-app text-[10px] font-medium text-muted">
-          K
-        </kbd>
-      </div>
-
-      {/* Dropdown Results */}
-      {open && (
-        <div className="absolute top-[calc(100%+6px)] left-0 right-0 bg-panel-2 border border-app rounded-2xl shadow-2xl shadow-black/60 z-[200] overflow-hidden">
-          {results.length === 0 && !loading ? (
-            <div className="px-4 py-5 text-center text-muted-2 text-xs font-bold uppercase tracking-wider">
-              No results found
-            </div>
-          ) : (
-            <>
-              <div className="px-3 pt-2.5 pb-1 flex items-center justify-between">
-                <span className="text-[9px] font-black text-app uppercase tracking-widest">
-                  {results.length} result{results.length !== 1 ? "s" : ""}
-                </span>
-                <span className="text-[9px] text-app">
-                  Clients · Jobs · Products · Mechanics · Sales · Locations · Spots
-                </span>
-              </div>
-              <ul className="max-h-[400px] overflow-y-auto divide-y divide-[#1a2234]">
-                {results.map((r, i) => (
-                  <li key={i}>
-                    <button
-                      onClick={() => handleSelect(r.href)}
-                      className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-white/[0.04] transition-colors text-left"
-                    >
-                      <div className="w-7 h-7 rounded-lg bg-panel-2 flex items-center justify-center flex-shrink-0">
-                        {ICON_MAP[r.icon]}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-sm font-semibold text-app-2 truncate">
-                            {r.title}
-                          </span>
-                          <span
-                            className={`text-[9px] font-black px-1.5 py-0.5 rounded uppercase tracking-wide ${r.tagColor}`}
-                          >
-                            {r.tag}
-                          </span>
-                        </div>
-                        <p className="text-[11px] text-muted-2 truncate mt-0.5">{r.subtitle}</p>
-                      </div>
-                      <ChevronRight size={12} className="text-app flex-shrink-0" />
-                    </button>
-                  </li>
-                ))}
-              </ul>
-              <div className="px-3 py-2 border-t border-app-2 text-[9px] text-app text-center">
-                Press Enter ya click karo to navigate
-              </div>
-            </>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
+// (NavbarSearch body components/NavbarSearch.tsx me — Sprint 4 #16.)
 
 // ─── Accordion sub-menu ───────────────────────────────────────────────────────
 function SubMenu({
@@ -1443,12 +1079,7 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
   } = useAppBoot();
 
   // Keyboard shortcuts (g-prefix + ? help + Escape)
-  const { helpOpen, setHelpOpen } = useKeyboardShortcuts({
-    dashboard: "/dashboard",
-    jobs: "/jobs",
-    clients: "/clients",
-    sales: "/direct-sales",
-  });
+  const { helpOpen, setHelpOpen } = useKeyboardShortcuts(SHORTCUT_ROUTES);
 
   // ── Unread messages badge (sidebar Messages icon) ─────────────────────────
   const [unreadCount, setUnreadCount] = useState(0);
