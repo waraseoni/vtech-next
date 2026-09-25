@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.41.0](https://github.com/waraseoni/vtech-next/compare/v1.40.0...v1.41.0) (2026-09-25)
+
+### Features
+
+* **sprint4:** [#18](https://github.com/waraseoni/vtech-next/issues/18) root + segment loading and error boundaries ([16311fd](https://github.com/waraseoni/vtech-next/commit/16311fd0a02f7a780f5cfd5af12e99b145ee2f75))
+
 ## [1.40.0](https://github.com/waraseoni/vtech-next/compare/v1.39.0...v1.40.0) (2026-09-25)
 
 ### Features
