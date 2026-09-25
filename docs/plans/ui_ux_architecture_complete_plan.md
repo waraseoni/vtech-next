@@ -437,7 +437,7 @@ DataTable (server-paginated, sortable)
 |---|---|---|
 | 6 | `DataTable` (desktop table + mobile cards + sort/page) + pilot on 3 pages | 4 | ✅ **DONE** — `src/components/ui/DataTable.tsx` (generic, sortable, paginated) + pilots: suppliers ✅ (`f6d05d4`), direct-sales ✅ (`a10b487`), payments ✅ (`b336d0c`). |
 | 7 | Mobile bottom tab bar (Dashboard/Jobs/Sales/Clients/More) | 2 |
-| 8 | Route cleanup (old redirects, ledger/salary merge, Lightbox kill) | 1 | ✅ **Lightbox kill done** — Removed `ImageLightbox.tsx` global system + 39 files (44 total). `Lightbox.tsx` recreated simpler version. Old redirects + ledger/salary merge remaining. |
+| 8 | Route cleanup (old redirects, ledger/salary merge, Lightbox kill) | 1 | ✅ **DONE** — Lightbox kill (39 files) · redirects audit: sirf 2 canonical redirects hain (`jobs/[id]`, `direct-sales/[id]` — live old links, keep) · ledger pages intentional variants hain (created vs completed, dono linked — merge nahi) · **salary merge DONE**: history view/edit/delete `/mechanics/salary` me port + `/salary` → `/mechanics/salary` redirect (`?month` forward; `/salary/[id]/ledger` untouched) |
 | 9 | Keyboard shortcuts: g-prefix + `?` help + skip-to-content | 1 | ✅ `src/hooks/useKeyboardShortcuts.ts` + `ShortcutHelpOverlay.tsx` + focus-visible CSS + skip-to-content link — committed `eaa898e` |
 | 10 | Image compression on ALL uploads (messenger pattern reuse) | 1 | ✅ Already integrated in 8 call sites via `compressImage` (imageCompression.ts) + messenger `uploadMedia` (media.ts) — no new work needed |
 

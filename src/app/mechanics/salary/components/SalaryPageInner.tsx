@@ -33,6 +33,9 @@ import {
   ArrowDown,
   ArrowUpDown,
   X,
+  Edit2,
+  Trash2,
+  Check,
 } from "lucide-react";
 import Link from "next/link";
 import { format } from "date-fns/format";
@@ -144,6 +147,17 @@ export default function SalaryPageInner({
   const [payoutData, setPayoutData] = useState<SalaryRecord | null>(null);
   const [payoutAmount, setPayoutAmount] = useState("");
   const [payoutReason, setPayoutReason] = useState("");
+
+  // Salary History Modal State (Sprint: /salary parity — view/edit/delete)
+  const [histModal, setHistModal] = useState(false);
+  const [histTarget, setHistTarget] = useState<{ id: number; name: string } | null>(null);
+  const [histEntries, setHistEntries] = useState<
+    { id: number; salary: number; effective_date: string }[]
+  >([]);
+  const [histLoading, setHistLoading] = useState(false);
+  const [editingEntry, setEditingEntry] = useState<{ id: number } | null>(null);
+  const [editSalary, setEditSalary] = useState("");
+  const [editDate, setEditDate] = useState("");
 
   // Notification / Toast
   const [toastMessage, setToastMessage] = useState<{ text: string; type: "success" | "error" } | null>(null);
@@ -415,6 +429,49 @@ export default function SalaryPageInner({
       showToast("Failed to process payment", "error");
     } finally {
       setSaving(false);
+    }
+  };
+
+  // ── Salary History view/edit/delete (/salary parity) ────────────────────
+  const openHistory = async (id: number, name: string) => {
+    setHistTarget({ id, name });
+    setHistModal(true);
+    setHistLoading(true);
+    setEditingEntry(null);
+    const { data } = await supabase
+      .from("mechanic_salary_history")
+      .select("id, salary, effective_date")
+      .eq("mechanic_id", id)
+      .order("effective_date", { ascending: false });
+    setHistEntries((data || []) as { id: number; salary: number; effective_date: string }[]);
+    setHistLoading(false);
+  };
+
+  const handleDeleteHistory = async (entryId: number) => {
+    if (!confirm("Are you sure you want to delete this record?")) return;
+    const { error } = await supabase.from("mechanic_salary_history").delete().eq("id", entryId);
+    if (!error) {
+      showToast("History record deleted");
+      if (histTarget) openHistory(histTarget.id, histTarget.name);
+      loadData();
+    } else {
+      showToast("Delete failed", "error");
+    }
+  };
+
+  const handleUpdateHistoryEntry = async () => {
+    if (!editingEntry || !editSalary || !editDate) return;
+    const { error } = await supabase
+      .from("mechanic_salary_history")
+      .update({ salary: parseFloat(editSalary), effective_date: editDate })
+      .eq("id", editingEntry.id);
+    if (!error) {
+      setEditingEntry(null);
+      showToast("History record updated");
+      if (histTarget) openHistory(histTarget.id, histTarget.name);
+      loadData();
+    } else {
+      showToast("Update failed", "error");
     }
   };
 
@@ -1122,6 +1179,13 @@ export default function SalaryPageInner({
                             >
                               <ExternalLink size={11} />
                             </Link>
+                            <button
+                              onClick={() => openHistory(row.id, row.name)}
+                              className="p-1 text-muted hover:text-amber-400 hover:bg-amber-500/10 rounded-md transition-all"
+                              title="Salary History (view/edit/delete)"
+                            >
+                              <History size={11} />
+                            </button>
                           </div>
                         </td>
                       </tr>
@@ -1320,6 +1384,13 @@ export default function SalaryPageInner({
                       >
                         <FileSpreadsheet size={12} /> Ledger
                       </Link>
+                      <button
+                        onClick={() => openHistory(row.id, row.name)}
+                        title="Salary History (view/edit/delete)"
+                        className="inline-flex items-center justify-center gap-1 py-2 px-3 bg-amber-600/10 hover:bg-amber-600/20 border border-amber-500/20 rounded-xl text-xs font-bold text-amber-400 transition-all active:scale-95"
+                      >
+                        <History size={12} />
+                      </button>
 
                       {row.netTotal > 0 && (
                         <button
@@ -1562,6 +1633,158 @@ export default function SalaryPageInner({
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* SALARY HISTORY: view / edit / delete (/salary parity)                  */}
+      {/* ========================================================================= */}
+      {histModal && histTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="bg-panel border border-app rounded-2xl w-full max-w-xl shadow-2xl flex flex-col overflow-hidden max-h-[85vh]">
+            <div className="p-5 bg-panel-2 border-b border-app flex items-center justify-between">
+              <div>
+                <h3 className="font-black text-white text-lg flex items-center gap-2">
+                  <History size={20} className="text-blue-500" /> Salary History
+                </h3>
+                <p className="text-xs font-bold text-muted mt-1">{histTarget.name}</p>
+              </div>
+              <button
+                onClick={() => {
+                  setHistModal(false);
+                  setEditingEntry(null);
+                }}
+                className="w-9 h-9 flex items-center justify-center bg-panel border border-app hover:border-muted rounded-xl text-muted hover:text-white transition-all"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto">
+              <table className="w-full">
+                <thead className="sticky top-0 bg-panel border-b border-app z-10">
+                  <tr>
+                    {["Effective Date", "Daily Rate", "Action"].map((h) => (
+                      <th
+                        key={h}
+                        className="px-5 py-3 text-[10px] font-black uppercase text-muted tracking-widest text-left"
+                      >
+                        {h}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#21293d]/50">
+                  {histLoading ? (
+                    <tr>
+                      <td colSpan={3} className="py-12 text-center">
+                        <Loader2 size={24} className="animate-spin text-blue-500 mx-auto" />
+                      </td>
+                    </tr>
+                  ) : histEntries.length === 0 ? (
+                    <tr>
+                      <td
+                        colSpan={3}
+                        className="py-12 text-center text-muted text-sm font-bold"
+                      >
+                        No history records found.
+                      </td>
+                    </tr>
+                  ) : (
+                    histEntries.map((e) => (
+                      <tr key={e.id} className="hover:bg-white/[0.02] transition-colors">
+                        <td className="px-5 py-3 text-sm font-bold text-app-2">
+                          {new Date(e.effective_date).toLocaleDateString("en-IN", {
+                            day: "2-digit",
+                            month: "short",
+                            year: "numeric",
+                          })}
+                        </td>
+                        <td className="px-5 py-3 text-sm font-black text-emerald-400">
+                          {inr(e.salary)}
+                        </td>
+                        <td className="px-5 py-3">
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => {
+                                setEditingEntry({ id: e.id });
+                                setEditSalary(String(e.salary));
+                                setEditDate(e.effective_date);
+                              }}
+                              className="w-8 h-8 flex items-center justify-center bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-lg hover:bg-blue-500 hover:text-white transition-all"
+                            >
+                              <Edit2 size={14} />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteHistory(e.id)}
+                              className="w-8 h-8 flex items-center justify-center bg-red-500/10 text-red-400 border border-red-500/20 rounded-lg hover:bg-red-500 hover:text-white transition-all"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {editingEntry && (
+              <div className="p-5 bg-panel-2 border-t border-app">
+                <h4 className="text-xs font-black uppercase text-white tracking-widest mb-4 flex items-center gap-2">
+                  <Edit2 size={12} className="text-blue-500" /> Edit Record
+                </h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-[10px] font-black uppercase text-muted tracking-widest block mb-1.5">
+                      New Rate
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted font-bold text-xs">
+                        ₹
+                      </span>
+                      <input
+                        type="number"
+                        value={editSalary}
+                        onChange={(e) => setEditSalary(e.target.value)}
+                        className="w-full pl-7 pr-3 py-2 bg-panel border border-app rounded-xl text-sm font-black text-white outline-none focus:border-blue-500/50"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-black uppercase text-muted tracking-widest block mb-1.5">
+                      Effective Date
+                    </label>
+                    <input
+                      type="date"
+                      value={editDate}
+                      onChange={(e) => setEditDate(e.target.value)}
+                      className="w-full px-3 py-2 bg-panel border border-app rounded-xl text-sm font-bold text-app-2 outline-none focus:border-blue-500/50"
+                    />
+                  </div>
+                </div>
+                <div className="flex gap-3 mt-5">
+                  <button
+                    onClick={handleUpdateHistoryEntry}
+                    className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-500 rounded-xl text-xs font-black text-white transition-all flex items-center justify-center gap-2"
+                  >
+                    <Check size={14} /> Save Changes
+                  </button>
+                  <button
+                    onClick={() => setEditingEntry(null)}
+                    className="px-5 py-2.5 bg-panel border border-app text-muted hover:text-white hover:bg-panel-2 rounded-xl text-xs font-bold transition-all"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+
+            <div className="p-4 bg-panel-2 border-t border-app text-[10px] text-muted text-center font-bold uppercase tracking-widest">
+              Total History Records: {histEntries.length}
+            </div>
           </div>
         </div>
       )}
