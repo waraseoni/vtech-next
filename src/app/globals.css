@@ -2935,3 +2935,28 @@ body.keyboard-open [data-fab="bottom-right"] {
     opacity: 0.85;
   }
 }
+
+/* 6. Density: compact (Sprint 4 #19) — `data-density="compact"` on <html>.
+   Unlayered author CSS Tailwind utilities ko override karta hai. Sirf
+   spacing tighten hoti hai (rang/type untouched). Opt-in via topbar toggle,
+   `vtech_density` me persisted. */
+html[data-density="compact"] table th {
+  padding-top: 0.45rem;
+  padding-bottom: 0.45rem;
+}
+html[data-density="compact"] table td {
+  padding-top: 0.4rem;
+  padding-bottom: 0.4rem;
+}
+html[data-density="compact"] .p-5 {
+  padding: 0.9rem;
+}
+html[data-density="compact"] .p-4 {
+  padding: 0.7rem;
+}
+html[data-density="compact"] .gap-3 {
+  gap: 0.6rem;
+}
+html[data-density="compact"] .space-y-3 > :not([hidden]) ~ :not([hidden]) {
+  margin-top: 0.6rem;
+}

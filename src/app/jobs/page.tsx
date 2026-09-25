@@ -65,9 +65,11 @@ import {
   MapPin,
   Eraser,
   Briefcase,
+  ScanEye,
 } from "lucide-react";
 import PageLoader from "@/components/PageLoader";
 import WaPreviewModal from "@/components/WaPreviewModal";
+import { JobPreviewPanel } from "./JobPreviewPanel";
 import JobSpotPicker from "@/components/JobSpotPicker";
 import WaitingPartsBadge from "@/components/WaitingPartsBadge";
 import { substituteTemplate, firmVars, resolveTemplate } from "@/lib/whatsapp";
@@ -436,6 +438,22 @@ function JobsListContent() {
   >([]);
   // Sprint 3 #14: single-send preview (row WA button → preview modal, not direct open)
   const [singleWa, setSingleWa] = useState<{ phone: string; msg: string } | null>(null);
+
+  // Sprint 4 #19: master-detail preview (?preview=<id>, xl slide-over)
+  const previewParam = searchParams.get("preview");
+  const previewId =
+    previewParam && /^\d+$/.test(previewParam) ? Number(previewParam) : null;
+  const openPreview = (id: number) => {
+    const p = new URLSearchParams(searchParams.toString());
+    p.set("preview", String(id));
+    router.push(`/jobs?${p.toString()}`, { scroll: false });
+  };
+  const closePreview = () => {
+    const p = new URLSearchParams(searchParams.toString());
+    p.delete("preview");
+    const qs = p.toString();
+    router.push(`/jobs${qs ? `?${qs}` : ""}`, { scroll: false });
+  };
 
   // ── NEW: Quick Status Change ─────────────────────────────
   const [statusChangeLoading, setStatusChangeLoading] = useState<number | null>(null);
@@ -1651,6 +1669,16 @@ function JobsListContent() {
                         data-dropdown-menu
                         className="absolute right-0 mt-1 w-44 bg-panel border border-app rounded-xl shadow-2xl z-20 py-1 overflow-hidden"
                       >
+                        {/* Sprint 4 #19: xl slide-over preview (mobile par panel nahi) */}
+                        <button
+                          onClick={() => {
+                            openPreview(txn.id);
+                            setOpenDropdownId(null);
+                          }}
+                          className="hidden xl:flex w-full items-center gap-2.5 px-4 py-2 hover:bg-white/[0.04] text-sm text-muted hover:text-purple-400 transition-colors"
+                        >
+                          <ScanEye size={13} className="text-purple-400" /> Preview
+                        </button>
                         {[
                           {
                             href: `/jobs/${txn.id}/view`,
@@ -2027,6 +2055,15 @@ function JobsListContent() {
         {bulkMoveModal}
         {spotEditModal}
         {staleModal}
+        {/* Sprint 4 #19: master-detail preview (xl slide-over) */}
+        {previewId !== null && (
+          <JobPreviewPanel
+            jobId={previewId}
+            onClose={closePreview}
+            onStatusChange={quickStatusChange}
+            onSendWA={sendWA}
+          />
+        )}
       </div>
     );
   }

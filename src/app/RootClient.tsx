@@ -70,6 +70,8 @@ import { hardReload } from "@/lib/hardRefresh";
 import { App } from "@capacitor/app";
 import PullToRefresh from "@/components/PullToRefresh";
 import { ThemeToggle } from "@/app/components/ui/ThemeToggle";
+import { DensityToggle } from "@/app/components/ui/DensityToggle";
+import { useDensity } from "@/hooks/useDensity";
 import { TeamOnline } from "@/app/components/ui/TeamOnline";
 import dynamic from "next/dynamic";
 
@@ -1081,6 +1083,9 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
   // Keyboard shortcuts (g-prefix + ? help + Escape)
   const { helpOpen, setHelpOpen } = useKeyboardShortcuts(SHORTCUT_ROUTES);
 
+  // Sprint 4 #19: density (compact/comfortable, persisted)
+  const { density, setDensity } = useDensity();
+
   // ── Unread messages badge (sidebar Messages icon) ─────────────────────────
   const [unreadCount, setUnreadCount] = useState(0);
   useEffect(() => {
@@ -1258,6 +1263,19 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
       }
     };
   }, []);
+
+  // ── Sprint 4 #20: bfcache restore ─────────────────────────────────────────
+  // Back/forward se page bfcache se zinda wapas aaye (event.persisted) to
+  // server data revalidate karo. Client form state same rehta hai (RSC refresh
+  // client state nahi mitata) — sirf taza server data aata hai. unload
+  // listeners kahin nahi hain isliye bfcache block nahi hota.
+  useEffect(() => {
+    const h = (e: PageTransitionEvent) => {
+      if (e.persisted) router.refresh();
+    };
+    window.addEventListener("pageshow", h);
+    return () => window.removeEventListener("pageshow", h);
+  }, [router]);
 
   if (isPublicPage) {
     // Auth pages par logged-in user ko flash na dikhe — blank while redirect.
@@ -1651,6 +1669,9 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
                 buttonClassName="w-9 h-9 flex-shrink-0 flex items-center justify-center glass border hover:border-blue-500/40 rounded-xl text-muted hover:text-white transition-all"
               />
             )}
+
+            {/* Density - desktop topbar (Sprint 4 #19) */}
+            {isMobile === false && <DensityToggle density={density} onSelect={setDensity} />}
 
             {/* User dropdown */}
             <div className="relative flex-shrink-0">

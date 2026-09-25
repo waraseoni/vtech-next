@@ -125,5 +125,18 @@ export function useAppTheme() {
     }
   }, [pathname, applyTheme]);
 
+  // Sprint 4 #20: multi-tab sync — doosre tab me theme badle to yahan apply
+  useEffect(() => {
+    const h = (e: StorageEvent) => {
+      if (e.key !== "vtech_theme") return;
+      const saved =
+        (e.newValue as "system" | "dark" | "light" | null) || "dark";
+      setThemePrefState(saved);
+      applyTheme(saved);
+    };
+    window.addEventListener("storage", h);
+    return () => window.removeEventListener("storage", h);
+  }, [applyTheme]);
+
   return { theme, themePref, setThemePref, toggleTheme };
 }
