@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { supabase, getCachedUser } from "@/lib/supabase";
 import { fetchStockByProducts } from "@/lib/inventoryStock";
 import { itemsToLines, type BomTemplate } from "@/lib/bomTemplates";
@@ -21,6 +22,7 @@ import {
   Pencil,
   Trash2,
   X,
+  ShoppingCart,
 } from "lucide-react";
 
 // ── BOM input parsing (spec §2.2) ───────────────────────────────────────────
@@ -68,6 +70,7 @@ type Product = {
   description: string;
   barcode: string | null;
   alert_quantity: number;
+  price: number; // Phase 4 — PO draft unit_cost prefill
 };
 
 function normalize(s: string): string {
@@ -183,6 +186,7 @@ const SAMPLE_BILLS = [
 ];
 
 export default function BomCheckPage() {
+  const router = useRouter();
   const [roleChecked, setRoleChecked] = useState(false);
   const [projectName, setProjectName] = useState("");
   const [input, setInput] = useState("");
@@ -246,7 +250,7 @@ export default function BomCheckPage() {
       const [{ data: pl }, { data: suppliersRows }, { data: spareLink }] = await Promise.all([
         supabase
           .from("product_list")
-          .select("id, name, description, barcode, alert_quantity")
+          .select("id, name, description, barcode, alert_quantity, price")
           .eq("delete_flag", 0)
           .eq("status", 1),
         supabase.from("suppliers").select("id, name, contact").eq("delete_flag", 0).eq("status", 1),
@@ -258,6 +262,7 @@ export default function BomCheckPage() {
         description: p.description || "",
         barcode: p.barcode ?? null,
         alert_quantity: p.alert_quantity ?? 0,
+        price: Number(p.price ?? 0),
       }));
       setCatalog(prods);
 
@@ -448,6 +453,28 @@ export default function BomCheckPage() {
   const goStatus = (): "go" | "hold" => {
     if (!lines || lines.length === 0) return "hold";
     return lines.every((l) => l.status === "available" || l.status === "low") ? "go" : "hold";
+  };
+
+  // ── Phase 4 — BOM → PO Draft ─────────────────────────────────────────────
+  // Missing (outofstock + insufficient) matched lines se draft banake
+  // existing `po_draft` sessionStorage contract me daalte hain — PO page wahi
+  // consume karta hai (requirement-list wala exact pattern, I4).
+  // notfound lines skip — unka product_id hi nahi.
+  const poDraftLines =
+    lines?.filter(
+      (l) => (l.status === "outofstock" || l.status === "insufficient") && l.product
+    ) ?? [];
+
+  const createPoFromBom = () => {
+    const draft = poDraftLines.map((l) => ({
+      product_id: l.product!.id,
+      product_name: l.product!.name,
+      qty: Math.max(1, l.deficit),
+      unit_cost: l.product!.price || 0,
+    }));
+    if (draft.length === 0) return;
+    window.sessionStorage.setItem("po_draft", JSON.stringify(draft));
+    router.push("/inventory/purchase-orders?create=draft");
   };
 
   // ── AI summary via existing /api/chat (Phase 2) ───────────────────────────
@@ -837,6 +864,30 @@ export default function BomCheckPage() {
                   </table>
                 </div>
               </div>
+
+              {/* PO draft (Phase 4) */}
+              {hasIssues && poDraftLines.length > 0 && (
+                <div className="bg-white dark:bg-panel-2 border border-app-2 dark:border-app rounded-2xl p-5">
+                  <div className="flex items-center gap-2 mb-3">
+                    <ShoppingCart size={16} className="text-emerald-600 dark:text-emerald-400" />
+                    <h2 className="text-sm font-black text-app dark:text-white tracking-tight">
+                      Missing parts se PO banayein
+                    </h2>
+                  </div>
+                  <button
+                    onClick={createPoFromBom}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-black transition-colors shadow-lg shadow-emerald-600/20"
+                  >
+                    <ShoppingCart size={16} />
+                    Create PO for {poDraftLines.length} missing item
+                    {poDraftLines.length !== 1 ? "s" : ""} ({poDraftLines.reduce((s, l) => s + Math.max(1, l.deficit), 0)} pcs)
+                  </button>
+                  <p className="mt-2 text-[11px] text-muted dark:text-muted-2 text-center">
+                    PO create modal me items ready milenge — supplier chun kar save karein.
+                    Not-in-catalog lines skip hoti hain.
+                  </p>
+                </div>
+              )}
 
               {/* AI summary */}
               <div className="bg-white dark:bg-panel-2 border border-app-2 dark:border-app rounded-2xl p-5">

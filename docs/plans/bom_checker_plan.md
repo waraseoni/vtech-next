@@ -1,10 +1,12 @@
 # BOM Auto-Check System — Implementation Plan
 
-> Status: **Phase 1 DONE · Phase 2 DONE · Phase 3 DONE (2026-09-16) · Phase 4/5 future.**
+> Status: **Phase 1 DONE · Phase 2 DONE · Phase 3 DONE (2026-09-16) · Phase 4 DONE (2026-09-25) · Phase 5 future.**
 > Phase 1 (core checker) + Phase 2 (AI via `/api/chat`) already live in
 > `src/app/inventory/bom-check/page.tsx`. Phase 3 (saved templates) shipped
 > 2026-09-16: `bom_templates` migration + `/api/bom-templates` routes +
-> client UI. See Phase sections for details.
+> client UI. Phase 4 (PO draft) shipped 2026-09-25 — "Create PO for missing
+> items" button → `sessionStorage.po_draft` → `/inventory/purchase-orders?create=draft`
+> (exact I4 requirement-list contract; PO page unchanged). See Phase sections for details.
 > This document is a phased, reviewable design for the feature.
 
 ---
@@ -482,11 +484,16 @@ Phase 1 (Core BOM Checker)
 - [x] RLS staff-only (`rlslock_bom_templates_staff`); API `/api/bom-templates*` cookie+RLS, no service role
 - [x] Additive — existing tables untouched; fold-in to consolidated full schema
 
-### Phase 4
-- Click "Create PO" → navigates to PO page with missing items pre-filled
-- Quantities correct: `qty_to_order = needed - available`
-- User can modify before saving PO
-- PO saved via existing flow (no changes to PO schema)
+### Phase 4 ✅ DONE (2026-09-25)
+- [x] Click "Create PO" → navigates to PO page with missing items pre-filled
+      ("Missing parts se PO banayein" card, issues + matched-lines hone par;
+      button label me item count + total pcs)
+- [x] Quantities correct: `qty_to_order = needed - available` (line `deficit`)
+- [x] User can modify before saving PO (PO create modal prefilled, editable)
+- [x] PO saved via existing flow (no changes to PO schema — PO page already
+      consumed `po_draft` + `?create=draft` from I4; zero PO-page changes)
+- [x] `notfound` lines skipped (no product_id); `unit_cost` = product_list.price
+      (Product type me `price` add kiya)
 
 ---
 

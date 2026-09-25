@@ -145,7 +145,8 @@ Only stock mutations today are stock-in modal, PO receive, delete row, indirect 
 - **Full spec:** `docs/plans/bom_checker_plan.md` (phases 1–5, UI patterns, matching
   logic, acceptance criteria).
 - **Ordering note:** Phase 1 (core checker) stock read uses **I1**, not the old
-  4-query copy. Phases 2 (AI), 3 (templates), 4 (PO draft), 5 (job→BOM) then follow.
+  4-query copy. Phases 2 (AI) ✅, 3 (templates) ✅, 4 (PO draft) ✅ (2026-09-25),
+  then 5 (job→BOM — speculative) follow.
 
 ### I4 — PO workflow (partial receipt + auto-reorder) — ✓ DONE
 - **Partially-received state:** `purchase_orders.status` CHECK now allows
