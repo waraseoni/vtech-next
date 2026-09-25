@@ -118,6 +118,9 @@ export default function SaleForm({ mode, saleId }: SaleFormProps) {
   const [totalAmount, setTotalAmount] = useState(0);
   const [originalSaleData, setOriginalSaleData] = useState<DbRow | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
+  // I5 (oversell visibility): pehle submit par oversell confirm lena zaroori hai.
+  // Items badalte hi confirm reset — purana ack stale nahi rehna chahiye.
+  const [oversellAck, setOversellAck] = useState(false);
 
   // Keep a stable ref to products so fetchSaleData can read the latest value
   // BUG FIX 1: fetchSaleData used stale `products` state (always [] on first render)
@@ -291,6 +294,17 @@ export default function SaleForm({ mode, saleId }: SaleFormProps) {
   // ── Helpers ───────────────────────────────────────────────────────────────
   const recalcTotal = (list: SaleItem[]) => list.reduce((s, i) => s + i.qty * i.price, 0);
 
+  // I5: lines jo stock se zyada bik rahi hain (edit mode me apni purani qty wapas
+  // judti hai — table row ke `totalAvailable` wahi formula). Oversell ALLOWED
+  // rehta hai, sirf visibility + ek confirm.
+  const oversoldLines = items.filter(
+    (i) => i.qty > i.available_stock + (i.original_qty ?? 0)
+  );
+
+  useEffect(() => {
+    setOversellAck(false);
+  }, [items]);
+
   // ── Add product ───────────────────────────────────────────────────────────
   // NOTE: Out-of-stock products are ALLOWED (negative inventory / overselling).
   // Stock info stays visible as a warning, but it never blocks a sale.
@@ -359,7 +373,12 @@ export default function SaleForm({ mode, saleId }: SaleFormProps) {
     }
 
     // NOTE: No hard stock validation — overselling is allowed by design.
-    // Stock shortfall is shown as a warning in the items list instead.
+    // I5: pehle submit par amber warning + ek confirm (doosra click) — block nahi,
+    // sirf "dekh lo" effect. Qty change karte hi confirm reset ho jata hai.
+    if (oversoldLines.length > 0 && !oversellAck) {
+      setOversellAck(true);
+      return;
+    }
 
     setSaving(true);
     try {
@@ -501,6 +520,32 @@ export default function SaleForm({ mode, saleId }: SaleFormProps) {
           >
             ×
           </button>
+        </div>
+      )}
+
+      {/* ── Oversell Warning (I5) ── */}
+      {oversoldLines.length > 0 && (
+        <div className="flex items-start gap-3 bg-amber-500/8 border border-amber-500/25 rounded-xl px-4 py-3">
+          <AlertTriangle size={14} className="text-amber-400 flex-shrink-0 mt-0.5" />
+          <div className="flex-1 text-amber-400 text-sm font-semibold">
+            <p>
+              ⚠ {oversoldLines.length} line{oversoldLines.length !== 1 ? "s" : ""} stock se
+              zyada bik rahi hain — sale ke baad stock negative jayega (oversell allowed).
+            </p>
+            <p className="text-[11px] text-amber-500/90 font-bold mt-1 leading-relaxed">
+              {oversoldLines
+                .map(
+                  (i) =>
+                    `${i.product_name} (available: ${i.available_stock + (i.original_qty ?? 0)}, selling: ${i.qty})`
+                )
+                .join(" · ")}
+            </p>
+            <p className="text-[11px] text-amber-500/90 font-bold mt-1">
+              {oversellAck
+                ? "Confirm ho gaya — ab 'Confirm Oversell' dabakar save karein, ya qty adjust karein."
+                : "Save dabate hi confirm option aayega."}
+            </p>
+          </div>
         </div>
       )}
 
@@ -832,11 +877,19 @@ export default function SaleForm({ mode, saleId }: SaleFormProps) {
           <button
             type="submit"
             disabled={saving || items.length === 0}
-            className="flex items-center gap-2 px-7 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-xl text-sm font-extrabold shadow-lg shadow-emerald-500/20 transition-all active:scale-95"
+            className={`flex items-center gap-2 px-7 py-2.5 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-xl text-sm font-extrabold shadow-lg transition-all active:scale-95 ${
+              oversellAck && oversoldLines.length > 0
+                ? "bg-amber-600 hover:bg-amber-700 shadow-amber-500/20"
+                : "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-500/20"
+            }`}
           >
             {saving ? (
               <>
                 <Loader2 size={14} className="animate-spin" /> Saving...
+              </>
+            ) : oversellAck && oversoldLines.length > 0 ? (
+              <>
+                <AlertTriangle size={14} /> Confirm Oversell
               </>
             ) : (
               <>

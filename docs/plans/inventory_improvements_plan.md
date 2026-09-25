@@ -1,6 +1,6 @@
 # Inventory System — Master Improvement & BOM Plan
 
-> Status: **I1/I2/I3/I4/I5-tracker active — I6 valuation report DONE (2026-09-12); location data-model cleanup Phase-1 DONE (2026-09-20), Phase-2 (place\* column retirement) gated-pending.**
+> Status: **I1/I2/I3/I4/I5 DONE — I6 valuation report DONE (2026-09-12); I5 oversold visibility DONE (2026-09-25); location data-model cleanup Phase-1 DONE (2026-09-20), Phase-2 (place\* column retirement) gated-pending.**
 > This is a single, merged, ordered plan built from two prior design docs:
 >   1. `inventory_improvements_plan.md` (system-wide upgrades)
 >   2. `bom_checker_plan.md` (BOM auto-check feature)
@@ -168,11 +168,19 @@ Only stock mutations today are stock-in modal, PO receive, delete row, indirect 
   `partially_received`; 2-step partial→full receive works; inventory rows correct;
   over-receipt + non-staff both rejected; isolated re-run idempotent.
 
-### I5 — Oversell visibility
+### I5 — Oversell visibility — ✓ DONE
 Keep the allow-over-sell rule (`SaleForm.tsx:310-311, 376-377`) but:
-- Amber inline warning + confirm when a line goes negative at sale time.
+- Amber inline warning + confirm when a line goes negative at sale time. ✅ — `SaleForm.tsx`:
+  `oversoldLines` (qty > available + original_qty — edit mode correction), warning banner
+  (details ke saath: name / available / selling), pehle submit par **ack mode** (button
+  amber → "Confirm Oversell"), doosra click par save. Items change par ack auto-reset
+  (`useEffect([items])`). Block kabhi nahi — oversell allowed hi rehta hai.
 - New **Oversold / Negative Stock** report so management can separate deliberate
-  oversell from shrinkage/typo.
+  oversell from shrinkage/typo. ✅ — `/reports/oversold`: I1 RPC (`available < 0`) ×
+  product_list join; KPIs (Products Negative / Negative Units / Sold via Jobs / Sold via
+  Sales), search, per-row link → `/inventory/[id]`, shortfall chip, footer total,
+  print header + guidance note (Stock vs Stocktake). Card added to reports index
+  (Job Reports, NEW badge) next to Stock Valuation.
 
 ### I6 — Valuation report & location data-model cleanup (LAST)
 - **Stock valuation report ✓ DONE (2026-09-12)** — `/reports/stock-valuation` shipped:
@@ -215,7 +223,7 @@ Keep the allow-over-sell rule (`SaleForm.tsx:310-311, 376-377`) but:
   templates persist, PO pre-fill quantities correct).
 - **I4:** a PO can be received in two partial steps; outstanding balance persists;
   draft PO created from requirement list.
-- **I5:** overselling a line shows the amber warning; negative-stock report lists them.
+- **I5:** ✅ overselling a line shows the amber warning + 2-step confirm; `/reports/oversold` lists negative-stock products with jobs/sales split.
 - **I6:** valuation report correct vs `inventory_list`; `place*` removed only after
   backfill verified.
 

@@ -29,6 +29,7 @@ import {
   CalendarClock,
   Landmark,
   Coins,
+  PackageX,
 } from "lucide-react";
 
 // --- Types ---
@@ -120,6 +121,15 @@ const REPORTS: ReportItem[] = [
     icon: <Coins size={16} />,
     category: "Job Reports",
     color: "from-emerald-500 to-teal-700",
+    isNew: true,
+  },
+  {
+    title: "Oversold Stock",
+    description: "Negative stock products — jobs vs sales split ke saath.",
+    href: "/reports/oversold",
+    icon: <PackageX size={16} />,
+    category: "Job Reports",
+    color: "from-red-500 to-orange-700",
     isNew: true,
   },
 
