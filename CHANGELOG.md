@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.46.0](https://github.com/waraseoni/vtech-next/compare/v1.45.0...v1.46.0) (2026-09-25)
+
+### Features
+
+* **nav:** sidebar link - Oversold Stock in Inventory group (+matchPaths) ([da55303](https://github.com/waraseoni/vtech-next/commit/da55303b486bd34c4e1013d7da2508b10fc7af70))
+
 ## [1.45.0](https://github.com/waraseoni/vtech-next/compare/v1.44.0...v1.45.0) (2026-09-25)
 
 ### Features
