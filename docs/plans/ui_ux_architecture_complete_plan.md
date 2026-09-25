@@ -446,7 +446,7 @@ DataTable (server-paginated, sortable)
 | # | Item | Effort |
 |---|---|---|
 | 11 | Dashboard Today's Board (kanban strip) + hero row | 3 |
-| 12 | Jobs list split: `useJobList` hook + component extraction | 3 |
+| 12 | Jobs list split: `useJobList` hook ✅ DONE + component extraction ⏳ FUTURE-BACKLOG (neeche dekho) | 3 |
 | 13 | Optimistic status updates + skeleton loaders | 2 |
 | 14 | WA message preview modal everywhere | 1 |
 | 15 | 2-step wizard `/jobs/new` | 2 |
@@ -463,6 +463,13 @@ DataTable (server-paginated, sortable)
 
 **Carry-forward P2:** swipe actions on cards, drag-drop uploads, desktop
 notifications, virtualized lists, context menus, haptics, infinite scroll.
+
+**FUTURE-BACKLOG #12b (Sprint 3 #12 ka bacha hissa — hook DONE `useJobList.ts`):**
+jobs `page.tsx` se bade JSX blocks nikalna — table (~300L), mobile cards
+(~300L), modals (WA/bulk/move/spot/filter). Fayda: render performance +
+parallel kaam + component preview. Risk: ~30 handlers ki prop-drilling, isliye
+tab karna jab team badhe ya list slow lage. Behavior contract: aaj jaisa hai
+waisa hi rahe (optimistic updates, skeletons, pager, preview).
 
 ---
 
