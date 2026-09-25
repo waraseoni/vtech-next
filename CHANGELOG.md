@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.40.0](https://github.com/waraseoni/vtech-next/compare/v1.39.0...v1.40.0) (2026-09-25)
+
+### Features
+
+* **sprint4:** [#17](https://github.com/waraseoni/vtech-next/issues/17) SSR lists - suppliers, direct-sales, inventory server-rendered ([e2a3aee](https://github.com/waraseoni/vtech-next/commit/e2a3aee02748e77a81417fc9d97de8db5d9a9f47))
+
 ## [1.39.0](https://github.com/waraseoni/vtech-next/compare/v1.38.2...v1.39.0) (2026-09-24)
 
 ### Features
