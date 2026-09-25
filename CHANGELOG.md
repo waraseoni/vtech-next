@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.42.0](https://github.com/waraseoni/vtech-next/compare/v1.41.0...v1.42.0) (2026-09-25)
+
+### Features
+
+* **sprint4:** [#19](https://github.com/waraseoni/vtech-next/issues/19) density toggle + master-detail preview, [#20](https://github.com/waraseoni/vtech-next/issues/20) bfcache + multi-tab sync ([2cb83c4](https://github.com/waraseoni/vtech-next/commit/2cb83c463ac31ee913e6f462f5f806109602d172))
+
 ## [1.41.0](https://github.com/waraseoni/vtech-next/compare/v1.40.0...v1.41.0) (2026-09-25)
 
 ### Features
