@@ -1,6 +1,6 @@
 # Inventory System — Master Improvement & BOM Plan
 
-> Status: **I1/I2/I3/I4/I5 DONE — I6 valuation report DONE (2026-09-12); I5 oversold visibility DONE (2026-09-25); location data-model cleanup Phase-1 DONE (2026-09-20), Phase-2 (place\* column retirement) gated-pending.**
+> Status: **I1/I2/I3/I4/I5 DONE — I6 valuation report DONE (2026-09-12); I5 oversold visibility DONE (2026-09-25); location data-model cleanup Phase-1 DONE (2026-09-20), Phase-2 DROP DONE (2026-09-25, verified live).**
 > This is a single, merged, ordered plan built from two prior design docs:
 >   1. `inventory_improvements_plan.md` (system-wide upgrades)
 >   2. `bom_checker_plan.md` (BOM auto-check feature)
