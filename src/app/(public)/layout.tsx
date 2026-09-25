@@ -18,8 +18,17 @@ import {
   LayoutDashboard,
 } from "lucide-react";
 import { SITE, SERVICES, getSiteInfo, type SiteInfo } from "./site";
-import { QrShareModal } from "./components/qr-share";
 import { getCachedUser } from "@/lib/supabase";
+import dynamic from "next/dynamic";
+
+// PERF (lightning A1): qrcode lib (~110KB gz) sirf QR button click par chahiye —
+// static import se har public route (/ , /about, /contact, /job-status) wo load
+// karta tha. Dynamic chunk = initial JS se bahar. Conditional render (qrOpen)
+// se chunk sirf pehli baar click par hi download hota hai.
+const QrShareModal = dynamic(
+  () => import("./components/qr-share").then((m) => m.QrShareModal),
+  { ssr: false, loading: () => null }
+);
 const NAV_LINKS = [
   { href: "/", label: "Home" },
   { href: "/about", label: "About" },
@@ -527,7 +536,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
       </footer>
 
       {/* Scan & Share QR modal */}
-      <QrShareModal open={qrOpen} onClose={() => setQrOpen(false)} />
+      {qrOpen && <QrShareModal open={qrOpen} onClose={() => setQrOpen(false)} />}
     </div>
   );
 }

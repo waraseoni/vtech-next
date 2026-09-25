@@ -53,6 +53,12 @@ export interface JobSpot {
   count: number;
 }
 
+// PERF (lightning B2): fetchStats + fetchPage dono same debounced term par
+// lagbhag ek saath client-search chalate the (= duplicate query). In-flight
+// dedupe — dusra caller same promise share karta hai, settle par entry hat
+// jati hai (stale cache NAHI — har naye term par fresh query).
+const searchClientsInflight = new Map<string, Promise<string>>();
+
 // ── DUAL-ERA status-log reader — docs/DATA_MIGRATION_NOTES.md zaroor padho ──
 // PHP yug ke logs aur naye Next.js ke logs activity_logs me ALAG conventions
 // me rehte hain, isliye dono ko unke apne rules se query karna padta hai:
@@ -201,13 +207,23 @@ export function useJobList() {
   // ── Client search (Step 1: foreign key filtering) ─────────────────────────
   const searchClients = useCallback(async (term: string) => {
     if (!term) return "";
-    const { data: matchedClients } = await supabase
-      .from("client_list")
-      .select("id")
-      .or(
-        `firstname.ilike.%${term}%,middlename.ilike.%${term}%,lastname.ilike.%${term}%,contact.ilike.%${term}%`
-      );
-    return matchedClients?.map((c) => c.id).join(",") || "-1";
+    const inflight = searchClientsInflight.get(term);
+    if (inflight) return inflight;
+    const p = (async () => {
+      const { data: matchedClients } = await supabase
+        .from("client_list")
+        .select("id")
+        .or(
+          `firstname.ilike.%${term}%,middlename.ilike.%${term}%,lastname.ilike.%${term}%,contact.ilike.%${term}%`
+        );
+      return matchedClients?.map((c) => c.id).join(",") || "-1";
+    })();
+    searchClientsInflight.set(term, p);
+    try {
+      return await p;
+    } finally {
+      if (searchClientsInflight.get(term) === p) searchClientsInflight.delete(term);
+    }
   }, []);
 
   // ── Quick Stats (exact — no 2k-row cap). Filter-dependent only: NOT re-run

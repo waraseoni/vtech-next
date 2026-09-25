@@ -78,6 +78,16 @@ export function DataTable<T>({
   const pageCount = Math.max(1, Math.ceil(effectiveTotal / localPageSize));
   const safePage = Math.min(Math.max(1, localPage), pageCount);
 
+  // PERF (lightning B4): uncontrolled mode (koi onPageChange nahi — direct-sales,
+  // suppliers) me parents FULL filtered array dete the aur DataTable use poora
+  // render karta tha (500+ rows DOM me = INP/TBT kill; footer buttons bhi
+  // be-asar the). Ab page-slice yahin lagta hai — DOM me max 100 rows.
+  // Controlled mode (onPageChange present — parent khud slice karta hai, jaise
+  // payments ka `paginated`) me data ko chhoda nahi jata (double-slice nahi).
+  const visibleData = onPageChange
+    ? data
+    : data.slice((safePage - 1) * localPageSize, safePage * localPageSize);
+
   // Sync external page changes
   useEffect(() => {
     setLocalPage(page);
@@ -186,7 +196,7 @@ export function DataTable<T>({
               </tr>
             </thead>
             <tbody className="divide-y divide-[#1a2234]">
-              {data.map((item, index) => (
+              {visibleData.map((item, index) => (
                 <tr
                   key={String((item as Record<string, unknown>)[keyField] ?? index)}
                   className="hover:bg-white/[0.02] transition-colors"

@@ -44,13 +44,8 @@ function AdvanceLedgerContent() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const { data: mechData } = await supabase
-        .from("mechanic_list")
-        .select("id, firstname, middlename, lastname")
-        .eq("status", 1)
-        .eq("delete_flag", 0);
-      setMechanics(mechData || []);
-
+      // PERF (lightning B3): mechanics + advances independent the — pehle
+      // serial 2 RTT, ab ek saath. Rows mapping neeche mechData se hota hai.
       let q = supabase
         .from("advance_payments")
         .select("id, mechanic_id, amount, date_paid, reason")
@@ -58,7 +53,15 @@ function AdvanceLedgerContent() {
         .lte("date_paid", to)
         .order("date_paid", { ascending: false });
       if (mechanicId !== "all") q = q.eq("mechanic_id", parseInt(mechanicId));
-      const { data } = await q;
+      const [{ data: mechData }, { data }] = await Promise.all([
+        supabase
+          .from("mechanic_list")
+          .select("id, firstname, middlename, lastname")
+          .eq("status", 1)
+          .eq("delete_flag", 0),
+        q,
+      ]);
+      setMechanics(mechData || []);
 
       setRows(
         (data || []).map((r) => {

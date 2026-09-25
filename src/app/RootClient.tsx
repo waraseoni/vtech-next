@@ -1295,6 +1295,35 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
     return () => window.removeEventListener("pageshow", h);
   }, [router]);
 
+  // ── PERF (lightning A3): hover par FULL route prefetch ─────────────────────
+  // Next <Link> ka default prefetch sirf loading-boundary tak hota hai (dynamic
+  // server routes par data payload NAHI) — hover par router.prefetch(href)
+  // poora RSC payload la deta hai, click = instant. Per-href Set dedupe taaki
+  // mouse sweep par baar-bar na chale. Sirf internal paths (href "/").
+  useEffect(() => {
+    const done = new Set<string>();
+    const timers = new Map<string, number>();
+    const h = (e: MouseEvent) => {
+      const el = (e.target as HTMLElement | null)?.closest?.("a[href]");
+      if (!el) return;
+      const href = el.getAttribute("href") || "";
+      if (!href.startsWith("/") || href.startsWith("//") || done.has(href)) return;
+      done.add(href);
+      // 120ms delay: accidental sweep (sidebar ke 20 links par mouse le jaana)
+      // par mass-fetch na ho — ruk kar hover hi prefetch kare.
+      const t = window.setTimeout(() => {
+        timers.delete(href);
+        router.prefetch(href);
+      }, 120);
+      timers.set(href, t);
+    };
+    document.addEventListener("mouseover", h);
+    return () => {
+      document.removeEventListener("mouseover", h);
+      timers.forEach((t) => window.clearTimeout(t));
+    };
+  }, [router]);
+
   if (isPublicPage) {
     // Auth pages par logged-in user ko flash na dikhe — blank while redirect.
     if (profile && isAuthPage) return <div className="min-h-screen bg-app" />;

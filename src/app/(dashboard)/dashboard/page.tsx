@@ -297,19 +297,13 @@ export default function Dashboard() {
         // Logged out → turant loading khatam → (public) website dikhao.
         if (!user) return;
 
-        {
-          const { data: pd } = await supabase
-            .from("profiles")
-            .select("full_name, role")
-            .eq("id", user.id)
-            .single();
-          setProfile(
-            pd ?? {
-              full_name: user.user_metadata?.full_name || user.email?.split("@")[0] || "User",
-              role: "staff",
-            }
-          );
-        }
+        // PERF (lightning B1): profile + dono RPC ek-dusre se independent —
+        // pehle profile ka 1 RTT serial tha, ab teeno ek saath fire.
+        const profileP = supabase
+          .from("profiles")
+          .select("full_name, role")
+          .eq("id", user.id)
+          .single();
 
         // BUG FIX 2: use todayIST() — not new Date().toISOString().split('T')[0]
         const today = todayIST();
@@ -318,10 +312,21 @@ export default function Dashboard() {
 
         // ── PERFORMANCE: 3 RPC calls replace 40+ individual queries ──
         // Agar RPC exist nahi karta to fallback to old client-side queries
-        const [statsRes, revenueRes] = await Promise.all([
+        const [profileRes, statsRes, revenueRes] = await Promise.all([
+          profileP,
           supabase.rpc("get_dashboard_stats", { p_today_start: startToday, p_today_end: endToday }),
           supabase.rpc("get_monthly_revenue", { p_months: 12 }),
         ]);
+
+        {
+          const pd = profileRes.data;
+          setProfile(
+            pd ?? {
+              full_name: user.user_metadata?.full_name || user.email?.split("@")[0] || "User",
+              role: "staff",
+            }
+          );
+        }
 
         const sd = (statsRes.data ?? {}) as Record<string, number>;
         if (statsRes.error || (!sd.totalJobs && sd.totalJobs !== 0)) {
@@ -458,38 +463,48 @@ export default function Dashboard() {
         if (!revenueRes.error && Array.isArray(revenueRes.data) && revenueRes.data.length > 0) {
           setRevenueData(revenueRes.data as RevenuePoint[]);
         } else {
-          const pts: RevenuePoint[] = [];
-          for (let i = 11; i >= 0; i--) {
+          // PERF (lightning B1): fallback loop serial tha (12 mahine × 2 queries
+          // = 12 RTT) — mahine ek-dusre se independent, sab ek saath fire.
+          const monthRanges = Array.from({ length: 12 }, (_, k) => {
             const md = new Date();
             md.setDate(1);
-            md.setMonth(md.getMonth() - i);
-            const start = `${startOfMonthIST(md)}T00:00:00+05:30`;
-            const end = `${endOfMonthIST(md)}T23:59:59+05:30`;
-            const [{ data: repMonth }, { data: dirMonth }] = await Promise.all([
-              pageAll(
-                supabase
-                  .from("transaction_list")
-                  .select("amount")
-                  .eq("status", 5)
-                  .eq("del_status", 0)
-                  .gte("date_completed", start)
-                  .lte("date_completed", end)
-              ),
-              pageAll(
-                supabase
-                  .from("direct_sales")
-                  .select("total_amount")
-                  .gte("date_created", start)
-                  .lte("date_created", end)
-              ),
-            ]);
-            pts.push({
-              month: md.toLocaleString("default", { month: "short", year: "2-digit" }),
+            md.setMonth(md.getMonth() - (11 - k));
+            return {
+              md,
+              start: `${startOfMonthIST(md)}T00:00:00+05:30`,
+              end: `${endOfMonthIST(md)}T23:59:59+05:30`,
+            };
+          });
+          const monthPairs = await Promise.all(
+            monthRanges.map(({ start, end }) =>
+              Promise.all([
+                pageAll(
+                  supabase
+                    .from("transaction_list")
+                    .select("amount")
+                    .eq("status", 5)
+                    .eq("del_status", 0)
+                    .gte("date_completed", start)
+                    .lte("date_completed", end)
+                ),
+                pageAll(
+                  supabase
+                    .from("direct_sales")
+                    .select("total_amount")
+                    .gte("date_created", start)
+                    .lte("date_created", end)
+                ),
+              ])
+            )
+          );
+          const pts: RevenuePoint[] = monthPairs.map(
+            ([{ data: repMonth }, { data: dirMonth }], k) => ({
+              month: monthRanges[k].md.toLocaleString("default", { month: "short", year: "2-digit" }),
               revenue:
                 (repMonth || []).reduce((s: number, r: TxnRow) => s + n(r.amount), 0) +
                 (dirMonth || []).reduce((s: number, r: DirectSaleRow) => s + n(r.total_amount), 0),
-            });
-          }
+            })
+          );
           setRevenueData(pts);
         }
 
@@ -517,23 +532,49 @@ export default function Dashboard() {
         ]);
         const lowProds = lpR.data;
         const lowStockMap = new Map<number, StockRow>();
-        const m = await fetchStockByProducts(
-          (lowProds || []).map((p: { id: number }) => p.id)
-        );
-        m.forEach((r, k) => lowStockMap.set(k, r));
         const recentTransRaw = rjR.data;
         const paymentsRaw = rpR.data;
 
+        // PERF (lightning B1): ye 4 chains ek-dusre se independent hain — pehle
+        // serial the (stock → job-names → payment-names → locations = 4 RTT),
+        // ab ek saath fire.
+        const cIds = recentTransRaw?.length
+          ? [
+              ...new Set(
+                recentTransRaw.map((t) => parseInt(t.client_name)).filter((x: number) => !isNaN(x))
+              ),
+            ]
+          : [];
+        const cIds2 = paymentsRaw?.length
+          ? [...new Set(paymentsRaw.map((p) => p.client_id).filter(Boolean))]
+          : [];
+        // `product_locations`/`locations` RLS-gated hain → anon-client khali
+        // [] deta hai. Service-role server route se read hota hai.
+        const lowProdIds = (lowProds || []).map((p: { id: number }) => p.id);
+        const [stockM, clsJobs, clsPays, plLocsData] = await Promise.all([
+          fetchStockByProducts(lowProdIds),
+          cIds.length
+            ? supabase.from("client_list").select("id, firstname, lastname").in("id", cIds)
+            : Promise.resolve({ data: [] }),
+          cIds2.length
+            ? supabase.from("client_list").select("id, firstname, lastname").in("id", cIds2)
+            : Promise.resolve({ data: [] }),
+          (async (): Promise<Record<string, unknown>> => {
+            if (!lowProdIds.length) return {};
+            try {
+              const res = await fetch(`/api/locations/by-product?ids=${lowProdIds.join(",")}`);
+              if (res.ok) return (await res.json()) as Record<string, unknown>;
+            } catch {
+              // ignore — place "—" rahega
+            }
+            return {};
+          })(),
+        ]);
+        stockM.forEach((r, k) => lowStockMap.set(k, r));
+
         // Recent jobs — resolve client names
         if (recentTransRaw?.length) {
-          const cIds = [
-            ...new Set(
-              recentTransRaw.map((t) => parseInt(t.client_name)).filter((x: number) => !isNaN(x))
-            ),
-          ];
-          const { data: cls } = cIds.length
-            ? await supabase.from("client_list").select("id, firstname, lastname").in("id", cIds)
-            : { data: [] };
+          const cls = clsJobs.data;
           const cMap = Object.fromEntries(
             (cls ?? []).map((c) => [c.id, `${c.firstname ?? ""} ${c.lastname ?? ""}`.trim()])
           );
@@ -548,10 +589,7 @@ export default function Dashboard() {
 
         // Recent payments — resolve client names
         if (paymentsRaw?.length) {
-          const cIds2 = [...new Set(paymentsRaw.map((p) => p.client_id).filter(Boolean))];
-          const { data: cls2 } = cIds2.length
-            ? await supabase.from("client_list").select("id, firstname, lastname").in("id", cIds2)
-            : { data: [] };
+          const cls2 = clsPays.data;
           const cMap2 = Object.fromEntries(
             (cls2 ?? []).map((c) => [c.id, `${c.firstname ?? ""} ${c.lastname ?? ""}`.trim()])
           );
@@ -571,20 +609,7 @@ export default function Dashboard() {
           let lowStock = 0;
 
           const placeMap = new Map<number, string>();
-          // `product_locations`/`locations` RLS-gated hain → anon-client khali
-          // [] deta hai. Service-role server route se read hota hai.
-          const lowProdIds = (lowProds || []).map((p: { id: number }) => p.id);
-          if (lowProdIds.length) {
-            let plLocsData: Record<string, unknown> = {};
-            try {
-              const res = await fetch(
-                `/api/locations/by-product?ids=${lowProdIds.join(",")}`
-              );
-              if (res.ok) plLocsData = (await res.json()) as Record<string, unknown>;
-            } catch {
-              plLocsData = {};
-            }
-            Object.entries(plLocsData).forEach(([pid, locs]) => {
+          Object.entries(plLocsData).forEach(([pid, locs]) => {
               if (placeMap.has(Number(pid))) return;
               const loc = (Array.isArray(locs) ? locs[0] : locs) as {
                 zone?: string;
@@ -595,7 +620,6 @@ export default function Dashboard() {
               const parts = [loc?.zone, loc?.rack, loc?.bin, loc?.box].filter(Boolean);
               if (parts.length > 0) placeMap.set(Number(pid), parts.join(" ▸ "));
             });
-          }
 
           const builtLow = (lowProds || [])
             .map((p: { id: number; name: string; alert_quantity: number }) => ({
@@ -782,30 +806,38 @@ export default function Dashboard() {
       const directInc = (dD ?? []).reduce((s: number, d) => s + n(d.total_amount), 0);
       const totalSales = repairInc + directInc;
 
+      // PERF (lightning B1): teeno chains independent the — pehle serial
+      // (partsTrans → partsDirect → mechs = 3 RTT), ab ek saath fire.
       const txList = (txIds ?? []).map((t: { id: number }) => t.id);
-      let partsTrans = 0;
-      if (txList.length) {
-        const { data: tp } = await supabase
-          .from("transaction_products")
-          .select("qty, price, product_id, products(cost_price)")
-          .in("transaction_id", txList);
-        partsTrans = (tp ?? []).reduce((s: number, r: PartsProductRow) => {
-          const cp = r.products?.[0]?.cost_price;
-          return s + n(r.qty) * (cp != null && cp > 0 ? cp : n(r.price) * 0.9);
-        }, 0);
-      }
       const dList = (dIds ?? []).map((d: { id: number }) => d.id);
-      let partsDirect = 0;
-      if (dList.length) {
-        const { data: di } = await supabase
-          .from("direct_sale_items")
-          .select("qty, price, product_id, products(cost_price)")
-          .in("sale_id", dList);
-        partsDirect = (di ?? []).reduce((s: number, r: PartsProductRow) => {
-          const cp = r.products?.[0]?.cost_price;
-          return s + n(r.qty) * (cp != null && cp > 0 ? cp : n(r.price) * 0.9);
-        }, 0);
-      }
+      const mIds = attD?.length
+        ? [...new Set(attD.map((a: AttendanceRow) => a.mechanic_id).filter(Boolean))]
+        : [];
+      const [{ data: tp }, { data: di }, { data: mechs }] = await Promise.all([
+        txList.length
+          ? supabase
+              .from("transaction_products")
+              .select("qty, price, product_id, products(cost_price)")
+              .in("transaction_id", txList)
+          : Promise.resolve({ data: null }),
+        dList.length
+          ? supabase
+              .from("direct_sale_items")
+              .select("qty, price, product_id, products(cost_price)")
+              .in("sale_id", dList)
+          : Promise.resolve({ data: null }),
+        mIds.length
+          ? supabase.from("mechanic_list").select("id, daily_salary").in("id", mIds)
+          : Promise.resolve({ data: null }),
+      ]);
+      const partsTrans = (tp ?? []).reduce((s: number, r: PartsProductRow) => {
+        const cp = r.products?.[0]?.cost_price;
+        return s + n(r.qty) * (cp != null && cp > 0 ? cp : n(r.price) * 0.9);
+      }, 0);
+      const partsDirect = (di ?? []).reduce((s: number, r: PartsProductRow) => {
+        const cp = r.products?.[0]?.cost_price;
+        return s + n(r.qty) * (cp != null && cp > 0 ? cp : n(r.price) * 0.9);
+      }, 0);
 
       const partsCost = partsTrans + partsDirect;
       const grossProfit = totalSales - partsCost;
@@ -813,11 +845,6 @@ export default function Dashboard() {
 
       let salary = 0;
       if (attD?.length) {
-        const mIds = [...new Set(attD.map((a: AttendanceRow) => a.mechanic_id).filter(Boolean))];
-        const { data: mechs } = await supabase
-          .from("mechanic_list")
-          .select("id, daily_salary")
-          .in("id", mIds);
         const sMap = Object.fromEntries(
           (mechs ?? []).map((m: MechRow) => [m.id, n(m.daily_salary)])
         );

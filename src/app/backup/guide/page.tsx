@@ -4,6 +4,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { ArrowLeft, BookOpen } from "lucide-react";
 import { renderMarkdown } from "@/lib/markdown";
+import styles from "./guide.module.css";
 
 export const dynamic = "force-dynamic";
 
@@ -53,7 +54,7 @@ export default function BackupGuidePage() {
           </div>
         ) : (
           <article
-            className="backup-guide bg-panel border border-app rounded-2xl px-5 py-5 sm:px-7 sm:py-6"
+            className={`${styles.guide} bg-panel border border-app rounded-2xl px-5 py-5 sm:px-7 sm:py-6`}
             dangerouslySetInnerHTML={{ __html: html }}
           />
         )}

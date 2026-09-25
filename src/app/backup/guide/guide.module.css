@@ -1,0 +1,159 @@
+/* PERF (lightning C1): ye styles pehle globals.css me the — har route par
+   363KB global stylesheet me render-block hote the, jabki sirf /backup/guide
+   use karta hai. Route-level module = sirf is page ke chunk me load. */
+.guide {
+  color: #cbd5e1;
+  font-size: 0.875rem;
+  line-height: 1.7;
+  word-wrap: break-word;
+}
+.guide h1 {
+  color: #ffffff;
+  font-size: 1.5rem;
+  font-weight: 800;
+  margin: 2rem 0 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #21293d;
+}
+.guide h2 {
+  color: #e2e8f0;
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin: 1.75rem 0 0.75rem;
+}
+.guide h3 {
+  color: #cbd5e1;
+  font-size: 1rem;
+  font-weight: 700;
+  margin: 1.25rem 0 0.5rem;
+}
+.guide p {
+  margin: 0.6rem 0;
+}
+.guide a {
+  color: #60a5fa;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.guide strong {
+  color: #f1f5f9;
+  font-weight: 700;
+}
+.guide ul,
+.guide ol {
+  margin: 0.5rem 0 0.5rem 1.25rem;
+}
+.guide ul {
+  list-style: disc;
+}
+.guide ol {
+  list-style: decimal;
+}
+.guide li {
+  margin: 0.25rem 0;
+}
+.guide li > ul,
+.guide li > ol {
+  margin-top: 0.25rem;
+}
+.guide code {
+  background: #0d1117;
+  border: 1px solid #21293d;
+  border-radius: 0.35rem;
+  padding: 0.1rem 0.35rem;
+  font-size: 0.8em;
+  color: #7dd3fc;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+.guide pre {
+  background: #0a0e17;
+  border: 1px solid #21293d;
+  border-radius: 0.6rem;
+  padding: 0.85rem 1rem;
+  overflow-x: auto;
+  margin: 0.75rem 0;
+}
+.guide pre code {
+  background: none;
+  border: none;
+  padding: 0;
+  color: #a5b4fc;
+  font-size: 0.8rem;
+}
+.guide blockquote {
+  border-left: 3px solid #3b82f6;
+  background: rgba(59, 130, 246, 0.08);
+  padding: 0.6rem 0.9rem;
+  border-radius: 0.4rem;
+  margin: 0.75rem 0;
+}
+.guide table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.75rem 0;
+  font-size: 0.8rem;
+  display: block;
+  overflow-x: auto;
+}
+.guide th,
+.guide td {
+  border: 1px solid #21293d;
+  padding: 0.45rem 0.6rem;
+  text-align: left;
+  vertical-align: top;
+}
+.guide th {
+  background: #0d1117;
+  color: #e2e8f0;
+  font-weight: 700;
+}
+.guide hr {
+  border: none;
+  border-top: 1px solid #21293d;
+  margin: 2rem 0;
+}
+.guide > h1:first-child,
+.guide > :first-child {
+  margin-top: 0;
+}
+/* `html[...]` element selector hai — CSS Modules me global rehta hai,
+   `.guide` hash hota hai. Dono theme same specificity se kaam karte hain. */
+html[data-theme="light"] .guide {
+  color: #1e293b;
+}
+html[data-theme="light"] .guide h1 {
+  color: #0f172a;
+  border-bottom-color: #cbd5e1;
+}
+html[data-theme="light"] .guide h2 {
+  color: #0f172a;
+}
+html[data-theme="light"] .guide h3 {
+  color: #1e293b;
+}
+html[data-theme="light"] .guide strong {
+  color: #0f172a;
+}
+html[data-theme="light"] .guide code {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #0369a1;
+}
+html[data-theme="light"] .guide pre {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+}
+html[data-theme="light"] .guide pre code {
+  color: #4338ca;
+}
+html[data-theme="light"] .guide th,
+html[data-theme="light"] .guide td {
+  border-color: #cbd5e1;
+}
+html[data-theme="light"] .guide th {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+html[data-theme="light"] .guide hr {
+  border-top-color: #cbd5e1;
+}

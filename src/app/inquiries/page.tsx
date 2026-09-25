@@ -132,13 +132,14 @@ function InquiriesPageInner() {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const { count: total } = await supabase
-        .from("message_list")
-        .select("status", { count: "exact", head: true });
-      const { count: unread } = await supabase
-        .from("message_list")
-        .select("status", { count: "exact", head: true })
-        .eq("status", 0);
+      // PERF (lightning B3): dono head-counts independent — serial 2 RTT → 1.
+      const [{ count: total }, { count: unread }] = await Promise.all([
+        supabase.from("message_list").select("status", { count: "exact", head: true }),
+        supabase
+          .from("message_list")
+          .select("status", { count: "exact", head: true })
+          .eq("status", 0),
+      ]);
       if (!cancelled) setAllTimeStats({ total: total || 0, unread: unread || 0 });
     })();
     return () => {

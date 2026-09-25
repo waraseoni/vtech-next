@@ -175,6 +175,19 @@ export function useAppBoot() {
         setUserEmail(session.user.email ?? null);
         setAuthReady(true); // shell itni der me dikh jata hai — data background
 
+        // PERF (lightning A2): profile fetch PEHLE se getUser validation ke
+        // saath PARALLEL chalao. Pehle ye SERIAL tha (getUser RTT → uske baad
+        // profile RTT) — role-based shell (sidebar naam, admin guards, module
+        // filter) ek extra RTT late render hota tha. Session id se profile read
+        // safe hai (RLS protect karta hai); validation fail par waise bhi
+        // signOut + /login hota hai. Supabase client promise reject nahi karta,
+        // isliye early-return par bhi unhandled rejection nahi.
+        const profileFetch = supabase
+          .from("profiles")
+          .select("full_name, role, avatar_url")
+          .eq("id", session.user.id)
+          .maybeSingle();
+
         // BUG FIX: getUser() kabhi-kabhi network par hang ho jata hai → "V-TECH
         // Secure Boot" loader hamesha ke liye atak jata tha. 6s timeout + EK
         // retry: pehle sirf ek 6s race thi — slow network par valid session
@@ -203,11 +216,7 @@ export function useAppBoot() {
           }
           return;
         }
-        const { data: pd } = await supabase
-          .from("profiles")
-          .select("full_name, role, avatar_url")
-          .eq("id", user.id)
-          .maybeSingle();
+        const { data: pd } = await profileFetch;
         if (cancelled) return;
         setProfile({
           full_name:

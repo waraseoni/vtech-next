@@ -58,12 +58,14 @@ const CUSTOM_CACHE: RuntimeCaching[] = [
     handler: new NetworkOnly(),
   },
   // ✅ /_next/static/**/*.js — content-hashed URLs, cache karne me safe (fast loads)
+  //    PERF (lightning A4): maxEntries 64→128 — build me ~151 client chunks hain,
+  //    64 par LRU eviction har reload par re-download karta tha.
   {
     matcher: /\/_next\/static.+\.js$/i,
     handler: new CacheFirst({
       cacheName: "next-static-js-assets",
       plugins: [
-        new ExpirationPlugin({ maxEntries: 64, maxAgeSeconds: 1440 * 60, maxAgeFrom: "last-used" }),
+        new ExpirationPlugin({ maxEntries: 128, maxAgeSeconds: 1440 * 60, maxAgeFrom: "last-used" }),
       ],
     }),
   },
@@ -117,7 +119,12 @@ const serwist = new Serwist({
   precacheEntries: self.__SW_MANIFEST,
   skipWaiting: true,
   clientsClaim: true,
-  navigationPreload: false,
+  // PERF (lightning A4): navigationPreload ON — browser SW dispatch ke saath
+  // hi navigation response shuru kar deta hai (pehle false tha, har page load
+  // par SW handler ka wait). HTML phir bhi hamesha fresh network se aata hai
+  // (upar ka no-store rule) — preload sirf latency kam karta hai, correctness
+  // unchanged.
+  navigationPreload: true,
   runtimeCaching: CUSTOM_CACHE,
 });
 

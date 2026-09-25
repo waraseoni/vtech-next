@@ -222,7 +222,9 @@ function AccountingDashboardContent() {
         .sort((a, b) => b.total - a.total)
         .slice(0, 5);
 
-      // Assets & Liabilities as of end date
+      // ── Assets & Liabilities as of end date ──
+      // PERF (lightning B3): walkinAll2 (client_id 0/'') pehle alag serial RTT
+      // tha — same table/same bound, batch me 16th query.
       const [
         { data: payAll },
         { data: walkinAll },
@@ -239,6 +241,7 @@ function AccountingDashboardContent() {
         { data: lenders },
         { data: allLoanPays },
         { data: invAllStock },
+        { data: walkinAll2 },
       ] = await Promise.all([
         pageAll(supabase.from("client_payments").select("amount").lte("payment_date", eTs)),
         pageAll(
@@ -277,21 +280,21 @@ function AccountingDashboardContent() {
         supabase.from("lender_list").select("loan_amount").eq("status", 1),
         pageAll(supabase.from("loan_payments").select("amount_paid")),
         supabase.from("inventory_list").select("quantity, product_id"),
+        // Walk-in direct sales (client_id null OR 0/'') — null wale upar
+        // (walkinAll me), 0/'' wale yahan — same batch, koi extra RTT nahi.
+        pageAll(
+          supabase
+            .from("direct_sales")
+            .select("total_amount")
+            .lte("date_created", eTs)
+            .or("client_id.eq.0,client_id.eq.''")
+        ),
       ]);
-
-      // Walk-in direct sales (client_id null OR 0 OR '') — fetch only null ones above, combine with 0/''
-      const walkinAll2 = await pageAll(
-        supabase
-          .from("direct_sales")
-          .select("total_amount")
-          .lte("date_created", eTs)
-          .or("client_id.eq.0,client_id.eq.''")
-      );
 
       const cashOnHand =
         (payAll || []).reduce((s: number, r) => s + num(r.amount), 0) +
         (walkinAll || []).reduce((s: number, r) => s + num(r.total_amount), 0) +
-        (walkinAll2.data || []).reduce((s: number, r) => s + num(r.total_amount), 0) -
+        (walkinAll2 || []).reduce((s: number, r) => s + num(r.total_amount), 0) -
         (expAll2 || []).reduce((s: number, r) => s + num(r.amount), 0) -
         (advAll2 || []).reduce((s: number, r) => s + num(r.amount), 0) -
         (loanPayAll || []).reduce((s: number, r) => s + num(r.amount_paid), 0);
