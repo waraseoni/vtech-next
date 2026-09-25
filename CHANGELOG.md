@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.43.1](https://github.com/waraseoni/vtech-next/compare/v1.43.0...v1.43.1) (2026-09-25)
+
+### Bug Fixes
+
+* **salary:** print commission parity - status=5 + date_completed like page ([c8ba3c8](https://github.com/waraseoni/vtech-next/commit/c8ba3c8956b58278b9968622bc92551232926662))
+
 ## [1.43.0](https://github.com/waraseoni/vtech-next/compare/v1.42.0...v1.43.0) (2026-09-25)
 
 ### Features
