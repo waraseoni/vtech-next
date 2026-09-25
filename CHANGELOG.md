@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.45.0](https://github.com/waraseoni/vtech-next/compare/v1.44.0...v1.45.0) (2026-09-25)
+
+### Features
+
+* **bom:** Phase 4 - create PO draft from missing BOM parts (po_draft contract) ([c48f55c](https://github.com/waraseoni/vtech-next/commit/c48f55c2e16daf58afe028d37619695160b9f1ad))
+
 ## [1.44.0](https://github.com/waraseoni/vtech-next/compare/v1.43.1...v1.44.0) (2026-09-25)
 
 ### Features
