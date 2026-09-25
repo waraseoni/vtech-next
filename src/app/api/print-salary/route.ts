@@ -84,11 +84,16 @@ export async function GET(request: NextRequest) {
           .lt("curr_date", nextMonthStart)
       ),
       pageAll(
+        // Commission SIRF Delivered (status=5) jobs ka, date_completed se —
+        // page (SalaryPageInner) ke canonical formula jaisa. Pehle yahan status
+        // filter nahi tha + date_created use hota tha → pending jobs ka
+        // commission jud jata tha aur print/page amounts alag aate the.
         supabase
           .from("transaction_list")
-          .select("mechanic_id, mechanic_commission_amount, date_created")
+          .select("mechanic_id, mechanic_commission_amount, date_completed")
+          .eq("status", 5)
           .in("mechanic_id", mechIds)
-          .lt("date_created", `${nextMonthStart}T00:00:00+05:30`)
+          .lt("date_completed", `${nextMonthStart}T00:00:00+05:30`)
       ),
       pageAll(
         supabase
@@ -125,7 +130,7 @@ export async function GET(request: NextRequest) {
       });
 
     const commPrevSum = commList
-      .filter((c) => c.mechanic_id === m.id && c.date_created < `${monthStart}T00:00:00+05:30`)
+      .filter((c) => c.mechanic_id === m.id && c.date_completed < `${monthStart}T00:00:00+05:30`)
       .reduce((s: number, c) => s + (c.mechanic_commission_amount || 0), 0);
     const advPrevSum = advList
       .filter((a) => a.mechanic_id === m.id && a.date_paid < monthStart)
@@ -154,8 +159,8 @@ export async function GET(request: NextRequest) {
       .filter(
         (c) =>
           c.mechanic_id === m.id &&
-          c.date_created >= `${monthStart}T00:00:00+05:30` &&
-          c.date_created < `${nextMonthStart}T00:00:00+05:30`
+          c.date_completed >= `${monthStart}T00:00:00+05:30` &&
+          c.date_completed < `${nextMonthStart}T00:00:00+05:30`
       )
       .reduce((s: number, c) => s + (c.mechanic_commission_amount || 0), 0);
     const currentAdv = advList
