@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.46.2](https://github.com/waraseoni/vtech-next/compare/v1.46.1...v1.46.2) (2026-09-25)
+
+### Performance Improvements
+
+* **i6-phase2:** drop place_* reads before column retirement ([801fe7d](https://github.com/waraseoni/vtech-next/commit/801fe7d61646bf667f9831ae9b7a72eb0bca1d6a))
+
 ## [1.46.1](https://github.com/waraseoni/vtech-next/compare/v1.46.0...v1.46.1) (2026-09-25)
 
 ### Performance Improvements
