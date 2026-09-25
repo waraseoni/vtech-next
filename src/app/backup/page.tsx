@@ -166,10 +166,8 @@ const TABLE_COLUMNS: Record<string, string[]> = {
     "date_updated",
     "purchase_cost",
     "courier_charges",
-    "place_zone",
-    "place_rack",
-    "place_bin",
-    "place_box",
+    // I6-Phase-2 (2026-09-25): place_zone/rack/bin/box DROP — export se out.
+    // `place` (display path) retained.
     "purchase_order_id",
   ],
   direct_sale_items: ["id", "sale_id", "product_id", "qty", "price"],
@@ -257,10 +255,7 @@ const TABLE_COLUMNS: Record<string, string[]> = {
     "hsn",
     "alert_quantity",
     "barcode",
-    "place_zone",
-    "place_rack",
-    "place_bin",
-    "place_box",
+    // I6-Phase-2 (2026-09-25): place_zone/rack/bin/box DROP — export se out.
   ],
   lender_list: [
     "id",

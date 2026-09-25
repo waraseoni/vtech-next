@@ -78,9 +78,12 @@ interface InvRow {
 
 /** Active products + stock basis value (available × avg purchase cost). */
 export async function fetchProductValuation(): Promise<ProductValuationReport> {
+  // PERF/I6-Phase-2 (2026-09-25): product_list.place_* DROP ho gaye —
+  // location ab canonical product_locations (locPath) ya trigger-synced
+  // inventory `place` se aata hai. partsFromRow fallback untouched (safe).
   const { data: pl } = await supabase
     .from("product_list")
-    .select("id, name, description, hsn, place_zone, place_rack, place_bin, place_box")
+    .select("id, name, description, hsn")
     .eq("delete_flag", 0)
     .eq("status", 1);
 
@@ -126,11 +129,11 @@ export async function fetchProductValuation(): Promise<ProductValuationReport> {
 /** Physically stock-in value grouped by shelf location. */
 export async function fetchLocationValuation(): Promise<LocationValuationReport> {
   const [{ data: inv }, { data: pl }] = await Promise.all([
+    // I6-Phase-2 (2026-09-25): inventory_list.place_* DROP — `place`
+    // (trigger-synced display path) hi select hota hai.
     supabase
       .from("inventory_list")
-      .select(
-        "product_id, quantity, purchase_cost, place, place_zone, place_rack, place_bin, place_box"
-      ),
+      .select("product_id, quantity, purchase_cost, place"),
     supabase.from("product_list").select("id, name"),
   ]);
 
