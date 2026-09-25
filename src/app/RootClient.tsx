@@ -61,6 +61,7 @@ import {
   Landmark,
   PanelLeftClose,
   PanelLeftOpen,
+  AlertTriangle,
 } from "lucide-react";
 import { isModuleEnabled, isRouteDisabled } from "@/lib/modules";
 import { LITE_MODE, LITE_MODULES, isLiteRouteAllowed } from "@/lib/lite";
@@ -420,7 +421,12 @@ function SidebarNav({
               title="Inventory"
               icon={<Package size={15} />}
               basePath="/inventory"
-              matchPaths={["/products", "/suppliers"]}
+              matchPaths={[
+                "/products",
+                "/suppliers",
+                "/reports/requirement-list",
+                "/reports/oversold",
+              ]}
             >
               {isAdmin && (
                 <li>
@@ -538,6 +544,18 @@ function SidebarNav({
                   >
                     <PackageX size={12} className="text-amber-400" />
                     Requirement List
+                  </Link>
+                </li>
+              )}
+              {isAdmin && (
+                <li>
+                  <Link
+                    href="/reports/oversold"
+                    className={subLinkCls(pathname === "/reports/oversold")}
+                    onClick={onNavClick}
+                  >
+                    <AlertTriangle size={12} className="text-red-400" />
+                    Oversold Stock
                   </Link>
                 </li>
               )}
