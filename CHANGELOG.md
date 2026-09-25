@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.46.1](https://github.com/waraseoni/vtech-next/compare/v1.46.0...v1.46.1) (2026-09-25)
+
+### Performance Improvements
+
+* **lightning:** A-C quick wins + data-path batching + CSS trim ([1e3ef94](https://github.com/waraseoni/vtech-next/commit/1e3ef94a0120be964636cc42cc249f16c5d0de8e))
+
 ## [1.46.0](https://github.com/waraseoni/vtech-next/compare/v1.45.0...v1.46.0) (2026-09-25)
 
 ### Features
