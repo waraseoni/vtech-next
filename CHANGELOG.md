@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.43.0](https://github.com/waraseoni/vtech-next/compare/v1.42.0...v1.43.0) (2026-09-25)
+
+### Features
+
+* **sprint2:** [#8](https://github.com/waraseoni/vtech-next/issues/8) salary merge - history port to mechanics-salary, /salary redirects ([98df65d](https://github.com/waraseoni/vtech-next/commit/98df65d5af54e09bad0889ee11b4132aa31ecc7b))
+
 ## [1.42.0](https://github.com/waraseoni/vtech-next/compare/v1.41.0...v1.42.0) (2026-09-25)
 
 ### Features
