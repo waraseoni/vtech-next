@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.44.0](https://github.com/waraseoni/vtech-next/compare/v1.43.1...v1.44.0) (2026-09-25)
+
+### Features
+
+* **inventory:** I5 oversell visibility - SaleForm amber confirm + /reports/oversold ([1294742](https://github.com/waraseoni/vtech-next/commit/129474222038d8727226f4389640825da1bbe090))
+
 ## [1.43.1](https://github.com/waraseoni/vtech-next/compare/v1.43.0...v1.43.1) (2026-09-25)
 
 ### Bug Fixes
