@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.47.4](https://github.com/waraseoni/vtech-next/compare/v1.47.3...v1.47.4) (2026-09-26)
+
+### Bug Fixes
+
+* **geofence:** disable all job action buttons when staff outside office without permit ([f744edb](https://github.com/waraseoni/vtech-next/commit/f744edbd0968bb0256014025d1e320f4b036f982))
+
 ## [1.47.3](https://github.com/waraseoni/vtech-next/compare/v1.47.2...v1.47.3) (2026-09-26)
 
 ### Bug Fixes
