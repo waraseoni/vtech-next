@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.47.2](https://github.com/waraseoni/vtech-next/compare/v1.47.1...v1.47.2) (2026-09-26)
+
+### Bug Fixes
+
+* **theme:** fix date visibility in light mode for attendance date navigator ([57b0f50](https://github.com/waraseoni/vtech-next/commit/57b0f50bb26bddd882801d3bf46e5f49734b103c))
+
 ## [1.47.1](https://github.com/waraseoni/vtech-next/compare/v1.47.0...v1.47.1) (2026-09-26)
 
 ### Bug Fixes
