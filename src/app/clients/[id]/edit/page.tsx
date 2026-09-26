@@ -568,7 +568,7 @@ export default function ManageClientPage() {
               <button
                 type="button"
                 onClick={() => safeBack(router, "/clients")}
-                className="flex-1 sm:flex-none sm:px-8 py-3 rounded-xl font-bold text-sm bg-panel-2 hover:bg-[#2a3550] text-app-2 transition-all"
+                className="flex-1 sm:flex-none sm:px-8 py-3 rounded-xl font-bold text-sm bg-panel-2 dark:hover:bg-[#2a3550] text-app-2 transition-all"
               >
                 Cancel
               </button>

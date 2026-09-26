@@ -347,6 +347,38 @@ html[data-theme="light"] select optgroup {
 }
 
 /* ============================================
+   NATIVE DATE/TIME/MONTH pickers — theme aware
+   ~80 jagah hardcoded `[color-scheme:dark]` utility hai (attendance date
+   selector ka dark popup bug isi se tha). Unlayered author CSS Tailwind
+   utilities ko override karta hai — 1 rule sab fix karta hai, components
+   chhedne ki zaroorat nahi. Dark side pehle se consistent hai.
+   ============================================ */
+html[data-theme="light"] input,
+html[data-theme="light"] select,
+html[data-theme="light"] textarea {
+  color-scheme: light;
+}
+
+/* ============================================
+   TABLE HAIRLINE DIVIDERS — light mode
+   divide-[#161b27/#1a2030/#1a2133/#1a2234/#21293d] ~100 jagah dark hairline
+   banate the. Light me slate-200 (#e2e8f0).
+   (Tailwind v4 shape: :where(.divide-\[…\]>:not(:last-child)))
+   ============================================ */
+html[data-theme="light"] :where(.divide-\[\#161b27\]>:not(:last-child)),
+html[data-theme="light"] :where(.divide-\[\#1a2030\]>:not(:last-child)),
+html[data-theme="light"] :where(.divide-\[\#1a2133\]>:not(:last-child)),
+html[data-theme="light"] :where(.divide-\[\#1a2234\]>:not(:last-child)),
+html[data-theme="light"] :where(.divide-\[\#21293d\]>:not(:last-child)) {
+  border-color: #e2e8f0 !important;
+}
+
+/* Sunday-absent cell (MonthlyReport) — light me red-100 */
+html[data-theme="light"] .bg-\[\#1a0505\] {
+  background-color: #fee2e2 !important;
+}
+
+/* ============================================
    FORM ELEMENTS - THEME AWARE
    ============================================ */
 html[data-theme="dark"] input,

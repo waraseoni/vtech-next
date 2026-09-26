@@ -193,8 +193,8 @@ function CashFlowPageInner() {
 
   return (
     <div className="min-h-screen bg-panel text-app-2 selection:bg-blue-500/30">
-      {/* ── Header ─────────────────────────────────────────────── */}
-      <div className="relative overflow-hidden border-b border-app bg-gradient-to-b from-[#111520] to-[#0d1117]">
+      {/* ── Header (PageHeader pattern: light me light gradient) ───────── */}
+      <div className="relative overflow-hidden border-b border-app bg-gradient-to-b from-white dark:from-[#111520] to-slate-50 dark:to-[#0d1117]">
         <div className="absolute -top-24 -left-20 w-64 h-64 bg-blue-600/10 blur-[100px] rounded-full" />
         <div className="absolute top-40 -right-20 w-80 h-80 bg-emerald-600/5 blur-[120px] rounded-full" />
 
@@ -210,7 +210,7 @@ function CashFlowPageInner() {
               <div>
                 <h1 className="text-3xl font-black text-white tracking-tight flex items-center gap-3">
                   Cash Flow Insights
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 uppercase tracking-widest">
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 uppercase tracking-widest">
                     Live
                   </span>
                 </h1>

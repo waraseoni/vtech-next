@@ -1594,16 +1594,14 @@ export default function ViewClientProfile() {
               type="date"
               value={dateFrom}
               onChange={(e) => setDateFrom(e.target.value)}
-              className="px-3 py-2 rounded-xl text-sm font-medium text-app-2 border focus:outline-none focus:border-blue-500 [color-scheme:dark]"
-              style={{ background: "#0d1117", borderColor: "#21293d" }}
+              className="px-3 py-2 rounded-xl text-sm font-medium text-app-2 border border-app bg-panel-2 focus:outline-none focus:border-blue-500"
             />
             <span className="text-muted self-center text-xs">to</span>
             <input
               type="date"
               value={dateTo}
               onChange={(e) => setDateTo(e.target.value)}
-              className="px-3 py-2 rounded-xl text-sm font-medium text-app-2 border focus:outline-none focus:border-blue-500 [color-scheme:dark]"
-              style={{ background: "#0d1117", borderColor: "#21293d" }}
+              className="px-3 py-2 rounded-xl text-sm font-medium text-app-2 border border-app bg-panel-2 focus:outline-none focus:border-blue-500"
             />
             <button
               onClick={() => {

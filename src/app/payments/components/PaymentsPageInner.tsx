@@ -295,8 +295,8 @@ export default function PaymentsPageInner({ initialClients, initialPayments }: P
 
   return (
     <AdminPage title="Payments" subtitle="Client payments management">
-      {/* Glassy Header */}
-      <div className="relative overflow-hidden mb-6 border-b border-app bg-gradient-to-b from-[#111520] to-[#0d1117] rounded-[2rem] p-6 md:p-8">
+      {/* Glassy Header (PageHeader pattern: light me light gradient) */}
+      <div className="relative overflow-hidden mb-6 border-b border-app bg-gradient-to-b from-white dark:from-[#111520] to-slate-50 dark:to-[#0d1117] rounded-[2rem] p-6 md:p-8">
         <div className="absolute -top-24 -left-20 w-64 h-64 bg-emerald-600/10 blur-[100px] rounded-full" />
         <div className="absolute top-40 -right-20 w-80 h-80 bg-purple-600/10 blur-[120px] rounded-full" />
         <div className="absolute top-20 left-1/3 w-40 h-40 bg-blue-600/8 blur-[80px] rounded-full" />
@@ -313,7 +313,7 @@ export default function PaymentsPageInner({ initialClients, initialPayments }: P
               <div>
                 <h1 className="text-2xl md:text-3xl font-black text-white tracking-tight flex items-center gap-3">
                   Client Payments
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 uppercase tracking-widest">
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 uppercase tracking-widest">
                     {filtered.length}
                   </span>
                 </h1>

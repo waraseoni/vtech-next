@@ -324,7 +324,7 @@ export default function AttendanceModal({
               <button
                 onClick={handleClearTimes}
                 disabled={saving}
-                className="w-full py-2 bg-panel-2 hover:bg-[#2a3550] text-muted hover:text-white font-bold rounded-xl text-xs transition-all flex items-center justify-center gap-1.5 disabled:opacity-50"
+                className="w-full py-2 bg-panel-2 dark:hover:bg-[#2a3550] text-muted hover:text-white font-bold rounded-xl text-xs transition-all flex items-center justify-center gap-1.5 disabled:opacity-50"
               >
                 <Eraser size={12} />
                 Clear In / Out Times

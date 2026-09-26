@@ -381,7 +381,7 @@ export default function BoxLabelsPage() {
         <div className="flex items-center gap-3">
           <Link
             href="/inventory"
-            className="bg-panel-2 hover:bg-[#2a3550] text-app-2 rounded-lg p-2 transition-colors no-underline"
+            className="bg-panel-2 dark:hover:bg-[#2a3550] text-app-2 rounded-lg p-2 transition-colors no-underline"
           >
             <ArrowLeft size={16} />
           </Link>
@@ -404,7 +404,7 @@ export default function BoxLabelsPage() {
           <button
             onClick={loadExistingBoxes}
             disabled={loadingBoxes}
-            className="border-none rounded-lg px-3 py-2 font-bold text-xs cursor-pointer hover:bg-[#2a3550] disabled:opacity-60 flex items-center gap-1.5 bg-panel-2 text-app-2"
+            className="border-none rounded-lg px-3 py-2 font-bold text-xs cursor-pointer dark:hover:bg-[#2a3550] disabled:opacity-60 flex items-center gap-1.5 bg-panel-2 text-app-2"
             title="Refresh boxes list"
           >
             <RefreshCw size={13} className={loadingBoxes ? "animate-spin" : ""} />
@@ -419,7 +419,7 @@ export default function BoxLabelsPage() {
           </button>
           <button
             onClick={() => setShowSettings((v) => !v)}
-            className={`border-none rounded-lg px-3 py-2 font-bold text-xs cursor-pointer hover:bg-[#2a3550] flex items-center gap-1.5 ${
+            className={`border-none rounded-lg px-3 py-2 font-bold text-xs cursor-pointer dark:hover:bg-[#2a3550] flex items-center gap-1.5 ${
               showSettings ? "bg-blue-600 !text-white" : "bg-panel-2 text-app-2"
             }`}
           >
@@ -431,7 +431,7 @@ export default function BoxLabelsPage() {
             className={`border-none rounded-lg px-3 py-2 font-bold text-xs cursor-pointer flex items-center gap-1.5 ${
               showPreviewDrawer
                 ? "bg-purple-600 hover:bg-purple-500 !text-white"
-                : "bg-panel-2 hover:bg-[#2a3550] text-purple-300"
+                : "bg-panel-2 dark:hover:bg-[#2a3550] text-purple-300"
             }`}
             title="Toggle Live Preview Drawer"
           >
@@ -761,7 +761,7 @@ export default function BoxLabelsPage() {
                           className={`shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold cursor-pointer transition-colors ${
                             isOpen
                               ? "bg-blue-600/20 text-blue-400 border border-blue-500/30"
-                              : "bg-panel-2 hover:bg-[#2a3550] text-app-2"
+                              : "bg-panel-2 dark:hover:bg-[#2a3550] text-app-2"
                           }`}
                         >
                           <Package size={13} />
