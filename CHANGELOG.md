@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.47.1](https://github.com/waraseoni/vtech-next/compare/v1.47.0...v1.47.1) (2026-09-26)
+
+### Bug Fixes
+
+* **theme:** light-mode hardcodes - date pickers, dividers, hovers, headers ([3038406](https://github.com/waraseoni/vtech-next/commit/303840684978ad997424e0a312590f30c0901ffb))
+
 ## [1.47.0](https://github.com/waraseoni/vtech-next/compare/v1.46.2...v1.47.0) (2026-09-26)
 
 ### Features
