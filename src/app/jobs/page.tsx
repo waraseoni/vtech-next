@@ -81,6 +81,7 @@ import { logger } from "@/lib/logger";
 import { toast } from "@/lib/toast";
 import { requireAdmin } from "@/lib/requireAdmin";
 import { CanWrite } from "@/lib/viewOnly";
+import { useViewOnly } from "@/lib/viewOnly";
 
 // ─── WhatsApp status template keys (PHP: pending=0, repairing=1, ready=2, delivered=3/5, cancelled=4) ─
 const STATUS_WA_KEY: Record<number, string> = {
@@ -239,6 +240,8 @@ function JobsListContent() {
     fetchStats,
     fetchPage,
   } = useJobList();
+
+  const { viewOnly } = useViewOnly();
 
   const [userRole, setUserRole] = useState<string | null>(null);
   const [isMobile, setIsMobile] = useState(false);
@@ -1177,55 +1180,52 @@ function JobsListContent() {
 
       {/* Row 2: actions */}
       <div className="flex items-center flex-wrap gap-1.5 md:gap-3">
-        <CanWrite message="Bulk status change sirf office ke andar se possible hai.">
-          <button
-            onClick={() => {
-              if (!bulkStatus) {
-                toast.error("Please select a status first");
-                return;
-              }
-              bulkUpdateStatus(Number(bulkStatus));
-            }}
-            disabled={bulkActionLoading}
-            className="!text-white border-none rounded-lg px-3 md:px-5 py-1.5 md:py-2 font-bold text-xs md:text-sm cursor-pointer transition-opacity hover:opacity-90 disabled:opacity-60 flex items-center gap-1 whitespace-nowrap bg-emerald-600 hover:bg-emerald-700 shadow-sm"
-          >
-            <CheckCircle2 size={13} className="!text-white" />{" "}
-            {bulkActionLoading ? "Applying..." : "Apply"}
-          </button>
-        </CanWrite>
+        <button
+          onClick={() => {
+            if (!bulkStatus) {
+              toast.error("Please select a status first");
+              return;
+            }
+            bulkUpdateStatus(Number(bulkStatus));
+          }}
+          disabled={bulkActionLoading || viewOnly}
+          className={`!text-white border-none rounded-lg px-3 md:px-5 py-1.5 md:py-2 font-bold text-xs md:text-sm cursor-pointer transition-opacity hover:opacity-90 disabled:opacity-60 flex items-center gap-1 whitespace-nowrap bg-emerald-600 hover:bg-emerald-700 shadow-sm ${viewOnly ? 'opacity-50 cursor-not-allowed' : ''}`}
+          title={viewOnly ? "Bulk status change sirf office ke andar se possible hai." : undefined}
+        >
+          <CheckCircle2 size={13} className="!text-white" />{" "}
+          {bulkActionLoading ? "Applying..." : "Apply"}
+        </button>
 
-        <CanWrite message="Bulk move sirf office ke andar se possible hai.">
-          <button
-            onClick={() => {
-              setBulkMoveId(null);
-              setBulkMoveName("");
-              setBulkMoveOpen(true);
-            }}
-            disabled={bulkActionLoading}
-            title="Selected jobs ko dusre spot par le jao"
-            className="!text-white border-none rounded-lg px-3 md:px-4 py-1.5 md:py-2 font-bold text-xs md:text-sm cursor-pointer transition-opacity hover:opacity-90 disabled:opacity-60 flex items-center gap-1 whitespace-nowrap bg-amber-600 hover:bg-amber-700 shadow-sm"
-          >
-            <MapPin size={13} className="!text-white" /> Move
-          </button>
-        </CanWrite>
+        <button
+          onClick={() => {
+            setBulkMoveId(null);
+            setBulkMoveName("");
+            setBulkMoveOpen(true);
+          }}
+          disabled={bulkActionLoading || viewOnly}
+          title={viewOnly ? "Bulk move sirf office ke andar se possible hai." : "Selected jobs ko dusre spot par le jao"}
+          className={`!text-white border-none rounded-lg px-3 md:px-4 py-1.5 md:py-2 font-bold text-xs md:text-sm cursor-pointer transition-opacity hover:opacity-90 disabled:opacity-60 flex items-center gap-1 whitespace-nowrap bg-amber-600 hover:bg-amber-700 shadow-sm ${viewOnly ? 'opacity-50 cursor-not-allowed' : ''}`}
+        >
+          <MapPin size={13} className="!text-white" /> Move
+        </button>
 
-        <CanWrite message="Bulk WA report sirf office ke andar se possible hai.">
-          <button
-            onClick={openBulkWhatsApp}
-            className="!text-white border-none rounded-lg px-3 md:px-4 py-1.5 md:py-2 font-bold text-xs md:text-sm cursor-pointer transition-opacity hover:opacity-90 flex items-center gap-1 whitespace-nowrap bg-[#25d366] hover:bg-[#20ba5a] shadow-sm"
-          >
-            <MessageCircle size={13} className="!text-white" /> WA Report
-          </button>
-        </CanWrite>
+        <button
+          onClick={openBulkWhatsApp}
+          disabled={viewOnly}
+          className={`!text-white border-none rounded-lg px-3 md:px-4 py-1.5 md:py-2 font-bold text-xs md:text-sm cursor-pointer transition-opacity hover:opacity-90 flex items-center gap-1 whitespace-nowrap bg-[#25d366] hover:bg-[#20ba5a] shadow-sm ${viewOnly ? 'opacity-50 cursor-not-allowed' : ''}`}
+          title={viewOnly ? "Bulk WA report sirf office ke andar se possible hai." : undefined}
+        >
+          <MessageCircle size={13} className="!text-white" /> WA Report
+        </button>
 
-        <CanWrite message="Bulk estimate sirf office ke andar se possible hai.">
-          <button
-            onClick={() => openCombinedInvoice("non_gst")}
-            className="!text-white border-none rounded-lg px-3 md:px-4 py-1.5 md:py-2 font-bold text-xs md:text-sm cursor-pointer transition-opacity hover:opacity-90 flex items-center gap-1 whitespace-nowrap bg-slate-600 hover:bg-slate-700 shadow-sm"
-          >
-            <FileText size={13} className="!text-white" /> Estimate
-          </button>
-        </CanWrite>
+        <button
+          onClick={() => openCombinedInvoice("non_gst")}
+          disabled={viewOnly}
+          className={`!text-white border-none rounded-lg px-3 md:px-4 py-1.5 md:py-2 font-bold text-xs md:text-sm cursor-pointer transition-opacity hover:opacity-90 flex items-center gap-1 whitespace-nowrap bg-slate-600 hover:bg-slate-700 shadow-sm ${viewOnly ? 'opacity-50 cursor-not-allowed' : ''}`}
+          title={viewOnly ? "Bulk estimate sirf office ke andar se possible hai." : undefined}
+        >
+          <FileText size={13} className="!text-white" /> Estimate
+        </button>
 
         <button
           onClick={() => {
@@ -1314,15 +1314,14 @@ function JobsListContent() {
             setSpotPickName(spot?.name || "");
           }}
         />
-        <CanWrite message="Spot change sirf office ke andar se possible hai.">
-          <button
+        <button
             onClick={handleSpotSave}
-            disabled={savingSpot}
-            className="mt-4 w-full bg-amber-600 hover:bg-amber-700 !text-white font-bold text-xs py-2.5 rounded-lg transition-colors disabled:opacity-50"
+            disabled={savingSpot || viewOnly}
+            className={`mt-4 w-full bg-amber-600 hover:bg-amber-700 !text-white font-bold text-xs py-2.5 rounded-lg transition-colors disabled:opacity-50 ${viewOnly ? 'opacity-50 cursor-not-allowed' : ''}`}
+            title={viewOnly ? "Spot change sirf office ke andar se possible hai." : undefined}
           >
             {savingSpot ? "Saving…" : "Spot Save karo"}
           </button>
-        </CanWrite>
       </div>
     </div>
   );
@@ -1643,15 +1642,14 @@ function JobsListContent() {
                       ) : (
                         <span className="text-muted-2">{"\u2014"}</span>
                       )}
-                      <CanWrite message="Spot edit sirf office ke andar se possible hai.">
                       <button
                         onClick={() => openSpotEdit(txn)}
-                        title="Spot set karo / badlo"
-                        className="inline-flex items-center gap-1 px-1.5 py-1 rounded-md border border-app-2 bg-white/[0.02] text-muted hover:text-amber-400 hover:border-amber-500/40 transition-all"
+                        title={viewOnly ? "Spot edit sirf office ke andar se possible hai." : "Spot set karo / badlo"}
+                        disabled={viewOnly}
+                        className={`inline-flex items-center gap-1 px-1.5 py-1 rounded-md border border-app-2 bg-white/[0.02] text-muted hover:text-amber-400 hover:border-amber-500/40 transition-all ${viewOnly ? 'opacity-50 cursor-not-allowed' : ''}`}
                       >
                         <PenSquare size={11} />
                       </button>
-                    </CanWrite>
                     </div>
                   </td>
                   <td className="px-3 py-2.5 text-right font-bold text-sm text-app-2">
@@ -1968,12 +1966,11 @@ function JobsListContent() {
               >
                 <MapPin size={13} /> QR
               </Link>
-<CanWrite message="Spot clean sirf office ke andar se possible hai.">
-              <button
+<button
                 onClick={clearDeliveredSpots}
-                disabled={spotCleaning}
-                title="Delivered jobs jinki location abhi bhi lagi hai — sab ek saath khali karo"
-                className="bg-panel-2 hover:bg-[#2a3550] text-muted px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all disabled:opacity-60"
+                disabled={spotCleaning || viewOnly}
+                title={viewOnly ? "Spot clean sirf office ke andar se possible hai." : "Delivered jobs jinki location abhi bhi lagi hai — sab ek saath khali karo"}
+                className={`bg-panel-2 hover:bg-[#2a3550] text-muted px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all disabled:opacity-60 ${viewOnly ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
                 {spotCleaning ? (
                   <Loader2 size={13} className="animate-spin" />
@@ -1982,27 +1979,28 @@ function JobsListContent() {
                 )}{" "}
                 Spot Clean
               </button>
-            </CanWrite>
               <button
                 onClick={resetFilters}
                 className="bg-panel-2 hover:bg-[#2a3550] text-muted px-4 py-1.5 rounded-lg text-xs font-bold transition-all"
               >
                 Reset
               </button>
-            <CanWrite message="Date change sirf office ke andar se possible hai.">
               <button
                 onClick={() => shiftDay(-1)}
-                className="bg-panel-2 hover:bg-[#2a3550] text-muted border border-app px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 transition-all"
+                disabled={viewOnly}
+                className={`bg-panel-2 hover:bg-[#2a3550] text-muted border border-app px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 transition-all ${viewOnly ? 'opacity-50 cursor-not-allowed' : ''}`}
+                title={viewOnly ? "Date change sirf office ke andar se possible hai." : undefined}
               >
                 <ChevronLeft size={13} /> Prev
               </button>
               <button
                 onClick={() => shiftDay(1)}
-                className="bg-panel-2 hover:bg-[#2a3550] text-muted border border-app px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 transition-all"
+                disabled={viewOnly}
+                className={`bg-panel-2 hover:bg-[#2a3550] text-muted border border-app px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 transition-all ${viewOnly ? 'opacity-50 cursor-not-allowed' : ''}`}
+                title={viewOnly ? "Date change sirf office ke andar se possible hai." : undefined}
               >
                 Next <ChevronRight size={13} />
               </button>
-            </CanWrite>
               <button
                 onClick={printReport}
                 className="bg-emerald-700 hover:bg-emerald-600 text-white px-4 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all"
@@ -2180,13 +2178,17 @@ function JobsListContent() {
             <div className="flex gap-1">
               <button
                 onClick={() => shiftDay(-1)}
-                className="text-[10px] bg-[var(--app-panel-2)] hover:bg-[var(--app-hover)] text-[var(--app-muted)] px-2 py-1 rounded-lg flex items-center gap-0.5 transition-colors"
+                disabled={viewOnly}
+                className={`text-[10px] bg-[var(--app-panel-2)] hover:bg-[var(--app-hover)] text-[var(--app-muted)] px-2 py-1 rounded-lg flex items-center gap-0.5 transition-colors ${viewOnly ? 'opacity-50 cursor-not-allowed' : ''}`}
+                title={viewOnly ? "Date change sirf office ke andar se possible hai." : undefined}
               >
                 <ChevronLeft size={11} /> Prev
               </button>
               <button
                 onClick={() => shiftDay(1)}
-                className="text-[10px] bg-[var(--app-panel-2)] hover:bg-[var(--app-hover)] text-[var(--app-muted)] px-2 py-1 rounded-lg flex items-center gap-0.5 transition-colors"
+                disabled={viewOnly}
+                className={`text-[10px] bg-[var(--app-panel-2)] hover:bg-[var(--app-hover)] text-[var(--app-muted)] px-2 py-1 rounded-lg flex items-center gap-0.5 transition-colors ${viewOnly ? 'opacity-50 cursor-not-allowed' : ''}`}
+                title={viewOnly ? "Date change sirf office ke andar se possible hai." : undefined}
               >
                 Next <ChevronRight size={11} />
               </button>
@@ -2350,12 +2352,12 @@ function JobsListContent() {
                       </span>
                       {/* Quick Status Buttons */}
                       <div className="flex gap-1 flex-wrap justify-end">
-                        {txn.status === 0 && (
-                          <CanWrite message="Job status change sirf office ke andar se possible hai.">
+{txn.status === 0 && (
                             <button
                               onClick={() => quickStatusChange(txn.id, 1)}
-                              disabled={statusChangeLoading === txn.id}
-                              className="px-1.5 py-0.5 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/30 text-blue-400 rounded text-[9px] font-bold flex items-center gap-0.5 transition-all"
+                              disabled={statusChangeLoading === txn.id || viewOnly}
+                              className={`px-1.5 py-0.5 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/30 text-blue-400 rounded text-[9px] font-bold flex items-center gap-0.5 transition-all ${viewOnly ? 'opacity-50 cursor-not-allowed' : ''}`}
+                              title={viewOnly ? "Job status change sirf office ke andar se possible hai." : undefined}
                             >
                               {statusChangeLoading === txn.id ? (
                                 <Loader2 size={9} className="animate-spin" />
@@ -2364,14 +2366,13 @@ function JobsListContent() {
                               )}{" "}
                               Progress
                             </button>
-                          </CanWrite>
-                        )}
-                        {txn.status === 1 && (
-                          <CanWrite message="Job status change sirf office ke andar se possible hai.">
+                          )}
+                          {txn.status === 1 && (
                             <button
                               onClick={() => quickStatusChange(txn.id, 2)}
-                              disabled={statusChangeLoading === txn.id}
-                              className="px-1.5 py-0.5 bg-teal-500/20 hover:bg-teal-500/30 border border-teal-500/30 text-teal-400 rounded text-[9px] font-bold flex items-center gap-0.5 transition-all"
+                              disabled={statusChangeLoading === txn.id || viewOnly}
+                              className={`px-1.5 py-0.5 bg-teal-500/20 hover:bg-teal-500/30 border border-teal-500/30 text-teal-400 rounded text-[9px] font-bold flex items-center gap-0.5 transition-all ${viewOnly ? 'opacity-50 cursor-not-allowed' : ''}`}
+                              title={viewOnly ? "Job status change sirf office ke andar se possible hai." : undefined}
                             >
                               {statusChangeLoading === txn.id ? (
                                 <Loader2 size={9} className="animate-spin" />
@@ -2380,14 +2381,13 @@ function JobsListContent() {
                               )}{" "}
                               Done
                             </button>
-                          </CanWrite>
-                        )}
-                        {txn.status === 2 && (
-                          <CanWrite message="Job status change sirf office ke andar se possible hai.">
+                          )}
+                          {txn.status === 2 && (
                             <button
                               onClick={() => quickStatusChange(txn.id, 5)}
-                              disabled={statusChangeLoading === txn.id}
-                              className="px-1.5 py-0.5 bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/30 text-purple-400 rounded text-[9px] font-bold flex items-center gap-0.5 transition-all"
+                              disabled={statusChangeLoading === txn.id || viewOnly}
+                              className={`px-1.5 py-0.5 bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/30 text-purple-400 rounded text-[9px] font-bold flex items-center gap-0.5 transition-all ${viewOnly ? 'opacity-50 cursor-not-allowed' : ''}`}
+                              title={viewOnly ? "Job status change sirf office ke andar se possible hai." : undefined}
                             >
                               {statusChangeLoading === txn.id ? (
                                 <Loader2 size={9} className="animate-spin" />
@@ -2396,8 +2396,7 @@ function JobsListContent() {
                               )}{" "}
                               Deliver
                             </button>
-                          </CanWrite>
-                        )}
+                          )}
                       </div>
                     </div>
                   </div>
@@ -2556,15 +2555,15 @@ function JobsListContent() {
                         )
                       )}
                     </div>
-                    <CanWrite message="Job delete sirf office ke andar se possible hai.">
-                      <button
+                    <button
                         onClick={() => handleDelete(txn.id)}
-                        className="w-full flex items-center justify-center gap-1.5 p-2 bg-red-500/10 rounded-xl border border-red-500/25 text-red-400 text-[9px] font-bold hover:bg-red-500/20 active:scale-[0.98] transition-all"
+                        disabled={viewOnly}
+                        className={`w-full flex items-center justify-center gap-1.5 p-2 bg-red-500/10 rounded-xl border border-red-500/25 text-red-400 text-[9px] font-bold hover:bg-red-500/20 active:scale-[0.98] transition-all ${viewOnly ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        title={viewOnly ? "Job delete sirf office ke andar se possible hai." : undefined}
                       >
                         <Trash2 size={13} />
                         <span>Delete</span>
                       </button>
-                    </CanWrite>
                   </div>
                 </div>
               );
@@ -2875,13 +2874,17 @@ function JobsListContent() {
               <div className="flex gap-2">
                 <button
                   onClick={() => shiftDay(-1)}
-                  className="flex-1 bg-panel-2 hover:bg-panel-2 dark:bg-panel-2 dark:hover:bg-[#2a3550] text-app dark:text-muted p-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition-colors"
+                  disabled={viewOnly}
+                  className={`flex-1 bg-panel-2 hover:bg-panel-2 dark:bg-panel-2 dark:hover:bg-[#2a3550] text-app dark:text-muted p-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition-colors ${viewOnly ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  title={viewOnly ? "Date change sirf office ke andar se possible hai." : undefined}
                 >
                   <ChevronLeft size={13} /> Prev Day
                 </button>
                 <button
                   onClick={() => shiftDay(1)}
-                  className="flex-1 bg-panel-2 hover:bg-panel-2 dark:bg-panel-2 dark:hover:bg-[#2a3550] text-app dark:text-muted p-2 rounded-xl text-xs font-bold flex items_center justify-center gap-1 transition-colors"
+                  disabled={viewOnly}
+                  className={`flex-1 bg-panel-2 hover:bg-panel-2 dark:bg-panel-2 dark:hover:bg-[#2a3550] text-app dark:text-muted p-2 rounded-xl text-xs font-bold flex items_center justify-center gap-1 transition-colors ${viewOnly ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  title={viewOnly ? "Date change sirf office ke andar se possible hai." : undefined}
                 >
                   Next Day <ChevronRight size={13} />
                 </button>
@@ -2919,11 +2922,11 @@ function JobsListContent() {
                   ))}
                 </select>
               </div>
-              <CanWrite message="Spot clean sirf office ke andar se possible hai.">
               <button
                 onClick={clearDeliveredSpots}
-                disabled={spotCleaning}
-                className="w-full bg-panel-2 hover:bg-panel-2 dark:bg-panel-2 dark:hover:bg-[#2a3550] text-app dark:text-muted p-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-1.5 transition-all disabled:opacity-60"
+                disabled={spotCleaning || viewOnly}
+                className={`w-full bg-panel-2 hover:bg-panel-2 dark:bg-panel-2 dark:hover:bg-[#2a3550] text-app dark:text-muted p-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-1.5 transition-all disabled:opacity-60 ${viewOnly ? 'opacity-50 cursor-not-allowed' : ''}`}
+                title={viewOnly ? "Spot clean sirf office ke andar se possible hai." : undefined}
               >
                 {spotCleaning ? (
                   <Loader2 size={14} className="animate-spin" />
@@ -2932,7 +2935,6 @@ function JobsListContent() {
                 )}
                 {spotCleaning ? "Clean ho raha hai…" : "Delivered Spots Clean karo"}
               </button>
-            </CanWrite>
               <div className="flex gap-2 pt-1">
                 <button
                   onClick={resetFilters}
