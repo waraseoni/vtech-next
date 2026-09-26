@@ -696,7 +696,7 @@ export default function DailyAttendance({
               </button>
               <div className="relative flex items-center gap-1.5 px-2 py-0.5">
                 <Calendar size={13} className="text-blue-400 flex-shrink-0" />
-                <span className="text-xs font-bold text-white min-w-[160px] text-center">
+                <span className="text-xs font-bold text-app min-w-[160px] text-center">
                   {displayDate}
                 </span>
                 <input
