@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.47.3](https://github.com/waraseoni/vtech-next/compare/v1.47.2...v1.47.3) (2026-09-26)
+
+### Bug Fixes
+
+* **geofence:** enforce view-only for staff outside office across all job actions ([75ab08e](https://github.com/waraseoni/vtech-next/commit/75ab08e893177270657beeb6716f170295d7c9ed))
+
 ## [1.47.2](https://github.com/waraseoni/vtech-next/compare/v1.47.1...v1.47.2) (2026-09-26)
 
 ### Bug Fixes
