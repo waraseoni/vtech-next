@@ -30,6 +30,7 @@ import {
   Landmark,
   Coins,
   PackageX,
+  MapPin,
 } from "lucide-react";
 
 // --- Types ---
@@ -245,6 +246,15 @@ const REPORTS: ReportItem[] = [
     icon: <Users size={16} />,
     category: "Staff & Performance",
     color: "from-violet-500 to-purple-700",
+    isNew: true,
+  },
+  {
+    title: "Bahar Se Hua Kaam",
+    description: "Office ke bahar se hue har kaam ki list — kaun staff, kahan se, kya change. Sirf admin.",
+    href: "/reports/outside-work",
+    icon: <MapPin size={16} />,
+    category: "Staff & Performance",
+    color: "from-sky-500 to-blue-700",
     isNew: true,
   },
 

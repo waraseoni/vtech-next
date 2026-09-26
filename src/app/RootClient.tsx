@@ -90,6 +90,8 @@ import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { SHORTCUT_ROUTES } from "@/config/nav.config";
 import { fetchUnreadCount, getMyId } from "@/lib/messaging";
 import { MobileBottomTab } from "@/components/ui/MobileBottomTab";
+import { ViewOnlyProvider } from "@/lib/viewOnly";
+import { ViewOnlyBanner } from "@/app/components/ViewOnlyBanner";
 
 // (Universal search — components/NavbarSearch + hooks/useNavbarSearch me.
 // Sprint 4 #16 split.)
@@ -677,7 +679,7 @@ function SidebarNav({
                 <li className="text-[9px] font-black uppercase text-app tracking-widest px-3 pt-5 pb-1.5 select-none">
                   People
                 </li>
-                <SubMenu title="People" icon={<UsersRound size={15} />} matchPaths={["/services"]} collapsed={collapsed} onExpand={onExpand}>
+                <SubMenu title="People" icon={<UsersRound size={15} />} matchPaths={["/services", "/reports/outside-work"]} collapsed={collapsed} onExpand={onExpand}>
                   <li>
                     <Link
                       href="/mechanics"
@@ -712,6 +714,18 @@ function SidebarNav({
                       Service Catalog
                     </Link>
                   </li>
+                  {isAdmin && (
+                    <li>
+                      <Link
+                        href="/reports/outside-work"
+                        className={subLinkCls(pathname === "/reports/outside-work")}
+                        onClick={onNavClick}
+                      >
+                        <MapPin size={12} className="text-sky-400" />
+                        Bahar Se Hua Kaam
+                      </Link>
+                    </li>
+                  )}
                 </SubMenu>
               </>
             )}
@@ -1805,19 +1819,26 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
           </div>
         )}
 
-        {/* ── PAGE CONTENT ── */}
-        <main className={`flex-1 ${isAiPage ? "p-0" : "p-3 sm:p-5 theme-body"}`}>
-          <PullToRefresh>
-            {isClient && !pathname.startsWith("/my-account") ? (
-              <div className="h-[60vh] flex flex-col items-center justify-center gap-3 text-muted-2">
-                <Loader2 size={22} className="animate-spin" />
-                <p className="text-xs font-bold uppercase tracking-widest">Redirecting...</p>
-              </div>
-            ) : (
-              children
-            )}
-          </PullToRefresh>
-        </main>
+        {/* ── STAFF GEOFENCE VIEW-ONLY (Tier A soft, fail-closed) ──
+            Banner har protected page par (<main> ke upar); provider children
+            ko viewOnly context deta hai (CanWrite wraps ke liye). Sirf staff
+            par verify chalta hai — admin/dev/client bypass. */}
+        <ViewOnlyProvider role={profile?.role}>
+          <ViewOnlyBanner isAdmin={isAdmin} />
+          {/* ── PAGE CONTENT ── */}
+          <main className={`flex-1 ${isAiPage ? "p-0" : "p-3 sm:p-5 theme-body"}`}>
+            <PullToRefresh>
+              {isClient && !pathname.startsWith("/my-account") ? (
+                <div className="h-[60vh] flex flex-col items-center justify-center gap-3 text-muted-2">
+                  <Loader2 size={22} className="animate-spin" />
+                  <p className="text-xs font-bold uppercase tracking-widest">Redirecting...</p>
+                </div>
+              ) : (
+                children
+              )}
+            </PullToRefresh>
+          </main>
+        </ViewOnlyProvider>
 
         {/* ── Bottom-bar spacer (mobile) ──
             Tab bar fixed hai — bina spacer ke har page ka bottom uske peeche

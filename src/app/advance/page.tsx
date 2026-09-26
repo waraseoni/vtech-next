@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import { CanWrite } from "@/lib/viewOnly";
 import SearchableSelect from "@/components/SearchableSelect";
 import { Loader2, Printer, Plus, Edit2, Trash2, DollarSign, X } from "lucide-react";
 
@@ -368,20 +369,23 @@ function AdvanceLedgerContent() {
                 />
               </div>
               <div className="flex gap-3 pt-2">
-                <button
-                  onClick={handleSave}
-                  disabled={saving}
-                  className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-500 disabled:bg-blue-800 disabled:opacity-50 rounded-xl text-xs font-bold text-white flex items-center justify-center gap-2 transition-all"
-                >
-                  {saving ? (
-                    <>
-                      <Loader2 size={13} className="animate-spin" />
-                      Saving…
-                    </>
-                  ) : (
-                    "Save Entry"
-                  )}
-                </button>
+                {/* GEOFENCE (Tier A): staff bahar ho to save block + toast */}
+                <CanWrite>
+                  <button
+                    onClick={handleSave}
+                    disabled={saving}
+                    className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-500 disabled:bg-blue-800 disabled:opacity-50 rounded-xl text-xs font-bold text-white flex items-center justify-center gap-2 transition-all"
+                  >
+                    {saving ? (
+                      <>
+                        <Loader2 size={13} className="animate-spin" />
+                        Saving…
+                      </>
+                    ) : (
+                      "Save Entry"
+                    )}
+                  </button>
+                </CanWrite>
                 <button
                   onClick={() => {
                     setShowModal(false);

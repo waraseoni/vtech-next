@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import AdminPage from "@/app/components/AdminPage";
 import { supabase } from "@/lib/supabase";
+import { CanWrite } from "@/lib/viewOnly";
 import {
   ChevronLeft,
   ChevronRight,
@@ -860,19 +861,22 @@ export default function PaymentsPageInner({ initialClients, initialPayments }: P
                 >
                   Cancel
                 </button>
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="flex-1 px-4 py-3 bg-emerald-600 hover:bg-emerald-500 rounded-xl text-sm font-bold text-white disabled:opacity-50"
-                >
-                  {saving ? (
-                    <Loader2 className="animate-spin mx-auto" size={18} />
-                  ) : form.id ? (
-                    "Update"
-                  ) : (
-                    "Save"
-                  )}
-                </button>
+                {/* GEOFENCE (Tier A): staff bahar ho to save block + toast */}
+                <CanWrite>
+                  <button
+                    type="submit"
+                    disabled={saving}
+                    className="flex-1 px-4 py-3 bg-emerald-600 hover:bg-emerald-500 rounded-xl text-sm font-bold text-white disabled:opacity-50"
+                  >
+                    {saving ? (
+                      <Loader2 className="animate-spin mx-auto" size={18} />
+                    ) : form.id ? (
+                      "Update"
+                    ) : (
+                      "Save"
+                    )}
+                  </button>
+                </CanWrite>
               </div>
             </form>
           </div>

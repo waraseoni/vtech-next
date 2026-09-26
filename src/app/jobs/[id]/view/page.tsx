@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase, getCachedUser } from "@/lib/supabase";
+import { GeoPin } from "@/app/components/ViewOnlyBanner";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { safeBack } from "@/lib/utils";
@@ -166,6 +167,9 @@ interface ActivityEntry {
   module?: string;
   details: string;
   date_created: string;
+  geo_lat?: number | null;
+  geo_lng?: number | null;
+  geo_distance_m?: number | null;
 }
 interface Client {
   id: number;
@@ -445,7 +449,7 @@ export default function JobDetailsPage() {
       const metaIds = jobNoStr && jobNoStr !== jobIdStr ? [jobIdStr, jobNoStr] : [jobIdStr];
       const { data: actRows, error: actErr } = await supabase
         .from("activity_logs")
-        .select("id, user_id, action, module, details, date_created")
+        .select("id, user_id, action, module, details, date_created, geo_lat, geo_lng, geo_distance_m")
         .in("module", ["Jobs", "Transactions"])
         .in("meta_id", metaIds)
         .order("date_created", { ascending: false })
@@ -1511,8 +1515,14 @@ ${svcHtml}${prodHtml}
                                     <p className="text-xs text-muted mt-0.5">{act.details}</p>
                                   )}
                                   <p className="text-[11px] text-muted-2 mt-1">
-                                    {fmtLogTime(act.date_created)} ·{" "}
+                                    {fmtLogTime(act.date_created)} •{" "}
                                     <span className="text-muted">{whoName(act.user_id)}</span>
+                                    {/* GEOFENCE Phase 6: bahar se hua kaam → map pin */}
+                                    <GeoPin
+                                      lat={act.geo_lat}
+                                      lng={act.geo_lng}
+                                      distanceM={act.geo_distance_m}
+                                    />
                                   </p>
                                 </div>
                               </div>

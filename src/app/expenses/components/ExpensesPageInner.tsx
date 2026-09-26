@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import type { Expense, Mechanic, AdvancePayment, SupplierMap } from "@/lib/server-expenses";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import { CanWrite } from "@/lib/viewOnly";
 import Image from "next/image";
 import { todayIST, startOfMonthIST, endOfMonthIST, parseISTDate, formatIST } from "@/lib/dateUtils";
 import { safeImageSrc } from "@/lib/image-utils";
@@ -1058,10 +1059,13 @@ export default function ExpensesPageInner({
                 <button type="button" onClick={closeModals} className="flex-1 py-2.5 bg-app hover:bg-panel-2 border border-app rounded-xl text-xs font-bold text-app-2 hover:text-white transition-all active:scale-95">
                   Cancel
                 </button>
-                <button type="submit" disabled={saving} className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-blue-600 hover:bg-blue-500 rounded-xl text-xs font-bold text-white transition-all active:scale-95 shadow-sm">
-                  {saving ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />}
-                  {staffForm.id ? "Update" : "Save"}
-                </button>
+                {/* GEOFENCE (Tier A): staff bahar ho to save block + toast */}
+                <CanWrite>
+                  <button type="submit" disabled={saving} className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-blue-600 hover:bg-blue-500 rounded-xl text-xs font-bold text-white transition-all active:scale-95 shadow-sm">
+                    {saving ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />}
+                    {staffForm.id ? "Update" : "Save"}
+                  </button>
+                </CanWrite>
               </div>
             </form>
           </div>
@@ -1147,10 +1151,13 @@ export default function ExpensesPageInner({
                 <button type="button" onClick={closeModals} className="flex-1 py-2.5 bg-app hover:bg-panel-2 border border-app rounded-xl text-xs font-bold text-app-2 hover:text-white transition-all active:scale-95">
                   Cancel
                 </button>
-                <button type="submit" disabled={saving} className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-blue-600 hover:bg-blue-500 rounded-xl text-xs font-bold text-white transition-all active:scale-95 shadow-sm">
-                  {saving ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />}
-                  {expenseForm.id ? "Update" : "Save"}
-                </button>
+                {/* GEOFENCE (Tier A): staff bahar ho to save block + toast */}
+                <CanWrite>
+                  <button type="submit" disabled={saving} className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-blue-600 hover:bg-blue-500 rounded-xl text-xs font-bold text-white transition-all active:scale-95 shadow-sm">
+                    {saving ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />}
+                    {expenseForm.id ? "Update" : "Save"}
+                  </button>
+                </CanWrite>
               </div>
             </form>
           </div>

@@ -1,7 +1,8 @@
 # Staff Geofence View-Only + Temporary Outside-Work Permit — Plan
 
 Created: 2026-08-31
-Status: **PLAN ONLY** — abhi implement nahi karna hai. Baad me is par kaam karenge.
+Status: **✅ COMMITTED + PUSHED 2026-09-26 — user ne staff + permit se bahar field-test kiya: sab OK.**
+Phase-0 decisions (user, 2026-09-26): **D1 = Tier A soft · D2 = fail-closed · D4 = field work hota hai (permit ON)** · radius = existing config (`geofence_radius_m`, default 200m).
 Scope: Staff ke liye office-based write-gating (view-only jab bahar), plus kisi specific
 staff ko timer ke saath geofence ke bahar kaam karne ki temporary permission.
 
@@ -196,35 +197,47 @@ dedicated device app level ka solution chahiye (is project me overkill).
 ## 8. Suggested Phases (baad me implement karte waqt)
 
 ### Phase 0 — Decisions
-- [ ] D1 enforcement tier choose (recommend: Tier A first).
-- [ ] D2 fail-closed vs fail-open decide.
-- [ ] D4 business-rule confirm (single-shop? field work?).
-- [ ] Radius value confirm.
+- [x] D1 enforcement tier choose (recommend: Tier A first). → **Tier A soft (user)**
+- [x] D2 fail-closed vs fail-open decide. → **fail-closed (user)**
+- [x] D4 business-rule confirm (single-shop? field work?). → **field work hota hai → permit ON (user)**
+- [x] Radius value confirm. → existing `geofence_radius_m` (default 200m)
 
 ### Phase 1 — Permit DB
-- [ ] `staff_geofence_permit` table migration + RLS (insert migration file).
-- [ ] Admin UI: grant/revoke + list + timer presets.
-- [ ] Activity-log entries.
+- [x] `staff_geofence_permit` table migration + RLS (insert migration file). → `supabase/migrations/20260926_staff_geofence_permit.sql` (SELECT: is_frontend_staff gate; INSERT/DELETE: service-role API only). **✅ Applied 2026-09-26 (user ran in Dashboard — 8/8 cols verified). Post-verify LIVE: table readable (0 rows) · staff JWT read OK · staff self-grant 403-blocked ✅.**
+- [x] Admin UI: grant/revoke + list + timer presets. → `/settings/geofence-permits` (admin/developer guard, presets 30m–1din, missing-table notice).
+- [x] Activity-log entries. → grant/revoke par `logActivity` (module `Staff`).
 
 ### Phase 2 — Tier A view-only core
-- [ ] `ViewOnlyContext` / `useViewOnly()` (role + location + permit).
-- [ ] `RootClient` load/focus/re-interval verification.
-- [ ] `CanWrite` wrapper + `useWriteGuard()`.
-- [ ] Banner + button disable + Hindi messages.
-- [ ] ESLint rule/helper: naye forms me `CanWrite` use karo.
+- [x] `ViewOnlyContext` / `useViewOnly()` (role + location + permit). → `src/lib/viewOnly.tsx` (pure `decideViewOnly` + 7 vitest).
+- [x] `RootClient` load/focus/re-interval verification. → `ViewOnlyProvider` (mount + visibility + focus + 5-min interval, staff-only).
+- [x] `CanWrite` wrapper + `useWriteGuard()`. → capture-phase guard + `display:contents` (layout zero-impact). Wraps: advance save, expenses staff+shop save, payments save (incremental — baaki 47 files future).
+- [x] Banner + button disable + Hindi messages. → `ViewOnlyBanner` (red view-only / green permit countdown / amber no-config).
+- [ ] ESLint rule/helper: naye forms me `CanWrite` use karo. → helper ready (`CanWrite`), lint rule future.
 
 ### Phase 3 — Permit wiring
-- [ ] `useViewOnly()` me permit check (active → write allowed + countdown badge).
-- [ ] Re-verify on focus/timer; expiry → view-only.
+- [x] `useViewOnly()` me permit check (active → write allowed + countdown badge). → DB-time `expires_at > now()` filter + badge.
+- [x] Re-verify on focus/timer; expiry → view-only. → focus/visibility/interval triggers.
 
-### Phase 4 — Test matrix
-- Admin inside/outside → always write.
-- Staff inside → write.
-- Staff outside, no permit → view-only + banner.
-- Staff outside, active permit in duration → write + badge.
-- Permit expired while outside → view-only (after re-verify).
-- Location denied/timeout → fail-closed ya fail-open per D2.
-- Desktop + mobile, multiple tabs, wifi-off in office.
+### Phase 4 — Test matrix (debugging session me verify karna)
+- [ ] Admin inside/outside → always write.
+- [ ] Staff inside → write.
+- [ ] Staff outside, no permit → view-only + banner.
+- [ ] Staff outside, active permit in duration → write + badge.
+- [ ] Permit expired while outside → view-only (after re-verify).
+- [ ] Location denied/timeout → fail-closed (banner with Hindi reason).
+- [ ] Desktop + mobile, multiple tabs, wifi-off in office.
+
+### Phase 6 — Location audit (map pins + session audit + per-write tagging, implemented uncommitted)
+- [x] Map-link viewer: `DailyAttendance` fetch me `lat_in/lng_in/lat_out/lng_out` + desktop/mobile rows me 📍 pin (Google Maps, no key). `handleTimeChange` coords preserve karta hai (spread fix).
+- [x] Permit-session audit: `ViewOnlyProvider` me transition log (`Geofence Outside` / `Permit Session Active` / `Geofence Inside` / `Geofence Location Unavailable`) — distance snapshot ONLY, precise coords kabhi nahi; 15-min cooldown per action; activity_logs (module `Staff`) me dikhta hai.
+- [x] Per-write geo tagging (user demand 2026-09-26 — "bahar ka har kaam history me location ke saath", implemented uncommitted): `activity_logs` me nullable `geo_lat/geo_lng/geo_distance_m` (migration `20260927_activity_geo_tags.sql` — Dashboard me apply ✅ 2026-09-26, 3/3 cols verified). `logActivity()` signature UNCHANGED — `lib/geoAudit.ts` cache (provider har check par likhta, activity har insert par padhta; 10-min TTL; inside = null = as-is). Columns missing hon to plain-insert fallback (deploy-order safe). History UI (reports/activity + activity-logs, dono `select("*")`) me 📍 GeoPin + details suffix `📍 Bahar ~Xm se (permit par)`. Backup export me 3 cols added. Gates: tsc 0 · eslint 0 errors · vitest 140/140 · build green.
+
+### Phase 7 — Outside-work audit page (user demand 2026-09-26, implemented uncommitted)
+- [x] `/reports/outside-work` (admin/developer only): geo-tagged entries ki poori list — kab, kaun staff (mechanic map, 0=Admin), **clickable Job / Record column** (`recordLink`: Jobs meta_id = canonical PK, `/jobs/[id]/view` PK-resolve verified) + **action text bhi clickable**, kya kaam, module, 📍 pin + ~Xm. Search (staff/kaam/module) + DataTable paging (500 latest, bounded). Reports index me "Bahar Se Hua Kaam" card (Staff & Performance). Sidebar: People submenu me "Bahar Se Hua Kaam" link (admin-gated, matchPaths).
+- [x] Job detail timeline me 📍 pin (user demand — "jobs ki history me dikh jayega"): `jobs/[id]/view` fetch me geo cols + `ActivityEntry` type + timestamp line me GeoPin.
+- [x] Guardrails: disclosure permit badge me ("location audit me save hoti hai") + permits page note + audit page par scope note (office ke kaam kabhi nahi aate).
+- [ ] Debugging: page khaali dikhega jab tak deploy + asli bahar-kaam nahi (purani rows me geo NULL). SQL se 1 test row (fake coords) → render verify → delete.
+- Gates: tsc 0 · eslint 0 · vitest 140/140 · build green (route compiled).
 
 ### Phase 5 — Tier B (optional)
 - Server-side verify + browser direct writes band, agar chahiye.

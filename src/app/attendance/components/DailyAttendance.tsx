@@ -94,6 +94,27 @@ interface AttendanceStatus {
 interface DayTimes {
   timeIn: string;
   timeOut: string;
+  // GPS audit (attendance_list lat/lng) — map pin ke liye; null = no coords
+  latIn: number | null;
+  lngIn: number | null;
+  latOut: number | null;
+  lngOut: number | null;
+}
+
+// Google Maps pin (koi API key nahi chahiye) — coords hon tabhi render.
+function MapPinLink({ lat, lng, label }: { lat: number; lng: number; label: string }) {
+  return (
+    <a
+      href={`https://www.google.com/maps?q=${lat},${lng}`}
+      target="_blank"
+      rel="noreferrer"
+      title={`${label}: ${lat.toFixed(5)}, ${lng.toFixed(5)} — Maps me kholo`}
+      className="inline-flex items-center text-sky-400 hover:text-sky-300 transition-colors"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <MapPin size={11} />
+    </a>
+  );
 }
 interface SelfAttn {
   status: number;
@@ -211,7 +232,7 @@ export default function DailyAttendance({
     setLoading(true);
     const { data, error } = await supabase
       .from("attendance_list")
-      .select("mechanic_id, status, time_in, time_out")
+      .select("mechanic_id, status, time_in, time_out, lat_in, lng_in, lat_out, lng_out")
       .eq("curr_date", selectedDate);
     const attMap: AttendanceStatus = {};
     const timesMap: Record<number, DayTimes> = {};
@@ -221,6 +242,10 @@ export default function DailyAttendance({
         timesMap[a.mechanic_id] = {
           timeIn: (a.time_in as string)?.slice(0, 5) || "",
           timeOut: (a.time_out as string)?.slice(0, 5) || "",
+          latIn: (a.lat_in as number | null) ?? null,
+          lngIn: (a.lng_in as number | null) ?? null,
+          latOut: (a.lat_out as number | null) ?? null,
+          lngOut: (a.lng_out as number | null) ?? null,
         };
       });
     }
@@ -259,10 +284,21 @@ export default function DailyAttendance({
     setAttendance((prev) => ({ ...prev, [mId]: status }));
 
   const handleTimeChange = (mId: number, field: "timeIn" | "timeOut", value: string) =>
-    setTimes((prev) => ({
-      ...prev,
-      [mId]: { timeIn: prev[mId]?.timeIn ?? "", timeOut: prev[mId]?.timeOut ?? "", [field]: value },
-    }));
+    setTimes((prev) => {
+      const p = prev[mId];
+      return {
+        ...prev,
+        // coords preserve — warna time edit par map pin gayab ho jata
+        [mId]: {
+          timeIn: field === "timeIn" ? value : p?.timeIn ?? "",
+          timeOut: field === "timeOut" ? value : p?.timeOut ?? "",
+          latIn: p?.latIn ?? null,
+          lngIn: p?.lngIn ?? null,
+          latOut: p?.latOut ?? null,
+          lngOut: p?.lngOut ?? null,
+        },
+      };
+    });
 
   // Mark all present quickly
   const handleMarkAllPresent = () => {
@@ -837,29 +873,45 @@ export default function DailyAttendance({
                         </td>
                         <td className="py-2 px-2 text-center overflow-hidden">
                           {userRole === "admin" ? (
-                            <input
-                              type="time"
-                              value={tIn}
-                              onChange={(e) => handleTimeChange(mech.id, "timeIn", e.target.value)}
-                              className={timeInputCls}
-                            />
+                            <span className="inline-flex items-center gap-1">
+                              <input
+                                type="time"
+                                value={tIn}
+                                onChange={(e) => handleTimeChange(mech.id, "timeIn", e.target.value)}
+                                className={timeInputCls}
+                              />
+                              {t?.latIn != null && t?.lngIn != null && (
+                                <MapPinLink lat={t.latIn} lng={t.lngIn} label="Check-in" />
+                              )}
+                            </span>
                           ) : (
-                            <span className="inline-block text-[11px] font-bold px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400">
+                            <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400">
                               {fmtTimeIST(tIn) || "—"}
+                              {t?.latIn != null && t?.lngIn != null && (
+                                <MapPinLink lat={t.latIn} lng={t.lngIn} label="Check-in" />
+                              )}
                             </span>
                           )}
                         </td>
                         <td className="py-2 px-2 text-center overflow-hidden">
                           {userRole === "admin" ? (
-                            <input
-                              type="time"
-                              value={tOut}
-                              onChange={(e) => handleTimeChange(mech.id, "timeOut", e.target.value)}
-                              className={timeInputCls}
-                            />
+                            <span className="inline-flex items-center gap-1">
+                              <input
+                                type="time"
+                                value={tOut}
+                                onChange={(e) => handleTimeChange(mech.id, "timeOut", e.target.value)}
+                                className={timeInputCls}
+                              />
+                              {t?.latOut != null && t?.lngOut != null && (
+                                <MapPinLink lat={t.latOut} lng={t.lngOut} label="Check-out" />
+                              )}
+                            </span>
                           ) : (
-                            <span className="inline-block text-[11px] font-bold px-2 py-0.5 rounded-md bg-red-500/10 text-red-400">
+                            <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-md bg-red-500/10 text-red-400">
                               {fmtTimeIST(tOut) || "—"}
+                              {t?.latOut != null && t?.lngOut != null && (
+                                <MapPinLink lat={t.latOut} lng={t.lngOut} label="Check-out" />
+                              )}
                             </span>
                           )}
                         </td>
@@ -913,14 +965,24 @@ export default function DailyAttendance({
                         <LogIn size={8} className="inline mr-0.5 text-emerald-400" />In
                       </p>
                       {userRole === "admin" ? (
-                        <input
-                          type="time"
-                          value={tIn}
-                          onChange={(e) => handleTimeChange(mech.id, "timeIn", e.target.value)}
-                          className="w-full px-1 py-1 bg-transparent text-emerald-400 text-xs font-bold text-center outline-none [color-scheme:dark]"
-                        />
+                        <span className="inline-flex items-center justify-center gap-1 w-full">
+                          <input
+                            type="time"
+                            value={tIn}
+                            onChange={(e) => handleTimeChange(mech.id, "timeIn", e.target.value)}
+                            className="w-full px-1 py-1 bg-transparent text-emerald-400 text-xs font-bold text-center outline-none [color-scheme:dark]"
+                          />
+                          {t?.latIn != null && t?.lngIn != null && (
+                            <MapPinLink lat={t.latIn} lng={t.lngIn} label="Check-in" />
+                          )}
+                        </span>
                       ) : (
-                        <span className="text-xs font-bold text-emerald-400">{fmtTimeIST(tIn) || "—"}</span>
+                        <span className="inline-flex items-center justify-center gap-1 text-xs font-bold text-emerald-400">
+                          {fmtTimeIST(tIn) || "—"}
+                          {t?.latIn != null && t?.lngIn != null && (
+                            <MapPinLink lat={t.latIn} lng={t.lngIn} label="Check-in" />
+                          )}
+                        </span>
                       )}
                     </div>
                     <div className="text-center">
@@ -928,14 +990,24 @@ export default function DailyAttendance({
                         <LogOut size={8} className="inline mr-0.5 text-red-400" />Out
                       </p>
                       {userRole === "admin" ? (
-                        <input
-                          type="time"
-                          value={tOut}
-                          onChange={(e) => handleTimeChange(mech.id, "timeOut", e.target.value)}
-                          className="w-full px-1 py-1 bg-transparent text-red-400 text-xs font-bold text-center outline-none [color-scheme:dark]"
-                        />
+                        <span className="inline-flex items-center justify-center gap-1 w-full">
+                          <input
+                            type="time"
+                            value={tOut}
+                            onChange={(e) => handleTimeChange(mech.id, "timeOut", e.target.value)}
+                            className="w-full px-1 py-1 bg-transparent text-red-400 text-xs font-bold text-center outline-none [color-scheme:dark]"
+                          />
+                          {t?.latOut != null && t?.lngOut != null && (
+                            <MapPinLink lat={t.latOut} lng={t.lngOut} label="Check-out" />
+                          )}
+                        </span>
                       ) : (
-                        <span className="text-xs font-bold text-red-400">{fmtTimeIST(tOut) || "—"}</span>
+                        <span className="inline-flex items-center justify-center gap-1 text-xs font-bold text-red-400">
+                          {fmtTimeIST(tOut) || "—"}
+                          {t?.latOut != null && t?.lngOut != null && (
+                            <MapPinLink lat={t.latOut} lng={t.lngOut} label="Check-out" />
+                          )}
+                        </span>
                       )}
                     </div>
                     <div className="text-center">

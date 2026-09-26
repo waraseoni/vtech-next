@@ -4,6 +4,7 @@ import { supabase, getCachedUser } from "@/lib/supabase";
 import { openCamera } from "@/lib/nativeCamera";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import Link from "next/link";
 import { APP_VERSION_FULL } from "@/lib/app-version";
 import {
   Settings2,
@@ -1293,6 +1294,13 @@ export default function SettingsPage() {
               >
                 {gfLocating ? "Locating..." : "Use My Current Location"}
               </button>
+              {/* Outside-Work Permits (staff geofence view-only) — alag page */}
+              <Link
+                href="/settings/geofence-permits"
+                className="text-xs bg-emerald-600/20 text-emerald-400 border border-emerald-600/30 px-3 py-1.5 rounded-lg hover:bg-emerald-600/30 transition-all inline-flex items-center gap-1.5"
+              >
+                <Timer size={13} /> Outside-Work Permits manage karo
+              </Link>
             </div>
           </div>
 

@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { format } from "date-fns/format";
 import Link from "next/link";
+import { GeoPin } from "@/app/components/ViewOnlyBanner";
 import { ExternalLink, Trash2, PlusCircle, Edit3, Eraser } from "lucide-react";
 import { toast } from "@/lib/toast";
 
@@ -26,6 +27,9 @@ type LogEntry = {
   meta_id: string;
   details: string;
   date_created: string;
+  geo_lat?: number | null;
+  geo_lng?: number | null;
+  geo_distance_m?: number | null;
   profiles?: {
     full_name: string;
   };
@@ -376,6 +380,12 @@ export default function ActivityLogPage() {
                       <div className="max-w-xs sm:max-w-sm">
                         <p className="text-xs text-muted leading-relaxed font-medium">
                           {log.details || "No additional details"}
+                          {/* GEOFENCE Phase 6: bahar se hua kaam → map pin */}
+                          <GeoPin
+                            lat={log.geo_lat}
+                            lng={log.geo_lng}
+                            distanceM={log.geo_distance_m}
+                          />
                         </p>
                       </div>
                     </td>

@@ -18,6 +18,7 @@ import {
   ScrollText,
 } from "lucide-react";
 import { formatIST } from "@/lib/dateUtils";
+import { GeoPin } from "@/app/components/ViewOnlyBanner";
 import PageLoader from "@/components/PageLoader";
   import Link from "next/link";
 
@@ -29,6 +30,9 @@ interface LogEntry {
   meta_id: string | null;
   details: string | null;
   date_created: string;
+  geo_lat?: number | null;
+  geo_lng?: number | null;
+  geo_distance_m?: number | null;
   username?: string;
   user_image?: string | null;
 }
@@ -443,6 +447,12 @@ export default function ActivityLogsPage() {
                         <td className="px-5 py-4">
                           <p className="text-muted text-xs leading-relaxed max-w-md">
                             {formatDetails(log.details, log.module)}
+                            {/* GEOFENCE Phase 6: bahar se hua kaam → map pin */}
+                            <GeoPin
+                              lat={log.geo_lat}
+                              lng={log.geo_lng}
+                              distanceM={log.geo_distance_m}
+                            />
                           </p>
                         </td>
                         <td className="px-5 py-4 whitespace-nowrap">

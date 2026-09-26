@@ -348,7 +348,7 @@ const TABLE_COLUMNS: Record<string, string[]> = {
     "changed_by",
     "changed_at",
   ],
-  activity_logs: ["id", "user_id", "action", "module", "meta_id", "details", "date_created"],
+    activity_logs: ["id", "user_id", "action", "module", "meta_id", "details", "date_created", "geo_lat", "geo_lng", "geo_distance_m"],
   payment_reminders: [
     "id",
     "client_id",
