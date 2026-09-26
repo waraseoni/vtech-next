@@ -12,6 +12,7 @@
 // ─────────────────────────────────────────────────────────────────
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
+import { useViewOnly, CanWrite } from "@/lib/viewOnly";
 import Image from "next/image";
 import {
   Calendar,
@@ -194,6 +195,9 @@ export default function DailyAttendance({
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
+
+  // Geofence view-only enforcement
+  const { viewOnly } = useViewOnly();
 
   // Self check-in / check-out
   const [selfAttn, setSelfAttn] = useState<SelfAttn | null>(null);
