@@ -446,7 +446,7 @@ export default function ClientAmtPage() {
       </div>
 
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm">
           <div className="w-full max-w-2xl rounded-3xl border border-app bg-panel shadow-2xl">
             <div className="flex items-center justify-between px-5 py-4 border-b border-app">
               <div>

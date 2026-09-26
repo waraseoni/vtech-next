@@ -1585,7 +1585,7 @@ export default function Dashboard() {
       {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━ QR MODAL */}
       {qrOpen && (
         <div
-          className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4"
+          className="fixed inset-0 bg-black/60 z-[70] flex items-center justify-center p-4"
           onClick={() => setQrOpen(false)}
         >
           <div
@@ -1628,7 +1628,7 @@ export default function Dashboard() {
       {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━ JOB TYPE MODAL */}
       {jobMenuOpen && (
         <div
-          className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4"
+          className="fixed inset-0 bg-black/60 z-[70] flex items-center justify-center p-4"
           onClick={() => setJobMenuOpen(false)}
         >
           <div

@@ -744,7 +744,7 @@ export default function PaymentsPageInner({ initialClients, initialPayments }: P
 
       {/* Add/Edit Modal */}
       {modalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-3 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/75 p-3 backdrop-blur-sm">
           <div className="max-h-[92vh] w-full max-w-xl overflow-y-auto rounded-3xl border border-app bg-panel shadow-2xl">
             <div className="flex items-center justify-between border-b border-app px-5 py-4">
               <div>
@@ -885,7 +885,7 @@ export default function PaymentsPageInner({ initialClients, initialPayments }: P
 
       {/* Receipt Modal */}
       {receiptOpen && receiptPayment && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-3 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/75 p-3 backdrop-blur-sm">
           <div className="max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-3xl border border-app bg-panel shadow-2xl">
             <div className="flex items-center justify-between border-b border-app px-5 py-4">
               <div className="flex items-center gap-2 text-base font-black text-white">

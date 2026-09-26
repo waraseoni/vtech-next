@@ -989,7 +989,7 @@ export default function ExpensesPageInner({
       {/* Staff Payment Modal */}
       {staffModalOpen && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-150"
+          className="fixed inset-0 z-[70] flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-150"
           onClick={(e) => e.target === e.currentTarget && closeModals()}
         >
           <div className="bg-panel border border-app rounded-2xl w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-150"> 
@@ -1075,7 +1075,7 @@ export default function ExpensesPageInner({
       {/* Shop Expense Modal */}
       {expenseModalOpen && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-150"
+          className="fixed inset-0 z-[70] flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-150"
           onClick={(e) => e.target === e.currentTarget && closeModals()}
         >
           <div className="bg-panel border border-app rounded-2xl w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-150">

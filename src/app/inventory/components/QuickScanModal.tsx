@@ -236,7 +236,7 @@ export default function QuickScanModal({ onClose, onSaved }: QuickScanProps) {
   return (
     <div
       ref={overlayRef}
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
+      className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center px-0 sm:px-4 pt-0 sm:pt-4 pb-[72px] md:pb-0"
       onClick={(e) => {
         if (e.target === overlayRef.current) onClose();
       }}
@@ -244,7 +244,7 @@ export default function QuickScanModal({ onClose, onSaved }: QuickScanProps) {
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
 
       <div
-        className="relative w-full sm:max-w-md bg-panel border border-app sm:rounded-2xl rounded-t-3xl overflow-hidden shadow-2xl shadow-black/50 flex flex-col max-h-[90vh]"
+        className="relative w-full sm:max-w-md bg-panel border border-app sm:rounded-2xl rounded-t-3xl overflow-hidden shadow-2xl shadow-black/50 flex flex-col max-h-[calc(100dvh-72px)] md:max-h-[90vh]"
         style={{ animation: "slideUp 0.22s cubic-bezier(0.34,1.56,0.64,1)" }}
         onClick={(e) => e.stopPropagation()}
       >

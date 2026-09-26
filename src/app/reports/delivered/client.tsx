@@ -728,10 +728,10 @@ export default function DeliveredReportClient({ fromDate, toDate, clientId }: Pr
       {/* Detail Modal */}
       {showDetailModal && (
         <div
-          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-150"
+          className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center px-0 sm:px-4 pt-0 sm:pt-4 pb-[72px] md:pb-0 bg-black/80 backdrop-blur-md animate-in fade-in duration-150"
           onClick={(e) => e.target === e.currentTarget && setShowDetailModal(null)}
         >
-          <div className="bg-panel border border-app rounded-t-2xl sm:rounded-2xl w-full sm:max-w-md shadow-2xl max-h-[85vh] overflow-y-auto animate-in zoom-in-95 duration-150">
+          <div className="bg-panel border border-app rounded-t-2xl sm:rounded-2xl w-full sm:max-w-md shadow-2xl max-h-[calc(100dvh-72px)] md:max-h-[85vh] overflow-y-auto animate-in zoom-in-95 duration-150">
             <div className="px-4 py-3.5 bg-app border-b border-app flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400">

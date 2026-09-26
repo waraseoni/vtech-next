@@ -733,7 +733,7 @@ export default function ManageJobPage({ params }: { params: Promise<{ id?: strin
     <div className="min-h-screen bg-app text-white font-sans">
       {/* Add New Client Modal */}
       {showAddClientModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
           <div className="bg-panel border border-app rounded-2xl w-full max-w-md shadow-2xl">
             {/* Modal Header */}
             <div className="flex items-center justify-between p-5 border-b border-app">

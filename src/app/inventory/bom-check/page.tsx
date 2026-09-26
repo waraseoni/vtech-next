@@ -932,7 +932,7 @@ export default function BomCheckPage() {
 
       {/* ── Template save/edit modal (Phase 3) ── */}
       {tmplModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 p-4">
           <div className="w-full max-w-sm bg-white dark:bg-panel-2 border border-app-2 dark:border-app rounded-2xl p-5 space-y-3">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-black text-app dark:text-white tracking-tight">

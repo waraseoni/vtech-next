@@ -2667,7 +2667,7 @@ function JobsListContent() {
 
       {/* ── Quick Create Modal ── */}
       {showQuickCreate && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
           <div className="bg-white dark:bg-panel border border-app-2 dark:border-app rounded-2xl w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto">
             {/* Header */}
             <div className="sticky top-0 bg-white dark:bg-panel border-b border-app-2 dark:border-app flex items-center justify-between p-4 z-10">

@@ -150,7 +150,7 @@ export default function InquiryModal({ inquiryId, onClose, onUpdate }: Props) {
   // ── Loading ──────────────────────────────────────────────────────────────
   if (loading) {
     return (
-      <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[70] flex items-center justify-center p-4">
         <div className="bg-panel border border-app rounded-2xl p-8 flex flex-col items-center gap-3">
           <Loader2 size={24} className="animate-spin text-blue-400" />
           <p className="text-muted-2 text-xs font-extrabold uppercase tracking-widest">
@@ -165,7 +165,7 @@ export default function InquiryModal({ inquiryId, onClose, onUpdate }: Props) {
 
   return (
     <div
-      className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+      className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[70] flex items-center justify-center p-4"
       onClick={onClose}
     >
       <div

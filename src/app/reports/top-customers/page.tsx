@@ -519,7 +519,7 @@ function TopCustomersContent() {
       </div>
 
       {modalClient && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
           <div className="bg-panel border border-app rounded-2xl shadow-xl shadow-black/40 w-full max-w-2xl overflow-hidden flex flex-col max-h-[80vh]">
             <div className="flex items-center justify-between p-4 border-b border-app bg-panel-2">
               <div>

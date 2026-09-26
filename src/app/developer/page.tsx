@@ -528,7 +528,7 @@ export default function DeveloperPage() {
 
       {/* ── Setup Kit modal ── */}
       {kitFor && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
           <div className="w-full max-w-lg bg-white dark:bg-panel-2 border border-app-2 dark:border-app rounded-2xl p-5 max-h-[90vh] overflow-y-auto shadow-2xl">
             <div className="flex items-start justify-between gap-3">
               <div>

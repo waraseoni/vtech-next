@@ -1641,7 +1641,7 @@ export default function SalaryPageInner({
       {/* SALARY HISTORY: view / edit / delete (/salary parity)                  */}
       {/* ========================================================================= */}
       {histModal && histTarget && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
           <div className="bg-panel border border-app rounded-2xl w-full max-w-xl shadow-2xl flex flex-col overflow-hidden max-h-[85vh]">
             <div className="p-5 bg-panel-2 border-b border-app flex items-center justify-between">
               <div>
@@ -1794,7 +1794,7 @@ export default function SalaryPageInner({
       {/* ========================================================================= */}
       {showRateModal && editingMech && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-150"
+          className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-150"
           onClick={(e) => {
             if (e.target === e.currentTarget) setShowRateModal(false);
           }}
@@ -1936,7 +1936,7 @@ export default function SalaryPageInner({
       {/* ========================================================================= */}
       {showPayoutModal && payoutData && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-150"
+          className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-150"
           onClick={(e) => {
             if (e.target === e.currentTarget) setShowPayoutModal(false);
           }}

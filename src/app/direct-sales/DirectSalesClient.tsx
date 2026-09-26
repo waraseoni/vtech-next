@@ -651,7 +651,7 @@ export function DirectSalesClient({
         {/* Mobile filter modal */}
         {showFilterModal && (
           <div
-            className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-end justify-center p-0"
+            className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[70] flex items-end justify-center px-0 pt-0 pb-[72px] md:pb-0"
             onClick={() => setShowFilterModal(false)}
           >
             <div

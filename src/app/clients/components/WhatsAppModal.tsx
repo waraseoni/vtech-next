@@ -26,7 +26,7 @@ export function WhatsAppModal({
   if (!waModal) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+    <div className="fixed inset-0 bg-black/60 z-[70] flex items-center justify-center p-4 backdrop-blur-sm">
       <div className="bg-white dark:bg-panel border border-app-2 dark:border-app rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden">
         <div className="flex items-center justify-between p-4 border-b border-app-2 dark:border-app bg-slate-50 dark:bg-panel">
           <h3 className="font-bold text-app dark:text-white">

@@ -620,7 +620,7 @@ export default function MonthlyProfitReport() {
 
       {/* Drill-down Modal */}
       {modalConfig && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
           <div className="bg-panel border border-app rounded-3xl w-full max-w-4xl max-h-[85vh] flex flex-col shadow-2xl animate-in fade-in zoom-in duration-200">
             <div className="flex items-center justify-between p-6 border-b border-app">
               <h2 className="text-xl font-black text-white">{modalConfig.title}</h2>

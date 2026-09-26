@@ -497,7 +497,7 @@ export default function LendersPage() {
 
       {/* Add/Edit Lender Modal */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
           <div className="bg-panel border border-app rounded-2xl w-full max-w-lg shadow-2xl">
             <div className="flex items-center justify-between p-5 border-b border-app">
               <h3 className="font-bold text-white flex items-center gap-2">
@@ -683,7 +683,7 @@ export default function LendersPage() {
 
       {/* Pay EMI Modal */}
       {showPayModal && payingLender && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
           <div className="bg-panel border border-app rounded-2xl w-full max-w-sm shadow-2xl">
             <div className="flex items-center justify-between p-5 border-b border-app">
               <h3 className="font-bold text-white flex items-center gap-2">
@@ -780,7 +780,7 @@ export default function LendersPage() {
           const lPayments = paymentsByLender.get(viewing.id) || [];
           const { totalPaid, totalToPay, balance } = getLenderTotals(viewing);
           return (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+            <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
               <div className="bg-panel border border-app rounded-2xl w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto">
                 <div className="flex items-center justify-between p-5 border-b border-app">
                   <h3 className="font-bold text-white flex items-center gap-2">

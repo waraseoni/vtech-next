@@ -1628,7 +1628,7 @@ ${svcHtml}${prodHtml}
       {/* ══ UPDATE STATUS MODAL ══════════════════════════════════════════════ */}
       {showStatusModal && (
         <div
-          className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4"
+          className="fixed inset-0 bg-black/60 z-[70] flex items-center justify-center p-4"
           onClick={(e) => {
             if (e.target === e.currentTarget) setShowStatusModal(false);
           }}
@@ -1753,7 +1753,7 @@ ${svcHtml}${prodHtml}
       {/* ══ ADD PAYMENT MODAL ════════════════════════════════════════════════ */}
       {showPayModal && (
         <div
-          className="fixed inset-0 bg-black/60 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
+          className="fixed inset-0 bg-black/60 z-[70] flex items-end sm:items-center justify-center px-0 sm:px-4 pt-0 sm:pt-4 pb-[72px] md:pb-0"
           onClick={(e) => {
             if (e.target === e.currentTarget) setShowPayModal(false);
           }}

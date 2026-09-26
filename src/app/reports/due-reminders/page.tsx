@@ -688,7 +688,7 @@ function DueRemindersContent() {
 
       {/* ── SET DUE DATE MODAL ── */}
       {dueModal && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[70] p-4 backdrop-blur-sm">
           <div className="w-full max-w-md rounded-2xl border p-6 shadow-2xl bg-panel border-app">
             <div className="flex items-center justify-between mb-5">
               <h3 className="text-base font-bold text-white flex items-center gap-2">

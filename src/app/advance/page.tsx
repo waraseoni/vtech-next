@@ -302,7 +302,7 @@ function AdvanceLedgerContent() {
 
       {/* Add/Edit Modal */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
           <div className="bg-panel border border-app rounded-2xl w-full max-w-sm shadow-2xl p-5">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-black text-white">

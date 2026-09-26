@@ -637,7 +637,7 @@ export default function PurchaseOrderDetailPage() {
 
       {/* ═══════════════════════════════ RECEIVE MODAL ═══════════════════════════════ */}
       {showReceive && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => !acting && setShowReceive(false)} />
           <div className="relative w-full max-w-2xl bg-panel border border-app rounded-2xl overflow-hidden shadow-2xl shadow-black/50 max-h-[90vh] flex flex-col">
             <div className="h-0.5 w-full bg-gradient-to-r from-emerald-500 to-teal-600" />

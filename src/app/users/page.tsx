@@ -516,7 +516,7 @@ export default function UsersPage() {
       {/* ═══ RESET PASSWORD MODAL ═══════════════════════════════════════════ */}
       {resetUser && (
         <div
-          className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-4 backdrop-blur-sm"
+          className="fixed inset-0 bg-black/75 z-[70] flex items-center justify-center p-4 backdrop-blur-sm"
           onClick={(e) => {
             if (e.target === e.currentTarget) setResetUser(null);
           }}
@@ -632,7 +632,7 @@ export default function UsersPage() {
       {/* ═══ DELETE CONFIRM MODAL ════════════════════════════════════════════ */}
       {deleteUser && (
         <div
-          className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-4 backdrop-blur-sm"
+          className="fixed inset-0 bg-black/75 z-[70] flex items-center justify-center p-4 backdrop-blur-sm"
           onClick={(e) => {
             if (e.target === e.currentTarget) setDeleteUser(null);
           }}

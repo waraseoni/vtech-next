@@ -2249,7 +2249,7 @@ export default function ViewClientProfile() {
 
       {/* ── SET PROMISED DUE DATE MODAL ── */}
       {dueModal && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[70] p-4 backdrop-blur-sm">
           <div className="w-full max-w-md rounded-2xl glass border border-[var(--glass-border)] p-6 shadow-2xl">
             <div className="flex items-center justify-between mb-5">
               <h3 className="text-base font-bold theme-heading flex items-center gap-2">
@@ -2317,7 +2317,7 @@ export default function ViewClientProfile() {
 
       {/* ── EDIT PAYMENT MODAL ── */}
       {editingPayment && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[70] p-4 backdrop-blur-sm">
           <div className="w-full max-w-md rounded-2xl glass border border-[var(--glass-border)] p-6 shadow-2xl">
             <div className="flex items-center justify-between mb-5">
               <h3 className="text-base font-bold theme-heading">Edit Payment</h3>
