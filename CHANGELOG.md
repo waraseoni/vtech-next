@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.47.5](https://github.com/waraseoni/vtech-next/compare/v1.47.4...v1.47.5) (2026-09-26)
+
+### Bug Fixes
+
+* **mobile:** modals hidden behind bottom tab bar on mobile ([553c10f](https://github.com/waraseoni/vtech-next/commit/553c10f90b5b0a30fa9c6fb10e89c50089982233))
+
 ## [1.47.4](https://github.com/waraseoni/vtech-next/compare/v1.47.3...v1.47.4) (2026-09-26)
 
 ### Bug Fixes
