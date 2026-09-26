@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.47.0](https://github.com/waraseoni/vtech-next/compare/v1.46.2...v1.47.0) (2026-09-26)
+
+### Features
+
+* **geofence:** Tier A staff view-only + permit + location audit ([5f574d2](https://github.com/waraseoni/vtech-next/commit/5f574d267691e5fae6c7c60967311868919ee66a))
+
 ## [1.46.2](https://github.com/waraseoni/vtech-next/compare/v1.46.1...v1.46.2) (2026-09-25)
 
 ### Performance Improvements
