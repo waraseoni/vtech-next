@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## [1.49.0](https://github.com/waraseoni/vtech-next/compare/v1.48.0...v1.49.0) (2026-09-28)
+
+### Features
+
+* **geofence:** allow messaging writes inside /messages when staff outside office ([a87798e](https://github.com/waraseoni/vtech-next/commit/a87798e5873f916ea878b88c545414f47908e631))
+
+### Bug Fixes
+
+* **direct-sales:** "Sale not found" + atomic save via save_direct_sale RPC ([d6ad4ac](https://github.com/waraseoni/vtech-next/commit/d6ad4ac201f3ae35861bd38e387a875a117ef4ce))
+
 ## [1.48.0](https://github.com/waraseoni/vtech-next/compare/v1.47.5...v1.48.0) (2026-09-28)
 
 ### Features
