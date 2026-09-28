@@ -55,6 +55,7 @@ export function setWriteGuardState(next: Partial<WriteGuardState>): void {
 /** Logout / role change par gate reset (stale block na rahe). */
 export function resetWriteGuardState(): void {
   state = OPEN;
+  lastNotifyAt = 0;
 }
 
 /** Current gate state (read-only). */
@@ -278,14 +279,29 @@ export function blockedBuilder<T = unknown>(message = writeBlockedMessage()): un
   return proxy;
 }
 
-/** Har attempt par ek hi toast (multiple call-sites ek hi action me). */
+/**
+ * Geofence notice ka **single** entry-point (2026-09-29).
+ *
+ * Pehle 4 alag jagah se toast fire hota tha — `CanWrite` capture, `useWriteGuard`
+ * handler, ye function, aur har wo call-site jo `toast.error(error.message)`
+ * karta tha (33 jagah). Sirf ye throttled tha, baaki chaaron un-throttled the,
+ * to ek click pe 6-8 popups aate the.
+ *
+ * Do layer se spam band:
+ *   1. Ye cooldown (har attempt par ek) + canonical message — to chaaron source
+ *      ka text SAME hota hai, aur `lib/toast.ts` ke message-based dedup se
+ *      `toast.error(error.message)` wali 33 call-sites bhi isi ek toast me
+ *      collapse ho jaati hain (zero call-site change).
+ *   2. `message` override sirf tab use karo jab text genuinely alag ho (kisi
+ *      specific action ka apna reason) — override karoge to wo apna alag toast
+ *      banega, kyunki id message se derive hoti hai.
+ */
 let lastNotifyAt = 0;
 const NOTIFY_COOLDOWN_MS = 2500;
 
-/** Blocked hone par Hindi message toast karta hai (throttled). */
-export function notifyWriteBlocked(): void {
+export function notifyWriteBlocked(message?: string): void {
   const now = Date.now();
   if (now - lastNotifyAt < NOTIFY_COOLDOWN_MS) return;
   lastNotifyAt = now;
-  toast.warning(writeBlockedMessage());
+  toast.warning(message ?? writeBlockedMessage());
 }

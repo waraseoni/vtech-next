@@ -26,12 +26,11 @@ import React, {
 import { supabase, getCachedUser } from "@/lib/supabase";
 import { logActivity } from "@/lib/activity";
 import { setGeoAudit } from "@/lib/geoAudit";
-import { setWriteGuardState, resetWriteGuardState, withWriteGuardBypass, installApiWriteGate } from "@/lib/writeGuard";
+import { setWriteGuardState, resetWriteGuardState, withWriteGuardBypass, installApiWriteGate, notifyWriteBlocked } from "@/lib/writeGuard";
 import {
   verifyAttendanceLocation,
   type GeoResult,
 } from "@/lib/geofence";
-import { toast } from "@/lib/toast";
 import { logger } from "@/lib/logger";
 
 // ─── Types ────────────────────────────────────────────────────────────────
@@ -113,7 +112,9 @@ async function fetchActivePermit(userId: string): Promise<string | null> {
 
 // ─── Context ──────────────────────────────────────────────────────────────
 
-const ViewOnlyContext = createContext<ViewOnlyState>({
+// Exported so `CanWrite` can be rendered in tests with an explicit verdict
+// (real `ViewOnlyProvider` would fire geolocation + permit queries).
+export const ViewOnlyContext = createContext<ViewOnlyState>({
   viewOnly: false,
   status: "unknown",
   distanceM: null,
@@ -133,7 +134,7 @@ export function useWriteGuard(): () => boolean {
   const { viewOnly } = useViewOnly();
   return useCallback(() => {
     if (viewOnly) {
-      toast.warning("View Only — aap office ke bahar hain. Changes sirf office ke andar se honge.");
+      notifyWriteBlocked();
       return false;
     }
     return true;
@@ -316,9 +317,7 @@ export function CanWrite({
   const block = (e: React.SyntheticEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    toast.warning(
-      message ?? "View Only — aap office ke bahar hain. Changes sirf office ke andar se honge."
-    );
+    notifyWriteBlocked(message);
   };
   return (
     <span
