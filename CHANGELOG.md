@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.48.0](https://github.com/waraseoni/vtech-next/compare/v1.47.5...v1.48.0) (2026-09-28)
+
+### Features
+
+* **geofence:** central write gate - staff read-only outside office without permit ([c1a949f](https://github.com/waraseoni/vtech-next/commit/c1a949fe3edd4598477a179251291215f2e90a51))
+
 ## [1.47.5](https://github.com/waraseoni/vtech-next/compare/v1.47.4...v1.47.5) (2026-09-26)
 
 ### Bug Fixes
