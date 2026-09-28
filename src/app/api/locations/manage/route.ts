@@ -1,7 +1,7 @@
 import { getAdminSupabase } from "@/lib/admin-supabase";
 import { NextRequest, NextResponse } from "next/server";
 
-import { requireStaff } from "@/lib/api-auth";
+import { requireStaff, requireStaffWriter } from "@/lib/api-auth";
 
 const sb = getAdminSupabase();
 
@@ -42,6 +42,7 @@ function genCode(parts: { zone?: number; rack?: number; bin?: number; box?: numb
 
 export async function GET(request: NextRequest) {
   try {
+    // GET = read → geofence gate NAHI (staff bahar bhi dekh sakta hai).
     const user = await requireStaff();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
@@ -202,7 +203,10 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const user = await requireStaff();
+    const session = await requireStaffWriter(request);
+    if (session instanceof NextResponse) return session;
+    if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const user = session.user;
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const body = await request.json();
@@ -240,7 +244,10 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
-    const user = await requireStaff();
+    const session = await requireStaffWriter(request);
+    if (session instanceof NextResponse) return session;
+    if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const user = session.user;
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const body = await request.json();
@@ -278,7 +285,10 @@ export async function PUT(request: NextRequest) {
 
 export async function PATCH(request: NextRequest) {
   try {
-    const user = await requireStaff();
+    const session = await requireStaffWriter(request);
+    if (session instanceof NextResponse) return session;
+    if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const user = session.user;
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const body = await request.json();

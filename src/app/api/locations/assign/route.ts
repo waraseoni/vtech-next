@@ -1,7 +1,7 @@
 import { getAdminSupabase } from "@/lib/admin-supabase";
 import { NextRequest, NextResponse } from "next/server";
 
-import { requireStaff } from "@/lib/api-auth";
+import { requireStaffWriter } from "@/lib/api-auth";
 
 const sb = getAdminSupabase();
 
@@ -20,7 +20,10 @@ function errMsg(e: unknown): string {
  */
 export async function POST(request: NextRequest) {
   try {
-    const user = await requireStaff();
+    const session = await requireStaffWriter(request);
+    if (session instanceof NextResponse) return session;
+    if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const user = session.user;
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const body = await request.json();

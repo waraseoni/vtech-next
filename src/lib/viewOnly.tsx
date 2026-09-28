@@ -26,6 +26,7 @@ import React, {
 import { supabase, getCachedUser } from "@/lib/supabase";
 import { logActivity } from "@/lib/activity";
 import { setGeoAudit } from "@/lib/geoAudit";
+import { setWriteGuardState, resetWriteGuardState, withWriteGuardBypass, installApiWriteGate } from "@/lib/writeGuard";
 import {
   verifyAttendanceLocation,
   type GeoResult,
@@ -220,6 +221,15 @@ export function ViewOnlyProvider({
     // D2 fail-closed sirf KNOWN failure (denied/timeout/...) par lagta hai.
     const viewOnly = geo ? verdict.viewOnly : false;
     const status: ViewOnlyStatus = geo ? verdict.status : role === "staff" ? "unknown" : verdict.status;
+    // ── Central write gate publish (synchronous, render ke andar) ──────────
+    // `supabase.ts` ka Proxy ye padhta hai. Memo ke andar (effect me nahi) —
+    // isliye ek render-tick ka gap nahi jisme write slip ho sake. Idempotent
+    // hai, to StrictMode double-render safe.
+    setWriteGuardState({
+      blocked: viewOnly,
+      status,
+      distanceM: geo?.distanceM ?? null,
+    });
     return {
       viewOnly,
       status,
@@ -234,6 +244,18 @@ export function ViewOnlyProvider({
       refresh: check,
     };
   }, [role, geo, permitExp, checkedAt, checking, check]);
+
+  // Non-staff / logout: gate reset — admin/dev kabhi block nahi hote, aur
+  // stale block agle user ko na mile.
+  useEffect(() => {
+    if (role !== "staff") resetWriteGuardState();
+  }, [role]);
+
+  // `/api/*` mutating routes ke liye chokepoint (69 raw fetch call-sites).
+  // Staff ke liye hi — non-staff ke gate open hone par ye no-op hai.
+  useEffect(() => {
+    if (role === "staff") installApiWriteGate();
+  }, [role]);
 
   // ── Permit-session audit (plan §5: "kahan se kaam hua") ────────────────
   // Status TRANSITION par hi log (har 5-min recheck par nahi) + 15-min
@@ -255,20 +277,25 @@ export function ViewOnlyProvider({
     lastAuditAt.current[key] = now;
     const dist =
       state.distanceM != null ? `office se ~${Math.round(state.distanceM)}m` : "distance unknown";
-    if (to === "outside") {
-      logActivity("Geofence Outside", "Staff", undefined, `${dist} bahar, permit nahi — view only`);
-    } else if (to === "permit") {
-      logActivity(
-        "Permit Session Active",
-        "Staff",
-        undefined,
-        `${dist} bahar, permit ${state.permit?.minsLeft ?? "?"} min baki`
-      );
-    } else if (to === "inside") {
-      logActivity("Geofence Inside", "Staff", undefined, "wapas office ke andar");
-    } else if (to === "denied" || to === "unavailable" || to === "timeout" || to === "unsupported") {
-      logActivity("Geofence Location Unavailable", "Staff", undefined, `GPS ${to} — fail-safe view only`);
-    }
+    // Gate ON hone par bhi ye entry likhni hai (warna "staff bahar gaya" audit
+    // hi block ho jayegi) — isliye sirf in 4 logActivity calls ke liye narrow
+    // bypass. Business writes kabhi isme nahi aate.
+    withWriteGuardBypass(() => {
+      if (to === "outside") {
+        logActivity("Geofence Outside", "Staff", undefined, `${dist} bahar, permit nahi — view only`);
+      } else if (to === "permit") {
+        logActivity(
+          "Permit Session Active",
+          "Staff",
+          undefined,
+          `${dist} bahar, permit ${state.permit?.minsLeft ?? "?"} min baki`
+        );
+      } else if (to === "inside") {
+        logActivity("Geofence Inside", "Staff", undefined, "wapas office ke andar");
+      } else if (to === "denied" || to === "unavailable" || to === "timeout" || to === "unsupported") {
+        logActivity("Geofence Location Unavailable", "Staff", undefined, `GPS ${to} — fail-safe view only`);
+      }
+    });
   }, [role, state]);
 
   return <ViewOnlyContext.Provider value={state}>{children}</ViewOnlyContext.Provider>;

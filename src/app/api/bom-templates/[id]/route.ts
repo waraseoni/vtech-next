@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSupabase, requireStaffWithRole } from "@/lib/api-auth";
+import { getServerSupabase, requireStaffWithRole, enforceApiGeoGate } from "@/lib/api-auth";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -62,6 +62,9 @@ export async function GET(_req: NextRequest, ctx: Ctx) {
 export async function PUT(req: NextRequest, ctx: Ctx) {
   const auth = await authed();
   if (!auth) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  // Staff + office ke bahar + permit nahi → write block (GET par gate nahi).
+  const geo = await enforceApiGeoGate(req, auth.session.role, auth.session.user.id);
+  if (geo) return geo;
   const id = await parseId(ctx);
   if (!id) return NextResponse.json({ error: "Invalid id" }, { status: 400 });
 
@@ -98,9 +101,11 @@ export async function PUT(req: NextRequest, ctx: Ctx) {
   return NextResponse.json({ template: data });
 }
 
-export async function DELETE(_req: NextRequest, ctx: Ctx) {
+export async function DELETE(req: NextRequest, ctx: Ctx) {
   const auth = await authed();
   if (!auth) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const geo = await enforceApiGeoGate(req, auth.session.role, auth.session.user.id);
+  if (geo) return geo;
   const id = await parseId(ctx);
   if (!id) return NextResponse.json({ error: "Invalid id" }, { status: 400 });
 

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireStaffWithRole } from "@/lib/api-auth";
+import { requireStaffWriter } from "@/lib/api-auth";
 import { getAdminSupabase } from "@/lib/admin-supabase";
 
 /**
@@ -16,7 +16,9 @@ import { getAdminSupabase } from "@/lib/admin-supabase";
  */
 export async function POST(req: NextRequest) {
   try {
-    const auth = await requireStaffWithRole();
+    // Staff + office ke bahar + permit nahi → block (storage delete = write).
+    const auth = await requireStaffWriter(req);
+    if (auth instanceof NextResponse) return auth;
     if (!auth) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }

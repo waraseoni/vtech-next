@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireStaff } from "@/lib/api-auth";
+import { requireStaffWriter } from "@/lib/api-auth";
 import { isPushConfigured, sendPushToUser } from "@/lib/push-send";
 
 /**
@@ -14,8 +14,11 @@ import { isPushConfigured, sendPushToUser } from "@/lib/push-send";
  */
 export async function POST(req: NextRequest) {
   try {
-    const user = await requireStaff();
-    if (!user) {
+    // Staff + office ke bahar + permit nahi → block (message ke saath push
+    // bhejna bhi ek change hai — warna blocked message ka notification jaayega).
+    const session = await requireStaffWriter(req);
+    if (session instanceof NextResponse) return session;
+    if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 

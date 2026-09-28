@@ -1,11 +1,11 @@
 import { getAdminSupabase } from "@/lib/admin-supabase";
 import { NextRequest, NextResponse } from "next/server";
 
-import { requireStaff } from "@/lib/api-auth";
+import { requireStaffWriter } from "@/lib/api-auth";
 
 // Service-role: system_info ab RLS se closed hai, isliye staff-guarded route
 // ko service-role key chahiye (session token anon hai, RLS select/insert/update
-// block karega). requireStaff() pehle hi guard hai.
+// block karega). requireStaffWriter() pehle hi auth + geofence guard hai.
 const supabase = getAdminSupabase();
 
 async function upsertField(field: string, value: string) {
@@ -23,8 +23,10 @@ async function upsertField(field: string, value: string) {
 
 export async function POST(request: NextRequest) {
   try {
-    const user = await requireStaff();
-    if (!user)
+    // Staff + office ke bahar + permit nahi → block (system_info write, service_role).
+    const session = await requireStaffWriter(request);
+    if (session instanceof NextResponse) return session;
+    if (!session)
       return NextResponse.json({ status: "unauthorized", msg: "Login required" }, { status: 401 });
 
     const form = await request.formData();

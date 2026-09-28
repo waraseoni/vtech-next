@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSupabase, requireStaffWithRole } from "@/lib/api-auth";
+import { getServerSupabase, requireStaffWithRole, enforceApiGeoGate } from "@/lib/api-auth";
 
 export type BomTemplateItemInput = {
   product_id: number | null;
@@ -61,6 +61,9 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   const auth = await authed();
   if (!auth) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  // Staff + office ke bahar + permit nahi → write block (GET par gate nahi).
+  const geo = await enforceApiGeoGate(req, auth.session.role, auth.session.user.id);
+  if (geo) return geo;
   const { supabase, session } = auth;
 
   const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;

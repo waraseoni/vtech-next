@@ -1,7 +1,7 @@
 import { getAdminSupabase } from "@/lib/admin-supabase";
 import { NextRequest, NextResponse } from "next/server";
 
-import { requireStaff } from "@/lib/api-auth";
+import { requireStaff, requireStaffWriter } from "@/lib/api-auth";
 
 const supabase = getAdminSupabase();
 
@@ -41,8 +41,9 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
-    const user = await requireStaff();
-    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const session = await requireStaffWriter(request);
+    if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (session instanceof NextResponse) return session;
 
     const body = await request.json();
     const { zone, rack, bin, box, label, zone_id, rack_id, bin_id, box_id } = body;
@@ -79,8 +80,9 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
-    const user = await requireStaff();
-    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const session = await requireStaffWriter(request);
+    if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (session instanceof NextResponse) return session;
 
     const body = await request.json();
     const { id, zone, rack, bin, box, label, zone_id, rack_id, bin_id, box_id } = body;
@@ -116,8 +118,9 @@ export async function PUT(request: NextRequest) {
 
 export async function PATCH(request: NextRequest) {
   try {
-    const user = await requireStaff();
-    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const session = await requireStaffWriter(request);
+    if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (session instanceof NextResponse) return session;
 
     const body = await request.json();
     const { id, delete_flag, status } = body;

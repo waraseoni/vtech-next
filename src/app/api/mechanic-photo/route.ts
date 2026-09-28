@@ -1,7 +1,7 @@
 import { getAdminSupabase } from "@/lib/admin-supabase";
 import { NextRequest, NextResponse } from "next/server";
 
-import { requireStaff } from "@/lib/api-auth";
+import { requireStaffWriter } from "@/lib/api-auth";
 
 // ─── Supabase Admin Client (service_role) ────────────────────────────────────
 // IMPORTANT: service_role key sirf server-side use karo — client-side kabhi nahi
@@ -11,8 +11,11 @@ const BUCKET = "mechanic-photos";
 
 export async function POST(request: NextRequest) {
   try {
-    const user = await requireStaff();
-    if (!user)
+    // Staff + office ke bahar + permit nahi → block. Ye route service_role se
+    // storage likhta hai, isliye RLS par depend karna safe nahi tha.
+    const session = await requireStaffWriter(request);
+    if (session instanceof NextResponse) return session;
+    if (!session)
       return NextResponse.json({ status: "unauthorized", msg: "Login required" }, { status: 401 });
 
     const form = await request.formData();

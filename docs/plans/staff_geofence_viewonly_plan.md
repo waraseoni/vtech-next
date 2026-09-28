@@ -214,6 +214,25 @@ dedicated device app level ka solution chahiye (is project me overkill).
 - [x] Banner + button disable + Hindi messages. → `ViewOnlyBanner` (red view-only / green permit countdown / amber no-config).
 - [ ] ESLint rule/helper: naye forms me `CanWrite` use karo. → helper ready (`CanWrite`), lint rule future.
 
+### Phase 2b — CENTRAL WRITE GATE (user decision 2026-09-28, implemented)
+Rule: **office ke bahar, permit ke bina staff SAARE modules dekh sakta hai, par KISI BHI module me kuch change nahi kar sakta. Permit active = har change allowed.** Attendance check-in/out jaaisa hi rakha gaya (koi badlav nahi).
+
+Audit ne dikhaya: `CanWrite` sirf 6 jagah laga tha, jabki `src/app` me **216 mutating call-sites / 81 files** hain (staff sidebar ke 18 modules me ~77 reachable unguated op — clients 24, jobs sub-pages 35, sales 6, attendance 4, inquiries 3, products 2, due-reminders 2, messages 1). DOM-level guarding se har form alag wrap karna padta — brittle.
+
+Isliye **3 central chokepoints** (0 call-site change):
+- [x] `src/lib/writeGuard.ts` (new) — module-level state store (pattern `lib/geoAudit.ts` jaisa), `GeoWriteBlockedError`, chainable `blockedBuilder` (`.insert().select().single()` bhi safe — throw nahi, `{data:null,error}` resolve), narrow `withWriteGuardBypass` (sirf geofence apne audit ke liye — warna "staff bahar gaya" entry hi block ho jati), `installApiWriteGate` (global `window.fetch` patch, 69 raw `/api/` call-sites).
+- [x] `src/lib/supabase.ts` — single browser client ko Proxy se wrap. Blocked: `.insert() .update() .upsert() .delete()`, storage `.upload() .remove() .createSignedUrl() .move() .copy()`. **Hamesha allowed: `.select()` + `auth.*`** (staff bahar dekh sakta hai; login block nahi hona chahiye).
+  - [x] `.rpc()` — **read-prefix allow + default-deny** (`isReadOnlyRpc()`): `get_/peek_/check_/list_/read_/fetch_/search_` allowed; `WRITE_RPCS` explicit deny (`next_job_id` read+increment, `record_stocktake`, `receive_po_receipt`, `reset_sequence`, `activate_license`); **unknown RPC = blocked**. Pehle sirf `["get_public_config","license_status"]` allowlist thi jisse staff ke bahar jaate hi REAL reads bhi toot jaati thi (`get_inventory_stock`, `get_dashboard_stats`, `get_financial_summary`, `get_clients_page_financials`, `get_technician_metrics`, `check_license`, `peek_next_job_id`) — user ka rule "sirf dekhna hai" isko allow karta hai.
+- [x] `src/lib/viewOnly.tsx` — `useMemo` ke andar `setWriteGuardState()` publish karta hai (effect me nahi → ek render-tick ka slip-gap nahi); `installApiWriteGate()` staff ke liye; non-staff par `resetWriteGuardState()`.
+- [x] Server side: `src/lib/api-auth.ts` me `enforceApiGeoGate(req, role, userId)` + `requireStaffWriter(req)` — permit check **server clock** se (`expires_at > <server ISO>`, client clock par trust nahi). **GET par gate NAHI** (reads allowed).
+  - [x] **Fail-closed signal:** `x-vtech-geo-blocked: 0` → allow · `1` → permit table check · **missing/invalid header → 403 `GEO_SIGNAL_MISSING`**. Pehle missing header par `return null` (allow) tha — jisse ek plain `fetch(..., {method:"POST"})` ya curl bina header ke staff writes chala deta tha, yaani gate hi bypass ho jata tha.
+  - [x] Wired staff-reachable mutating routes (16): `api/locations` (POST/PUT/PATCH), `api/locations/assign` (POST), `api/locations/manage` (POST/PUT/PATCH), `api/bom-templates` (POST), `api/bom-templates/[id]` (PUT/DELETE), `api/media/delete` (POST), `api/settings/signature` (POST), `api/messages/push` (POST), `api/client-photo`, `api/job-images`, `api/mechanic-photo`, `api/product-image`, `api/spare-photos`, `api/supplier-photo`, `api/user-avatar` (sab POST upload). Ye photo/avatar/signature routes **service_role** se likhte hain — RLS par depend karna safe nahi tha.
+  - [x] Deliberately **NOT** gated: `api/chat` (POST) — sirf AI call; `lib/gemini-tools.ts` me poora `.select()`-only hai, koi DB write nahi → over-blocking hota. `api/print-*` (GET/print), `api/export-transactions` (GET), `api/locations/options|by-product` (GET) — sab reads.
+- [x] Gates: tsc 0 · eslint 0 errors (4 pre-existing warnings `api/print-purchase-order` me, untouched) · **vitest 193/193 across 15 files** (naye: `writeGuard.test.ts` 16, `supabase.writeGuard.test.ts` 16, `apiWriteGate.test.ts` 9, `api-auth.geoGate.test.ts` 12) · `next build` compiled successfully.
+
+**Known limits (honest):** ye abhi bhi Tier A hai. Server route gate client ke bheje `x-vtech-geo-*` signal par depend karta hai — DevTools se header `0` set karke ya raw Supabase client se RLS tak pahunch kar bypass **ho sakta hai** (sirf missing-header wala aasaan bypass band hua). Geo-audit (`lib/geoAudit.ts`) detective layer hai, preventive ka replacement nahi. Asli hard enforcement ke liye Tier B (server-side location attestation) ya MDM chahiye.
+
+
 ### Phase 3 — Permit wiring
 - [x] `useViewOnly()` me permit check (active → write allowed + countdown badge). → DB-time `expires_at > now()` filter + badge.
 - [x] Re-verify on focus/timer; expiry → view-only. → focus/visibility/interval triggers.
