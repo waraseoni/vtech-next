@@ -251,16 +251,36 @@ export default function SaleForm({ mode, saleId }: SaleFormProps) {
 
   const fetchSaleData = async () => {
     if (!saleId) return;
+    // NOTE: `items:direct_sale_items(...)` embed KABHI use mat karo yahan.
+    // `direct_sale_items` → `direct_sales` par koi FOREIGN KEY nahi hai
+    // (schema me sirf columns hain, constraint nahi), to PostgREST embedded
+    // resource resolve nahi kar paata aur POORI query error de deti thi
+    // (PGRST200) → `.single()` ka `error` set → user ko bekaar "Sale not
+    // found" dikhta tha, jabki sale exist karti thi. Isi liye view page alag
+    // query karta hai; yahan wahi pattern use karo (2 queries).
     const { data: sale, error } = await supabase
       .from("direct_sales")
-      .select("*, items:direct_sale_items(product_id, qty, price)")
+      .select("*")
       .eq("id", saleId)
       .single();
-    if (error) {
-      toast.error("Sale not found");
+    if (error || !sale) {
+      console.error("[direct-sale edit] sale load failed", error);
+      // Asli reason dikhao — generic "Sale not found" bug ko chhupa deta tha.
+      toast.error(
+        error?.message?.includes("PGRST")
+          ? "Sale load nahi hua (schema error PGRST) — console dekhein"
+          : "Sale not found"
+      );
       router.push("/direct-sales");
       return;
     }
+
+    const { data: itemRows, error: itemErr } = await supabase
+      .from("direct_sale_items")
+      .select("product_id, qty, price")
+      .eq("sale_id", saleId);
+    if (itemErr) console.error("[direct-sale edit] items load failed", itemErr);
+    const items_ = (itemRows || []) as SaleItemRow[];
 
     setOriginalSaleData(sale);
     setSelectedClient(sale.client_id || "");
@@ -268,7 +288,7 @@ export default function SaleForm({ mode, saleId }: SaleFormProps) {
     setPaymentMode(sale.payment_mode || "Cash");
     setRemarks(sale.remarks || "");
 
-    const productIds = (sale.items || []).map((i: SaleItemRow) => i.product_id);
+    const productIds = items_.map((i) => i.product_id);
     const pMap = new Map<number, string>();
     if (productIds.length) {
       const { data: pData } = await supabase
@@ -278,7 +298,7 @@ export default function SaleForm({ mode, saleId }: SaleFormProps) {
       (pData || []).forEach((p) => pMap.set(p.id, p.name));
     }
 
-    const loadedItems: SaleItem[] = (sale.items || []).map((i: SaleItemRow) => ({
+    const loadedItems: SaleItem[] = items_.map((i) => ({
       product_id: i.product_id,
       product_name: pMap.get(i.product_id) || "Unknown Product",
       qty: i.qty,
@@ -400,69 +420,44 @@ export default function SaleForm({ mode, saleId }: SaleFormProps) {
 
       const lastEditedBy = userRole === "staff" && mechanicId ? mechanicId : 0;
 
-      const salePayload: DbRow = {
-        client_id: selectedClient || null,
-        payment_mode: paymentMode,
-        remarks: remarks.trim() || null,
-        total_amount: totalAmount,
-        last_edited_by: lastEditedBy,
-        last_edited_date: new Date().toISOString(),
-      };
-
-      if (mode === "new") {
-        salePayload.sale_code = saleCode;
-        salePayload.date_created = new Date().toISOString();
-        // BUG FIX 8: staff mode set mechanic_id correctly, but admin mode
-        // set `selectedMechanic || null` — if admin forgot to pick, null was silently saved
-        salePayload.mechanic_id =
-          userRole === "staff" ? mechanicId : Number(selectedMechanic) || null;
-      } else {
-        // BUG FIX 9: edit was sending date_created and sale_code in update payload
-        // which could overwrite them unnecessarily — only preserve, don't send
-        salePayload.mechanic_id = originalSaleData?.mechanic_id;
-        // Do NOT include sale_code / date_created in update — leave DB values intact
-      }
-
-      let resultId: number;
-
-      if (mode === "new") {
-        const { data, error } = await supabase
-          .from("direct_sales")
-          .insert([salePayload])
-          .select("id")
-          .single();
-        if (error) throw error;
-        resultId = data.id;
-      } else {
-        // BUG FIX 10: edit path did `delete items` AFTER `update sale` but if
-        // reinsert fails, the sale has no items and there is no rollback.
-        // Fix: delete → insert in sequence so at least items aren't lost.
-        const { error: ue } = await supabase
-          .from("direct_sales")
-          .update(salePayload)
-          .eq("id", saleId!);
-        if (ue) throw ue;
-        resultId = saleId!;
-      }
-
-      // Delete old items (edit only) then re-insert
-      if (mode === "edit") {
-        const { error: de } = await supabase
-          .from("direct_sale_items")
-          .delete()
-          .eq("sale_id", resultId);
-        if (de) throw de;
-      }
-
-      const { error: ie } = await supabase.from("direct_sale_items").insert(
-        items.map((i) => ({
-          sale_id: resultId,
+      // ── Atomic save via RPC (migration 20260928_direct_sale_fk_atomic_save) ──
+      // Pehle 3 alag round-trip the: `update direct_sales` → `delete
+      // direct_sale_items` → `insert direct_sale_items`. Koi transaction nahi
+      // tha, to delete pass + insert fail = line items permanently gayab
+      // (koi error nahi, koi rollback nahi). Ab ek call: ya poora save hota
+      // hai ya kuch nahi hota. Total bhi server compute karta hai, isliye
+      // client ka total chhupa nahi ja sakta.
+      //
+      // sale_code/date_created edit me bhejte hi nahi — RPC unhe DB se intact
+      // rakhta hai (pehle bhi update payload me nahi jaate the).
+      const { data: resultIdRaw, error: saveErr } = await supabase.rpc("save_direct_sale", {
+        p_sale_id: mode === "edit" ? saleId! : null,
+        p_sale_code: mode === "new" ? saleCode : null,
+        p_client_id: selectedClient || null,
+        p_mechanic_id:
+          mode === "new"
+            ? // BUG FIX 8 preserved: staff apna mechanic_id, admin explicitly
+              // chuna hua — admin bhool jaye to null silently save na ho.
+              userRole === "staff"
+              ? mechanicId
+              : Number(selectedMechanic) || null
+            : originalSaleData?.mechanic_id ?? null,
+        p_payment_mode: paymentMode,
+        p_remarks: remarks.trim() || null,
+        p_last_edited_by: lastEditedBy,
+        p_last_edited_by_name: null,
+        p_items: items.map((i) => ({
           product_id: i.product_id,
           qty: i.qty,
           price: i.price,
-        }))
-      );
-      if (ie) throw ie;
+        })),
+      });
+      if (saveErr) throw saveErr;
+
+      const resultId = Number(resultIdRaw);
+      if (!Number.isFinite(resultId) || resultId <= 0) {
+        throw new Error("Sale save hui par id nahi mili");
+      }
 
       if (mode === "new") {
         await logActivity(

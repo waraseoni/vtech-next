@@ -68,6 +68,8 @@ const WRITE_RPCS = new Set<string>([
   "receive_po_receipt",
   "reset_sequence",
   "activate_license",
+  // direct_sale parent+items dono likhta hai (RPC, transaction ke andar)
+  "save_direct_sale",
 ]);
 
 export function isReadOnlyRpc(fn: string): boolean {

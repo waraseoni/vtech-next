@@ -15,26 +15,9 @@ import {
 import Link from "next/link";
 import { toast } from "@/lib/toast";
 
-// ─────────────────────────────────────────────────────────────────────────────
-// TIMEZONE HELPER
-// ─────────────────────────────────────────────────────────────────────────────
-function nowIST(): string {
-  const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Asia/Kolkata",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: false,
-  }).formatToParts(new Date());
-  const p: Record<string, string> = {};
-  parts.forEach((x) => {
-    p[x.type] = x.value;
-  });
-  return `${p.year}-${p.month}-${p.day}T${p.hour}:${p.minute}:${p.second}+05:30`;
-}
+// NOTE: `nowIST()` helper yahan se hata diya — timestamps ab `save_direct_sale`
+// RPC server par IST wall-clock me likhta hai (readers `fmtIST()` se yahi
+// maante hain). Client ka timezone bana raha tha, DB ka nahi.
 
 // ─────────────────────────────────────────────────────────────────────────────
 // STYLES
@@ -148,24 +131,27 @@ export default function AddDirectSalePage({ params }: { params: Promise<{ id: st
 
     setLoading(true);
     try {
-      // BUG FIX: direct_sales table has NO 'items' column — items go in direct_sale_items
-      // Step 1: Insert parent sale record (WITHOUT items)
-      const { data: sale, error: saleErr } = await supabase
-        .from("direct_sales")
-        .insert([
-          {
-            client_id: clientId,
-            sale_code: saleCode,
-            payment_mode: paymentMode,
-            remarks: remarks.trim() || null,
-            total_amount: totalAmount,
-            // mechanic_id:   null,  // nullable per schema — set if needed
-            // last_edited_by, last_edited_by_name etc. — optional
-            date_created: nowIST(),
-          },
-        ])
-        .select("id")
-        .single();
+      // ── Atomic save via RPC (migration 20260928_direct_sale_fk_atomic_save) ──
+      // Pehle parent insert → items insert, do alag round-trip bina transaction
+      // ke: parent ban jata tha aur items fail ho to adhoori sale reh jati thi
+      // (reports/stock me dikhti thi). Ab ek call me dono, ya dono nahi.
+      // BUG FIX: direct_sales table has NO 'items' column — items RPC ke andar
+      // direct_sale_items me jaate hain.
+      const { data: resultIdRaw, error: saleErr } = await supabase.rpc("save_direct_sale", {
+        p_sale_id: null, // always a new sale here
+        p_sale_code: saleCode,
+        p_client_id: clientId,
+        p_mechanic_id: null, // nullable per schema — set if needed
+        p_payment_mode: paymentMode,
+        p_remarks: remarks.trim() || null,
+        p_last_edited_by: null,
+        p_last_edited_by_name: null,
+        p_items: items.map((it) => ({
+          product_id: null, // no product linked — free-text description
+          qty: it.quantity,
+          price: it.price,
+        })),
+      });
 
       if (saleErr) {
         // Retry with new sale_code if duplicate (race condition)
@@ -178,17 +164,10 @@ export default function AddDirectSalePage({ params }: { params: Promise<{ id: st
         throw saleErr;
       }
 
-      // Step 2: Insert line items into direct_sale_items
-      const lineItems = items.map((it) => ({
-        sale_id: sale.id,
-        product_id: null, // no product linked — free-text description
-        qty: it.quantity,
-        price: it.price,
-        // product_name stored via description — if your schema has a name column add it here
-      }));
-
-      const { error: itemsErr } = await supabase.from("direct_sale_items").insert(lineItems);
-      if (itemsErr) throw itemsErr;
+      const resultId = Number(resultIdRaw);
+      if (!Number.isFinite(resultId) || resultId <= 0) {
+        throw new Error("Sale save hui par id nahi mili");
+      }
 
       toast.success("Sale save ho gayi! ✅");
       // BUG FIX: router.replace instead of push+refresh (avoids unmount warning)
