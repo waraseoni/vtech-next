@@ -40,6 +40,7 @@ vi.mock("@supabase/ssr", () => {
 vi.mock("next/headers", () => ({ cookies: async () => ({ getAll: () => [] }) }));
 
 import { enforceApiGeoGate } from "@/lib/api-auth";
+import { NextResponse } from "next/server";
 
 const FUTURE = new Date(Date.now() + 60 * 60 * 1000).toISOString();
 const PAST = new Date(Date.now() - 60 * 60 * 1000).toISOString();
@@ -105,5 +106,15 @@ describe("enforceApiGeoGate — staff + blocked, permit check", () => {
     expect(body.error).toContain("850");
     expect(body.error).toContain("Bina permit ke koi bhi change nahi ho sakta");
     expect(body.geo).toBe("outside");
+  });
+
+  // Production safety: 11 route handlers `if (session instanceof NextResponse)
+  // return session;` se gate response pass-through karte hain. Agar ye check
+  // kabhi fail ho to `session.user` undefined → 500 instead of clean 403.
+  // Vercel/Next bundling me `instanceof` dual-module-instance se fail kar sakta
+  // hai, isliye ye ek cheap regression guard hai.
+  it("403 response `instanceof NextResponse` hai (route pass-through ke liye)", async () => {
+    const res = await enforceApiGeoGate(req({}), "staff", "u1");
+    expect(res).toBeInstanceOf(NextResponse);
   });
 });
