@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
   try {
     // Staff + office ke bahar + permit nahi → block (message ke saath push
     // bhejna bhi ek change hai — warna blocked message ka notification jaayega).
-    const session = await requireStaffWriter(req);
+    const session = await requireStaffWriter(req, { geoExempt: true });
     if (session instanceof NextResponse) return session;
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

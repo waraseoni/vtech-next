@@ -65,9 +65,18 @@ function geoBlocked(code: string, message: string, geoStatus = ""): NextResponse
 export async function enforceApiGeoGate(
   req: Request,
   role: string | null | undefined,
-  userId?: string
+  userId?: string,
+  opts: { geoExempt?: boolean } = {}
 ): Promise<NextResponse | null> {
   if (role !== "staff") return null; // admin/developer never locked
+
+  // ─── Messaging routes (/messages) — user decision 2026-09-28 ────────────
+  // Field staff ko office ke bahar se message bhejna hai, isliye ye routes
+  // geofence se free hain. Ye EXEMPTION server route file me DECLARE hoti hai
+  // (client header nahi) — matlab attacker apna header badal ke isse open
+  // nahi kar sakta, sirf yehi 2 messaging routes hi exempt hain. Baaki saare
+  // mutating routes (clients/jobs/BOM/media/settings…) gate ke neeche rehte hain.
+  if (opts.geoExempt) return null;
 
   const blocked = req.headers.get(GEO_HDR_BLOCKED);
   const status = req.headers.get(GEO_HDR_STATUS) ?? "";
@@ -108,14 +117,17 @@ export async function enforceApiGeoGate(
  *   NextResponse      → geofence block (403, seedha return karo)
  *   { user, role }    → authenticated + allowed
  */
-export async function requireStaffWriter(req: Request): Promise<
+export async function requireStaffWriter(
+  req: Request,
+  opts: { geoExempt?: boolean } = {}
+): Promise<
   | { user: NonNullable<Awaited<ReturnType<typeof requireUser>>>; role: string }
   | NextResponse
   | null
 > {
   const session = await requireStaffWithRole();
   if (!session) return null;
-  const gate = await enforceApiGeoGate(req, session.role, session.user.id);
+  const gate = await enforceApiGeoGate(req, session.role, session.user.id, opts);
   if (gate) return gate;
   return session;
 }

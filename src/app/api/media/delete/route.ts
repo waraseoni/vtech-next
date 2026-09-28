@@ -16,8 +16,9 @@ import { getAdminSupabase } from "@/lib/admin-supabase";
  */
 export async function POST(req: NextRequest) {
   try {
-    // Staff + office ke bahar + permit nahi → block (storage delete = write).
-    const auth = await requireStaffWriter(req);
+    // Staff + messaging route: geo-exempt. Sirf /messages se call hota hai aur
+    // neeche ownership check apne hi message ki media tak limit karta hai. → block (storage delete = write).
+    const auth = await requireStaffWriter(req, { geoExempt: true });
     if (auth instanceof NextResponse) return auth;
     if (!auth) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

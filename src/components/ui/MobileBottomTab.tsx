@@ -9,7 +9,9 @@ export function MobileBottomTab({ onMore, onBack }: { onMore?: () => void; onBac
   const pathname = usePathname();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden">
+    // data-mobile-tabbar: /messages jaise full-height layouts isko measure kar
+    // ke apni height adjust karte hain (composer bottom bar ke peeche na chhupe).
+    <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden" data-mobile-tabbar>
       <div className="flex items-center justify-around bg-panel border-t border-app backdrop-blur-xl px-2 py-1.5 pb-safe">
         {/* Back — floating FAB ki jagah (overlap fix): Dashboard se pehle */}
         <button

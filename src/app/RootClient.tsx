@@ -1434,6 +1434,9 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
   }
 
   const isAiPage = pathname === "/ai";
+  // /messages (+ sub-routes) — AI FAB aur bottom-bar spacer dono yahan
+  // handle hote hain, isliye ek hi source of truth rakhte hain.
+  const isMessagesPage = pathname === "/messages" || pathname.startsWith("/messages/");
   const displayName = profile?.full_name ?? "User";
   const initials = displayName.slice(0, 2).toUpperCase();
 
@@ -1844,7 +1847,7 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
             Tab bar fixed hai — bina spacer ke har page ka bottom uske peeche
             dabta tha. AI (/ai) aur /messages ke fitted layouts alag handle
             hote hain (neeche), isliye yahan exclude. */}
-        {!isAiPage && !pathname.startsWith("/messages") && (
+        {!isAiPage && !isMessagesPage && (
           <div aria-hidden className="h-[72px] pb-safe md:hidden shrink-0" />
         )}
       </div>
@@ -1854,8 +1857,10 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
       {/* ── AI ASSISTANT RIGHT DRAWER ── */}
       {!isClient && !LITE_MODE && (
         <>
-          {/* Floating Button Group - Bottom Right (hidden while AI window is open) */}
-          {!aiDrawerOpen && !isAiPage && (
+          {/* Floating Button Group - Bottom Right (hidden while AI window is open)
+              /messages par bhi hidden: ye `fixed bottom-20 right-4` baithe rehta
+              hai aur chat ka SEND BUTTON uske neeche dab jata tha (z-60). */}
+          {!aiDrawerOpen && !isAiPage && !isMessagesPage && (
             <div className="fixed bottom-20 right-4 z-60 flex flex-col gap-3">
               {/* AI Assistant Button - positioned above Jobs FAB */}
               <button

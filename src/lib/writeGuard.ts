@@ -121,7 +121,7 @@ export function installApiWriteGate(): void {
     }
 
     const isApi = url.startsWith("/api/") || url.includes("://") && new URL(url, location.href).pathname.startsWith("/api/");
-    if (isApi && MUTATING_VERBS.has(method) && isWriteBlocked()) {
+    if (isApi && MUTATING_VERBS.has(method) && isWriteBlocked() && !isMessagingApiExempt(url)) {
       notifyWriteBlocked();
       logger.warn(`[geofence] blocked API write: ${method} ${url}`);
       return Promise.resolve(
@@ -152,6 +152,54 @@ export function installApiWriteGate(): void {
 export const GEO_HEADER_STATUS = "x-vtech-geo-status";
 export const GEO_HEADER_BLOCKED = "x-vtech-geo-blocked";
 export const GEO_HEADER_DISTANCE = "x-vtech-geo-distance";
+
+// ─── Route-scoped write exemption (/messages) ──────────────────────────────
+
+/**
+ * User decision 2026-09-28: `/messages` page geofence se free hai — staff
+ * office ke bahar se bhi message dekh **aur bhej** sake (field staff ko office
+ * se contact karna real workflow hai).
+ *
+ * Ye BLANKET "all writes allowed" nahi hai — sirf messaging ke tables. Agar
+ * staff /messages khula ho aur koi background effect `clients`/`jobs` me likhe,
+ * wo abhi bhi block rahega (gate apni jagah khadi hai).
+ */
+const MESSAGING_TABLES = new Set(["messages", "user_presence"]);
+
+/** Storage bucket jo message media ke liye use hota hai (`lib/media.ts`). */
+const MESSAGING_BUCKET = "media";
+
+/** Server routes jo messaging ke liye hain (client fetch gate + server gate). */
+const MESSAGING_API_PREFIXES = ["/api/messages/", "/api/media/delete"];
+
+const MESSAGING_ROUTE = "/messages";
+
+/** Current pathname `/messages` (ya uska sub-route) par hai? */
+export function isOnMessagingRoute(): boolean {
+  if (typeof window === "undefined") return false;
+  const p = window.location.pathname;
+  return p === MESSAGING_ROUTE || p.startsWith(`${MESSAGING_ROUTE}/`);
+}
+
+/**
+ * Sirf /messages par, sirf messaging tables ke liye gate bypass. Baaki har
+ * write (aur har route) apni jagah block rahta hai.
+ */
+export function isMessagingTableExempt(table: string): boolean {
+  return isOnMessagingRoute() && MESSAGING_TABLES.has(table);
+}
+
+/** `media` bucket upload/remove — sirf /messages par. */
+export function isMessagingStorageExempt(bucket: string): boolean {
+  return isOnMessagingRoute() && bucket === MESSAGING_BUCKET;
+}
+
+/** `/api/messages/*` + `/api/media/delete` — sirf /messages par. */
+export function isMessagingApiExempt(url: string): boolean {
+  if (!isOnMessagingRoute()) return false;
+  const path = url.includes("://") ? new URL(url, "http://x").pathname : url;
+  return MESSAGING_API_PREFIXES.some((p) => path.startsWith(p));
+}
 
 // ─── Message ───────────────────────────────────────────────────────────────
 

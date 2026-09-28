@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 // Toast browser-only hai — mock.
 vi.mock("@/lib/toast", () => ({
@@ -197,5 +197,75 @@ describe("supabase client proxy — writes ALLOWED when gate open", () => {
     const { data, error } = await supabase.rpc("next_job_id");
     expect(error).toBeNull();
     expect(data).toBe(42);
+  });
+});
+
+// ─── /messages exemption — end-to-end Proxy behaviour ──────────────────────
+describe("supabase client proxy — /messages par messaging writes ALLOWED (staff bahar)", () => {
+  beforeEach(() => {
+    lock(); // staff office ke bahar, permit nahi
+    window.history.pushState({}, "", "/messages");
+  });
+  afterEach(() => window.history.pushState({}, "", "/dashboard"));
+
+  it("messages insert (message bhejna) chalega", async () => {
+    const { data, error } = await supabase.from("messages").insert({ body: "hi" }).select();
+    expect(error).toBeNull();
+    expect(data).toEqual([{ id: 1, table: "messages" }]);
+  });
+
+  it("messages update (delivered_at / read_at) chalega", async () => {
+    const { error } = await supabase.from("messages").update({ read_at: "now" }).eq("id", 1);
+    expect(error).toBeNull();
+  });
+
+  it("user_presence upsert (online heartbeat) chalega", async () => {
+    const { error } = await supabase.from("user_presence").upsert({ online: true });
+    expect(error).toBeNull();
+  });
+
+  it("media bucket upload (message attachment) chalega", async () => {
+    const r = (await supabase.storage.from("media").upload("a.jpg", new Blob())) as {
+      error?: { code?: string };
+    };
+    expect(r.error?.code).toBeUndefined();
+  });
+
+  // ── SABSE IMPORTANT: exemption narrow rehni chahiye.
+  it("clients/jobs AABHI bhi blocked hain (/messages khula hone par bhi)", async () => {
+    const a = await supabase.from("clients").insert({ name: "X" });
+    const b = await supabase.from("jobs").update({ status: "x" }).eq("id", 1);
+    expect((a as { error: { code: string } }).error.code).toBe("GEO_WRITE_BLOCKED");
+    expect((b as { error: { code: string } }).error.code).toBe("GEO_WRITE_BLOCKED");
+  });
+
+  it("non-media storage bucket bhi blocked (media hi exempt hai)", async () => {
+    const r = (await supabase.storage.from("photos").upload("a.jpg", new Blob())) as {
+      error?: { code?: string };
+    };
+    expect(r.error?.code).toBe("GEO_WRITE_BLOCKED");
+  });
+
+  it("write RPC bhi blocked (messaging RPC allow-list me nahi)", async () => {
+    const { error } = await supabase.rpc("next_job_id");
+    expect(error?.code).toBe("GEO_WRITE_BLOCKED");
+  });
+
+  // `save_direct_sale` direct-sale ka POORA write hai (parent + items, ek
+  // transaction me). Ye /messages exception ke under NAHI aata — exception sirf
+  // `messages`/`user_presence` tables aur 2 API routes tak hai, RPC nahi.
+  it("save_direct_sale RPC staff ke liye bhi blocked (direct sale = business write)", async () => {
+    const { error } = await supabase.rpc("save_direct_sale", { p_items: [] });
+    expect(error?.code).toBe("GEO_WRITE_BLOCKED");
+  });
+});
+
+describe("supabase client proxy — /messages kholne se kisi aur page ka gate nahi hilta", () => {
+  it("/clients par messages table bhi blocked", async () => {
+    lock();
+    window.history.pushState({}, "", "/clients");
+    const { error } = await supabase.from("messages").insert({ body: "hi" });
+    expect(error?.code).toBe("GEO_WRITE_BLOCKED");
+    window.history.pushState({}, "", "/dashboard");
   });
 });

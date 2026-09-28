@@ -153,6 +153,55 @@ export default function MessagesPage() {
     return () => mq.removeEventListener("change", onR);
   }, []);
 
+  // ── Fitted height: mobile composer kabhi bottom tab-bar ke peeche na chhipe ──
+  // Purana `h-[calc(100vh-3.5rem-76px)]` viewport-math galat tha, kyunki:
+  //  1. `100vh` mobile browser chrome (URL bar) ignore karta hai, aur on-screen
+  //     keyboard khulte hi shrink nahi hota.
+  //  2. `ViewOnlyBanner` `<main>` se PEHLE in-flow render hota hai — yaani
+  //     office ke bahar (banner visible) hi uski ~46px height add hoti hai.
+  //     Us pehle total page bottom `100vh - 52 + bannerHeight` par jaata tha,
+  //     jabki tab-bar last ~57px ghere deta hai → composer poora chhup jata
+  //     tha. Yehi user ka original bug tha.
+  //  3. 76px hardcoded tha, jabki tab-bar ki asli height (safe-area/notch
+  //     wale device) usse alag hoti hai.
+  // Isliye ab: page ko apni ASLI visible height dete hain — (viewport ka
+  // bottom - page ka on-screen top - tab-bar ki measured height).
+  const shellRef = useRef<HTMLDivElement>(null);
+  const [shellH, setShellH] = useState(0);
+
+  useEffect(() => {
+    const measure = () => {
+      const shell = shellRef.current;
+      if (!shell) return;
+      const vv = window.visualViewport;
+      // Keyboard khulte hi visualViewport chhota hota hai — `100vh` nahi.
+      const vh = vv?.height ?? window.innerHeight;
+      // Page ka apna on-screen top (header + banner + main padding already
+      // included) — isse har ancestor ka height automatically account hota hai.
+      const top = shell.getBoundingClientRect().top - (vv?.offsetTop ?? 0);
+      // Tab-bar `display:none` ho to (>=768px) height 0 → koi cut nahi.
+      const bar = document.querySelector<HTMLElement>("[data-mobile-tabbar]");
+      const barH = bar ? bar.getBoundingClientRect().height : 0;
+      // 200px floor: mount/transition ke transient 0 se layout collapse na ho.
+      setShellH(Math.max(200, vh - top - barH));
+    };
+
+    measure();
+    const ro = new ResizeObserver(measure);
+    // Banner show/hide hone par <main> ka size badalta hai → re-measure.
+    const main = shellRef.current?.closest("main");
+    if (main) ro.observe(main);
+    const bar = document.querySelector<HTMLElement>("[data-mobile-tabbar]");
+    if (bar) ro.observe(bar);
+    window.addEventListener("resize", measure);
+    window.visualViewport?.addEventListener("resize", measure);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", measure);
+      window.visualViewport?.removeEventListener("resize", measure);
+    };
+  }, [isMobile, activeId, conversations.length]);
+
   // session + profiles + presence bootstrap
   useEffect(() => {
     let cancelled = false;
@@ -895,10 +944,16 @@ export default function MessagesPage() {
 
   // ── Responsive layout ──────────────────────────────────────────────
   if (isMobile) {
-    // mobile: list ya chat (ek time par ek) — height me bottom tab-bar
-    // (~76px) ki katoti taaki input bar ke peeche na dabe
+    // mobile: list ya chat (ek time par ek) — height upar wale measured
+    // logic se aati hai taaki composer hamesha bottom tab-bar ke upar rahe
+    // (ViewOnlyBanner visible hone par bhi, aur keyboard khulte par bhi).
+    // 0 = pehla render/ssr: flex-none se content apni height le leta hai.
     return (
-      <div className="h-[calc(100vh-3.5rem-76px)] flex">
+      <div
+        ref={shellRef}
+        className="flex"
+        style={shellH ? { height: `${shellH}px` } : undefined}
+      >
         {chatPane ? chatPane : listPane}
       </div>
     );

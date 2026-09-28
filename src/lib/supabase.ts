@@ -1,5 +1,11 @@
 import { createBrowserClient } from "@supabase/ssr";
-import { isWriteBlocked, notifyWriteBlocked, blockedBuilder } from "@/lib/writeGuard";
+import {
+  isWriteBlocked,
+  isMessagingTableExempt,
+  isMessagingStorageExempt,
+  notifyWriteBlocked,
+  blockedBuilder,
+} from "@/lib/writeGuard";
 import { logger } from "@/lib/logger";
 
 const baseClient = createBrowserClient(
@@ -89,7 +95,8 @@ export const supabase: typeof baseClient = new Proxy(baseClient, {
           get(b, m) {
             if (typeof m === "string" && BLOCKED_TABLE_METHODS.has(m)) {
               return (...args: unknown[]) => {
-                if (isWriteBlocked()) return blockWrite(`${table}.${m}`);
+                if (isWriteBlocked() && !isMessagingTableExempt(table))
+                  return blockWrite(`${table}.${m}`);
                 return (b[m] as (...a: unknown[]) => unknown)(...args);
               };
             }
@@ -120,7 +127,8 @@ export const supabase: typeof baseClient = new Proxy(baseClient, {
                 get(o, om) {
                   if (typeof om === "string" && BLOCKED_STORAGE_METHODS.has(om)) {
                     return (...args: unknown[]) => {
-                      if (isWriteBlocked()) return blockWrite(`storage:${bucket}.${om}`);
+                      if (isWriteBlocked() && !isMessagingStorageExempt(bucket))
+                        return blockWrite(`storage:${bucket}.${om}`);
                       return (o[om] as (...a: unknown[]) => unknown)(...args);
                     };
                   }

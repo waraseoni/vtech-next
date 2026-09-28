@@ -5,6 +5,7 @@
 
 import { MapPin, ShieldAlert, Timer, Settings2 } from "lucide-react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useViewOnly } from "@/lib/viewOnly";
 import { geoErrorMessage } from "@/lib/geofence";
 
@@ -37,6 +38,10 @@ export function GeoPin({
 
 export function ViewOnlyBanner({ isAdmin }: { isAdmin: boolean }) {
   const { viewOnly, status, distanceM, needsConfig, permit } = useViewOnly();
+  const pathname = usePathname();
+  // /messages geofence se free hai (messaging exception) — banner wahan
+  // "sab changes band" bolke mislead karta, to us page par exception batate hain.
+  const onMessages = pathname === "/messages" || pathname.startsWith("/messages/");
 
   // Admin ko permit badge nahi (wo kabhi lock nahi hote) — staff-only UI.
   if (!viewOnly && !needsConfig && !permit) return null;
@@ -75,11 +80,15 @@ export function ViewOnlyBanner({ isAdmin }: { isAdmin: boolean }) {
 
   if (!viewOnly) return null;
 
-  // ── Red view-only banner (fail-closed reasons samet) ──
+  // ── Red view-only banner (fail-closed reasons samet) ─────────────────
   const detail =
     status === "outside" && distanceM != null
       ? ` (office se ~${Math.round(distanceM)}m bahar)`
       : "";
+
+  const msgException = onMessages
+    ? " Messages bhejna is page par allowed hai."
+    : "";
 
   return (
     <div className="mx-3 sm:mx-5 mt-3 rounded-xl border border-red-500/50 bg-red-500/10 px-4 py-2.5 flex items-center gap-2.5">
@@ -88,7 +97,8 @@ export function ViewOnlyBanner({ isAdmin }: { isAdmin: boolean }) {
         VIEW ONLY —{" "}
         {status === "outside" ? (
           <>
-            Aap office ke bahar hain{detail}. Changes sirf office ke andar se honge.
+            Aap office ke bahar hain{detail}. Baaki changes sirf office ke
+            andar se honge.{msgException}
           </>
         ) : (
           <>
