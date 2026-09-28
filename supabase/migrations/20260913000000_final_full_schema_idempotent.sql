@@ -665,6 +665,13 @@ do $$ begin
   alter table public.activity_logs add column if not exists meta_id text;
   alter table public.activity_logs add column if not exists details text;
   alter table public.activity_logs add column if not exists date_created timestamp with time zone DEFAULT now();
+  -- Geofence per-write location tags (20260927_activity_geo_tags.sql).
+  -- Nullable + IF NOT EXISTS → purani rows NULL, koi backfill nahi. Office se
+  -- hua kaam bilkul as-is dikhta hai (DATA_MIGRATION_NOTES: naya convention
+  -- sirf naye logs me).
+  alter table public.activity_logs add column if not exists geo_lat double precision DEFAULT NULL;
+  alter table public.activity_logs add column if not exists geo_lng double precision DEFAULT NULL;
+  alter table public.activity_logs add column if not exists geo_distance_m integer DEFAULT NULL;
 exception when duplicate_column then null; end $$;
 
 do $$ begin
@@ -2555,6 +2562,11 @@ do $$ begin if not exists (select 1 from pg_constraint where conname='push_subsc
 do $$ begin if not exists (select 1 from pg_constraint where conname='user_presence_user_id_fkey' and conrelid='public.user_presence'::regclass) then alter table only public.user_presence add constraint user_presence_user_id_fkey foreign key (user_id) references public.profiles(id) on delete cascade; end if; end $$;
 do $$ begin if not exists (select 1 from pg_constraint where conname='messages_sender_id_fkey' and conrelid='public.messages'::regclass) then alter table only public.messages add constraint messages_sender_id_fkey foreign key (sender_id) references public.profiles(id) on delete cascade; end if; end $$;
 do $$ begin if not exists (select 1 from pg_constraint where conname='messages_recipient_id_fkey' and conrelid='public.messages'::regclass) then alter table only public.messages add constraint messages_recipient_id_fkey foreign key (recipient_id) references public.profiles(id) on delete cascade; end if; end $$;
+-- direct_sale_items -> direct_sales: PHP-era table me FK reh gaya tha. Bina FK
+-- PostgREST embedded resource (`items:direct_sale_items(...)`) resolve nahi
+-- karta (PGRST200) aur orphan rows ban sakte the. Migration:
+-- 20260928_direct_sale_fk_atomic_save.sql
+do $$ begin if not exists (select 1 from pg_constraint where conname='direct_sale_items_sale_fk' and conrelid='public.direct_sale_items'::regclass) then alter table only public.direct_sale_items add constraint direct_sale_items_sale_fk foreign key (sale_id) references public.direct_sales(id) on delete cascade; end if; end $$;
 
 
 -- ═══════════════════════════════════════════════════════════════════════════
@@ -2572,6 +2584,10 @@ CREATE INDEX IF NOT EXISTS idx_wpth_template_key ON public.wp_template_history U
 CREATE INDEX IF NOT EXISTS product_list_place_zone_idx ON public.product_list USING btree (place_zone);
 CREATE INDEX IF NOT EXISTS inventory_list_place_zone_idx ON public.inventory_list USING btree (place_zone);
 CREATE INDEX IF NOT EXISTS transaction_list_location_idx ON public.transaction_list USING btree (location_id);
+-- direct_sale_items: FK column + stock-calcs grouping column. Postgres FK par
+-- auto-index nahi banata; 10+ call sites `sale_id` par filter lagte hain.
+CREATE INDEX IF NOT EXISTS direct_sale_items_sale_id_idx ON public.direct_sale_items USING btree (sale_id);
+CREATE INDEX IF NOT EXISTS direct_sale_items_product_id_idx ON public.direct_sale_items USING btree (product_id);
 CREATE UNIQUE INDEX IF NOT EXISTS login_throttle_email_uniq ON public.login_throttle USING btree (lower(email));
 CREATE UNIQUE INDEX IF NOT EXISTS profiles_mechanic_id_unique ON public.profiles USING btree (mechanic_id)
   WHERE (mechanic_id IS NOT NULL);
@@ -2894,6 +2910,12 @@ DROP POLICY IF EXISTS media_staff_insert ON storage.objects;
 CREATE POLICY media_staff_insert ON storage.objects FOR INSERT TO authenticated WITH CHECK (bucket_id = 'media' AND public.is_frontend_staff());
 DROP POLICY IF EXISTS media_staff_delete ON storage.objects;
 CREATE POLICY media_staff_delete ON storage.objects FOR DELETE TO authenticated USING (bucket_id = 'media' AND public.is_frontend_staff());
+
+-- ── Supplier visiting-card photo policies (20260917_supplier_visiting_card.sql) ──
+DROP POLICY IF EXISTS supplier_photos_staff_insert ON storage.objects;
+CREATE POLICY supplier_photos_staff_insert ON storage.objects FOR INSERT TO authenticated WITH CHECK (bucket_id = 'supplier-photos' AND public.is_frontend_staff());
+DROP POLICY IF EXISTS supplier_photos_staff_delete ON storage.objects;
+CREATE POLICY supplier_photos_staff_delete ON storage.objects FOR DELETE TO authenticated USING (bucket_id = 'supplier-photos' AND public.is_frontend_staff());
 
 -- ── Realtime (20260901_messenger_presence.sql) — guarded, idempotent ──
 do $$
@@ -3950,7 +3972,194 @@ grant all on table public.bom_templates to anon;
 grant all on table public.bom_templates to authenticated;
 grant all on table public.bom_templates to service_role;
 grant usage on sequence public.bom_templates_id_seq to anon, authenticated, service_role;
+
+-- ── staff_geofence_permit (20260926_staff_geofence_permit.sql) ──
+-- Staff "Outside-Work Permit" — dynamic per-user data, isliye system_info
+-- key-value me nahi, alag table + expiry cleanup.
+-- RLS: sirf SELECT policy (is_frontend_staff()). Koi authenticated INSERT/DELETE
+-- policy NAHI — permit sirf service-role API route (requireAdmin) likhta hai,
+-- staff khud ko permit nahi de sakta. Isi liye ye block pehle se missing tha:
+-- bina is table ke geofence ka permit feature poora kaam hi nahi karta
+-- (api-auth.ts `staff_geofence_permit` query 403/empty deti hai).
+create table if not exists public.staff_geofence_permit (
+  id          bigint generated always as identity,
+  user_id     uuid not null references auth.users(id) on delete cascade,
+  mechanic_id int null,
+  reason      text not null default '',
+  granted_by  uuid references auth.users(id),
+  granted_at  timestamptz not null default now(),
+  expires_at  timestamptz not null,
+  created_at  timestamptz not null default now()
+);
+
+do $$ begin
+  if not exists (
+    select 1 from pg_constraint
+    where conname = 'staff_geofence_permit_pkey'
+      and conrelid = 'public.staff_geofence_permit'::regclass
+  ) then
+    alter table only public.staff_geofence_permit
+      add constraint staff_geofence_permit_pkey primary key (id);
+  end if;
+end $$;
+
+create index if not exists staff_geofence_permit_user_idx
+  on public.staff_geofence_permit(user_id);
+create index if not exists staff_geofence_permit_expiry_idx
+  on public.staff_geofence_permit(expires_at);
+
+alter table public.staff_geofence_permit enable row level security;
+
+drop policy if exists rlslock_geofence_permit_read on public.staff_geofence_permit;
+create policy rlslock_geofence_permit_read on public.staff_geofence_permit
+  for select to authenticated
+  using (public.is_frontend_staff());
+
+grant all on table public.staff_geofence_permit to anon;
+grant all on table public.staff_geofence_permit to authenticated;
+grant all on table public.staff_geofence_permit to service_role;
+grant usage on sequence public.staff_geofence_permit_id_seq to anon, authenticated, service_role;
+
+-- ── Direct Sale: atomic save RPC ──
+-- Client pehle `update direct_sales` -> `delete direct_sale_items` -> `insert`
+-- alag round-trip me karta tha (koi transaction nahi) -> delete pass + insert
+-- fail = line items permanently gayab. Ye ek call me atomic kar deta hai aur
+-- total server par compute karta hai (client ka total trust nahi).
+-- `security invoker` — RLS apni jagah lagta hai (dono tables ki policy
+-- `is_frontend_staff()` hai, to definer se koi zaroorat nahi).
+create or replace function public.save_direct_sale(
+    p_sale_id            integer default null,
+    p_sale_code          text    default null,
+    p_client_id          integer default null,
+    p_mechanic_id        integer default null,
+    p_payment_mode       text    default null,
+    p_remarks            text    default null,
+    p_last_edited_by     integer default null,
+    p_last_edited_by_name text   default null,
+    p_items              jsonb   default null
+) returns integer
+language plpgsql
+security invoker
+set search_path to public
+as $$
+declare
+  v_id    integer;
+  v_item  jsonb;
+  v_total numeric(15,2) := 0;
+  -- Columns `timestamp WITHOUT time zone` hain; readers `fmtIST()` use karte
+  -- hain jo stored value ko IST WALL-CLOCK maankar round-trip karta hai. Isliye
+  -- `now()` ko plain IST wall-clock me cast karo — `now() at time zone 'utc'`
+  -- galat hota (5:30 peeche dikhta). Ye SaleForm ke UTC bug ko bhi theek karta
+  -- hai aur add-direct-sale ke `nowIST()` convention se match karta hai.
+  v_now   timestamp := (now() at time zone 'Asia/Kolkata');
+begin
+  if p_items is null or jsonb_array_length(p_items) = 0 then
+    raise exception 'Sale me kam se kam ek item chahiye.'
+      using errcode = '22023';
+  end if;
+
+  if p_sale_id is null then
+    if p_sale_code is null or btrim(p_sale_code) = '' then
+      raise exception 'Naye sale ke liye sale_code zaroori hai.'
+        using errcode = '22023';
+    end if;
+
+    insert into public.direct_sales (
+      sale_code, client_id, mechanic_id, total_amount, payment_mode,
+      remarks, last_edited_by, last_edited_by_name, last_edited_date,
+      date_created
+    ) values (
+      btrim(p_sale_code), p_client_id, p_mechanic_id, 0, coalesce(p_payment_mode, 'Cash'),
+      nullif(btrim(coalesce(p_remarks, '')), ''), p_last_edited_by,
+      p_last_edited_by_name, v_now, v_now
+    )
+    returning id into v_id;
+  else
+    update public.direct_sales set
+      client_id           = p_client_id,
+      mechanic_id         = p_mechanic_id,
+      payment_mode        = coalesce(p_payment_mode, 'Cash'),
+      remarks             = nullif(btrim(coalesce(p_remarks, '')), ''),
+      last_edited_by      = p_last_edited_by,
+      last_edited_by_name = p_last_edited_by_name,
+      last_edited_date    = v_now
+      -- sale_code / date_created deliberately NAHI bhejte — DB values intact
+    where id = p_sale_id
+    returning id into v_id;
+
+    if v_id is null then
+      raise exception 'Sale #% nahi mila — edit nahi ho sakta.', p_sale_id
+        using errcode = 'P0002';
+    end if;
+
+    delete from public.direct_sale_items where sale_id = p_sale_id;
+  end if;
+
+  for v_item in select * from jsonb_array_elements(p_items) loop
+    insert into public.direct_sale_items (sale_id, product_id, qty, price)
+    values (
+      v_id,
+      nullif(btrim(coalesce(v_item->>'product_id', '')), '')::integer,
+      (v_item->>'qty')::integer,
+      coalesce((v_item->>'price')::numeric, 0)
+    );
+  end loop;
+
+  select coalesce(sum(i.qty * i.price), 0) into v_total
+  from public.direct_sale_items i
+  where i.sale_id = v_id;
+
+  update public.direct_sales set total_amount = v_total where id = v_id;
+
+  return v_id;
+end;
+$$;
+
+grant execute on function public.save_direct_sale(
+  integer, text, integer, integer, text, text, integer, text, jsonb
+) to authenticated;
 -- ═══ end bom_templates fold-in block ═══
+
+-- ═══════════════════════════════════════════════════════════════════════════
+-- I6 LOCATION CLEANUP — PHASE 2 (20260925_i6_phase2_place_drop.sql)
+-- Legacy structured place columns ka DROP.
+--
+-- Ye block jaan-boojh kar file ke ANT me rakha hai (create-then-drop order):
+--   * Upar wale sections (20260816 inventory_locations + 20260817
+--     product_level_location + 20260920 inventory_location_cleanup provenance)
+--     in columns ko CREATE karte hain, trigger/function reference karte hain
+--     aur backfill `place_zone -> product_list` bharte hain. Wo backfill ke
+--     liye chahiye, isliye upar ke sections hata nahi sakte.
+--   * 2026-09-25 ke baad app ne `place_*` reads/writes hata diye (commit
+--     801fe7d) aur live DB par ye 8 columns DROP ho chuke hain. Ye block unhe
+--     wapas introduce nahi karta — file ko live schema ke saath align karta hai.
+--   * Saare statements IF EXISTS hain → re-run safe; jis DB par columns
+--     maujood hi nahi (live jaisa) wahan koi error nahi, aur jahan maujood hain
+--     wahan clean remove ho jaate hain.
+--
+-- KEPT (deliberate, 20260925 me documented deviation):
+--   * inventory_list.place (free-text display path) — 10+ app read-points +
+--     get_inventory_stock RPC is par hain. Trigger ise structured se sync
+--     karta tha, isliye drop ke baad display IDENTICAL rehta hai.
+--   * get_inventory_stock RPC unchanged (latest inventory_list.place leta hai).
+-- ═══════════════════════════════════════════════════════════════════════════
+
+-- Trigger pehle — ye NEW.place_zone/... reference karta hai; columns ke saath
+-- rehta to har INSERT/UPDATE on inventory_list fail hota.
+drop trigger if exists trig_inventory_place_sync on public.inventory_list;
+drop function if exists public.inventory_sync_place_path();
+
+alter table public.inventory_list
+  drop column if exists place_zone,
+  drop column if exists place_rack,
+  drop column if exists place_bin,
+  drop column if exists place_box;
+
+alter table public.product_list
+  drop column if exists place_zone,
+  drop column if exists place_rack,
+  drop column if exists place_bin,
+  drop column if exists place_box;
 
 -- ═══════════════════════════════════════════════════════════════════════════
 -- PostgREST ke liye schema reload (Supabase SQL Editor me dabane ke baad
