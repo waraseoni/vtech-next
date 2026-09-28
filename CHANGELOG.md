@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.49.1](https://github.com/waraseoni/vtech-next/compare/v1.49.0...v1.49.1) (2026-09-28)
+
+### Bug Fixes
+
+* **geofence:** one toast per blocked action instead of 6-8 ([d8451c0](https://github.com/waraseoni/vtech-next/commit/d8451c039f4c84b2f99f22279b9742e07cbb088c)), closes [#4](https://github.com/waraseoni/vtech-next/issues/4)
+
 ## [1.49.0](https://github.com/waraseoni/vtech-next/compare/v1.48.0...v1.49.0) (2026-09-28)
 
 ### Features
