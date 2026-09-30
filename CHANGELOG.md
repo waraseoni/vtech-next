@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.49.2](https://github.com/waraseoni/vtech-next/compare/v1.49.1...v1.49.2) (2026-09-30)
+
+### Bug Fixes
+
+* **auth:** fail-closed when profiles row is missing ([10c5c18](https://github.com/waraseoni/vtech-next/commit/10c5c18961887bb2ff7d8d69adf52ebc28bf2f4c))
+
 ## [1.49.1](https://github.com/waraseoni/vtech-next/compare/v1.49.0...v1.49.1) (2026-09-28)
 
 ### Bug Fixes
