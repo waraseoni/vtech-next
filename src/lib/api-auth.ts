@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { logger } from "@/lib/logger";
 
 export async function getServerSupabase() {
   const cookieStore = await cookies();
@@ -155,22 +156,54 @@ export async function requireStaffWithRole(): Promise<{
   user: NonNullable<Awaited<ReturnType<typeof requireUser>>>;
   role: string;
 } | null> {
+  const r = await requireStaffWithReason();
+  return r.status === "ok" ? { user: r.user, role: r.role } : null;
+}
+
+export type StaffAuthStatus = "no-session" | "no-profile" | "forbidden";
+
+/**
+ * `requireStaffWithRole()` ka reason-aware twin — routes jo precise error
+ * dena chahein (e.g. ledger: "provision missing" vs "login karo").
+ *
+ * FAIL-CLOSED: `profiles` me row missing hone par pehle role `"staff"`
+ * DEFAULT ho jata tha. API to 200 de deta tha, par RLS
+ * (`is_frontend_staff()`, strict — missing row par false) har query ko `[]`
+ * kar deta tha, to report sab kuch 0 dikhata tha, bina kisi error ke. Ye
+ * ek fail-open security bug hai (unprovisioned user ko staff maana jaata
+ * tha, chahe RLS phir bhi rok de). Aisa user ab seedha deny hota hai +
+ * server log me uid ke saath warn, taaki repair (profiles row insert) ho
+ * sake. Koi working flow is default par depend nahi karta — RLS aise users
+ * ko pehle se hi sab kuch deny karta tha, to deny sirf silent-zeros ko
+ * loud-403 me badalta hai.
+ */
+export async function requireStaffWithReason(): Promise<
+  | { status: "ok"; user: NonNullable<Awaited<ReturnType<typeof requireUser>>>; role: string }
+  | { status: StaffAuthStatus }
+> {
   const supabase = await getServerSupabase();
   try {
     const {
       data: { user },
     } = await supabase.auth.getUser();
-    if (!user) return null;
+    if (!user) return { status: "no-session" };
     const { data: profile } = await supabase
       .from("profiles")
       .select("role")
       .eq("id", user.id)
       .maybeSingle();
-    const role = profile?.role ?? "staff";
-    if (role !== "admin" && role !== "staff" && role !== "developer") return null;
-    return { user, role };
+    if (!profile?.role) {
+      logger.warn(
+        `requireStaff: denying user ${user.id} — public.profiles me row missing hai (fail-closed; silent-zeros se bachne ke liye). Repair: us id ke liye profiles me role wali row insert karo.`
+      );
+      return { status: "no-profile" };
+    }
+    const role = profile.role;
+    if (role !== "admin" && role !== "staff" && role !== "developer")
+      return { status: "forbidden" };
+    return { status: "ok", user, role };
   } catch {
-    return null;
+    return { status: "no-session" };
   }
 }
 

@@ -65,6 +65,33 @@ Ek hi table `activity_logs`, par dono systems ne apne-apne rules se likha:
 
 Naya antar milte hi is table me add karo.
 
+## Auth Gotcha — profiles row missing = fail-open + report silently 0
+
+- Auth auto-trigger (`on_auth_user_created` → `handle_new_user`) **20260809 se dropped
+  hai** (client onboarding toot raha tha) — `profiles` rows ab sirf explicit flows se
+  banti hain (`/api/admin/create-user`, `/api/client/onboard`). In dono ke bahar bana
+  user (dashboard/SQL se) = **koi profiles row nahi**.
+- Aise user par do layer disagree karti thi: API (`requireStaffWithRole`) role `"staff"`
+  **default** karke 200 deta tha, par RLS (`is_frontend_staff()`, strict — missing row
+  par false) har query ko `[]` kar deta tha → report me **saare totals 0, bina error ke**.
+  Ye fail-open security bug hai (unprovisioned user ko staff maana jaana), RLS ke
+  checklist par saved hi tha.
+- Fix: API layer fail-closed hai (`requireStaffWithReason()` → `no-profile` → 403 with
+  repair hint). Koi working flow default par depend nahi karta tha (RLS aise users ko
+  pehle se sab deny karta tha).
+- Repair: us `auth.users.id` ke liye `public.profiles` me `(id, role)` row insert karo.
+
+## Report Gotcha — ledger/cash reports current month default karte hain
+
+- `reports/ledger` (aur cash-flow family) kholte hi **current month** ka range default
+  hota hai. Mahine ke pehle din (jaise 1 Oct) poora P&L + Cash Flow zero dikhta hai —
+  kyunki us mahine me abhi koi entry hi nahi hoti. Ye bug NAHI hai.
+- Balance-sheet items (stock value, staff liability, loan outstanding) all-time hain,
+  isliye date range se affected nahi hote — inhe 0 dekhna matlab range galat hai.
+- Data nahi dikh raha to pehle header ka month label + `◀ / ▶` se pichhla mahina check
+  karo, phir RLS/auth socho. Month gate hone par report khud `Is period mein koi
+  transaction nahi mila.` dikhati hai.
+
 ## Aage Ke Liye Checklist (har DB-related change par)
 
 1. Kya ye reader purane logs/data ko bhi padh payega?
