@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.50.0](https://github.com/waraseoni/vtech-next/compare/v1.49.2...v1.50.0) (2026-10-02)
+
+### Features
+
+* **attendance:** compact report + duty schedule history + working-hours engine ([342bde5](https://github.com/waraseoni/vtech-next/commit/342bde5807dc4fdc8601819ad8d9b49cd1c88e75))
+
 ## [1.49.2](https://github.com/waraseoni/vtech-next/compare/v1.49.1...v1.49.2) (2026-09-30)
 
 ### Bug Fixes
