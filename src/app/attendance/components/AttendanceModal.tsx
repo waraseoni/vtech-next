@@ -25,7 +25,8 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import { deriveStatusFromTimes, hoursBetweenIST } from "@/lib/dateUtils";
-  interface Props {
+import { CLEAR_DERIVED_COLS, derivedCols, loadDuty } from "@/lib/attendance-derive";
+interface Props {
   mechanicId: number;
   mechanicName: string;
   mechanicImage?: string | null;
@@ -145,10 +146,17 @@ export default function AttendanceModal({
     const derived = deriveStatusFromTimes(timeIn || null, timeOut || null);
     const status: 0 | 1 | 2 | 3 =
       derived ?? (currentStatus !== 0 ? (currentStatus as 1 | 2 | 3) : 0);
+    // P3: admin save par hi derived cols persist (worked/ot/duty/auto).
+    const duty = await loadDuty(mechanicId, date);
+    const cols = derivedCols(
+      { curr_date: date, status, time_in: timeIn || null, time_out: timeOut || null },
+      duty
+    );
     const ok = await upsert({
       time_in: timeIn || null,
       time_out: timeOut || null,
       status,
+      ...cols,
     });
     if (ok) {
       setCurrentStatus(status);
@@ -160,7 +168,12 @@ export default function AttendanceModal({
     const status: 0 | 1 | 2 | 3 = currentStatus !== 0 ? (currentStatus as 1 | 2 | 3) : 0;
     setTimeIn("");
     setTimeOut("");
-    const ok = await upsert({ time_in: null, time_out: null, status });
+    const ok = await upsert({
+      time_in: null,
+      time_out: null,
+      status,
+      ...CLEAR_DERIVED_COLS, // times ke saath cols bhi reset
+    });
     if (ok) {
       setCurrentStatus(status);
       onUpdate(status);
@@ -216,7 +229,7 @@ export default function AttendanceModal({
                   width={32}
                   height={32}
                   className="w-8 h-8 rounded-full object-cover flex-shrink-0 border border-white/10"
-                  
+
                   onError={(e) => {
                     (e.currentTarget as HTMLImageElement).style.display = "none";
                   }}
@@ -230,7 +243,9 @@ export default function AttendanceModal({
                 <p className="text-white font-black text-xs truncate">{mechanicName}</p>
               </div>
             </div>
-            <span className={`flex-shrink-0 text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full ${badge.cls}`}>
+            <span
+              className={`flex-shrink-0 text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full ${badge.cls}`}
+            >
               {badge.label}
             </span>
           </div>
@@ -301,7 +316,9 @@ export default function AttendanceModal({
               {/* Divider */}
               <div className="flex items-center gap-2">
                 <div className="flex-1 h-px bg-panel-2" />
-                <span className="text-[9px] text-muted-2 font-bold uppercase tracking-wider">or mark directly</span>
+                <span className="text-[9px] text-muted-2 font-bold uppercase tracking-wider">
+                  or mark directly
+                </span>
                 <div className="flex-1 h-px bg-panel-2" />
               </div>
 

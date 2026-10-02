@@ -42,7 +42,9 @@ import {
   deriveStatusFromTimes,
 } from "@/lib/dateUtils";
 import { verifyAttendanceLocation, geoErrorMessage } from "@/lib/geofence";
-  import { format } from "date-fns/format";
+import { derivedCols, loadDuty, loadDutyMap } from "@/lib/attendance-derive";
+import { DEFAULT_DUTY, fmtDuty, type Duty } from "@/lib/duty";
+import { format } from "date-fns/format";
 
 interface Mechanic {
   id: number;
@@ -75,7 +77,7 @@ const MechAvatar = ({
       width={32}
       height={32}
       className={`${cls} rounded-full object-cover flex-shrink-0 border border-white/10 ring-1 ring-blue-500/10 cursor-zoom-in`}
-      
+
       onError={(e) => {
         (e.currentTarget as HTMLImageElement).style.display = "none";
       }}
@@ -192,6 +194,8 @@ export default function DailyAttendance({
   const [mechanics, setMechanics] = useState<Mechanic[]>([]);
   const [attendance, setAttendance] = useState<AttendanceStatus>({});
   const [times, setTimes] = useState<Record<number, DayTimes>>({});
+  // Staff ke naam ke neeche dikhne wali us din ki applicable duty.
+  const [dutyMap, setDutyMap] = useState<Record<number, Duty>>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
@@ -284,6 +288,24 @@ export default function DailyAttendance({
     fetchSelf();
   }, [fetchSelf]);
 
+  // Duty fetch — naam ke neeche "Duty 10:00 – 20:00" dikhane ke liye.
+  // Ek round-trip (N+1 nahi); fail ho to duty line gayab, page normal chalta.
+  useEffect(() => {
+    if (!mechanics.length) return;
+    let dead = false;
+    loadDutyMap(
+      mechanics.map((m) => m.id),
+      selectedDate
+    )
+      .then((map) => {
+        if (!dead) setDutyMap(Object.fromEntries(map));
+      })
+      .catch(() => undefined);
+    return () => {
+      dead = true;
+    };
+  }, [mechanics, selectedDate]);
+
   const handleStatusChange = (mId: number, status: 1 | 2 | 3) =>
     setAttendance((prev) => ({ ...prev, [mId]: status }));
 
@@ -294,8 +316,8 @@ export default function DailyAttendance({
         ...prev,
         // coords preserve — warna time edit par map pin gayab ho jata
         [mId]: {
-          timeIn: field === "timeIn" ? value : p?.timeIn ?? "",
-          timeOut: field === "timeOut" ? value : p?.timeOut ?? "",
+          timeIn: field === "timeIn" ? value : (p?.timeIn ?? ""),
+          timeOut: field === "timeOut" ? value : (p?.timeOut ?? ""),
           latIn: p?.latIn ?? null,
           lngIn: p?.lngIn ?? null,
           latOut: p?.latOut ?? null,
@@ -387,12 +409,24 @@ export default function DailyAttendance({
         setSelfMsg({ type: "ok", text: `Checked in at ${fmtTimeIST(now)}. Have a nice day!` });
       } else {
         const derived = deriveStatusFromTimes(existing?.time_in ?? null, now) ?? 1;
+        // P3: real checkout par hi derived cols persist (duty + engine se).
+        const duty = await loadDuty(mechanicId, today);
+        const cols = derivedCols(
+          {
+            curr_date: today,
+            status: derived,
+            time_in: existing?.time_in ?? null,
+            time_out: now,
+          },
+          duty
+        );
         const { error } = await supabase.from("attendance_list").upsert(
           {
             mechanic_id: mechanicId,
             curr_date: today,
             time_out: now,
             status: derived,
+            ...cols,
             ...(coords ? { lat_out: coords.lat, lng_out: coords.lng } : {}),
           },
           { onConflict: "mechanic_id,curr_date" }
@@ -409,7 +443,8 @@ export default function DailyAttendance({
     } catch (err) {
       setSelfMsg({
         type: "err",
-        text: (err instanceof Error ? err.message : String(err)) || "Error performing check-in/out.",
+        text:
+          (err instanceof Error ? err.message : String(err)) || "Error performing check-in/out.",
       });
     } finally {
       setSelfBusy(null);
@@ -428,6 +463,14 @@ export default function DailyAttendance({
 
     setSaving(true);
     try {
+      // P3: derived cols ke liye duty history — admin save par ek round-trip (N+1 nahi).
+      const dutyMap =
+        userRole === "admin"
+          ? await loadDutyMap(
+              mechanics.map((m) => m.id),
+              selectedDate
+            )
+          : new Map<number, Duty>();
       await Promise.all(
         mechanics.map(async (mech) => {
           const s = attendance[mech.id] ?? 2;
@@ -450,6 +493,14 @@ export default function DailyAttendance({
           if (userRole === "admin") {
             payload.time_in = timeIn;
             payload.time_out = timeOut;
+            // P3: worked/ot/duty/auto cols — times ke saath hi persist.
+            Object.assign(
+              payload,
+              derivedCols(
+                { curr_date: selectedDate, status, time_in: timeIn, time_out: timeOut },
+                dutyMap.get(mech.id) ?? DEFAULT_DUTY
+              )
+            );
           }
 
           const { data: existing, error: checkErr } = await supabase
@@ -506,7 +557,6 @@ export default function DailyAttendance({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-3.5">
-
       {/* ── Self Check-In / Check-Out Hero Card (Staff only when self-data exists) ── */}
       {selfName && (
         <div className="bg-gradient-to-r from-blue-50 via-indigo-50 to-blue-50 dark:from-blue-950/70 dark:via-indigo-950/60 dark:to-blue-950/70 border border-blue-200 dark:border-blue-500/25 rounded-2xl overflow-hidden shadow-lg shadow-blue-100 dark:shadow-blue-900/20">
@@ -522,9 +572,18 @@ export default function DailyAttendance({
               <div className="min-w-0">
                 <div className="flex items-center gap-1.5 mb-0.5">
                   <Fingerprint size={12} className="text-blue-400/70 flex-shrink-0" />
-                  <span className="text-app dark:text-white font-black text-sm truncate">{selfName}</span>
+                  <span className="text-app dark:text-white font-black text-sm truncate">
+                    {selfName}
+                  </span>
                 </div>
-                <p className="text-blue-600/70 dark:text-blue-200/60 text-[11px] mb-1.5">{displayDate}</p>
+                <p className="text-blue-600/70 dark:text-blue-200/60 text-[11px] mb-1.5">
+                  {displayDate}
+                  {mechanicId && dutyMap[mechanicId] && (
+                    <span className="ml-2 font-bold text-indigo-600 dark:text-indigo-300">
+                      Duty {fmtDuty(dutyMap[mechanicId])}
+                    </span>
+                  )}
+                </p>
                 <span
                   className={`inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full ${selfBadge.cls}`}
                 >
@@ -545,7 +604,10 @@ export default function DailyAttendance({
                   {fmtTimeIST(selfStatus.time_in)}
                 </span>
               </div>
-              <ArrowRight size={13} className="hidden lg:block text-muted dark:text-white/30 mx-1 flex-shrink-0" />
+              <ArrowRight
+                size={13}
+                className="hidden lg:block text-muted dark:text-white/30 mx-1 flex-shrink-0"
+              />
               <div className="bg-white/70 dark:bg-white/[0.06] border border-blue-100 dark:border-white/10 rounded-xl px-3 py-2 text-center min-w-[80px]">
                 <span className="block text-[8px] uppercase tracking-wider text-blue-600/70 dark:text-blue-200/60 font-bold mb-0.5">
                   <LogOut size={8} className="inline mr-0.5" />
@@ -621,8 +683,8 @@ export default function DailyAttendance({
                 selfBusy
                   ? "bg-blue-500/10 border-blue-500/20 text-blue-600 dark:text-blue-300"
                   : selfMsg?.type === "ok"
-                  ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-300"
-                  : "bg-red-500/10 border-red-500/20 text-red-600 dark:text-red-300"
+                    ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-300"
+                    : "bg-red-500/10 border-red-500/20 text-red-600 dark:text-red-300"
               }`}
             >
               {selfBusy ? (
@@ -653,7 +715,9 @@ export default function DailyAttendance({
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-2.5">
             <div className="bg-panel border border-app rounded-xl p-2.5 sm:p-3">
               <div className="flex items-center justify-between mb-0.5">
-                <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-muted">Total Staff</span>
+                <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-muted">
+                  Total Staff
+                </span>
                 <Users size={13} className="text-blue-400" />
               </div>
               <p className="text-lg font-black text-white">{totalStaff}</p>
@@ -661,7 +725,9 @@ export default function DailyAttendance({
             </div>
             <div className="bg-panel border border-emerald-500/20 rounded-xl p-2.5 sm:p-3">
               <div className="flex items-center justify-between mb-0.5">
-                <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-emerald-400/80">Present</span>
+                <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-emerald-400/80">
+                  Present
+                </span>
                 <Check size={13} className="text-emerald-400" />
               </div>
               <p className="text-lg font-black text-emerald-400">{presentCount}</p>
@@ -671,7 +737,9 @@ export default function DailyAttendance({
             </div>
             <div className="bg-panel border border-amber-500/20 rounded-xl p-2.5 sm:p-3">
               <div className="flex items-center justify-between mb-0.5">
-                <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-amber-400/80">Half Day</span>
+                <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-amber-400/80">
+                  Half Day
+                </span>
                 <Clock size={13} className="text-amber-400" />
               </div>
               <p className="text-lg font-black text-amber-400">{halfdayCount}</p>
@@ -679,7 +747,9 @@ export default function DailyAttendance({
             </div>
             <div className="bg-panel border border-red-500/20 rounded-xl p-2.5 sm:p-3">
               <div className="flex items-center justify-between mb-0.5">
-                <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-red-400/80">Absent</span>
+                <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-red-400/80">
+                  Absent
+                </span>
                 <X size={13} className="text-red-400" />
               </div>
               <p className="text-lg font-black text-red-400">{absentCount}</p>
@@ -747,11 +817,7 @@ export default function DailyAttendance({
                 disabled={saving}
                 className="inline-flex items-center gap-1.5 px-4 py-1.5 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-sm shadow-blue-600/25 active:scale-95"
               >
-                {saving ? (
-                  <Loader2 size={13} className="animate-spin" />
-                ) : (
-                  <Save size={13} />
-                )}
+                {saving ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />}
                 {saving ? "Saving..." : "Save Attendance"}
               </button>
             </div>
@@ -831,17 +897,27 @@ export default function DailyAttendance({
                     const tOut = t?.timeOut ?? "";
                     const badge = STATUS_BADGE[st] ?? STATUS_BADGE[0];
                     return (
-                      <tr
-                        key={mech.id}
-                        className="hover:bg-blue-500/[0.02] transition-colors"
-                      >
-                        <td className="py-2 px-2 text-center text-[10px] text-muted font-bold">{idx + 1}</td>
+                      <tr key={mech.id} className="hover:bg-blue-500/[0.02] transition-colors">
+                        <td className="py-2 px-2 text-center text-[10px] text-muted font-bold">
+                          {idx + 1}
+                        </td>
                         <td className="py-2 px-3 overflow-hidden">
                           <div className="flex items-center gap-2 min-w-0">
-                            <MechAvatar image={mech.image} name={mech.name} cls="w-7 h-7 text-[10px]" />
+                            <MechAvatar
+                              image={mech.image}
+                              name={mech.name}
+                              cls="w-7 h-7 text-[10px]"
+                            />
                             <div className="min-w-0 truncate">
                               <p className="text-white font-bold text-xs truncate">{mech.name}</p>
-                              <p className="text-[10px] text-muted font-medium">{mech.designation}</p>
+                              <p className="text-[10px] text-muted font-medium">
+                                {mech.designation}
+                              </p>
+                              {dutyMap[mech.id] && (
+                                <p className="text-[10px] font-bold text-indigo-300 truncate">
+                                  Duty {fmtDuty(dutyMap[mech.id])}
+                                </p>
+                              )}
                             </div>
                           </div>
                         </td>
@@ -859,8 +935,12 @@ export default function DailyAttendance({
                                       : `bg-transparent text-muted border-app ${btn.hoverClass}`
                                   }`}
                                 >
-                                  {btn.short === "P" && <Check size={9} className="inline mr-0.5" />}
-                                  {btn.short === "H" && <Clock size={9} className="inline mr-0.5" />}
+                                  {btn.short === "P" && (
+                                    <Check size={9} className="inline mr-0.5" />
+                                  )}
+                                  {btn.short === "H" && (
+                                    <Clock size={9} className="inline mr-0.5" />
+                                  )}
                                   {btn.short === "A" && <X size={9} className="inline mr-0.5" />}
                                   {btn.label}
                                 </button>
@@ -881,7 +961,9 @@ export default function DailyAttendance({
                               <input
                                 type="time"
                                 value={tIn}
-                                onChange={(e) => handleTimeChange(mech.id, "timeIn", e.target.value)}
+                                onChange={(e) =>
+                                  handleTimeChange(mech.id, "timeIn", e.target.value)
+                                }
                                 className={timeInputCls}
                               />
                               {t?.latIn != null && t?.lngIn != null && (
@@ -903,7 +985,9 @@ export default function DailyAttendance({
                               <input
                                 type="time"
                                 value={tOut}
-                                onChange={(e) => handleTimeChange(mech.id, "timeOut", e.target.value)}
+                                onChange={(e) =>
+                                  handleTimeChange(mech.id, "timeOut", e.target.value)
+                                }
                                 className={timeInputCls}
                               />
                               {t?.latOut != null && t?.lngOut != null && (
@@ -952,6 +1036,11 @@ export default function DailyAttendance({
                       <div className="min-w-0">
                         <p className="text-white font-black text-sm truncate">{mech.name}</p>
                         <p className="text-[10px] text-muted font-medium">{mech.designation}</p>
+                        {dutyMap[mech.id] && (
+                          <p className="text-[10px] font-bold text-indigo-300">
+                            Duty {fmtDuty(dutyMap[mech.id])}
+                          </p>
+                        )}
                       </div>
                     </div>
                     <span
@@ -966,7 +1055,8 @@ export default function DailyAttendance({
                   <div className="grid grid-cols-3 gap-2 bg-app p-2 rounded-xl border border-app">
                     <div className="text-center">
                       <p className="text-[8px] uppercase font-bold text-muted mb-0.5">
-                        <LogIn size={8} className="inline mr-0.5 text-emerald-400" />In
+                        <LogIn size={8} className="inline mr-0.5 text-emerald-400" />
+                        In
                       </p>
                       {userRole === "admin" ? (
                         <span className="inline-flex items-center justify-center gap-1 w-full">
@@ -991,7 +1081,8 @@ export default function DailyAttendance({
                     </div>
                     <div className="text-center">
                       <p className="text-[8px] uppercase font-bold text-muted mb-0.5">
-                        <LogOut size={8} className="inline mr-0.5 text-red-400" />Out
+                        <LogOut size={8} className="inline mr-0.5 text-red-400" />
+                        Out
                       </p>
                       {userRole === "admin" ? (
                         <span className="inline-flex items-center justify-center gap-1 w-full">
@@ -1016,9 +1107,12 @@ export default function DailyAttendance({
                     </div>
                     <div className="text-center">
                       <p className="text-[8px] uppercase font-bold text-muted mb-0.5">
-                        <Clock size={8} className="inline mr-0.5 text-blue-400" />Hours
+                        <Clock size={8} className="inline mr-0.5 text-blue-400" />
+                        Hours
                       </p>
-                      <span className="text-xs font-bold text-blue-400">{hoursBetweenIST(tIn, tOut)}</span>
+                      <span className="text-xs font-bold text-blue-400">
+                        {hoursBetweenIST(tIn, tOut)}
+                      </span>
                     </div>
                   </div>
 
@@ -1058,11 +1152,7 @@ export default function DailyAttendance({
           disabled={saving}
           className="md:hidden fixed bottom-[136px] right-4 z-[60] w-12 h-12 bg-gradient-to-br from-blue-600 to-blue-700 rounded-full shadow-xl shadow-blue-500/30 flex items-center justify-center text-white border border-blue-500/30 transition-all active:scale-95 disabled:opacity-50"
         >
-          {saving ? (
-            <Loader2 className="animate-spin" size={22} />
-          ) : (
-            <Save size={22} />
-          )}
+          {saving ? <Loader2 className="animate-spin" size={22} /> : <Save size={22} />}
         </button>
       )}
     </form>

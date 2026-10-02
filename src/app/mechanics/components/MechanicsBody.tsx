@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
 import Image from "next/image";
@@ -24,7 +24,20 @@ import {
   FileText,
 } from "lucide-react";
 import { logActivity } from "@/lib/activity";
-import { todayIST } from "@/lib/dateUtils";
+import { todayIST, formatIST } from "@/lib/dateUtils";
+import {
+  DEFAULT_DUTY,
+  dutyEqual,
+  dutyFor,
+  dutyLengthLabel,
+  fmtDuty,
+  isValidDuty,
+  normTime,
+  rowToDuty,
+  type Duty,
+  type DutyScheduleRow,
+} from "@/lib/duty";
+import { toast } from "@/lib/toast";
 import { inr, type Mechanic } from "./helpers";
 import { requireAdmin } from "@/lib/requireAdmin";
 
@@ -79,6 +92,12 @@ export default function MechanicsBody({
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState("");
   const [refreshing, setRefreshing] = useState(false);
+  // Duty time (staff_duty_schedule, P2) — form alag state hai taaki mechanic_list
+  // payload me by mistake na chala jaye. RLS: sirf admin/developer likh sakta hai.
+  const [dutyForm, setDutyForm] = useState<Duty>(DEFAULT_DUTY);
+  const [dutyHistory, setDutyHistory] = useState<DutyScheduleRow[]>([]);
+  const [bizDuty, setBizDuty] = useState<Duty>(DEFAULT_DUTY);
+  const canWriteDuty = userRole === "admin" || userRole === "developer";
 
   const [form, setForm] = useState({
     firstname: "",
@@ -108,6 +127,75 @@ export default function MechanicsBody({
     setRefreshing(false);
   }, []);
 
+  // Shop-level fallback duty (system_info biz_open/biz_close) — mount par ek baar.
+  // Koi staff schedule row nahi ho to duty yahi hogi (biz open/close hours).
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      const { data } = await supabase
+        .from("system_info")
+        .select("meta_field, meta_value")
+        .in("meta_field", ["biz_open", "biz_close"]);
+      if (!alive || !data) return;
+      const info: Record<string, string> = {};
+      (data as Array<{ meta_field: string; meta_value: string | null }>).forEach((r) => {
+        if (r.meta_value != null) info[r.meta_field] = String(r.meta_value);
+      });
+      const start = normTime(info.biz_open);
+      const end = normTime(info.biz_close);
+      if (start && end && start !== end) setBizDuty({ start, end, breakMinutes: 0 });
+    })();
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  // Edit modal: staff ki duty history (staff_duty_schedule) + current duty.
+  const loadDuty = async (mechanicId: number) => {
+    const { data, error } = await supabase
+      .from("staff_duty_schedule")
+      .select(
+        "id, mechanic_id, duty_start, duty_end, break_minutes, effective_from, note, created_at"
+      )
+      .eq("mechanic_id", mechanicId)
+      .order("effective_from", { ascending: false });
+    if (error) {
+      toast.error(`Duty history load nahi hui: ${error.message}`);
+      return;
+    }
+    const list = (data || []) as DutyScheduleRow[];
+    setDutyHistory(list);
+    setDutyForm(dutyFor(list, todayIST(), bizDuty));
+  };
+
+  // Duty save: sirf admin (RLS bhi wahi block karta hai). Ek hi UPSERT —
+  // aaj ka effective_from, conflict par update (salary_history pattern).
+  const saveDuty = async (mechanicId: number) => {
+    const next: Duty = { ...dutyForm, breakMinutes: 0 };
+    if (!isValidDuty(next)) {
+      throw new Error("Valid duty time daalo! (e.g. 10:00 se 19:00)");
+    }
+    const prev = dutyFor(dutyHistory, todayIST(), bizDuty);
+    if (dutyEqual(prev, next)) return;
+    const { error } = await supabase.from("staff_duty_schedule").upsert(
+      {
+        mechanic_id: mechanicId,
+        duty_start: next.start,
+        duty_end: next.end,
+        break_minutes: next.breakMinutes,
+        effective_from: todayIST(),
+      },
+      { onConflict: "mechanic_id,effective_from" }
+    );
+    if (error) throw error;
+    await logActivity(
+      "Updated Duty Time",
+      "Mechanics",
+      mechanicId,
+      `Duty: ${fmtDuty(prev)} → ${fmtDuty(next)}`
+    );
+  };
+
   const filtered = rows.filter((m) => {
     const name = [m.firstname, m.middlename, m.lastname].filter(Boolean).join(" ").toLowerCase();
     return (
@@ -135,6 +223,8 @@ export default function MechanicsBody({
       daily_salary: "",
       commission_percent: "",
     });
+    setDutyForm(bizDuty);
+    setDutyHistory([]);
     setFormErr("");
     setShowModal(true);
   };
@@ -147,11 +237,17 @@ export default function MechanicsBody({
       lastname: m.lastname,
       contact: m.contact,
       designation: m.designation || "",
-      daily_salary: String(m.daily_salary || ""),
-      commission_percent: String(m.commission_percent || ""),
+      // `?? ""` — commission/salary 0 ho to bhi "0" aaye (pehle `|| ""` → ""
+      // → parseFloat("") = NaN → save "Valid commission daalo!" par atak jata).
+      daily_salary: String(m.daily_salary ?? ""),
+      commission_percent: String(m.commission_percent ?? ""),
     });
+    // Placeholder (biz hours) — loadDuty current duty se overwrite karega.
+    setDutyForm(bizDuty);
+    setDutyHistory([]);
     setFormErr("");
     setShowModal(true);
+    void loadDuty(m.id);
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -178,6 +274,10 @@ export default function MechanicsBody({
       setFormErr("Valid commission daalo!");
       return;
     }
+    if (canWriteDuty && !isValidDuty({ ...dutyForm, breakMinutes: 0 })) {
+      setFormErr("Valid duty time daalo! (e.g. 10:00 se 19:00)");
+      return;
+    }
 
     setSaving(true);
     try {
@@ -192,7 +292,9 @@ export default function MechanicsBody({
         status: editing ? editing.status : 1,
       };
       const today = todayIST();
+      let dutyMechanicId: number | null = null;
       if (editing) {
+        dutyMechanicId = editing.id;
         const { error } = await supabase.from("mechanic_list").update(payload).eq("id", editing.id);
         if (error) throw error;
         if (salary !== editing.daily_salary) {
@@ -214,6 +316,7 @@ export default function MechanicsBody({
           .select("id")
           .single();
         if (error) throw error;
+        dutyMechanicId = data.id;
         const { error: histErr } = await supabase
           .from("mechanic_salary_history")
           .insert([{ mechanic_id: data.id, salary, effective_date: today }]);
@@ -224,6 +327,18 @@ export default function MechanicsBody({
           data.id,
           `Staff: ${payload.firstname} ${payload.lastname}`
         );
+      }
+      // Duty save (P2) — non-fatal: staff record save ho chuka hai. Agar duty
+      // fail ho (jaise RLS ne non-admin ko roka) to toast aata hai jo modal
+      // band hone ke baad bhi dikhta hai; admin dobara save karke retry karega.
+      if (canWriteDuty && dutyMechanicId != null) {
+        try {
+          await saveDuty(dutyMechanicId);
+        } catch (de) {
+          toast.error(
+            `Duty time save nahi hui: ${de instanceof Error && de.message ? de.message : "error"}`
+          );
+        }
       }
       setShowModal(false);
       refreshData();
@@ -328,10 +443,7 @@ export default function MechanicsBody({
         <div className="px-5 py-3.5 border-b border-app flex items-center justify-between flex-wrap gap-3">
           <div className="flex items-center gap-3">
             <div className="relative">
-              <Search
-                size={14}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-2"
-              />
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-2" />
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
@@ -462,6 +574,7 @@ export default function MechanicsBody({
                           </Link>
                           <button
                             onClick={() => openEdit(m)}
+                            aria-label={`Edit ${name}`}
                             className="p-2 rounded-lg bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 transition"
                           >
                             <Edit3 size={13} />
@@ -608,6 +721,97 @@ export default function MechanicsBody({
                     className="w-full px-3 py-2.5 bg-app border border-app rounded-xl text-sm text-white placeholder:text-app outline-none focus:border-blue-500"
                   />
                 </div>
+              </div>
+
+              {/* Duty time (staff_duty_schedule, P2) — per-staff duty + history */}
+              <div className="border-t border-app pt-4 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-muted">
+                    Duty Time
+                  </span>
+                  <span className="text-[10px] font-black uppercase tracking-widest text-blue-400">
+                    {dutyLengthLabel({ ...dutyForm, breakMinutes: 0 })}
+                  </span>
+                </div>
+                {canWriteDuty ? (
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label
+                        htmlFor="duty-from"
+                        className="block text-[10px] font-black uppercase tracking-wider text-muted mb-1.5"
+                      >
+                        Duty From
+                      </label>
+                      <input
+                        id="duty-from"
+                        type="time"
+                        value={dutyForm.start}
+                        onChange={(e) => setDutyForm((p) => ({ ...p, start: e.target.value }))}
+                        className="w-full px-3 py-2.5 bg-app border border-app rounded-xl text-sm text-white outline-none focus:border-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label
+                        htmlFor="duty-to"
+                        className="block text-[10px] font-black uppercase tracking-wider text-muted mb-1.5"
+                      >
+                        Duty To
+                      </label>
+                      <input
+                        id="duty-to"
+                        type="time"
+                        value={dutyForm.end}
+                        onChange={(e) => setDutyForm((p) => ({ ...p, end: e.target.value }))}
+                        className="w-full px-3 py-2.5 bg-app border border-app rounded-xl text-sm text-white outline-none focus:border-blue-500"
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-sm font-bold text-white">{fmtDuty(dutyForm)}</p>
+                )}
+                <p className="text-[10px] text-muted">
+                  {canWriteDuty
+                    ? `Aaj (${todayIST()}) se lagu — badli hui duty history me entry banegi.`
+                    : "Sirf Admin duty badal sakta hai."}
+                </p>
+
+                {dutyHistory.length > 0 && (
+                  <div className="space-y-1 pt-1">
+                    <p className="text-[10px] font-black uppercase tracking-wider text-muted">
+                      Duty History
+                    </p>
+                    {dutyHistory.map((r, i) => {
+                      const isCurrent = i === 0 && String(r.effective_from) <= todayIST();
+                      return (
+                        <div
+                          key={r.id ?? `${r.effective_from}-${i}`}
+                          className="flex items-center justify-between gap-2 text-xs bg-app/60 border border-app rounded-lg px-2.5 py-1.5"
+                        >
+                          <span className="text-muted-2">
+                            {formatIST(r.effective_from, {
+                              day: "2-digit",
+                              month: "short",
+                              year: "numeric",
+                            })}{" "}
+                            se
+                          </span>
+                          <span className="font-bold text-white">
+                            {fmtDuty(rowToDuty(r) || DEFAULT_DUTY)}
+                          </span>
+                          <span
+                            className={
+                              isCurrent
+                                ? "text-[9px] font-black uppercase text-emerald-400"
+                                : "text-[9px] font-black uppercase text-muted-2"
+                            }
+                          >
+                            {isCurrent ? "Current" : "Old"}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
 
               <div className="flex gap-3 pt-2">

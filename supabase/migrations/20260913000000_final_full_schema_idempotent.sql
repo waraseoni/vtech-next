@@ -694,7 +694,12 @@ do $$ begin
   alter table public.attendance_list add column if not exists lng_in double precision;
   alter table public.attendance_list add column if not exists lat_out double precision;
   alter table public.attendance_list add column if not exists lng_out double precision;
-exception when duplicate_column then null; end $$;
+  -- P3 derived working-hours cols (20261002_attendance_derived_cols.sql)
+  alter table public.attendance_list add column if not exists worked_min integer;
+  alter table public.attendance_list add column if not exists ot_min integer DEFAULT 0 NOT NULL;
+  alter table public.attendance_list add column if not exists duty_min integer;
+  alter table public.attendance_list add column if not exists is_auto_closed boolean DEFAULT false NOT NULL;
+  exception when duplicate_column then null; end $$;
 
 do $$ begin
   alter table public.client_list add column if not exists id integer;
@@ -3382,7 +3387,7 @@ GRANT EXECUTE ON FUNCTION public.next_job_id() TO service_role;
 -- ids (< 28101, jaise 27322) iske daayre se bahar hain — index unhe nahi ragadta.
 CREATE UNIQUE INDEX IF NOT EXISTS transaction_list_job_id_autogen_uniq
   ON public.transaction_list (job_id)
-  WHERE job_id ~ '^[0-9]+$' AND job_id::bigint >= 28101;
+  WHERE job_id ~ '^[0-9]+$' AND job_id::bigint >= 00000;
 
 -- READ-ONLY preview RPC — next_job_id() ke ULTA: counter increment NAHI karta.
 -- Form (new/bulk) par "Job No." preview isi se aata hai taaki page kholne se
@@ -4160,6 +4165,94 @@ alter table public.product_list
   drop column if exists place_rack,
   drop column if exists place_bin,
   drop column if exists place_box;
+
+-- ── staff_duty_schedule (20261002_staff_duty_schedule.sql) ────────────────
+-- Per-staff default duty time + EFFECTIVE-DATED HISTORY (P2). Salary history
+-- (mechanic_salary_history) ke same pattern: append-only rows with
+-- `effective_from`, `effective_to` column nahi — range read-time derive hota
+-- hai (next-naye row ka effective_from - 1). App fallback: system_info
+-- biz_open/biz_close (src/lib/duty.ts dutyFor()).
+-- RLS: SELECT sab frontend staff ko; INSERT/UPDATE/DELETE sirf admin/developer
+-- (duty salary se juda hai). Detail: 20261002_staff_duty_schedule.sql header.
+create table if not exists public.staff_duty_schedule (
+  id             bigint generated always as identity,
+  mechanic_id    int not null references public.mechanic_list(id) on delete cascade,
+  duty_start     time not null default '10:00',
+  duty_end       time not null default '20:00',
+  break_minutes  int not null default 0,
+  effective_from date not null default CURRENT_DATE,
+  note           text not null default '',
+  created_by     uuid references auth.users(id),
+  created_at     timestamptz not null default now(),
+  constraint staff_duty_schedule_break_ck check (break_minutes >= 0),
+  constraint staff_duty_schedule_mech_from_uniq unique (mechanic_id, effective_from)
+);
+
+do $$ begin
+  if not exists (
+    select 1 from pg_constraint
+    where conname = 'staff_duty_schedule_pkey'
+      and conrelid = 'public.staff_duty_schedule'::regclass
+  ) then
+    alter table only public.staff_duty_schedule
+      add constraint staff_duty_schedule_pkey primary key (id);
+  end if;
+end $$;
+
+create index if not exists staff_duty_schedule_lookup_idx
+  on public.staff_duty_schedule(mechanic_id, effective_from desc);
+
+alter table public.staff_duty_schedule enable row level security;
+
+drop policy if exists rlslock_staff_duty_schedule_read on public.staff_duty_schedule;
+create policy rlslock_staff_duty_schedule_read on public.staff_duty_schedule
+  for select to authenticated
+  using (public.is_frontend_staff());
+
+drop policy if exists rlslock_staff_duty_schedule_ins on public.staff_duty_schedule;
+create policy rlslock_staff_duty_schedule_ins on public.staff_duty_schedule
+  for insert to authenticated
+  with check (
+    public.is_frontend_staff()
+    and exists (
+      select 1 from public.profiles p
+      where p.id = auth.uid() and p.role in ('admin', 'developer')
+    )
+  );
+
+drop policy if exists rlslock_staff_duty_schedule_upd on public.staff_duty_schedule;
+create policy rlslock_staff_duty_schedule_upd on public.staff_duty_schedule
+  for update to authenticated
+  using (
+    public.is_frontend_staff()
+    and exists (
+      select 1 from public.profiles p
+      where p.id = auth.uid() and p.role in ('admin', 'developer')
+    )
+  )
+  with check (
+    public.is_frontend_staff()
+    and exists (
+      select 1 from public.profiles p
+      where p.id = auth.uid() and p.role in ('admin', 'developer')
+    )
+  );
+
+drop policy if exists rlslock_staff_duty_schedule_del on public.staff_duty_schedule;
+create policy rlslock_staff_duty_schedule_del on public.staff_duty_schedule
+  for delete to authenticated
+  using (
+    public.is_frontend_staff()
+    and exists (
+      select 1 from public.profiles p
+      where p.id = auth.uid() and p.role in ('admin', 'developer')
+    )
+  );
+
+grant all on table public.staff_duty_schedule to anon;
+grant all on table public.staff_duty_schedule to authenticated;
+grant all on table public.staff_duty_schedule to service_role;
+grant usage on sequence public.staff_duty_schedule_id_seq to anon, authenticated, service_role;
 
 -- ═══════════════════════════════════════════════════════════════════════════
 -- PostgREST ke liye schema reload (Supabase SQL Editor me dabane ke baad
