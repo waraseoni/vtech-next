@@ -24,8 +24,13 @@ import {
   AlertCircle,
   CheckCircle2,
 } from "lucide-react";
-import { deriveStatusFromTimes, hoursBetweenIST } from "@/lib/dateUtils";
-import { CLEAR_DERIVED_COLS, derivedCols, loadDuty } from "@/lib/attendance-derive";
+import { deriveStatusFromTimes, hoursBetweenIST, todayIST } from "@/lib/dateUtils";
+import {
+  CLEAR_DERIVED_COLS,
+  autoClosePrevDays,
+  derivedCols,
+  loadDuty,
+} from "@/lib/attendance-derive";
 interface Props {
   mechanicId: number;
   mechanicName: string;
@@ -161,6 +166,8 @@ export default function AttendanceModal({
     if (ok) {
       setCurrentStatus(status);
       onUpdate(status);
+      // §4.3: aaj ka check-in save hua → kal ke open row auto-close (non-fatal).
+      if (date === todayIST() && timeIn) autoClosePrevDays(mechanicId).catch(() => undefined);
     }
   };
 

@@ -10,7 +10,7 @@
 //   - both times, 6h+                 -> Present
 //   - no times                        -> keep manually chosen status
 // ─────────────────────────────────────────────────────────────────
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import { useViewOnly, CanWrite } from "@/lib/viewOnly";
 import Image from "next/image";
@@ -42,8 +42,16 @@ import {
   deriveStatusFromTimes,
 } from "@/lib/dateUtils";
 import { verifyAttendanceLocation, geoErrorMessage } from "@/lib/geofence";
-import { derivedCols, loadDuty, loadDutyMap } from "@/lib/attendance-derive";
-import { DEFAULT_DUTY, fmtDuty, type Duty } from "@/lib/duty";
+import {
+  autoClosePrevDays,
+  autoClosePrevDaysFor,
+  derivedCols,
+  loadDuty,
+  loadDutyContext,
+  loadDutyMap,
+} from "@/lib/attendance-derive";
+import { computeDay, fmtMins, nowIST } from "@/lib/attendance-hours";
+import { DEFAULT_DUTY, dutyFor, fmtDuty, type Duty } from "@/lib/duty";
 import { format } from "date-fns/format";
 
 interface Mechanic {
@@ -196,6 +204,10 @@ export default function DailyAttendance({
   const [times, setTimes] = useState<Record<number, DayTimes>>({});
   // Staff ke naam ke neeche dikhne wali us din ki applicable duty.
   const [dutyMap, setDutyMap] = useState<Record<number, Duty>>({});
+  // Month-to-date total (naam ke neeche "Total 42h 10m") — selected month, aaj tak.
+  const [monthMins, setMonthMins] = useState<Record<number, number>>({});
+  // §4.3 lazy auto-close — sirf ek baar per mount.
+  const lazyClosedRef = useRef(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
@@ -234,40 +246,56 @@ export default function DailyAttendance({
     fetchMechanics();
   }, [userRole, mechanicId]);
 
-  // Fetch attendance for selected date
-  const fetchAttendance = useCallback(async () => {
-    if (!mechanics.length) return;
-    setLoading(true);
-    const { data, error } = await supabase
-      .from("attendance_list")
-      .select("mechanic_id, status, time_in, time_out, lat_in, lng_in, lat_out, lng_out")
-      .eq("curr_date", selectedDate);
-    const attMap: AttendanceStatus = {};
-    const timesMap: Record<number, DayTimes> = {};
-    if (!error && data) {
-      data.forEach((a) => {
-        attMap[a.mechanic_id] = a.status as 1 | 2 | 3;
-        timesMap[a.mechanic_id] = {
-          timeIn: (a.time_in as string)?.slice(0, 5) || "",
-          timeOut: (a.time_out as string)?.slice(0, 5) || "",
-          latIn: (a.lat_in as number | null) ?? null,
-          lngIn: (a.lng_in as number | null) ?? null,
-          latOut: (a.lat_out as number | null) ?? null,
-          lngOut: (a.lng_out as number | null) ?? null,
-        };
+  // Fetch attendance for selected date (silent=true: lazy auto-close refresh —
+  // spinner blink nahi, data wahi hai sirf rows update hui hain).
+  const fetchAttendance = useCallback(
+    async (silent = false) => {
+      if (!mechanics.length) return;
+      if (!silent) setLoading(true);
+      const { data, error } = await supabase
+        .from("attendance_list")
+        .select("mechanic_id, status, time_in, time_out, lat_in, lng_in, lat_out, lng_out")
+        .eq("curr_date", selectedDate);
+      const attMap: AttendanceStatus = {};
+      const timesMap: Record<number, DayTimes> = {};
+      if (!error && data) {
+        data.forEach((a) => {
+          attMap[a.mechanic_id] = a.status as 1 | 2 | 3;
+          timesMap[a.mechanic_id] = {
+            timeIn: (a.time_in as string)?.slice(0, 5) || "",
+            timeOut: (a.time_out as string)?.slice(0, 5) || "",
+            latIn: (a.lat_in as number | null) ?? null,
+            lngIn: (a.lng_in as number | null) ?? null,
+            latOut: (a.lat_out as number | null) ?? null,
+            lngOut: (a.lng_out as number | null) ?? null,
+          };
+        });
+      }
+      mechanics.forEach((m) => {
+        if (attMap[m.id] == null) attMap[m.id] = 2;
       });
-    }
-    mechanics.forEach((m) => {
-      if (attMap[m.id] == null) attMap[m.id] = 2;
-    });
-    setAttendance(attMap);
-    setTimes(timesMap);
-    setLoading(false);
-  }, [mechanics, selectedDate]);
+      setAttendance(attMap);
+      setTimes(timesMap);
+      if (!silent) setLoading(false);
+    },
+    [mechanics, selectedDate]
+  );
 
   useEffect(() => {
     fetchAttendance();
   }, [fetchAttendance]);
+
+  // §4.3 lazy: page load par sab staff ke purane open rows ek batch me close
+  // (non-fatal, ek baar per mount) — kuch close hua to silent refresh.
+  useEffect(() => {
+    if (lazyClosedRef.current || !mechanics.length) return;
+    lazyClosedRef.current = true;
+    autoClosePrevDaysFor(mechanics.map((m) => m.id))
+      .then((n) => {
+        if (n > 0) fetchAttendance(true);
+      })
+      .catch(() => undefined);
+  }, [mechanics, fetchAttendance]);
 
   // Self record for today
   const fetchSelf = useCallback(async () => {
@@ -301,6 +329,59 @@ export default function DailyAttendance({
         if (!dead) setDutyMap(Object.fromEntries(map));
       })
       .catch(() => undefined);
+    return () => {
+      dead = true;
+    };
+  }, [mechanics, selectedDate]);
+
+  // Month-to-date working total (naam ke neeche "Total 42h 10m"):
+  // selected month ka range (month-start → aaj) + per-row-date duty history —
+  // report tab ke engine-parity ke saath. Ek round-trip + ek duty context.
+  useEffect(() => {
+    if (!mechanics.length) return;
+    let dead = false;
+    const monthStart = `${selectedDate.slice(0, 7)}-01`;
+    const monthEnd = `${selectedDate.slice(0, 7)}-${String(
+      new Date(
+        Date.UTC(Number(selectedDate.slice(0, 4)), Number(selectedDate.slice(5, 7)), 0)
+      ).getUTCDate()
+    ).padStart(2, "0")}`;
+    const todayStr = todayIST();
+    const rangeEnd = monthEnd < todayStr ? monthEnd : todayStr;
+    if (rangeEnd < monthStart) {
+      setMonthMins({});
+      return;
+    }
+    const mechIds = mechanics.map((m) => m.id);
+    (async () => {
+      const [attRes, ctx] = await Promise.all([
+        supabase
+          .from("attendance_list")
+          .select("mechanic_id, curr_date, status, time_in, time_out")
+          .in("mechanic_id", mechIds)
+          .gte("curr_date", monthStart)
+          .lte("curr_date", rangeEnd),
+        loadDutyContext(mechIds, rangeEnd),
+      ]);
+      if (dead) return;
+      const now = nowIST();
+      const sums: Record<number, number> = {};
+      (attRes.data || []).forEach((a) => {
+        const rows = ctx.rows.filter((r) => r.mechanic_id === a.mechanic_id);
+        const c = computeDay(
+          {
+            curr_date: a.curr_date as string,
+            status: Number(a.status),
+            time_in: (a.time_in as string) ?? null,
+            time_out: (a.time_out as string) ?? null,
+          },
+          dutyFor(rows, a.curr_date as string, ctx.bizDuty),
+          now
+        );
+        if (c.workedMin > 0) sums[a.mechanic_id] = (sums[a.mechanic_id] || 0) + c.workedMin;
+      });
+      setMonthMins(sums);
+    })().catch(() => undefined);
     return () => {
       dead = true;
     };
@@ -406,6 +487,8 @@ export default function DailyAttendance({
           { onConflict: "mechanic_id,curr_date" }
         );
         if (error) throw error;
+        // §4.3: naye check-in par kal ke open row auto-close (non-fatal).
+        autoClosePrevDays(mechanicId).catch(() => undefined);
         setSelfMsg({ type: "ok", text: `Checked in at ${fmtTimeIST(now)}. Have a nice day!` });
       } else {
         const derived = deriveStatusFromTimes(existing?.time_in ?? null, now) ?? 1;
@@ -555,6 +638,15 @@ export default function DailyAttendance({
     day: "numeric",
   });
 
+  // §9 gap fix: engine se us din ka result — live (aaj abhi), auto (purana din
+  // checkout nahi) ya real checkout. Daily ka Hours cell = report cell jaisa.
+  const dayCalc = (mId: number, status: number, tIn: string, tOut: string) =>
+    computeDay(
+      { curr_date: selectedDate, status, time_in: tIn || null, time_out: tOut || null },
+      dutyMap[mId] ?? DEFAULT_DUTY,
+      nowIST()
+    );
+
   return (
     <form onSubmit={handleSubmit} className="space-y-3.5">
       {/* ── Self Check-In / Check-Out Hero Card (Staff only when self-data exists) ── */}
@@ -625,7 +717,9 @@ export default function DailyAttendance({
                 }`}
               >
                 <span className="block text-app dark:text-white font-black text-sm">
-                  {hoursBetweenIST(selfStatus.time_in, selfStatus.time_out)}
+                  {selfStatus.time_in && !selfStatus.time_out
+                    ? hoursBetweenIST(selfStatus.time_in, nowISTTime()) // live (abhi working)
+                    : hoursBetweenIST(selfStatus.time_in, selfStatus.time_out)}
                 </span>
                 <span className="block text-[8px] uppercase tracking-wider text-muted dark:text-white/70 font-bold">
                   Hours
@@ -896,6 +990,7 @@ export default function DailyAttendance({
                     const tIn = t?.timeIn ?? "";
                     const tOut = t?.timeOut ?? "";
                     const badge = STATUS_BADGE[st] ?? STATUS_BADGE[0];
+                    const calc = dayCalc(mech.id, st ?? 0, tIn, tOut);
                     return (
                       <tr key={mech.id} className="hover:bg-blue-500/[0.02] transition-colors">
                         <td className="py-2 px-2 text-center text-[10px] text-muted font-bold">
@@ -916,6 +1011,14 @@ export default function DailyAttendance({
                               {dutyMap[mech.id] && (
                                 <p className="text-[10px] font-bold text-indigo-300 truncate">
                                   Duty {fmtDuty(dutyMap[mech.id])}
+                                </p>
+                              )}
+                              {(monthMins[mech.id] || 0) > 0 && (
+                                <p
+                                  className="text-[10px] font-bold text-blue-300 truncate"
+                                  title={`Mahine ki total working hours (aaj tak) — ${monthMins[mech.id]} min`}
+                                >
+                                  Total {fmtMins(monthMins[mech.id])}
                                 </p>
                               )}
                             </div>
@@ -996,7 +1099,11 @@ export default function DailyAttendance({
                             </span>
                           ) : (
                             <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-md bg-red-500/10 text-red-400">
-                              {fmtTimeIST(tOut) || "—"}
+                              {tOut
+                                ? fmtTimeIST(tOut)
+                                : calc.isAutoClosed && calc.effOut
+                                  ? `${fmtTimeIST(calc.effOut)} (auto)` // checkout nahi → auto (§9)
+                                  : fmtTimeIST(tOut)}
                               {t?.latOut != null && t?.lngOut != null && (
                                 <MapPinLink lat={t.latOut} lng={t.lngOut} label="Check-out" />
                               )}
@@ -1005,7 +1112,7 @@ export default function DailyAttendance({
                         </td>
                         <td className="py-2 px-2 text-center overflow-hidden">
                           <span className="inline-block text-[11px] font-bold px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-400">
-                            {hoursBetweenIST(tIn, tOut)}
+                            {fmtMins(calc.workedMin)}
                           </span>
                         </td>
                       </tr>
@@ -1024,6 +1131,7 @@ export default function DailyAttendance({
               const tIn = t?.timeIn ?? "";
               const tOut = t?.timeOut ?? "";
               const badge = STATUS_BADGE[st] ?? STATUS_BADGE[0];
+              const calc = dayCalc(mech.id, st ?? 0, tIn, tOut);
               return (
                 <div
                   key={mech.id}
@@ -1039,6 +1147,14 @@ export default function DailyAttendance({
                         {dutyMap[mech.id] && (
                           <p className="text-[10px] font-bold text-indigo-300">
                             Duty {fmtDuty(dutyMap[mech.id])}
+                          </p>
+                        )}
+                        {(monthMins[mech.id] || 0) > 0 && (
+                          <p
+                            className="text-[10px] font-bold text-blue-300"
+                            title={`Mahine ki total working hours (aaj tak) — ${monthMins[mech.id]} min`}
+                          >
+                            Total {fmtMins(monthMins[mech.id])}
                           </p>
                         )}
                       </div>
@@ -1098,7 +1214,11 @@ export default function DailyAttendance({
                         </span>
                       ) : (
                         <span className="inline-flex items-center justify-center gap-1 text-xs font-bold text-red-400">
-                          {fmtTimeIST(tOut) || "—"}
+                          {tOut
+                            ? fmtTimeIST(tOut)
+                            : calc.isAutoClosed && calc.effOut
+                              ? `${fmtTimeIST(calc.effOut)} (auto)` // checkout nahi → auto (§9)
+                              : fmtTimeIST(tOut)}
                           {t?.latOut != null && t?.lngOut != null && (
                             <MapPinLink lat={t.latOut} lng={t.lngOut} label="Check-out" />
                           )}
@@ -1111,7 +1231,7 @@ export default function DailyAttendance({
                         Hours
                       </p>
                       <span className="text-xs font-bold text-blue-400">
-                        {hoursBetweenIST(tIn, tOut)}
+                        {fmtMins(calc.workedMin)}
                       </span>
                     </div>
                   </div>

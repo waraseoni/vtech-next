@@ -171,7 +171,10 @@ export default function MechanicsBody({
   // Duty save: sirf admin (RLS bhi wahi block karta hai). Ek hi UPSERT —
   // aaj ka effective_from, conflict par update (salary_history pattern).
   const saveDuty = async (mechanicId: number) => {
-    const next: Duty = { ...dutyForm, breakMinutes: 0 };
+    const next: Duty = {
+      ...dutyForm,
+      breakMinutes: Math.max(0, Math.round(Number(dutyForm.breakMinutes) || 0)),
+    };
     if (!isValidDuty(next)) {
       throw new Error("Valid duty time daalo! (e.g. 10:00 se 19:00)");
     }
@@ -274,7 +277,7 @@ export default function MechanicsBody({
       setFormErr("Valid commission daalo!");
       return;
     }
-    if (canWriteDuty && !isValidDuty({ ...dutyForm, breakMinutes: 0 })) {
+    if (canWriteDuty && !isValidDuty(dutyForm)) {
       setFormErr("Valid duty time daalo! (e.g. 10:00 se 19:00)");
       return;
     }
@@ -730,11 +733,11 @@ export default function MechanicsBody({
                     Duty Time
                   </span>
                   <span className="text-[10px] font-black uppercase tracking-widest text-blue-400">
-                    {dutyLengthLabel({ ...dutyForm, breakMinutes: 0 })}
+                    {dutyLengthLabel(dutyForm)}
                   </span>
                 </div>
                 {canWriteDuty ? (
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-3 gap-3">
                     <div>
                       <label
                         htmlFor="duty-from"
@@ -765,9 +768,37 @@ export default function MechanicsBody({
                         className="w-full px-3 py-2.5 bg-app border border-app rounded-xl text-sm text-white outline-none focus:border-blue-500"
                       />
                     </div>
+                    <div>
+                      <label
+                        htmlFor="duty-break"
+                        className="block text-[10px] font-black uppercase tracking-wider text-muted mb-1.5"
+                      >
+                        Break (min)
+                      </label>
+                      <input
+                        id="duty-break"
+                        type="number"
+                        min={0}
+                        max={480}
+                        step={5}
+                        value={dutyForm.breakMinutes}
+                        onChange={(e) =>
+                          setDutyForm((p) => ({
+                            ...p,
+                            breakMinutes: Math.max(0, Math.round(Number(e.target.value) || 0)),
+                          }))
+                        }
+                        className="w-full px-3 py-2.5 bg-app border border-app rounded-xl text-sm text-white outline-none focus:border-blue-500"
+                      />
+                    </div>
                   </div>
                 ) : (
-                  <p className="text-sm font-bold text-white">{fmtDuty(dutyForm)}</p>
+                  <p className="text-sm font-bold text-white">
+                    {fmtDuty(dutyForm)}
+                    {dutyForm.breakMinutes > 0 && (
+                      <span className="text-muted"> · {dutyForm.breakMinutes}m break</span>
+                    )}
+                  </p>
                 )}
                 <p className="text-[10px] text-muted">
                   {canWriteDuty
@@ -797,6 +828,12 @@ export default function MechanicsBody({
                           </span>
                           <span className="font-bold text-white">
                             {fmtDuty(rowToDuty(r) || DEFAULT_DUTY)}
+                            {Number(r.break_minutes) > 0 && (
+                              <span className="text-muted-2">
+                                {" "}
+                                · {Number(r.break_minutes)}m break
+                              </span>
+                            )}
                           </span>
                           <span
                             className={

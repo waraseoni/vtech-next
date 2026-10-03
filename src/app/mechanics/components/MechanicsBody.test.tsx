@@ -206,4 +206,34 @@ describe("MechanicsBody — duty time (staff_duty_schedule)", () => {
       false
     );
   });
+
+  it("break input: break-only change bhi UPSERT jata hai (break_minutes 30)", async () => {
+    const user = userEvent.setup();
+    fx.dutyRows = [HISTORY_ROW];
+    renderBody("admin");
+
+    clickEdit();
+    const from = (await screen.findByLabelText("Duty From")) as HTMLInputElement;
+    await waitFor(() => expect(from).toHaveValue("10:00"));
+
+    // Badge = net length (span − break): 9h → 8h 30m
+    fireEvent.change(screen.getByLabelText("Break (min)"), { target: { value: "30" } });
+    expect(screen.getByText("8h 30m")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Update" }));
+
+    await waitFor(() => {
+      const upsert = fx.calls.find(
+        (c) => c.table === "staff_duty_schedule" && c.method === "upsert"
+      );
+      expect(upsert).toBeTruthy();
+      expect(upsert!.args[0]).toMatchObject({
+        mechanic_id: 7,
+        duty_start: "10:00",
+        duty_end: "19:00",
+        break_minutes: 30,
+      });
+    });
+    await waitFor(() => expect(screen.queryByLabelText("Duty From")).not.toBeInTheDocument());
+  });
 });

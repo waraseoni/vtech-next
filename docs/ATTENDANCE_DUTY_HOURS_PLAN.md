@@ -1,7 +1,9 @@
 # Attendance — Compact Report + Duty Schedule + Working-Hours Engine
 
-> Status: **P1 ✅ done · P2 ✅ done · P3 ✅ done (migration live 2026-10-02)
-> · ⏳ open: tooltip duty ≠ DB — next steps §9** · Created: 2026-10-02
+> Status: **P1 ✅ · P2 ✅ · P3 ✅ (migration live 2026-10-02)
+> · §9 ✅ fixed 2026-10-03 (Option C + auto-close + break input + MTD totals +
+> lazy batch close — uncommitted, user verification pending, commit gate)**
+> · Created: 2026-10-02
 > Scope: monthly report cell redesign, per-staff duty time with history,
 > auto-checkout, working-hours/OT calculation, path to hours-based salary.
 >
@@ -279,69 +281,111 @@ hours/OT dikhna shuru hota hai.
 
 ---
 
-## 9. NEXT SESSION — open issue + instructions (saved 2026-10-02, sab commit/push ho chuka)
+## 9. FIXED (2026-10-03) — tooltip duty + all pendings (⚠️ UNCOMMITTED, user gate)
 
-### ⏳ Open: tooltip duty ≠ DB duty (user report)
+> User directive: "fix add karo aur sabhi pendings ko complete karo par abhi
+> jab tak sab ok aur debug na hojaye **commit aur push mat karna**".
+> Sab code + tests likhe hue hain, gates ke baad bhi commit tabhi jab user
+> explicitly bole. **P4/P5 still gated — `server-salary.ts` untouched.**
 
-**Observation** (`http://localhost:3000/attendance?view=report&month=2026-10`,
-staff **Hemant Mehra**):
+### ⏳ Open issue (2026-10-02) ka root cause — ab FIX ho chuka
 
-- Naam ke neeche label = `Duty 12:00 – 20:00` = DB ✓ = staff edit modal ✓
-  (refresh ke baad dono sahi — user confirm).
-- **Hover tooltip Thu, 01 Oct 2026**: `In 12:16 PM · Total 5h 44m · Duty 11:00 –
-  20:00 (9h 0m) · Late 76m` — DB/current duty (12:00–20:00) se ALAG.
-  User: "hover tool DB se match nahi karta · Edit modal me galat aa raha hai".
+Original report (staff **Hemant Mehra**, `?view=report&month=2026-10`): label
+= `Duty 12:00 – 20:00` (DB ✓) par 01 Oct tooltip me `Duty 11:00 – 20:00`.
+Sab duty displays ek hi `dutyFor()` use karte — sirf **basis date** alag thi:
 
-**Root cause (code-verified — data nahi, logic se prove):**
+| Display                    | Basis date      | Code                      |
+| -------------------------- | --------------- | ------------------------- |
+| Staff edit modal           | `todayIST()`    | `MechanicsBody.tsx:168`   |
+| Report row label           | month `endDate` | `MonthlyReport.tsx:519`   |
+| Report hover tooltip (was) | per-day date    | `MonthlyReport.tsx:452`   |
+| DailyAttendance            | selected date   | `DailyAttendance.tsx:296` |
+| AttendanceModal save       | row ka `date`   | `AttendanceModal.tsx:150` |
 
-Sab duty displays ek hi `dutyFor()` use karte — sirf **basis date** alag hai:
+Hemant ki row `effective_from = 2026-10-02` → 01 Oct ko purani duty apply hoti
+(thi) → tooltip historically consistent par DB se alag.
 
-| Display                        | Basis date      | Code                    |
-| ------------------------------ | --------------- | ----------------------- |
-| Staff edit modal               | `todayIST()`    | `MechanicsBody.tsx:168` |
-| Report row label (name ke neeche) | month `endDate` | `MonthlyReport.tsx:509` |
-| Report hover tooltip           | per-day `dateStr` | `MonthlyReport.tsx:452` |
-| DailyAttendance                | selected date   | `DailyAttendance.tsx:296` |
-| AttendanceModal save (derivedCols) | row ka `date` | `AttendanceModal.tsx:150` |
+### What was implemented (Option C — user ki "DB match" demand)
 
-Hemant ki `12:00 – 20:00` row ka `effective_from = 2026-10-02` (aaj modal se set
-hui). **01 Oct < effective_from** → `currentSchedule` purani row / biz-fallback
-(`11:00 – 20:00`) lata hai → tooltip wahi dikhata hai, aur `Late 76m` (12:16 −
-11:00) **us purani duty se internally consistent** hai. Yani tooltip historically
-sahi hai, par user ko DB wali duty (12:00 – 20:00) chahiye.
+1. **Tooltip = current/DB duty, history note me** (`MonthlyReport.tsx`):
+   - `labelBasis = endDate < todayStr ? endDate : todayStr` (L410) — current
+     month ke liye aaj (modal-parity), past months ke liye month-end.
+   - `dutyLabel` `DayData` me (L519), `DayTip` prop (L198) — tooltip Duty row
+     me `curDuty = dutyLabel` primary; per-day duty alag ho to sub =
+     `us din ${d.dutyRange}` (L230-236). **Metrics (Late/OT/Total) per-day
+     rehte — retroactive recompute nahi (approval wala kaam nahi kiya).**
+2. **§9 gap — DailyAttendance unchecked-out rows** (`dayCalc` L563): Hours cell
+   ab `fmtMins(computeDay(...).workedMin)` (live/auto/real teeno cases), staff
+   Out cell me `7:00 PM (auto)` marker jab `time_out` NULL ho, self card live
+   hours `hoursBetweenIST(in, nowISTTime())` jab checkout na ho.
+3. **§4.3 auto-close prev open day** (`autoClosePrevDays` in
+   `attendance-derive.ts` L93): aaj ke naye check-in (self DailyAttendance L411
+   - AttendanceModal save L170, `date === todayIST() && timeIn`) par kal se
+     pehle ke open rows → `time_out = duty_end` (engine rule 3) + derived cols.
+     Fire-and-forget (non-fatal) — "Close pending days" button as-is rehta hai.
+     Bulk attendance submit par auto-close **nahi** (deliberate).
+4. **Break input** (`MechanicsBody.tsx` L773): grid-cols-3 me `Break (min)`
+   (0–480, step 5); `saveDuty` break normalise karke bhejta hai (pehle
+   forced 0); badge = `dutyLengthLabel(dutyForm)` (net span − break); read-only
+   - history timeline me ` · 30m break` note. `dutyEqual` ab break compare
+     karta hai (`duty.ts:125`) — warna break-only change skip ho jaata.
+5. **MTD totals (naam ke neeche "Total 42h 10m")** — dono tabs:
+   - Report: `DayData.workedMin` + `MechanicMonthData.monthMins` (sum —
+     current month me future days 0 = "aaj tak" natural) · zero extra query.
+   - Daily: naya `monthMins` state — selected month ka range (month-start →
+     `min(monthEnd, today)`) + per-row-date duty (`loadDutyContext` ek
+     round-trip) + `computeDay` sum. Title me exact minutes.
+   - Display: report desktop/mobile name block + daily desktop/mobile duty line
+     ke neeche (sirf jab minutes > 0). Format `fmtMins`.
+6. **Lazy batch auto-close (Option B)** — page-load par dono tabs:
+   `autoClosePrevDaysFor(mechIds)` (naya batch variant — `.in` ek query,
+   `autoClosePrevDays` ab iska single-id wrapper). Fire-and-forget ek baar per
+   mount (ref guard); kuch close hua to **silent** refetch (`fetchData(true)`
+   / `fetchAttendance(true)` — spinner blink nahi). "Close pending" button +
+   explicit close waise bhi rehte hain; cron = P5 (gated).
+   - **Cap fix (live debug 2026-10-03):** `time_out is null` alone matched
+     **1055** rows → PostgREST 1000-row default cap asli target rows (id
+     1150-1205) ko result se bahar kar raha tha → batch kabhi close nahi karta.
+     Ab `.not("time_in", "is", null)` + `.order("curr_date")` — exact 4 rows.
+     Live verify: 5/5 rows closed (`still-open=0`, engine values match,
+     status untouched).
 
-**Design fork — fix se pehle decide karna:**
+### Tests added/adjusted (in this fix)
 
-- **Option A — tooltip duty = label basis (`min(monthEnd, today)`)**: har din DB
-  duty dikhegi (user ki demand) · but pre-change days ke Total/OT/Late purani
-  duty se bane hain → inconsistent (Late 76m vs 12:00 start). Metrics bhi
-  recompute kiye = **historical hours badlenge** → wo approval chahiye.
-- **Option B — per-day (current) retain + clarify**: jab day ki applicable duty
-  current se alag ho, duty row me marker `11:00 – 20:00 (us din)`; label ke
-  paas "Duty changed ×1" chip already hai.
-- **Option C (hybrid, recommended)** — current/DB duty primary, alag ho to
-  chhoti line me "us din: 11:00 – 20:00" note.
+- `MonthlyReport.test.tsx` — mid-month duty fixture (eff Oct 3) → tooltip
+  `11:00 – 19:00` + `us din 10:00 – 20:00` + label parity (try/finally pop).
+- `DailyAttendance.test.tsx` — kal ka open-row fixture → `8h 55m` auto hours
+  - `7:00 PM (auto)` Out (desktop + mobile dono).
+- `attendance-derive.test.ts` (NEW) — auto-close 2 rows (535/540m, OT 0),
+  closed/absent skip, 0-row non-fatal.
+- `MechanicsBody.test.tsx` — break-only change → upsert `break_minutes: 30`,
+  badge `8h 30m`.
+- `duty.test.ts` — `dutyEqual` break case ab `false` + same-break `true`.
+- MTD: report `Total 15h 39m` (344+595m) + daily `Total 8h 55m` (535m)
+  title-assertions; `attendance-derive.test.ts` batch variant
+  (empty → 0, `.in` query, single update).
+- **Regression:** `attendance-derive.test.ts` batch select me `.not("time_in",
+"is", null)` assertion (1000-row cap bug dobara na aaye); component test
+  mocks me `not` chain method added.
 
-**Next steps (order):**
+### Next steps (order)
 
-1. User se Option A/B/C confirm (ya C seedha implement, agar "DB match hona
-   chahiye" hi final answer maana jaaye).
-2. `MonthlyReport.tsx` DayTip (rows ~219-245) + `DayData` field badlo; test
-   `MonthlyReport.test.tsx` me tooltip assertions add/adjust (`data-testid="day-tip"`).
-3. "Edit modal" wala complaint verify: `AttendanceModal` me **duty TEXT dikhta
-   hi nahi** (sirf times + working-hours preview), duty sirf `derivedCols`
-   persist ke liye load hoti hai — user se exact value/screenshot poochho agar
-   Option ke baad bhi dikhta ho.
-4. Gates: `npx vitest run` (312+) · `npx tsc --noEmit` · `npx eslint <changed>`
-   · `npx prettier --check <touched files>` (repo me 230 files already non-conforming).
-5. Verify report: `?view=report&month=2026-10` (desktop hover + mobile tap).
+1. Gates: `npx vitest run` · `npx tsc --noEmit` · `npx eslint <touched>` ·
+   `npx prettier --check <touched>` (repo me 230 files already non-conforming).
+2. User verification/debug (checklist): ✅ lazy-close DB verify = 5/5 ALL
+   PASS (script `verify-attendance.mjs`); baaki — report `?view=report&month=
+2026-10` hover (Hemant 01 Oct → `Duty 12:00 – 20:00` + `us din …` note),
+   daily view unchecked-out hours, self check-in se kal ka row close, duty
+   form break save.
+3. **User ke "OK" ke baad hi commit/push** (abhi tak staging me — gate).
+4. P4/P5 (neeche) — explicit go chahiye.
 
 ### Baaki pending (plan ke hisaab se)
 
 - **P4 gated**: `salary_mode=hours` + `ot_multiplier` (1.5) + preview diff —
   explicit go chahiye; `src/lib/server-salary.ts` abhi days-based (untouched).
 - **P5 gated**: status auto-derive (hours-based) + optional cron.
-- Optional §4.3: naye check-in se kal ka pending row auto-close (app-level ek line).
+- ~~Optional §4.3 auto-close~~ ✅ done (upar, uncommitted).
 - Recent session rules: linter par sirf touched files (`eslint .` me unrelated
   root/.cjs/android errors); PowerShell se file content rewrite mat karo
   (UTF-8 corrupt) — edit/write tools hi use karo.

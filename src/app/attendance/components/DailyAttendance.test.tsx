@@ -6,48 +6,76 @@ import DailyAttendance from "./DailyAttendance";
 // ── Fixtures ────────────────────────────────────────────────────────────────
 // Vikram: custom duty schedule row (11:00–19:00). Ravi: koi row nahi →
 // system_info biz hours fallback (09:30–18:30). Dono ke naam ke neeche duty.
-const db = vi.hoisted(() => ({
-  tables: {
-    mechanic_list: [
-      {
-        id: 7,
-        firstname: "Vikram",
-        lastname: "Kumar",
-        designation: "Senior",
-        image_path: null,
-        status: 1,
-      },
-      {
-        id: 8,
-        firstname: "Ravi",
-        lastname: "Sharma",
-        designation: "Junior",
-        image_path: null,
-        status: 1,
-      },
-    ],
-    attendance_list: [],
-    staff_duty_schedule: [
-      {
-        mechanic_id: 7,
-        duty_start: "11:00:00",
-        duty_end: "19:00:00",
-        break_minutes: 0,
-        effective_from: "2026-01-01",
-      },
-    ],
-    system_info: [
-      { meta_field: "biz_open", meta_value: "09:30" },
-      { meta_field: "biz_close", meta_value: "18:30" },
-    ],
-  },
-}));
+// Kal ka din: check-in hai par checkout NAHI (§9 gap — auto hours/out).
+const db = vi.hoisted(() => {
+  const fmt = (d: Date) => new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata" }).format(d);
+  const yesterday = fmt(new Date(Date.now() - 86400000));
+  return {
+    yesterday,
+    tables: {
+      mechanic_list: [
+        {
+          id: 7,
+          firstname: "Vikram",
+          lastname: "Kumar",
+          designation: "Senior",
+          image_path: null,
+          status: 1,
+        },
+        {
+          id: 8,
+          firstname: "Ravi",
+          lastname: "Sharma",
+          designation: "Junior",
+          image_path: null,
+          status: 1,
+        },
+      ],
+      attendance_list: [
+        // Kal open din: in 10:05, out NULL → engine auto @ duty_end 19:00
+        {
+          mechanic_id: 7,
+          curr_date: yesterday,
+          status: 1,
+          time_in: "10:05:00",
+          time_out: null,
+        },
+      ],
+      staff_duty_schedule: [
+        {
+          mechanic_id: 7,
+          duty_start: "11:00:00",
+          duty_end: "19:00:00",
+          break_minutes: 0,
+          effective_from: "2026-01-01",
+        },
+      ],
+      system_info: [
+        { meta_field: "biz_open", meta_value: "09:30" },
+        { meta_field: "biz_close", meta_value: "18:30" },
+      ],
+    },
+  };
+});
 
 vi.mock("@/lib/supabase", () => {
   const makeQuery = (rows: unknown[]) => {
     const q: Record<string, unknown> = {};
     const chain = () => q;
-    ["select", "eq", "gte", "lte", "order", "in", "update", "upsert", "insert"].forEach((m) => {
+    [
+      "select",
+      "eq",
+      "gte",
+      "lte",
+      "order",
+      "in",
+      "update",
+      "upsert",
+      "insert",
+      "lt",
+      "is",
+      "not",
+    ].forEach((m) => {
       q[m] = chain;
     });
     q.maybeSingle = () => Promise.resolve({ data: rows[0] ?? null, error: null });
@@ -63,7 +91,8 @@ vi.mock("@/lib/supabase", () => {
 });
 
 vi.mock("next/navigation", () => ({
-  useSearchParams: () => new URLSearchParams(),
+  // Selected date = kal (open checkout fixture wahi din hai)
+  useSearchParams: () => new URLSearchParams(`date=${db.yesterday}`),
 }));
 
 vi.mock("next/image", () => ({
@@ -95,5 +124,29 @@ describe("DailyAttendance — staff naam ke sath duty time", () => {
     expect(await screen.findAllByText(/Duty 11:00 – 19:00/)).not.toHaveLength(0);
     // Ravi — koi row nahi → system_info biz hours 09:30–18:30 fallback
     expect(screen.getAllByText(/Duty 09:30 – 18:30/).length).toBeGreaterThan(0);
+  });
+
+  it("§9 gap: checkout nahi (kal) → Hours auto-derived + Out '(auto)' — dono views", async () => {
+    render(<DailyAttendance userRole="staff" mechanicId={null} />);
+
+    // Vikram: duty 11:00–19:00, in 10:05, kal ka din → auto out 19:00,
+    // worked = 10:05 → 19:00 = 535m = "8h 55m" (desktop table + mobile card)
+    expect(await screen.findAllByText("8h 55m")).not.toHaveLength(0);
+    // Out: DB NULL → engine ka auto-checkout time + (auto) marker
+    expect(screen.getAllByText(/7:00 PM \(auto\)/).length).toBeGreaterThan(0);
+    // Ravi: koi attendance row hi nahi → "—" (as-is)
+    expect(screen.getAllByText("—").length).toBeGreaterThan(0);
+  });
+
+  it("naam ke neeche mahine ka Total working hours (MTD) dikhta hai", async () => {
+    render(<DailyAttendance userRole="staff" mechanicId={null} />);
+
+    // MTD range = selected month → aaj: sirf kal ka row (10:05 → auto 19:00 = 535m)
+    const totals = await screen.findAllByTitle(/Mahine ki total working hours/);
+    expect(totals.length).toBeGreaterThan(0);
+    totals.forEach((t) => {
+      expect(t).toHaveTextContent("Total 8h 55m");
+      expect(t.getAttribute("title")).toContain("535 min");
+    });
   });
 });

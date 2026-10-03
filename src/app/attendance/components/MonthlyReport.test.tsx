@@ -27,7 +27,13 @@ const db = vi.hoisted(() => ({
         time_out: null,
       },
     ],
-    staff_duty_schedule: [],
+    staff_duty_schedule: [] as Array<{
+      mechanic_id: number;
+      duty_start: string;
+      duty_end: string;
+      break_minutes: number;
+      effective_from: string;
+    }>,
     system_info: [],
   },
 }));
@@ -36,7 +42,7 @@ vi.mock("@/lib/supabase", () => {
   const makeQuery = (rows: unknown[]) => {
     const q: Record<string, unknown> = {};
     const chain = () => q;
-    ["select", "eq", "gte", "lte", "order", "in", "update"].forEach((m) => {
+    ["select", "eq", "gte", "lte", "order", "in", "update", "lt", "is", "not"].forEach((m) => {
       q[m] = chain;
     });
     q.then = (onFulfilled: unknown, onRejected: unknown) =>
@@ -193,5 +199,45 @@ describe("MonthlyReport compact cells + detail tooltip", () => {
     renderReport("staff");
     await findCell(/^1 Present/);
     expect(screen.queryByRole("button", { name: /Close \d+ pending/i })).not.toBeInTheDocument();
+  });
+
+  it("§9: tooltip Duty = current/DB duty + 'us din' note jab day purani duty par ho", async () => {
+    // Mid-month change (eff Oct 3): day1 purani duty (DEFAULT) par,
+    // label/tooltip aaj (fake clock = Oct 5) basis par → DB/modal match.
+    db.tables.staff_duty_schedule.push({
+      mechanic_id: 7,
+      duty_start: "11:00:00",
+      duty_end: "19:00:00",
+      break_minutes: 0,
+      effective_from: "2026-10-03",
+    });
+    try {
+      renderReport("admin");
+      const day1 = await findCell(/^1 Present/);
+      fireEvent.click(day1);
+
+      const tip = screen.getByTestId("day-tip");
+      // Current duty (labelBasis) hi tooltip me dikhti hai — DB se match
+      expect(tip).toHaveTextContent("11:00 – 19:00");
+      // Us din ki purani duty sirf note me
+      expect(tip).toHaveTextContent("us din 10:00 – 20:00");
+      // Naam ke neeche label bhi wahi (donom me parity)
+      expect(screen.getAllByText(/Duty 11:00 – 19:00/).length).toBeGreaterThan(0);
+    } finally {
+      db.tables.staff_duty_schedule.pop();
+    }
+  });
+
+  it("naam ke neeche mahine ka Total working hours (MTD minutes) dikhta hai", async () => {
+    renderReport("admin");
+    await findCell(/^1 Present/);
+
+    // Day1: 12:16→18:00 = 344m · Day4: 10:05→auto 20:00 = 595m → 939m = 15h 39m
+    const totals = await screen.findAllByTitle(/Mahine ki total working hours/);
+    expect(totals.length).toBeGreaterThan(0);
+    totals.forEach((t) => {
+      expect(t).toHaveTextContent("Total 15h 39m");
+      expect(t.getAttribute("title")).toContain("939 min");
+    });
   });
 });

@@ -13,7 +13,7 @@
 export type Duty = {
   start: string; // "HH:MM" (24h, normalised)
   end: string; // "HH:MM"
-  breakMinutes: number; // duty ke beech ka break (abhi UI me 0)
+  breakMinutes: number; // duty ke beech ka break (minutes, UI se editable)
 };
 
 export type DutyScheduleRow = {
@@ -121,10 +121,14 @@ export function dutyFor(
   return rowToDuty(row) || fallback;
 }
 
-/** Do duty same hain ya nahi (save skip karne ke liye). */
+/** Do duty same hain ya nahi (save skip karne ke liye). Break bhi count hota hai. */
 export function dutyEqual(a: Duty | null | undefined, b: Duty | null | undefined): boolean {
   if (!a || !b) return a === b;
-  return normTime(a.start) === normTime(b.start) && normTime(a.end) === normTime(b.end);
+  return (
+    normTime(a.start) === normTime(b.start) &&
+    normTime(a.end) === normTime(b.end) &&
+    (Number(a.breakMinutes) || 0) === (Number(b.breakMinutes) || 0)
+  );
 }
 
 /** "10:00 – 19:00" (en-dash) — UI ke liye. */

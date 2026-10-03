@@ -32,6 +32,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import AttendanceModal from "./AttendanceModal";
 import { currentMonthIST, parseISTDate, fmtTimeIST } from "@/lib/dateUtils";
 import { computeDay, fmtMins, nowIST } from "@/lib/attendance-hours";
+import { autoClosePrevDaysFor } from "@/lib/attendance-derive";
 import { bizDutyFromMeta, dutyFor, fmtDuty, type Duty, type DutyScheduleRow } from "@/lib/duty";
 import { logActivity } from "@/lib/activity";
 import { toast } from "@/lib/toast";
@@ -56,6 +57,8 @@ interface DayData {
   lateMin: number;
   /** Us din ki duty range "10:00 – 20:00" (mid-month change ho to alag ho sakta). */
   dutyRange: string;
+  /** Us din ki working minutes (engine se) — MTD total ke liye. */
+  workedMin: number;
 }
 interface MechanicMonthData {
   mechanic: Mechanic;
@@ -65,6 +68,8 @@ interface MechanicMonthData {
   absentDays: number;
   /** Naam ke neeche dikhne ke liye — month-end tak applicable duty range. */
   dutyLabel: string;
+  /** Mahine ki ab tak ki total working minutes (current month = aaj tak). */
+  monthMins: number;
 }
 
 /** Report header ke "Close pending days" button ke liye ek row. */
@@ -186,6 +191,7 @@ type TipState = {
  */
 function DayTip({
   tip,
+  dutyLabel,
   isAdmin,
   onEdit,
   onClose,
@@ -193,6 +199,8 @@ function DayTip({
   onLeave,
 }: {
   tip: TipState;
+  /** Staff ki current duty (label/DB basis) — tooltip isi ko match kare (§9). */
+  dutyLabel?: string;
   isAdmin: boolean;
   onEdit: () => void;
   onClose: () => void;
@@ -222,12 +230,15 @@ function DayTip({
     { label: "Total", value: d.hours, cls: "text-blue-400" },
   ];
   // P3: duty/OT/late — salary isi data se banegi, pehle se tooltip me.
+  // §9: Duty HAMESHA current/DB (label) basis par dikhe; us din ki purani duty
+  // sirf note me ("us din …") — tooltip DB/modal se match + history bhi dikhe.
+  const curDuty = dutyLabel || d.dutyRange;
+  const dutyChanged = !!d.dutyRange && !!curDuty && d.dutyRange !== curDuty;
   const meta = [
     {
       label: "Duty",
-      // Duty TIME (range) + uske neeche lambai — mid-month change bhi dikh jata.
-      value: d.dutyRange || "—",
-      sub: d.dutyMin > 0 ? fmtMins(d.dutyMin) : "",
+      value: curDuty || "—",
+      sub: dutyChanged ? `us din ${d.dutyRange}` : d.dutyMin > 0 ? fmtMins(d.dutyMin) : "",
       cls: "text-indigo-300",
     },
     {
@@ -359,164 +370,191 @@ export default function MonthlyReport({
   // Detail tooltip — hover (desktop) / tap (mobile). pinned = click se khula.
   const [tip, setTip] = useState<TipState | null>(null);
   const tipTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // §4.3 lazy auto-close — sirf ek baar per mount (refresh/month-change par na dohraaye).
+  const lazyClosedRef = useRef(false);
 
-  const fetchData = useCallback(async () => {
-    setLoading(true);
-    let mechQuery = supabase
-      .from("mechanic_list")
-      .select("id, firstname, lastname, image_path")
-      .eq("status", 1);
-    if (userRole === "staff") {
-      mechQuery = mechanicId ? mechQuery.eq("id", mechanicId) : mechQuery.eq("id", 0);
-    }
-    const { data: mechs, error: mechErr } = await mechQuery.order("firstname");
-    if (mechErr || !mechs || mechs.length === 0) {
-      setMechanicsData([]);
-      setPendingClose([]);
-      setDutyChanges(0);
-      setLoading(false);
-      return;
-    }
+  // silent=true: refresh ke liye — spinner blink nahi (data wahi hai, sirf
+  // auto-close ke baad rows/pending update chahiye).
+  const fetchData = useCallback(
+    async (silent = false) => {
+      if (!silent) setLoading(true);
+      let mechQuery = supabase
+        .from("mechanic_list")
+        .select("id, firstname, lastname, image_path")
+        .eq("status", 1);
+      if (userRole === "staff") {
+        mechQuery = mechanicId ? mechQuery.eq("id", mechanicId) : mechQuery.eq("id", 0);
+      }
+      const { data: mechs, error: mechErr } = await mechQuery.order("firstname");
+      if (mechErr || !mechs || mechs.length === 0) {
+        setMechanicsData([]);
+        setPendingClose([]);
+        setDutyChanges(0);
+        if (!silent) setLoading(false);
+        return;
+      }
 
-    const d = parseISTDate(month + "-01");
-    const y = d.getFullYear();
-    const m = d.getMonth() + 1;
-    const daysInMonth = new Date(y, m, 0).getDate();
-    const startDate = `${month}-01`;
-    const endDate = `${month}-${daysInMonth.toString().padStart(2, "0")}`;
+      const d = parseISTDate(month + "-01");
+      const y = d.getFullYear();
+      const m = d.getMonth() + 1;
+      const daysInMonth = new Date(y, m, 0).getDate();
+      const startDate = `${month}-01`;
+      const endDate = `${month}-${daysInMonth.toString().padStart(2, "0")}`;
 
-    const { data: attData } = await supabase
-      .from("attendance_list")
-      .select("id, mechanic_id, curr_date, status, time_in, time_out")
-      .gte("curr_date", startDate)
-      .lte("curr_date", endDate);
+      const { data: attData } = await supabase
+        .from("attendance_list")
+        .select("id, mechanic_id, curr_date, status, time_in, time_out")
+        .gte("curr_date", startDate)
+        .lte("curr_date", endDate);
 
-    const now = new Date();
-    const todayStr = new Intl.DateTimeFormat("en-CA", {
-      timeZone: "Asia/Kolkata",
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-    }).format(now);
+      const now = new Date();
+      const todayStr = new Intl.DateTimeFormat("en-CA", {
+        timeZone: "Asia/Kolkata",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+      }).format(now);
 
-    // P3: duty history (batch — N+1 nahi) + shop fallback, dono ek saath.
-    const mechIds = mechs.map((m) => m.id);
-    const [dutyRes, sysRes] = await Promise.all([
-      supabase
-        .from("staff_duty_schedule")
-        .select("mechanic_id, duty_start, duty_end, break_minutes, effective_from")
-        .in("mechanic_id", mechIds)
-        .lte("effective_from", endDate)
-        .order("effective_from", { ascending: false }),
-      supabase
-        .from("system_info")
-        .select("meta_field, meta_value")
-        .in("meta_field", ["biz_open", "biz_close"]),
-    ]);
-    const bizDuty = bizDutyFromMeta(
-      (sysRes.data as Array<{ meta_field: string; meta_value: string | null }>) || []
-    );
-    const dutyRows = (dutyRes.data || []) as DutyScheduleRow[];
-    // Mahine ke beech me duty badli? (effective_from strictly 01 tarikh ke baad)
-    setDutyChanges(
-      dutyRows.filter((r) => r.effective_from > startDate && r.effective_from <= endDate).length
-    );
-    const nowInfo = nowIST();
-    const pending: PendingClose[] = [];
+      // §9: label/tooltips ka "current duty" basis — aaj (modal parity; future
+      // row kabhi label na badle), purane mahine me month-end (historical).
+      const labelBasis = endDate < todayStr ? endDate : todayStr;
 
-    const result: MechanicMonthData[] = mechs.map((mech) => {
-      const sched = dutyRows.filter((r) => r.mechanic_id === mech.id);
-      const mechName = `${mech.firstname} ${mech.lastname}`.trim();
-      const days: DayData[] = [];
-      let fullDays = 0,
-        halfDays = 0,
-        absentDays = 0;
-      for (let day = 1; day <= daysInMonth; day++) {
-        const dateStr = `${month}-${day.toString().padStart(2, "0")}`;
-        const att = attData?.find((a) => a.mechanic_id === mech.id && a.curr_date === dateStr);
-        const isFuture = dateStr >= todayStr;
-        let status: 0 | 1 | 2 | 3;
-        if (att) {
-          status = att.status as 1 | 2 | 3;
-        } else if (isFuture) {
-          status = 0;
-        } else {
-          status = 2;
-        }
-        if (status === 1) fullDays++;
-        else if (status === 3) halfDays++;
-        else if (status === 2) absentDays++;
-        const timeIn = (att?.time_in as string)?.slice(0, 5) || "";
-        const rawOut = (att?.time_out as string)?.slice(0, 5) || "";
-        // Us din ki applicable duty (history se) → engine (auto-checkout + OT).
-        const duty = dutyFor(sched, dateStr, bizDuty);
-        const c = att
-          ? computeDay(
-              {
-                curr_date: dateStr,
-                status: Number(att.status),
-                time_in: (att.time_in as string) ?? null,
-                time_out: (att.time_out as string) ?? null,
-              },
+      // P3: duty history (batch — N+1 nahi) + shop fallback, dono ek saath.
+      const mechIds = mechs.map((m) => m.id);
+      const [dutyRes, sysRes] = await Promise.all([
+        supabase
+          .from("staff_duty_schedule")
+          .select("mechanic_id, duty_start, duty_end, break_minutes, effective_from")
+          .in("mechanic_id", mechIds)
+          .lte("effective_from", endDate)
+          .order("effective_from", { ascending: false }),
+        supabase
+          .from("system_info")
+          .select("meta_field, meta_value")
+          .in("meta_field", ["biz_open", "biz_close"]),
+      ]);
+      const bizDuty = bizDutyFromMeta(
+        (sysRes.data as Array<{ meta_field: string; meta_value: string | null }>) || []
+      );
+      const dutyRows = (dutyRes.data || []) as DutyScheduleRow[];
+      // Mahine ke beech me duty badli? (effective_from strictly 01 tarikh ke baad)
+      setDutyChanges(
+        dutyRows.filter((r) => r.effective_from > startDate && r.effective_from <= endDate).length
+      );
+      const nowInfo = nowIST();
+      const pending: PendingClose[] = [];
+
+      const result: MechanicMonthData[] = mechs.map((mech) => {
+        const sched = dutyRows.filter((r) => r.mechanic_id === mech.id);
+        const mechName = `${mech.firstname} ${mech.lastname}`.trim();
+        const days: DayData[] = [];
+        let fullDays = 0,
+          halfDays = 0,
+          absentDays = 0;
+        for (let day = 1; day <= daysInMonth; day++) {
+          const dateStr = `${month}-${day.toString().padStart(2, "0")}`;
+          const att = attData?.find((a) => a.mechanic_id === mech.id && a.curr_date === dateStr);
+          const isFuture = dateStr >= todayStr;
+          let status: 0 | 1 | 2 | 3;
+          if (att) {
+            status = att.status as 1 | 2 | 3;
+          } else if (isFuture) {
+            status = 0;
+          } else {
+            status = 2;
+          }
+          if (status === 1) fullDays++;
+          else if (status === 3) halfDays++;
+          else if (status === 2) absentDays++;
+          const timeIn = (att?.time_in as string)?.slice(0, 5) || "";
+          const rawOut = (att?.time_out as string)?.slice(0, 5) || "";
+          // Us din ki applicable duty (history se) → engine (auto-checkout + OT).
+          const duty = dutyFor(sched, dateStr, bizDuty);
+          const c = att
+            ? computeDay(
+                {
+                  curr_date: dateStr,
+                  status: Number(att.status),
+                  time_in: (att.time_in as string) ?? null,
+                  time_out: (att.time_out as string) ?? null,
+                },
+                duty,
+                nowInfo
+              )
+            : null;
+
+          // P3 "Close pending days": purana din + check-in ho chuka + checkout nahi.
+          if (
+            att?.id != null &&
+            att.time_in &&
+            !att.time_out &&
+            dateStr < todayStr &&
+            (att.status === 1 || att.status === 3)
+          ) {
+            pending.push({
+              id: Number(att.id),
+              dateStr,
+              mechName,
+              timeIn: att.time_in as string,
               duty,
-              nowInfo
-            )
-          : null;
+            });
+          }
 
-        // P3 "Close pending days": purana din + check-in ho chuka + checkout nahi.
-        if (
-          att?.id != null &&
-          att.time_in &&
-          !att.time_out &&
-          dateStr < todayStr &&
-          (att.status === 1 || att.status === 3)
-        ) {
-          pending.push({
-            id: Number(att.id),
-            dateStr,
-            mechName,
-            timeIn: att.time_in as string,
-            duty,
+          days.push({
+            day,
+            status,
+            isSunday: parseISTDate(dateStr).getDay() === 0,
+            timeIn,
+            timeOut: c?.effOut ?? rawOut, // effective (auto ya real)
+            hours: c && c.workedMin > 0 ? fmtMins(c.workedMin) : "—",
+            outAuto: c?.isAutoClosed ?? false,
+            working: c?.working ?? false,
+            otMin: c?.otMin ?? 0,
+            dutyMin: c?.dutyMin ?? 0,
+            lateMin: c?.lateInMin ?? 0,
+            dutyRange: fmtDuty(duty),
+            workedMin: c && c.workedMin > 0 ? c.workedMin : 0,
           });
         }
-
-        days.push({
-          day,
-          status,
-          isSunday: parseISTDate(dateStr).getDay() === 0,
-          timeIn,
-          timeOut: c?.effOut ?? rawOut, // effective (auto ya real)
-          hours: c && c.workedMin > 0 ? fmtMins(c.workedMin) : "—",
-          outAuto: c?.isAutoClosed ?? false,
-          working: c?.working ?? false,
-          otMin: c?.otMin ?? 0,
-          dutyMin: c?.dutyMin ?? 0,
-          lateMin: c?.lateInMin ?? 0,
-          dutyRange: fmtDuty(duty),
-        });
-      }
-      return {
-        mechanic: {
-          id: mech.id,
-          name: mechName,
-          image: (mech.image_path as string) || null,
-        },
-        days,
-        fullDays,
-        halfDays,
-        absentDays,
-        // Naam ke neeche: us mahine ki applicable duty (month-end wali).
-        dutyLabel: fmtDuty(dutyFor(sched, endDate, bizDuty)),
-      };
-    });
-    setMechanicsData(result);
-    setPendingClose(pending);
-    setLoading(false);
-  }, [month, userRole, mechanicId]);
+        return {
+          mechanic: {
+            id: mech.id,
+            name: mechName,
+            image: (mech.image_path as string) || null,
+          },
+          days,
+          fullDays,
+          halfDays,
+          absentDays,
+          // Naam ke neeche: current duty (labelBasis = aaj/month-end) — modal se match.
+          dutyLabel: fmtDuty(dutyFor(sched, labelBasis, bizDuty)),
+          // MTD total — current month me future days 0 hain to sum "aaj tak" hi hai.
+          monthMins: days.reduce((s, d) => s + d.workedMin, 0),
+        };
+      });
+      setMechanicsData(result);
+      setPendingClose(pending);
+      if (!silent) setLoading(false);
+    },
+    [month, userRole, mechanicId]
+  );
 
   useEffect(() => {
     fetchData();
   }, [fetchData, refreshKey]);
+
+  // §4.3 lazy: report kholne par purane open rows ek hi batch me auto-close
+  // (non-fatal, ek baar per mount) — kuch close hua to silent refresh (bina
+  // spinner) taaki pending list/persisted cols turant sahi dikhein.
+  useEffect(() => {
+    if (lazyClosedRef.current || !mechanicsData.length) return;
+    lazyClosedRef.current = true;
+    autoClosePrevDaysFor(mechanicsData.map((md) => md.mechanic.id))
+      .then((n) => {
+        if (n > 0) fetchData(true);
+      })
+      .catch(() => undefined);
+  }, [mechanicsData, fetchData]);
 
   // Tooltip: Esc se band + unmount par hover-timer cleanup.
   useEffect(() => {
@@ -891,6 +929,12 @@ export default function MonthlyReport({
                         >
                           Duty {md.dutyLabel}
                         </span>
+                        <span
+                          className="block text-[9px] font-bold text-blue-300 truncate max-w-[110px]"
+                          title={`Mahine ki total working hours (aaj tak) — ${md.monthMins} min`}
+                        >
+                          Total {fmtMins(md.monthMins)}
+                        </span>
                       </div>
                     </div>
                   </td>
@@ -1001,6 +1045,12 @@ export default function MonthlyReport({
                     <p className="text-[10px] text-muted font-medium">
                       {monthName} ·{" "}
                       <span className="font-bold text-indigo-300">Duty {md.dutyLabel}</span>
+                      <span
+                        className="ml-2 font-bold text-blue-300"
+                        title={`Mahine ki total working hours (aaj tak) — ${md.monthMins} min`}
+                      >
+                        Total {fmtMins(md.monthMins)}
+                      </span>
                     </p>
                   </div>
                 </div>
@@ -1118,6 +1168,7 @@ export default function MonthlyReport({
       {tip && (
         <DayTip
           tip={tip}
+          dutyLabel={mechanicsData.find((m) => m.mechanic.id === tip.mechanicId)?.dutyLabel}
           isAdmin={userRole === "admin"}
           onEdit={openEditFromTip}
           onClose={closeTip}

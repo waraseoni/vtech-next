@@ -152,12 +152,20 @@ describe("dutyFor", () => {
 
 describe("dutyEqual / fmtDuty / dutyLengthLabel", () => {
   it("compares normalised values", () => {
+    // Same times + same break (PostgREST "HH:MM:SS" normalise hokar equal)
+    expect(
+      dutyEqual(
+        { start: "10:00", end: "19:00", breakMinutes: 0 },
+        { start: "10:00:00", end: "19:00", breakMinutes: 0 }
+      )
+    ).toBe(true);
+    // Break alag = duty alag (break-only change bhi save hone chahiye)
     expect(
       dutyEqual(
         { start: "10:00", end: "19:00", breakMinutes: 0 },
         { start: "10:00:00", end: "19:00", breakMinutes: 30 }
       )
-    ).toBe(true);
+    ).toBe(false);
     expect(
       dutyEqual(
         { start: "10:00", end: "19:00", breakMinutes: 0 },
