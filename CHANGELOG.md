@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.51.0](https://github.com/waraseoni/vtech-next/compare/v1.50.0...v1.51.0) (2026-10-03)
+
+### Features
+
+* **attendance:** duty tooltip parity, auto-close prev days, break input + MTD totals ([22581d3](https://github.com/waraseoni/vtech-next/commit/22581d3925163a8270ab9897c899ba006a75ca15))
+
 ## [1.50.0](https://github.com/waraseoni/vtech-next/compare/v1.49.2...v1.50.0) (2026-10-02)
 
 ### Features
