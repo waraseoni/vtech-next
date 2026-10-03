@@ -1,8 +1,8 @@
 # Attendance — Compact Report + Duty Schedule + Working-Hours Engine
 
 > Status: **P1 ✅ · P2 ✅ · P3 ✅ (migration live 2026-10-02)
-> · §9 ✅ fixed 2026-10-03 (Option C + auto-close + break input + MTD totals +
-> lazy batch close — uncommitted, user verification pending, commit gate)**
+> · §9 ✅ fixed + verified 2026-10-03 (Option C + auto-close + break input +
+> MTD totals + lazy batch close — committed `22581d3`, live verify 5/5 ALL PASS)**
 > · Created: 2026-10-02
 > Scope: monthly report cell redesign, per-staff duty time with history,
 > auto-checkout, working-hours/OT calculation, path to hours-based salary.
@@ -249,13 +249,13 @@ earnDay = (regularMin / 60) * hourly + (otMin / 60) * hourly * ot_multiplier;
 
 ## 6. Phases
 
-| #      | Kaam                                                                                                                       | DB  | Salary risk               |
-| ------ | -------------------------------------------------------------------------------------------------------------------------- | --- | ------------------------- |
-| **P1** | ✅ Compact cell (date+hours) + legend + portal tooltip/tap popover + strip delete + tests                                  | ❌  | None                      |
-| **P2** | ✅ `staff_duty_schedule` migration + `duty.ts` (`dutyFor`) + duty UI **with history timeline** + admin-only write          | ✅  | None (write nahi ho raha) |
-| **P3** | ✅ `attendance-hours.ts` engine + wire (report/daily/modal) + persist cols + **"Close pending"** button + OT badge + tests | ✅  | None (status untouched)   |
-| **P4** | `salary_mode=hours` + OT multiplier + preview diff, **manual flag flip**                                                   | —   | ⚠️ Gated                  |
-| **P5** | Status auto-derive (hours-based), optional cron                                                                            | —   | ⚠️ Gated                  |
+| #      | Kaam                                                                                                                                                    | DB              | Salary risk               |
+| ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------- | ------------------------- |
+| **P1** | ✅ Compact cell (date+hours) + legend + portal tooltip/tap popover + strip delete + tests                                                               | ❌              | None                      |
+| **P2** | ✅ `staff_duty_schedule` migration + `duty.ts` (`dutyFor`) + duty UI **with history timeline** + admin-only write                                       | ✅              | None (write nahi ho raha) |
+| **P3** | ✅ `attendance-hours.ts` engine + wire (report/daily/modal) + persist cols + **"Close pending"** button + OT badge + tests                              | ✅              | None (status untouched)   |
+| **P4** | Hours-mode salary — **detailed spec ab `docs/plans/salary_hours_mode_plan.md`** (per-staff mode history + comparison page; global flag idea superseded) | ✅ (mode table) | ⚠️ Gated                  |
+| **P5** | Status auto-derive (hours-based), optional cron — spec bhi naye plan doc me                                                                             | —               | ⚠️ Gated                  |
 
 Har phase alag commit. **P1→P3 tak koi salary change nahi** — sirf sahi
 hours/OT dikhna shuru hota hai.
@@ -377,15 +377,17 @@ Hemant ki row `effective_from = 2026-10-02` → 01 Oct ko purani duty apply hoti
 2026-10` hover (Hemant 01 Oct → `Duty 12:00 – 20:00` + `us din …` note),
    daily view unchecked-out hours, self check-in se kal ka row close, duty
    form break save.
-3. **User ke "OK" ke baad hi commit/push** (abhi tak staging me — gate).
-4. P4/P5 (neeche) — explicit go chahiye.
+3. ~~User ke "OK" ke baad hi commit/push~~ ✅ done (`22581d3`, 2026-10-03).
+4. P4/P5 (neeche) — explicit go chahiye; detailed spec:
+   `docs/plans/salary_hours_mode_plan.md`.
 
 ### Baaki pending (plan ke hisaab se)
 
-- **P4 gated**: `salary_mode=hours` + `ot_multiplier` (1.5) + preview diff —
-  explicit go chahiye; `src/lib/server-salary.ts` abhi days-based (untouched).
-- **P5 gated**: status auto-derive (hours-based) + optional cron.
-- ~~Optional §4.3 auto-close~~ ✅ done (upar, uncommitted).
+- **P4 gated**: per-staff `day|hours` mode + hours formula + OT multiplier +
+  **comparison page** — full spec `docs/plans/salary_hours_mode_plan.md`
+  (open questions §10 usi doc me); `src/lib/server-salary.ts` abhi days-based (untouched).
+- **P5 gated**: status auto-derive (hours-based) + optional cron (spec bhi naye doc me).
+- ~~Optional §4.3 auto-close~~ ✅ done (committed `22581d3`).
 - Recent session rules: linter par sirf touched files (`eslint .` me unrelated
   root/.cjs/android errors); PowerShell se file content rewrite mat karo
   (UTF-8 corrupt) — edit/write tools hi use karo.
