@@ -317,9 +317,7 @@ export default function SaleForm({ mode, saleId }: SaleFormProps) {
   // I5: lines jo stock se zyada bik rahi hain (edit mode me apni purani qty wapas
   // judti hai — table row ke `totalAvailable` wahi formula). Oversell ALLOWED
   // rehta hai, sirf visibility + ek confirm.
-  const oversoldLines = items.filter(
-    (i) => i.qty > i.available_stock + (i.original_qty ?? 0)
-  );
+  const oversoldLines = items.filter((i) => i.qty > i.available_stock + (i.original_qty ?? 0));
 
   useEffect(() => {
     setOversellAck(false);
@@ -441,7 +439,7 @@ export default function SaleForm({ mode, saleId }: SaleFormProps) {
               userRole === "staff"
               ? mechanicId
               : Number(selectedMechanic) || null
-            : originalSaleData?.mechanic_id ?? null,
+            : (originalSaleData?.mechanic_id ?? null),
         p_payment_mode: paymentMode,
         p_remarks: remarks.trim() || null,
         p_last_edited_by: lastEditedBy,
@@ -524,8 +522,8 @@ export default function SaleForm({ mode, saleId }: SaleFormProps) {
           <AlertTriangle size={14} className="text-amber-400 flex-shrink-0 mt-0.5" />
           <div className="flex-1 text-amber-400 text-sm font-semibold">
             <p>
-              ⚠ {oversoldLines.length} line{oversoldLines.length !== 1 ? "s" : ""} stock se
-              zyada bik rahi hain — sale ke baad stock negative jayega (oversell allowed).
+              ⚠ {oversoldLines.length} line{oversoldLines.length !== 1 ? "s" : ""} stock se zyada
+              bik rahi hain — sale ke baad stock negative jayega (oversell allowed).
             </p>
             <p className="text-[11px] text-amber-500/90 font-bold mt-1 leading-relaxed">
               {oversoldLines
@@ -844,13 +842,15 @@ export default function SaleForm({ mode, saleId }: SaleFormProps) {
         </div>
       </Field>
 
-      {/* ── Submit Row ── */}
-      <div className="flex items-center justify-between gap-3 pt-4 border-t border-app">
-        <div>
+      {/* ── Submit Row (flex-wrap: narrow pe total + buttons ek line me fit nahi
+          hote the, card overflow-hidden se buttons kat ke frame se bahar chale
+          jate the — amount aane ke baad ye zyada hota tha) ── */}
+      <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-app">
+        <div className="min-w-0">
           <div className="text-[9px] text-app font-extrabold uppercase tracking-widest mb-0.5">
             Grand Total
           </div>
-          <div className="text-2xl font-black text-white">
+          <div className="text-xl sm:text-2xl font-black text-white">
             ₹{totalAmount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
           </div>
           {items.length > 0 && (
@@ -861,18 +861,18 @@ export default function SaleForm({ mode, saleId }: SaleFormProps) {
           )}
         </div>
 
-        <div className="flex gap-2.5">
+        <div className="flex flex-wrap gap-2.5 ml-auto">
           <button
             type="button"
             onClick={() => safeBack(router, "/direct-sales")}
-            className="px-5 py-2.5 bg-panel-2 hover:bg-white/5 border border-app text-muted hover:text-white rounded-xl text-sm font-extrabold transition-all"
+            className="px-4 sm:px-5 py-2.5 whitespace-nowrap bg-panel-2 hover:bg-white/5 border border-app text-muted hover:text-white rounded-xl text-sm font-extrabold transition-all"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={saving || items.length === 0}
-            className={`flex items-center gap-2 px-7 py-2.5 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-xl text-sm font-extrabold shadow-lg transition-all active:scale-95 ${
+            className={`flex items-center gap-2 px-5 sm:px-7 py-2.5 whitespace-nowrap disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-xl text-sm font-extrabold shadow-lg transition-all active:scale-95 ${
               oversellAck && oversoldLines.length > 0
                 ? "bg-amber-600 hover:bg-amber-700 shadow-amber-500/20"
                 : "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-500/20"
