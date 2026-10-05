@@ -7,9 +7,14 @@ import DailyAttendance from "./DailyAttendance";
 // Vikram: custom duty schedule row (11:00–19:00). Ravi: koi row nahi →
 // system_info biz hours fallback (09:30–18:30). Dono ke naam ke neeche duty.
 // Kal ka din: check-in hai par checkout NAHI (§9 gap — auto hours/out).
+//
+// Clock FIX: staff view hamesha selectedDate = today leta hai, aur §9 ka
+// auto-close tab lagta hai jab now >= duty_end + grace (19:15). Real clock se
+// ye suite sirf 19:15–24:00 IST ke beech pass hota tha — midnight ke baad fail
+// (now 00:xx → Rule 4 live, auto nahi). Isliye dateUtils ka todayIST/nowISTTime
+// mock karke clock fix rakha: today = 2026-10-05, abhi = 22:00 (duty_end ke baad).
 const db = vi.hoisted(() => {
-  const fmt = (d: Date) => new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata" }).format(d);
-  const yesterday = fmt(new Date(Date.now() - 86400000));
+  const yesterday = "2026-10-04"; // fixed today (2026-10-05) se ek din pehle
   return {
     yesterday,
     tables: {
@@ -56,6 +61,12 @@ const db = vi.hoisted(() => {
       ],
     },
   };
+});
+
+// Fixed clock (upar comment dekho) — baaki exports dateUtils ke as-is.
+vi.mock("@/lib/dateUtils", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/dateUtils")>();
+  return { ...actual, todayIST: () => "2026-10-05", nowISTTime: () => "22:00:00" };
 });
 
 vi.mock("@/lib/supabase", () => {
