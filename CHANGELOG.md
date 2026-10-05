@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.51.1](https://github.com/waraseoni/vtech-next/compare/v1.51.0...v1.51.1) (2026-10-05)
+
+### Bug Fixes
+
+* **direct-sales:** submit row wrap — narrow screen par buttons frame se bahar kat the the ([8718f5e](https://github.com/waraseoni/vtech-next/commit/8718f5ebcd1693759d7db72aa4d12c947e69e28a))
+
 ## [1.51.0](https://github.com/waraseoni/vtech-next/compare/v1.50.0...v1.51.0) (2026-10-03)
 
 ### Features
