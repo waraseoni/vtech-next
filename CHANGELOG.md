@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## [1.52.0](https://github.com/waraseoni/vtech-next/compare/v1.51.1...v1.52.0) (2026-10-09)
+
+### Features
+
+* **crop:** upload par crop + lightbox se existing photo edit — jobs, required parts, settings ([accd46d](https://github.com/waraseoni/vtech-next/commit/accd46d21714d8c96567acf06b636d21d3fe34c9))
+* **zoom:** photo par click se full-screen zoom viewer — wheel/pinch/pan + gallery arrows ([d58fa52](https://github.com/waraseoni/vtech-next/commit/d58fa527c4e5e80d71e1d70f2874fea476cce73d))
+
 ## [1.51.1](https://github.com/waraseoni/vtech-next/compare/v1.51.0...v1.51.1) (2026-10-05)
 
 ### Bug Fixes
