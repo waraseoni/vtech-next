@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from "react";
 import { supabase, getCachedUser } from "@/lib/supabase";
 import { openCamera } from "@/lib/nativeCamera";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
+import ZoomableImage from "@/components/ZoomableImage";
 import Link from "next/link";
 import { APP_VERSION_FULL } from "@/lib/app-version";
 import {
@@ -36,6 +36,7 @@ import {
 import NotificationSettings from "@/components/NotificationSettings";
 import PageLoader from "@/components/PageLoader";
 import { toast } from "@/lib/toast";
+import { useImageUpload } from "@/lib/useImageUpload";
 
 const inputCls =
   "w-full px-3 py-2.5 bg-app border border-app rounded-xl text-sm text-white outline-none focus:border-blue-500/60 transition-all placeholder:text-app";
@@ -47,6 +48,7 @@ type SysInfo = Record<string, string>;
 
 export default function SettingsPage() {
   const router = useRouter();
+  const { openCropper, cropperEl } = useImageUpload();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -471,14 +473,24 @@ export default function SettingsPage() {
   // ── Logo upload ──────────────────────────────────────────
   const handleLogoFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
-    if (f) {
+    e.target.value = "";
+    if (!f) return;
+    // SVG crop canvas pe rasterize hoti hai — waise hi chhod do
+    if (f.type === "image/svg+xml") {
       setLogoFile(f);
       setLogoFileName(f.name);
+      return;
     }
+    void openCropper(f, { title: "Logo", maxDim: 512 }).then((out) => {
+      if (!out) return;
+      setLogoFile(out);
+      setLogoFileName(out.name);
+    });
   };
 
-  const saveLogo = async () => {
-    if (!logoFile) return;
+  const saveLogo = async (file?: File) => {
+    const f = file ?? logoFile;
+    if (!f) return;
     setLogoSaving(true);
     try {
       const reader = new FileReader();
@@ -499,7 +511,7 @@ export default function SettingsPage() {
         toast.error("Logo file read nahi hui");
         setLogoSaving(false);
       };
-      reader.readAsDataURL(logoFile);
+      reader.readAsDataURL(f);
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : "Save failed");
       setLogoSaving(false);
@@ -524,14 +536,24 @@ export default function SettingsPage() {
   // ── Website Cover upload ─────────────────────────────────────
   const handleCoverFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
-    if (f) {
+    e.target.value = "";
+    if (!f) return;
+    if (f.type === "image/svg+xml") {
       setCoverFile(f);
       setCoverFileName(f.name);
+      return;
     }
+    // Preview frame 260×112 → fixed aspect (cropper me Free toggle bhi hai)
+    void openCropper(f, { title: "Cover", aspect: 260 / 112, maxDim: 1600 }).then((out) => {
+      if (!out) return;
+      setCoverFile(out);
+      setCoverFileName(out.name);
+    });
   };
 
-  const saveCover = async () => {
-    if (!coverFile) return;
+  const saveCover = async (file?: File) => {
+    const f = file ?? coverFile;
+    if (!f) return;
     setCoverSaving(true);
     try {
       const reader = new FileReader();
@@ -552,7 +574,7 @@ export default function SettingsPage() {
         toast.error("Cover file read nahi hui");
         setCoverSaving(false);
       };
-      reader.readAsDataURL(coverFile);
+      reader.readAsDataURL(f);
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : "Save failed");
       setCoverSaving(false);
@@ -571,6 +593,47 @@ export default function SettingsPage() {
       toast.error(err instanceof Error ? err.message : "Failed");
     } finally {
       setCoverSaving(false);
+    }
+  };
+
+  // ── Existing photo edit (lightbox → crop → seedha save) ─────────────
+  const editLogoPhoto = async () => {
+    if (!logo) return;
+    if (logo.includes(".svg") || logo.startsWith("data:image/svg")) {
+      toast.error("SVG crop nahi ho sakti — nayi image upload karein");
+      return;
+    }
+    try {
+      const res = await fetch(logo);
+      if (!res.ok) throw new Error("Logo load fail");
+      const blob = await res.blob();
+      const file = new File([blob], "logo", { type: blob.type || "image/png" });
+      const cropped = await openCropper(file, { title: "Edit Logo", maxDim: 512 });
+      if (cropped) await saveLogo(cropped);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Logo edit fail");
+    }
+  };
+
+  const editCoverPhoto = async () => {
+    if (!cover) return;
+    if (cover.includes(".svg") || cover.startsWith("data:image/svg")) {
+      toast.error("SVG crop nahi ho sakti — nayi image upload karein");
+      return;
+    }
+    try {
+      const res = await fetch(cover);
+      if (!res.ok) throw new Error("Cover load fail");
+      const blob = await res.blob();
+      const file = new File([blob], "cover", { type: blob.type || "image/jpeg" });
+      const cropped = await openCropper(file, {
+        title: "Edit Cover",
+        aspect: 260 / 112,
+        maxDim: 1600,
+      });
+      if (cropped) await saveCover(cropped);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Cover edit fail");
     }
   };
 
@@ -746,13 +809,13 @@ export default function SettingsPage() {
                 <div className="bg-app rounded-xl border border-app p-4">
                   <div className="flex items-center gap-4 flex-wrap">
                     {logo ? (
-                      <Image
+                      <ZoomableImage
                         src={logo}
                         alt="Logo"
                         width={200}
                         height={64}
                         className="max-h-16 max-w-[200px] object-contain bg-white rounded-lg p-1"
-                        
+                        onEdit={editLogoPhoto}
                       />
                     ) : (
                       <div className="w-24 h-16 rounded-lg bg-white/5 border border-dashed border-app-2 flex items-center justify-center">
@@ -823,7 +886,7 @@ export default function SettingsPage() {
                         {logoFile && (
                           <button
                             type="button"
-                            onClick={saveLogo}
+                            onClick={() => void saveLogo()}
                             disabled={logoSaving}
                             className="text-xs bg-blue-600 text-white px-3 py-1.5 rounded-lg disabled:opacity-50"
                           >
@@ -855,13 +918,13 @@ export default function SettingsPage() {
                 <div className="bg-app rounded-xl border border-app p-4">
                   <div className="flex items-center gap-4 flex-wrap">
                     {cover ? (
-                      <Image
+                      <ZoomableImage
                         src={cover}
                         alt="Cover"
                         width={260}
                         height={112}
                         className="max-h-28 max-w-[260px] object-cover rounded-lg border border-app"
-                        
+                        onEdit={editCoverPhoto}
                       />
                     ) : (
                       <div className="w-36 h-24 rounded-lg bg-white/5 border border-dashed border-app-2 flex items-center justify-center">
@@ -932,7 +995,7 @@ export default function SettingsPage() {
                         {coverFile && (
                           <button
                             type="button"
-                            onClick={saveCover}
+                            onClick={() => void saveCover()}
                             disabled={coverSaving}
                             className="text-xs bg-blue-600 text-white px-3 py-1.5 rounded-lg disabled:opacity-50"
                           >
@@ -1041,9 +1104,7 @@ export default function SettingsPage() {
                   maxLength={15}
                   className={`${inputCls} font-mono tracking-widest`}
                 />
-                <p className="text-[10px] text-app mt-1">
-                  GST Invoice par yeh number dikhega.
-                </p>
+                <p className="text-[10px] text-app mt-1">GST Invoice par yeh number dikhega.</p>
               </div>
             </div>
           </div>
@@ -1316,13 +1377,12 @@ export default function SettingsPage() {
               {/* Current signature preview */}
               {signature && (
                 <div className="flex items-center gap-4 p-4 bg-app rounded-xl border border-app">
-                  <Image
+                  <ZoomableImage
                     src={signature}
                     alt="Signature"
                     width={200}
                     height={64}
                     className="max-h-16 object-contain"
-                    
                   />
                   <button
                     type="button"
@@ -1701,13 +1761,12 @@ export default function SettingsPage() {
             </p>
             <div className="space-y-1">
               {logo && (
-                <Image
+                <ZoomableImage
                   src={logo}
                   alt="Logo"
                   width={160}
                   height={48}
                   className="max-h-12 max-w-[160px] object-contain bg-white rounded-lg p-0.5"
-                  
                 />
               )}
               <p className="text-white font-black text-base">{name || "System Name"}</p>
@@ -1741,6 +1800,7 @@ export default function SettingsPage() {
           </button>
         </div>
       </form>
+      {cropperEl}
     </div>
   );
 }

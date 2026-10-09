@@ -2,9 +2,10 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
+import ZoomableImage from "@/components/ZoomableImage";
 import { supabase } from "@/lib/supabase";
 import { safeImageSrc } from "@/lib/image-utils";
+import { useImageUpload } from "@/lib/useImageUpload";
 import {
   Plus,
   X,
@@ -65,6 +66,8 @@ export default function JobRequiredParts({ numId, jobStatus, onToast }: Props) {
   const formPhotoRef = useRef<HTMLInputElement>(null);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const { openCropper, cropperEl } = useImageUpload();
+  const [editingId, setEditingId] = useState<number | null>(null);
 
   // Master data
   const [suppliers, setSuppliers] = useState<{ id: number; name: string; contact: string }[]>([]);
@@ -181,10 +184,14 @@ export default function JobRequiredParts({ numId, jobStatus, onToast }: Props) {
 
   const onFormPhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
+    e.target.value = "";
     if (!f) return;
-    clearFormPhoto();
-    setPhotoFile(f);
-    setPhotoPreview(URL.createObjectURL(f));
+    void openCropper(f, { title: "Spare Photo" }).then((out) => {
+      if (!out) return;
+      clearFormPhoto();
+      setPhotoFile(out);
+      setPhotoPreview(URL.createObjectURL(out));
+    });
   };
 
   const submit = async () => {
@@ -266,6 +273,43 @@ export default function JobRequiredParts({ numId, jobStatus, onToast }: Props) {
     }
   };
 
+  // Existing photo edit: download → crop → uploadPhoto (old delete + replace)
+  const editPartPhoto = async (part: RequiredPart) => {
+    if (editingId !== null) return;
+    const src = safeImageSrc(part.photo_url);
+    if (!src) return;
+    setEditingId(part.id);
+    try {
+      const res = await fetch(src);
+      if (!res.ok) throw new Error("Photo download fail");
+      const blob = await res.blob();
+      const file = new File([blob], "spare.jpg", { type: blob.type || "image/jpeg" });
+      const cropped = await openCropper(file, { title: "Edit Spare Photo" });
+      if (cropped) await uploadPhoto(part, cropped);
+    } catch (e) {
+      onToast({ type: "error", msg: e instanceof Error ? e.message : "Photo edit fail" });
+    } finally {
+      setEditingId(null);
+    }
+  };
+
+  const editFormPhoto = async () => {
+    if (!photoPreview || !photoFile) return;
+    try {
+      const res = await fetch(photoPreview);
+      if (!res.ok) throw new Error("Preview load fail");
+      const blob = await res.blob();
+      const file = new File([blob], photoFile.name, { type: blob.type || "image/jpeg" });
+      const cropped = await openCropper(file, { title: "Edit Spare Photo" });
+      if (!cropped) return;
+      clearFormPhoto();
+      setPhotoFile(cropped);
+      setPhotoPreview(URL.createObjectURL(cropped));
+    } catch (e) {
+      onToast({ type: "error", msg: e instanceof Error ? e.message : "Photo edit fail" });
+    }
+  };
+
   if (loading)
     return (
       <div className="bg-panel-2 border border-app rounded-lg p-4 flex items-center gap-2 text-muted text-sm">
@@ -305,13 +349,13 @@ export default function JobRequiredParts({ numId, jobStatus, onToast }: Props) {
                 <div className="w-16 h-16 shrink-0">
                   {part.photo_url ? (
                     <div className="relative group">
-                      <Image
+                      <ZoomableImage
                         src={safeImageSrc(part.photo_url)}
                         alt="Spare"
                         width={64}
                         height={64}
                         className="w-16 h-16 object-cover rounded-lg border border-app"
-                        
+                        onEdit={() => editPartPhoto(part)}
                         onError={(e) => {
                           (e.target as HTMLImageElement).style.visibility = "hidden";
                         }}
@@ -343,7 +387,12 @@ export default function JobRequiredParts({ numId, jobStatus, onToast }: Props) {
                         className="hidden"
                         onChange={(e) => {
                           const f = e.target.files?.[0];
-                          if (f) uploadPhoto(part, f);
+                          e.target.value = "";
+                          if (!f) return;
+                          void openCropper(f, { title: "Spare Photo" }).then((out) => {
+                            if (out) void uploadPhoto(part, out);
+                            if (fileRef.current) fileRef.current.value = "";
+                          });
                         }}
                       />
                     </>
@@ -643,13 +692,13 @@ export default function JobRequiredParts({ numId, jobStatus, onToast }: Props) {
               <div className="flex items-center gap-3">
                 {photoPreview ? (
                   <div className="relative group">
-                    <Image
+                    <ZoomableImage
                       src={photoPreview}
                       alt="New spare"
                       width={64}
                       height={64}
                       className="w-16 h-16 object-cover rounded-lg border border-app"
-                      
+                      onEdit={editFormPhoto}
                     />
                     <button
                       type="button"
@@ -678,9 +727,7 @@ export default function JobRequiredParts({ numId, jobStatus, onToast }: Props) {
                   onChange={onFormPhotoChange}
                 />
                 {photoPreview && (
-                  <span className="text-[10px] text-muted">
-                    Spare ki photo attach ho jayegi
-                  </span>
+                  <span className="text-[10px] text-muted">Spare ki photo attach ho jayegi</span>
                 )}
               </div>
             </div>
@@ -707,6 +754,7 @@ export default function JobRequiredParts({ numId, jobStatus, onToast }: Props) {
             </div>
           </div>
         )}
+        {cropperEl}
       </div>
     </fieldset>
   );

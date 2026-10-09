@@ -41,6 +41,7 @@ import {
 } from "lucide-react";
 import PageLoader from "@/components/PageLoader";
 import WaPreviewModal from "@/components/WaPreviewModal";
+import Lightbox from "@/components/Lightbox";
 import JobSpotPicker from "@/components/JobSpotPicker";
 import JobRequiredParts from "@/components/JobRequiredParts";
 import WaitingPartsBadge from "@/components/WaitingPartsBadge";
@@ -53,6 +54,7 @@ import { JOB_STATUS } from "@/lib/status-colors";
 import { logger } from "@/lib/logger";
 import { toast } from "@/lib/toast";
 import { requireAdmin } from "@/lib/requireAdmin";
+import { useImageUpload } from "@/lib/useImageUpload";
 
 // ─── IST HELPERS ─────────────────────────────────────────────────────────────
 // Legacy PHP/MariaDB activity logs predate the Next.js handover (Aug 15, 2026)
@@ -293,7 +295,9 @@ function Fieldset({
     danger: "text-red-400 border-red-500/30",
   };
   return (
-    <fieldset className={`border-2 min-w-0 ${colors[color].split(" ")[1]} rounded-lg bg-panel-2 mb-4`}>
+    <fieldset
+      className={`border-2 min-w-0 ${colors[color].split(" ")[1]} rounded-lg bg-panel-2 mb-4`}
+    >
       <legend
         className={`px-3 py-1 text-sm font-bold ${colors[color].split(" ")[0]} ml-3 flex items-center gap-1.5`}
       >
@@ -361,8 +365,12 @@ export default function JobDetailsPage() {
   const [uploading, setUploading] = useState(false);
   const [photoErr, setPhotoErr] = useState("");
   const [imgPopup, setImgPopup] = useState(false);
+  // Item photo par click → zoom lightbox (index of images[])
+  const [zoomIdx, setZoomIdx] = useState<number | null>(null);
+  const [editingPhoto, setEditingPhoto] = useState(false);
   const imgInputRef = useRef<HTMLInputElement>(null);
   const imgCamInputRef = useRef<HTMLInputElement>(null);
+  const { openCropper, cropperEl } = useImageUpload();
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
@@ -371,8 +379,19 @@ export default function JobDetailsPage() {
     setUploading(true);
     setPhotoErr("");
     try {
+      // Pick → har photo crop (Cancel = baaki chhod do) → compress → upload
+      const picked: File[] = [];
+      for (const f of files) {
+        const out = await openCropper(f, { title: "Item Photo", maxDim: 1600 });
+        if (!out) break;
+        picked.push(out);
+      }
+      if (picked.length === 0) {
+        setUploading(false);
+        return;
+      }
       const numId = Number(jobId?.trim());
-      const compressed = await Promise.all(files.map((f) => compressImage(f)));
+      const compressed = await Promise.all(picked.map((f) => compressImage(f)));
       const over = compressed.filter((c) => c.bytes > 100 * 1024);
       if (over.length > 0) {
         setPhotoErr(
@@ -414,6 +433,55 @@ export default function JobDetailsPage() {
     }
   };
 
+  // Photo edit: lightbox band → download → crop → nayi upload → purani row delete
+  const editItemPhoto = async () => {
+    const idx = zoomIdx;
+    const img = idx !== null ? images[idx] : null;
+    if (!img || editingPhoto) return;
+    setZoomIdx(null);
+    setEditingPhoto(true);
+    setPhotoErr("");
+    try {
+      const src = safeImageSrc(img.image_path);
+      const res = await fetch(src);
+      if (!res.ok) throw new Error("Photo download fail");
+      const blob = await res.blob();
+      const file = new File([blob], img.image_path.split("/").pop() || "photo.jpg", {
+        type: blob.type || "image/jpeg",
+      });
+      const cropped = await openCropper(file, { title: "Edit Item Photo", maxDim: 1600 });
+      if (!cropped) return;
+      const compressed = await compressImage(cropped);
+      if (compressed.bytes > 100 * 1024) {
+        setPhotoErr("Cropped image abhi bhi 100KB se badi hai — kam resolution try karein");
+        return;
+      }
+      const numId = Number(jobId?.trim());
+      const fd = new FormData();
+      fd.append("action", "upload");
+      fd.append("transactionId", String(numId));
+      fd.append("files", compressed.file);
+      const upRes = await fetch("/api/job-images", { method: "POST", body: fd });
+      const upJson = await upRes.json();
+      if (upJson.status !== "success") throw new Error(upJson.msg || "Upload failed");
+      const newImg = (upJson.uploaded as TransactionImage[])[0];
+      if (!newImg) throw new Error("Upload failed");
+      setImages((prev) => prev.map((im, i) => (i === idx ? newImg : im)));
+      // Purani row best-effort delete (nayi photo save ho chuki hai)
+      const dfd = new FormData();
+      dfd.append("action", "delete");
+      dfd.append("transactionId", String(numId));
+      dfd.append("imageId", String(img.id));
+      dfd.append("imagePath", img.image_path);
+      fetch("/api/job-images", { method: "POST", body: dfd }).catch(() => {});
+    } catch (err: unknown) {
+      setPhotoErr(err instanceof Error ? err.message : "Edit failed");
+    } finally {
+      setEditingPhoto(false);
+      setZoomIdx(idx); // updated photo ke saath lightbox wapas
+    }
+  };
+
   // Status modal
   const [showStatusModal, setShowStatusModal] = useState(false);
   // Sprint 3 #14: WA preview (direct open nahi)
@@ -449,7 +517,9 @@ export default function JobDetailsPage() {
       const metaIds = jobNoStr && jobNoStr !== jobIdStr ? [jobIdStr, jobNoStr] : [jobIdStr];
       const { data: actRows, error: actErr } = await supabase
         .from("activity_logs")
-        .select("id, user_id, action, module, details, date_created, geo_lat, geo_lng, geo_distance_m")
+        .select(
+          "id, user_id, action, module, details, date_created, geo_lat, geo_lng, geo_distance_m"
+        )
         .in("module", ["Jobs", "Transactions"])
         .in("meta_id", metaIds)
         .order("date_created", { ascending: false })
@@ -1091,10 +1161,7 @@ ${svcHtml}${prodHtml}
                           </tbody>
                           <tfoot className="bg-app font-bold border-t border-app">
                             <tr>
-                              <td
-                                colSpan={2}
-                                className="px-3 py-2 text-right text-sm text-muted"
-                              >
+                              <td colSpan={2} className="px-3 py-2 text-right text-sm text-muted">
                                 Services Total:
                               </td>
                               <td className="px-3 py-2 text-right text-emerald-400">
@@ -1142,10 +1209,7 @@ ${svcHtml}${prodHtml}
                           </tbody>
                           <tfoot className="bg-app font-bold border-t border-app">
                             <tr>
-                              <td
-                                colSpan={4}
-                                className="px-3 py-2 text-right text-sm text-muted"
-                              >
+                              <td colSpan={4} className="px-3 py-2 text-right text-sm text-muted">
                                 Products Total:
                               </td>
                               <td className="px-3 py-2 text-right text-emerald-400">
@@ -1265,15 +1329,15 @@ ${svcHtml}${prodHtml}
                     )}
                     {images.length > 0 ? (
                       <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                        {images.map((img) => (
+                        {images.map((img, idx) => (
                           <div key={img.id} className="relative group">
                             <Image
                               src={safeImageSrc(img.image_path)}
                               alt="Item"
                               width={640}
                               height={128}
-                              className="w-full h-32 object-cover rounded-lg border border-app hover:opacity-80 transition-opacity"
-                              
+                              className="w-full h-32 object-cover rounded-lg border border-app hover:opacity-80 transition-opacity cursor-zoom-in"
+                              onClick={() => setZoomIdx(idx)}
                               onError={(e) => {
                                 (e.target as HTMLImageElement).style.display = "none";
                               }}
@@ -1650,9 +1714,7 @@ ${svcHtml}${prodHtml}
             {/* Modal Body */}
             <div className="p-5 space-y-4">
               <div>
-                <label className="block text-sm font-semibold text-muted mb-1.5">
-                  New Status
-                </label>
+                <label className="block text-sm font-semibold text-muted mb-1.5">New Status</label>
                 <select
                   value={newStatus}
                   onChange={(e) => setNewStatus(parseInt(e.target.value))}
@@ -1827,9 +1889,7 @@ ${svcHtml}${prodHtml}
               )}
 
               <div>
-                <label className="block text-xs font-semibold text-muted mb-1.5">
-                  Bill No.
-                </label>
+                <label className="block text-xs font-semibold text-muted mb-1.5">Bill No.</label>
                 <input
                   type="text"
                   value={payBillNo}
@@ -1981,6 +2041,21 @@ ${svcHtml}${prodHtml}
           onClose={() => setWaPreview(null)}
         />
       )}
+
+      {/* ══ ITEM PHOTO ZOOM (click → lightbox, arrows se gallery) ═════════════ */}
+      {zoomIdx !== null && images[zoomIdx] && (
+        <Lightbox
+          src={safeImageSrc(images[zoomIdx].image_path)}
+          alt="Item photo"
+          srcs={images.map((i) => safeImageSrc(i.image_path))}
+          index={zoomIdx}
+          onIndexChange={setZoomIdx}
+          onEdit={editItemPhoto}
+          onClose={() => setZoomIdx(null)}
+        />
+      )}
+
+      {cropperEl}
     </div>
   );
 }
