@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import Image from "next/image";
+import ZoomableImage from "@/components/ZoomableImage";
 import { safeImageSrc } from "@/lib/image-utils";
 import { supabase, getCachedUser } from "@/lib/supabase";
 import { stockStatusStyle, alertThreshold, stockValue } from "@/lib/inventory";
@@ -158,10 +158,19 @@ export default function ProductDetailPage() {
 
   useEffect(() => {
     getCachedUser().then(({ data: { user } }) => {
-      if (!user) { setRoleChecked(true); return; }
+      if (!user) {
+        setRoleChecked(true);
+        return;
+      }
       supabase
-        .from("profiles").select("role").eq("id", user.id).single()
-        .then(({ data }) => { setUserRole(data?.role ?? "staff"); setRoleChecked(true); });
+        .from("profiles")
+        .select("role")
+        .eq("id", user.id)
+        .single()
+        .then(({ data }) => {
+          setUserRole(data?.role ?? "staff");
+          setRoleChecked(true);
+        });
     });
   }, []);
 
@@ -547,13 +556,12 @@ export default function ProductDetailPage() {
               <div className="flex items-start gap-3">
                 {safeImageSrc(product.image_path) ? (
                   <div className="relative flex-shrink-0">
-                    <Image
+                    <ZoomableImage
                       src={safeImageSrc(product.image_path)}
                       alt={product.name}
                       width={64}
                       height={64}
                       className="w-16 h-16 rounded-2xl object-cover border border-app"
-                      
                     />
                     <span
                       className={`absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full border-2 border-app ${st.bar}`}
@@ -777,11 +785,7 @@ export default function ProductDetailPage() {
           <div className="p-3">
             {locEditing ? (
               <div className="space-y-3">
-                <LocationPicker
-                  value={editLoc}
-                  onChange={setEditLoc}
-                  hierarchy={locHierarchy}
-                />
+                <LocationPicker value={editLoc} onChange={setEditLoc} hierarchy={locHierarchy} />
                 <div className="flex gap-2">
                   <button
                     onClick={async () => {
@@ -799,8 +803,7 @@ export default function ProductDetailPage() {
                           }),
                         });
                         const json = await res.json();
-                        if (!res.ok || !json?.ok)
-                          throw new Error(json?.error || "Save failed");
+                        if (!res.ok || !json?.ok) throw new Error(json?.error || "Save failed");
 
                         await logActivity(
                           "Updated Product Location",
@@ -842,29 +845,29 @@ export default function ProductDetailPage() {
                   if (xId) segs.push(`X${xId}`);
                   const code = segs.join("-");
                   return (
-                  <div
-                    key={loc.id}
-                    className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-panel-2 border border-app hover:border-emerald-500/30 transition-colors"
-                  >
-                    <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center flex-shrink-0">
-                      <MapPin size={13} className="text-emerald-400" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-black text-app-2 truncate">
-                          {locPath(loc)}
-                        </span>
-                        {code && (
-                          <span className="text-[10px] font-mono font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 rounded flex-shrink-0">
-                            {code}
+                    <div
+                      key={loc.id}
+                      className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-panel-2 border border-app hover:border-emerald-500/30 transition-colors"
+                    >
+                      <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center flex-shrink-0">
+                        <MapPin size={13} className="text-emerald-400" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-black text-app-2 truncate">
+                            {locPath(loc)}
                           </span>
-                        )}
-                      </div>
-                      <div className="text-[9px] text-muted-2 font-bold mt-0.5">
-                        Product location
+                          {code && (
+                            <span className="text-[10px] font-mono font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 rounded flex-shrink-0">
+                              {code}
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-[9px] text-muted-2 font-bold mt-0.5">
+                          Product location
+                        </div>
                       </div>
                     </div>
-                  </div>
                   );
                 })}
                 {stats.available <= 0 && (
@@ -1332,9 +1335,7 @@ export default function ProductDetailPage() {
                       >
                         {ledger.length} movements
                       </td>
-                      <td className="px-5 py-2.5 text-right text-muted-2 text-xs font-bold">
-                        Net
-                      </td>
+                      <td className="px-5 py-2.5 text-right text-muted-2 text-xs font-bold">Net</td>
                       <td className="px-5 py-2.5 text-right font-black text-emerald-400">
                         {stats.available}
                       </td>

@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback, Suspense } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
-import Image from "next/image";
+import ZoomableImage from "@/components/ZoomableImage";
 import { safeImageSrc } from "@/lib/image-utils";
 import { Loader2, Printer, Star, X } from "lucide-react";
 import { todayIST, formatIST, startOfMonthIST, endOfMonthIST } from "@/lib/dateUtils";
@@ -30,13 +30,12 @@ const ClientAvatar = ({
 }) => {
   const src = safeImageSrc(image);
   return src ? (
-    <Image
+    <ZoomableImage
       src={src}
       alt={name}
       width={32}
       height={32}
-      className={`${cls} rounded-full object-cover flex-shrink-0 border border-white/10 cursor-zoom-in`}
-      
+      className={`${cls} rounded-full object-cover flex-shrink-0 border border-white/10`}
       onError={(e) => {
         (e.currentTarget as HTMLImageElement).style.display = "none";
       }}
@@ -474,9 +473,7 @@ function TopCustomersContent() {
                       </div>
                     </td>
                     <td className="px-3 py-2.5 text-xs text-muted">{r.contact || "—"}</td>
-                    <td className="px-3 py-2.5 text-xs text-center text-app-2">
-                      {r.total_jobs}
-                    </td>
+                    <td className="px-3 py-2.5 text-xs text-center text-app-2">{r.total_jobs}</td>
                     <td className="px-3 py-2.5 text-xs text-right font-bold text-emerald-400">
                       <button
                         onClick={() =>

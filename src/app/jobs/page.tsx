@@ -22,7 +22,7 @@
 
 import React, { useState, useEffect, useCallback, useMemo, useRef, Suspense } from "react";
 import { supabase, getCachedUser } from "@/lib/supabase";
-import Image from "next/image";
+import ZoomableImage from "@/components/ZoomableImage";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import { todayIST, toISTString, parseISTDate, formatIST, dtLocalToIST } from "@/lib/dateUtils";
@@ -123,13 +123,12 @@ const ClientMiniAvatar = ({ image, name }: { image?: string; name: string }) => 
   const src = safeImageSrc(image);
   if (src) {
     return (
-      <Image
+      <ZoomableImage
         src={src}
         alt={name}
         width={32}
         height={32}
-        className="w-8 h-8 rounded-full object-cover flex-shrink-0border border-white/10"
-        
+        className="w-8 h-8 rounded-full object-cover flex-shrink-0 border border-white/10"
         onError={(e) => {
           (e.currentTarget as HTMLImageElement).style.display = "none";
         }}
@@ -445,8 +444,7 @@ function JobsListContent() {
 
   // Sprint 4 #19: master-detail preview (?preview=<id>, xl slide-over)
   const previewParam = searchParams.get("preview");
-  const previewId =
-    previewParam && /^\d+$/.test(previewParam) ? Number(previewParam) : null;
+  const previewId = previewParam && /^\d+$/.test(previewParam) ? Number(previewParam) : null;
   const openPreview = (id: number) => {
     const p = new URLSearchParams(searchParams.toString());
     p.set("preview", String(id));
@@ -1189,7 +1187,7 @@ function JobsListContent() {
             bulkUpdateStatus(Number(bulkStatus));
           }}
           disabled={bulkActionLoading || viewOnly}
-          className={`!text-white border-none rounded-lg px-3 md:px-5 py-1.5 md:py-2 font-bold text-xs md:text-sm cursor-pointer transition-opacity hover:opacity-90 disabled:opacity-60 flex items-center gap-1 whitespace-nowrap bg-emerald-600 hover:bg-emerald-700 shadow-sm ${viewOnly ? 'opacity-50 cursor-not-allowed' : ''}`}
+          className={`!text-white border-none rounded-lg px-3 md:px-5 py-1.5 md:py-2 font-bold text-xs md:text-sm cursor-pointer transition-opacity hover:opacity-90 disabled:opacity-60 flex items-center gap-1 whitespace-nowrap bg-emerald-600 hover:bg-emerald-700 shadow-sm ${viewOnly ? "opacity-50 cursor-not-allowed" : ""}`}
           title={viewOnly ? "Bulk status change sirf office ke andar se possible hai." : undefined}
         >
           <CheckCircle2 size={13} className="!text-white" />{" "}
@@ -1203,8 +1201,12 @@ function JobsListContent() {
             setBulkMoveOpen(true);
           }}
           disabled={bulkActionLoading || viewOnly}
-          title={viewOnly ? "Bulk move sirf office ke andar se possible hai." : "Selected jobs ko dusre spot par le jao"}
-          className={`!text-white border-none rounded-lg px-3 md:px-4 py-1.5 md:py-2 font-bold text-xs md:text-sm cursor-pointer transition-opacity hover:opacity-90 disabled:opacity-60 flex items-center gap-1 whitespace-nowrap bg-amber-600 hover:bg-amber-700 shadow-sm ${viewOnly ? 'opacity-50 cursor-not-allowed' : ''}`}
+          title={
+            viewOnly
+              ? "Bulk move sirf office ke andar se possible hai."
+              : "Selected jobs ko dusre spot par le jao"
+          }
+          className={`!text-white border-none rounded-lg px-3 md:px-4 py-1.5 md:py-2 font-bold text-xs md:text-sm cursor-pointer transition-opacity hover:opacity-90 disabled:opacity-60 flex items-center gap-1 whitespace-nowrap bg-amber-600 hover:bg-amber-700 shadow-sm ${viewOnly ? "opacity-50 cursor-not-allowed" : ""}`}
         >
           <MapPin size={13} className="!text-white" /> Move
         </button>
@@ -1212,7 +1214,7 @@ function JobsListContent() {
         <button
           onClick={openBulkWhatsApp}
           disabled={viewOnly}
-          className={`!text-white border-none rounded-lg px-3 md:px-4 py-1.5 md:py-2 font-bold text-xs md:text-sm cursor-pointer transition-opacity hover:opacity-90 flex items-center gap-1 whitespace-nowrap bg-[#25d366] hover:bg-[#20ba5a] shadow-sm ${viewOnly ? 'opacity-50 cursor-not-allowed' : ''}`}
+          className={`!text-white border-none rounded-lg px-3 md:px-4 py-1.5 md:py-2 font-bold text-xs md:text-sm cursor-pointer transition-opacity hover:opacity-90 flex items-center gap-1 whitespace-nowrap bg-[#25d366] hover:bg-[#20ba5a] shadow-sm ${viewOnly ? "opacity-50 cursor-not-allowed" : ""}`}
           title={viewOnly ? "Bulk WA report sirf office ke andar se possible hai." : undefined}
         >
           <MessageCircle size={13} className="!text-white" /> WA Report
@@ -1221,7 +1223,7 @@ function JobsListContent() {
         <button
           onClick={() => openCombinedInvoice("non_gst")}
           disabled={viewOnly}
-          className={`!text-white border-none rounded-lg px-3 md:px-4 py-1.5 md:py-2 font-bold text-xs md:text-sm cursor-pointer transition-opacity hover:opacity-90 flex items-center gap-1 whitespace-nowrap bg-slate-600 hover:bg-slate-700 shadow-sm ${viewOnly ? 'opacity-50 cursor-not-allowed' : ''}`}
+          className={`!text-white border-none rounded-lg px-3 md:px-4 py-1.5 md:py-2 font-bold text-xs md:text-sm cursor-pointer transition-opacity hover:opacity-90 flex items-center gap-1 whitespace-nowrap bg-slate-600 hover:bg-slate-700 shadow-sm ${viewOnly ? "opacity-50 cursor-not-allowed" : ""}`}
           title={viewOnly ? "Bulk estimate sirf office ke andar se possible hai." : undefined}
         >
           <FileText size={13} className="!text-white" /> Estimate
@@ -1255,10 +1257,7 @@ function JobsListContent() {
           <p className="font-black text-white text-sm flex items-center gap-1.5">
             <MapPin size={14} className="text-amber-400" /> Move {selectedIds.size} Job(s)
           </p>
-          <button
-            onClick={() => setBulkMoveOpen(false)}
-            className="text-muted hover:text-white"
-          >
+          <button onClick={() => setBulkMoveOpen(false)} className="text-muted hover:text-white">
             <X size={16} />
           </button>
         </div>
@@ -1315,13 +1314,13 @@ function JobsListContent() {
           }}
         />
         <button
-            onClick={handleSpotSave}
-            disabled={savingSpot || viewOnly}
-            className={`mt-4 w-full bg-amber-600 hover:bg-amber-700 !text-white font-bold text-xs py-2.5 rounded-lg transition-colors disabled:opacity-50 ${viewOnly ? 'opacity-50 cursor-not-allowed' : ''}`}
-            title={viewOnly ? "Spot change sirf office ke andar se possible hai." : undefined}
-          >
-            {savingSpot ? "Saving…" : "Spot Save karo"}
-          </button>
+          onClick={handleSpotSave}
+          disabled={savingSpot || viewOnly}
+          className={`mt-4 w-full bg-amber-600 hover:bg-amber-700 !text-white font-bold text-xs py-2.5 rounded-lg transition-colors disabled:opacity-50 ${viewOnly ? "opacity-50 cursor-not-allowed" : ""}`}
+          title={viewOnly ? "Spot change sirf office ke andar se possible hai." : undefined}
+        >
+          {savingSpot ? "Saving…" : "Spot Save karo"}
+        </button>
       </div>
     </div>
   );
@@ -1533,237 +1532,241 @@ function JobsListContent() {
             {/* Sprint 3 #13: refetch par stale rows ki jagah skeleton */}
             {!(loading && hasLoaded) &&
               paginatedTransactions.map((txn, idx) => {
-              const clientName = getClientName(txn);
-              const balance = getClientBalance(txn);
-              const phone = txn.client_contact?.replace(/\D/g, "") || "";
+                const clientName = getClientName(txn);
+                const balance = getClientBalance(txn);
+                const phone = txn.client_contact?.replace(/\D/g, "") || "";
 
-              return (
-                <tr
-                  key={txn.id}
-                  className={`hover:bg-white/[0.02] transition-colors ${selectedIds.has(txn.id) ? "bg-blue-500/[0.06]" : ""}`}
-                >
-                  <td className="px-3 py-2.5 text-center">
-                    <button
-                      onClick={() => toggleSelect(txn.id)}
-                      title="Select / Deselect"
-                      className="text-muted hover:text-blue-400 transition-colors"
-                    >
-                      {selectedIds.has(txn.id) ? <CheckSquare size={13} /> : <Square size={13} />}
-                    </button>
-                  </td>
-                  <td className="px-3 py-2.5 text-muted-2 text-xs">
-                    {pageIndex * pageSize + idx + 1}
-                  </td>
+                return (
+                  <tr
+                    key={txn.id}
+                    className={`hover:bg-white/[0.02] transition-colors ${selectedIds.has(txn.id) ? "bg-blue-500/[0.06]" : ""}`}
+                  >
+                    <td className="px-3 py-2.5 text-center">
+                      <button
+                        onClick={() => toggleSelect(txn.id)}
+                        title="Select / Deselect"
+                        className="text-muted hover:text-blue-400 transition-colors"
+                      >
+                        {selectedIds.has(txn.id) ? <CheckSquare size={13} /> : <Square size={13} />}
+                      </button>
+                    </td>
+                    <td className="px-3 py-2.5 text-muted-2 text-xs">
+                      {pageIndex * pageSize + idx + 1}
+                    </td>
 
-                  {/* Date + Time (PHP feature) */}
-                  <td className="px-3 py-2.5">
-                    <div className="text-xs text-app-2 font-medium">
-                      {fmtDate(txn.date_created)}
-                    </div>
-                    <div className="text-[10px] text-muted-2 mt-0.5">
-                      {fmtTime(txn.date_created)}
-                    </div>
-                  </td>
+                    {/* Date + Time (PHP feature) */}
+                    <td className="px-3 py-2.5">
+                      <div className="text-xs text-app-2 font-medium">
+                        {fmtDate(txn.date_created)}
+                      </div>
+                      <div className="text-[10px] text-muted-2 mt-0.5">
+                        {fmtTime(txn.date_created)}
+                      </div>
+                    </td>
 
-                  <td className="px-3 py-2.5">
-                    <Link
-                      href={`/jobs/${txn.id}/view`}
-                      className="font-bold text-blue-400 hover:text-blue-300 text-xs transition-colors no-underline"
-                    >
-                      #{txn.job_id}
-                    </Link>
-                    {txn.status <= 3 && (openPartCounts.get(txn.id) || 0) > 0 && (
-                      <WaitingPartsBadge count={openPartCounts.get(txn.id)!} />
-                    )}
-                    {txn.code && (
+                    <td className="px-3 py-2.5">
                       <Link
                         href={`/jobs/${txn.id}/view`}
-                        className="block text-muted-2 hover:text-muted text-[10px] truncate transition-colors no-underline mt-0.5"
+                        className="font-bold text-blue-400 hover:text-blue-300 text-xs transition-colors no-underline"
                       >
-                        {txn.code}
+                        #{txn.job_id}
                       </Link>
-                    )}
-                    {txn.mechanic_id != null && mechNames[txn.mechanic_id] && (
-                      <div
-                        className="text-[9px] font-medium text-muted truncate max-w-[110px] mt-0.5"
-                        title={`Mechanic: ${mechNames[txn.mechanic_id]}`}
-                      >
-                        {mechNames[txn.mechanic_id]}
-                      </div>
-                    )}
-                  </td>
-
-                  {/* Client with avatar + phone number text (PHP feature) */}
-                  <td className="px-3 py-2.5">
-                    <div className="flex items-center gap-2">
-                      <ClientMiniAvatar image={txn.client_image} name={clientName} />
-                      <div className="min-w-0">
+                      {txn.status <= 3 && (openPartCounts.get(txn.id) || 0) > 0 && (
+                        <WaitingPartsBadge count={openPartCounts.get(txn.id)!} />
+                      )}
+                      {txn.code && (
                         <Link
-                          href={`/clients/${txn.client_name}/view`}
-                          className="font-bold text-app-2 text-xs hover:text-blue-400 truncate block max-w-[150px] transition-colors"
-                          title={clientName}
+                          href={`/jobs/${txn.id}/view`}
+                          className="block text-muted-2 hover:text-muted text-[10px] truncate transition-colors no-underline mt-0.5"
                         >
-                          {clientName}
+                          {txn.code}
                         </Link>
-                        <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                          <BalanceBadge bal={balance} />
-                          {phone && (
-                            <a
-                              href={`tel:${txn.client_contact}`}
-                              className="flex items-center gap-0.5 text-blue-400 hover:text-blue-300 text-[10px]"
-                              title="Call client"
-                            >
-                              <Phone size={10} />
-                              <span className="hidden xl:inline">{txn.client_contact}</span>
-                            </a>
-                          )}
+                      )}
+                      {txn.mechanic_id != null && mechNames[txn.mechanic_id] && (
+                        <div
+                          className="text-[9px] font-medium text-muted truncate max-w-[110px] mt-0.5"
+                          title={`Mechanic: ${mechNames[txn.mechanic_id]}`}
+                        >
+                          {mechNames[txn.mechanic_id]}
+                        </div>
+                      )}
+                    </td>
+
+                    {/* Client with avatar + phone number text (PHP feature) */}
+                    <td className="px-3 py-2.5">
+                      <div className="flex items-center gap-2">
+                        <ClientMiniAvatar image={txn.client_image} name={clientName} />
+                        <div className="min-w-0">
+                          <Link
+                            href={`/clients/${txn.client_name}/view`}
+                            className="font-bold text-app-2 text-xs hover:text-blue-400 truncate block max-w-[150px] transition-colors"
+                            title={clientName}
+                          >
+                            {clientName}
+                          </Link>
+                          <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                            <BalanceBadge bal={balance} />
+                            {phone && (
+                              <a
+                                href={`tel:${txn.client_contact}`}
+                                className="flex items-center gap-0.5 text-blue-400 hover:text-blue-300 text-[10px]"
+                                title="Call client"
+                              >
+                                <Phone size={10} />
+                                <span className="hidden xl:inline">{txn.client_contact}</span>
+                              </a>
+                            )}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </td>
+                    </td>
 
-                  <td className="px-3 py-2.5 text-xs text-app-2 truncate" title={txn.item}>
-                    {txn.item}
-                  </td>
-                  <td className="px-3 py-2.5 text-xs text-red-400 truncate" title={txn.fault}>
-                    {txn.fault}
-                  </td>
-                  <td className="px-3 py-2.5 text-xs">
-                    <div className="flex items-center gap-1.5">
-                      {txn.uniq_id ? (
-                        <Link
-                          href={`/jobs?search=${encodeURIComponent(txn.uniq_id)}`}
-                          title={`Spot: ${txn.uniq_id} \u2014 is spot ke sab items`}
-                          className="flex items-center gap-1 text-amber-400/90 hover:text-amber-300 no-underline transition-colors"
-                        >
-                          <MapPin size={10} className="flex-shrink-0" />
-                          <span className="truncate max-w-[120px]">{txn.uniq_id}</span>
-                        </Link>
-                      ) : (
-                        <span className="text-muted-2">{"\u2014"}</span>
-                      )}
-                      <button
-                        onClick={() => openSpotEdit(txn)}
-                        title={viewOnly ? "Spot edit sirf office ke andar se possible hai." : "Spot set karo / badlo"}
-                        disabled={viewOnly}
-                        className={`inline-flex items-center gap-1 px-1.5 py-1 rounded-md border border-app-2 bg-white/[0.02] text-muted hover:text-amber-400 hover:border-amber-500/40 transition-all ${viewOnly ? 'opacity-50 cursor-not-allowed' : ''}`}
-                      >
-                        <PenSquare size={11} />
-                      </button>
-                    </div>
-                  </td>
-                  <td className="px-3 py-2.5 text-right font-bold text-sm text-app-2">
-                    {"\u20B9"}
-                    {(txn.amount || 0).toFixed(0)}
-                  </td>
-
-                  <td className="px-3 py-2.5 text-center">
-                    <span className={getStatusBadge(txn.status)}>{STATUS_MAP[txn.status]}</span>
-                    {txn.status_changed_at && (
-                      <div className="text-[9px] text-muted-2 mt-0.5">
-                        {fmtDate(txn.status_changed_at)} {fmtTime(txn.status_changed_at)}
-                      </div>
-                    )}
-                  </td>
-
-                  {/* Dropdown Actions */}
-                  <td className="px-3 py-2.5 relative">
-                    <button
-                      data-dropdown-trigger
-                      onClick={() => setOpenDropdownId(openDropdownId === txn.id ? null : txn.id)}
-                      className="bg-panel-2 hover:bg-[#2a3550] border border-app-2 text-muted hover:text-app-2 rounded-lg px-3 py-1.5 text-xs font-bold flex items-center gap-1 mx-auto transition-all"
-                    >
-                      Action <ChevronDown size={12} />
-                    </button>
-                    {openDropdownId === txn.id && (
-                      <div
-                        data-dropdown-menu
-                        className="absolute right-0 mt-1 w-44 bg-panel border border-app rounded-xl shadow-2xl z-20 py-1 overflow-hidden"
-                      >
-                        {/* Sprint 4 #19: xl slide-over preview (mobile par panel nahi) */}
-                        <button
-                          onClick={() => {
-                            openPreview(txn.id);
-                            setOpenDropdownId(null);
-                          }}
-                          className="hidden xl:flex w-full items-center gap-2.5 px-4 py-2 hover:bg-white/[0.04] text-sm text-muted hover:text-purple-400 transition-colors"
-                        >
-                          <ScanEye size={13} className="text-purple-400" /> Preview
-                        </button>
-                        {[
-                          {
-                            href: `/jobs/${txn.id}/view`,
-                            icon: Eye,
-                            label: "View",
-                            cls: "text-blue-400",
-                          },
-                          {
-                            href: `/jobs/${txn.id}/edit`,
-                            icon: Settings,
-                            label: "Edit",
-                            cls: "text-indigo-400",
-                          },
-                          {
-                            href: `/jobs/${txn.id}/old`,
-                            icon: History,
-                            label: "Old Edit",
-                            cls: "text-cyan-400",
-                          },
-                        ].map(({ href, icon: Icon, label, cls }) => (
+                    <td className="px-3 py-2.5 text-xs text-app-2 truncate" title={txn.item}>
+                      {txn.item}
+                    </td>
+                    <td className="px-3 py-2.5 text-xs text-red-400 truncate" title={txn.fault}>
+                      {txn.fault}
+                    </td>
+                    <td className="px-3 py-2.5 text-xs">
+                      <div className="flex items-center gap-1.5">
+                        {txn.uniq_id ? (
                           <Link
-                            key={label}
-                            href={href}
-                            className="flex items-center gap-2.5 px-4 py-2 hover:bg-white/[0.04] text-sm text-muted hover:text-app-2 transition-colors"
+                            href={`/jobs?search=${encodeURIComponent(txn.uniq_id)}`}
+                            title={`Spot: ${txn.uniq_id} \u2014 is spot ke sab items`}
+                            className="flex items-center gap-1 text-amber-400/90 hover:text-amber-300 no-underline transition-colors"
+                          >
+                            <MapPin size={10} className="flex-shrink-0" />
+                            <span className="truncate max-w-[120px]">{txn.uniq_id}</span>
+                          </Link>
+                        ) : (
+                          <span className="text-muted-2">{"\u2014"}</span>
+                        )}
+                        <button
+                          onClick={() => openSpotEdit(txn)}
+                          title={
+                            viewOnly
+                              ? "Spot edit sirf office ke andar se possible hai."
+                              : "Spot set karo / badlo"
+                          }
+                          disabled={viewOnly}
+                          className={`inline-flex items-center gap-1 px-1.5 py-1 rounded-md border border-app-2 bg-white/[0.02] text-muted hover:text-amber-400 hover:border-amber-500/40 transition-all ${viewOnly ? "opacity-50 cursor-not-allowed" : ""}`}
+                        >
+                          <PenSquare size={11} />
+                        </button>
+                      </div>
+                    </td>
+                    <td className="px-3 py-2.5 text-right font-bold text-sm text-app-2">
+                      {"\u20B9"}
+                      {(txn.amount || 0).toFixed(0)}
+                    </td>
+
+                    <td className="px-3 py-2.5 text-center">
+                      <span className={getStatusBadge(txn.status)}>{STATUS_MAP[txn.status]}</span>
+                      {txn.status_changed_at && (
+                        <div className="text-[9px] text-muted-2 mt-0.5">
+                          {fmtDate(txn.status_changed_at)} {fmtTime(txn.status_changed_at)}
+                        </div>
+                      )}
+                    </td>
+
+                    {/* Dropdown Actions */}
+                    <td className="px-3 py-2.5 relative">
+                      <button
+                        data-dropdown-trigger
+                        onClick={() => setOpenDropdownId(openDropdownId === txn.id ? null : txn.id)}
+                        className="bg-panel-2 hover:bg-[#2a3550] border border-app-2 text-muted hover:text-app-2 rounded-lg px-3 py-1.5 text-xs font-bold flex items-center gap-1 mx-auto transition-all"
+                      >
+                        Action <ChevronDown size={12} />
+                      </button>
+                      {openDropdownId === txn.id && (
+                        <div
+                          data-dropdown-menu
+                          className="absolute right-0 mt-1 w-44 bg-panel border border-app rounded-xl shadow-2xl z-20 py-1 overflow-hidden"
+                        >
+                          {/* Sprint 4 #19: xl slide-over preview (mobile par panel nahi) */}
+                          <button
+                            onClick={() => {
+                              openPreview(txn.id);
+                              setOpenDropdownId(null);
+                            }}
+                            className="hidden xl:flex w-full items-center gap-2.5 px-4 py-2 hover:bg-white/[0.04] text-sm text-muted hover:text-purple-400 transition-colors"
+                          >
+                            <ScanEye size={13} className="text-purple-400" /> Preview
+                          </button>
+                          {[
+                            {
+                              href: `/jobs/${txn.id}/view`,
+                              icon: Eye,
+                              label: "View",
+                              cls: "text-blue-400",
+                            },
+                            {
+                              href: `/jobs/${txn.id}/edit`,
+                              icon: Settings,
+                              label: "Edit",
+                              cls: "text-indigo-400",
+                            },
+                            {
+                              href: `/jobs/${txn.id}/old`,
+                              icon: History,
+                              label: "Old Edit",
+                              cls: "text-cyan-400",
+                            },
+                          ].map(({ href, icon: Icon, label, cls }) => (
+                            <Link
+                              key={label}
+                              href={href}
+                              className="flex items-center gap-2.5 px-4 py-2 hover:bg-white/[0.04] text-sm text-muted hover:text-app-2 transition-colors"
+                              onClick={() => setOpenDropdownId(null)}
+                            >
+                              <Icon size={13} className={cls} /> {label}
+                            </Link>
+                          ))}
+                          <button
+                            onClick={() => {
+                              sendWA(txn);
+                              setOpenDropdownId(null);
+                            }}
+                            className="w-full flex items-center gap-2.5 px-4 py-2 hover:bg-white/[0.04] text-sm text-muted hover:text-emerald-400 transition-colors"
+                          >
+                            <Phone size={13} className="text-emerald-400" /> WhatsApp
+                          </button>
+                          <a
+                            href={`/api/print-bill?job_id=${txn.job_id}`}
+                            target="_blank"
+                            className="flex items-center gap-2.5 px-4 py-2 hover:bg-white/[0.04] text-sm text-muted hover:text-orange-400 transition-colors"
                             onClick={() => setOpenDropdownId(null)}
                           >
-                            <Icon size={13} className={cls} /> {label}
-                          </Link>
-                        ))}
-                        <button
-                          onClick={() => {
-                            sendWA(txn);
-                            setOpenDropdownId(null);
-                          }}
-                          className="w-full flex items-center gap-2.5 px-4 py-2 hover:bg-white/[0.04] text-sm text-muted hover:text-emerald-400 transition-colors"
-                        >
-                          <Phone size={13} className="text-emerald-400" /> WhatsApp
-                        </button>
-                        <a
-                          href={`/api/print-bill?job_id=${txn.job_id}`}
-                          target="_blank"
-                          className="flex items-center gap-2.5 px-4 py-2 hover:bg-white/[0.04] text-sm text-muted hover:text-orange-400 transition-colors"
-                          onClick={() => setOpenDropdownId(null)}
-                        >
-                          <Printer size={13} className="text-orange-400" /> Print Bill
-                        </a>
-                        <a
-                          href={`/api/print-bill?job_id=${txn.job_id}&type=thermal`}
-                          target="_blank"
-                          className="flex items-center gap-2.5 px-4 py-2 hover:bg-white/[0.04] text-sm text-muted hover:text-yellow-400 transition-colors"
-                          onClick={() => setOpenDropdownId(null)}
-                        >
-                          <Printer size={13} className="text-yellow-400" /> Thermal Receipt
-                        </a>
-                        {userRole === "admin" && (
-                          <>
-                            <hr className="my-1 border-app" />
-                            <button
-                              onClick={() => {
-                                handleDelete(txn.id);
-                                setOpenDropdownId(null);
-                              }}
-                              className="w-full flex items-center gap-2.5 px-4 py-2 hover:bg-red-500/10 text-sm text-red-500 transition-colors"
-                            >
-                              <Trash2 size={13} /> Delete
-                            </button>
-                          </>
-                        )}
-                      </div>
-                    )}
-                  </td>
-                </tr>
-              );
-            })}
+                            <Printer size={13} className="text-orange-400" /> Print Bill
+                          </a>
+                          <a
+                            href={`/api/print-bill?job_id=${txn.job_id}&type=thermal`}
+                            target="_blank"
+                            className="flex items-center gap-2.5 px-4 py-2 hover:bg-white/[0.04] text-sm text-muted hover:text-yellow-400 transition-colors"
+                            onClick={() => setOpenDropdownId(null)}
+                          >
+                            <Printer size={13} className="text-yellow-400" /> Thermal Receipt
+                          </a>
+                          {userRole === "admin" && (
+                            <>
+                              <hr className="my-1 border-app" />
+                              <button
+                                onClick={() => {
+                                  handleDelete(txn.id);
+                                  setOpenDropdownId(null);
+                                }}
+                                className="w-full flex items-center gap-2.5 px-4 py-2 hover:bg-red-500/10 text-sm text-red-500 transition-colors"
+                              >
+                                <Trash2 size={13} /> Delete
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
             {loading && hasLoaded && <TableSkeletonRows rows={8} />}
             {!loading && filteredTransactions.length === 0 && (
               <tr>
@@ -1966,11 +1969,15 @@ function JobsListContent() {
               >
                 <MapPin size={13} /> QR
               </Link>
-<button
+              <button
                 onClick={clearDeliveredSpots}
                 disabled={spotCleaning || viewOnly}
-                title={viewOnly ? "Spot clean sirf office ke andar se possible hai." : "Delivered jobs jinki location abhi bhi lagi hai — sab ek saath khali karo"}
-                className={`bg-panel-2 hover:bg-[#2a3550] text-muted px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all disabled:opacity-60 ${viewOnly ? 'opacity-50 cursor-not-allowed' : ''}`}
+                title={
+                  viewOnly
+                    ? "Spot clean sirf office ke andar se possible hai."
+                    : "Delivered jobs jinki location abhi bhi lagi hai — sab ek saath khali karo"
+                }
+                className={`bg-panel-2 hover:bg-[#2a3550] text-muted px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all disabled:opacity-60 ${viewOnly ? "opacity-50 cursor-not-allowed" : ""}`}
               >
                 {spotCleaning ? (
                   <Loader2 size={13} className="animate-spin" />
@@ -1988,7 +1995,7 @@ function JobsListContent() {
               <button
                 onClick={() => shiftDay(-1)}
                 disabled={viewOnly}
-                className={`bg-panel-2 hover:bg-[#2a3550] text-muted border border-app px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 transition-all ${viewOnly ? 'opacity-50 cursor-not-allowed' : ''}`}
+                className={`bg-panel-2 hover:bg-[#2a3550] text-muted border border-app px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 transition-all ${viewOnly ? "opacity-50 cursor-not-allowed" : ""}`}
                 title={viewOnly ? "Date change sirf office ke andar se possible hai." : undefined}
               >
                 <ChevronLeft size={13} /> Prev
@@ -1996,7 +2003,7 @@ function JobsListContent() {
               <button
                 onClick={() => shiftDay(1)}
                 disabled={viewOnly}
-                className={`bg-panel-2 hover:bg-[#2a3550] text-muted border border-app px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 transition-all ${viewOnly ? 'opacity-50 cursor-not-allowed' : ''}`}
+                className={`bg-panel-2 hover:bg-[#2a3550] text-muted border border-app px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 transition-all ${viewOnly ? "opacity-50 cursor-not-allowed" : ""}`}
                 title={viewOnly ? "Date change sirf office ke andar se possible hai." : undefined}
               >
                 Next <ChevronRight size={13} />
@@ -2033,10 +2040,7 @@ function JobsListContent() {
 
           {/* ── Search ── */}
           <div className="relative">
-            <Search
-              className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-2"
-              size={16}
-            />
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-2" size={16} />
             <input
               type="text"
               placeholder="Search by job ID, client, device, fault, code, status, remark..."
@@ -2179,7 +2183,7 @@ function JobsListContent() {
               <button
                 onClick={() => shiftDay(-1)}
                 disabled={viewOnly}
-                className={`text-[10px] bg-[var(--app-panel-2)] hover:bg-[var(--app-hover)] text-[var(--app-muted)] px-2 py-1 rounded-lg flex items-center gap-0.5 transition-colors ${viewOnly ? 'opacity-50 cursor-not-allowed' : ''}`}
+                className={`text-[10px] bg-[var(--app-panel-2)] hover:bg-[var(--app-hover)] text-[var(--app-muted)] px-2 py-1 rounded-lg flex items-center gap-0.5 transition-colors ${viewOnly ? "opacity-50 cursor-not-allowed" : ""}`}
                 title={viewOnly ? "Date change sirf office ke andar se possible hai." : undefined}
               >
                 <ChevronLeft size={11} /> Prev
@@ -2187,7 +2191,7 @@ function JobsListContent() {
               <button
                 onClick={() => shiftDay(1)}
                 disabled={viewOnly}
-                className={`text-[10px] bg-[var(--app-panel-2)] hover:bg-[var(--app-hover)] text-[var(--app-muted)] px-2 py-1 rounded-lg flex items-center gap-0.5 transition-colors ${viewOnly ? 'opacity-50 cursor-not-allowed' : ''}`}
+                className={`text-[10px] bg-[var(--app-panel-2)] hover:bg-[var(--app-hover)] text-[var(--app-muted)] px-2 py-1 rounded-lg flex items-center gap-0.5 transition-colors ${viewOnly ? "opacity-50 cursor-not-allowed" : ""}`}
                 title={viewOnly ? "Date change sirf office ke andar se possible hai." : undefined}
               >
                 Next <ChevronRight size={11} />
@@ -2261,10 +2265,7 @@ function JobsListContent() {
           <span className="text-muted">
             Found <strong className="text-blue-400">{totalRows}</strong> results
           </span>
-          <button
-            onClick={() => setLocalSearch("")}
-            className="text-muted-2 hover:text-muted"
-          >
+          <button onClick={() => setLocalSearch("")} className="text-muted-2 hover:text-muted">
             <X size={14} />
           </button>
         </div>
@@ -2352,51 +2353,63 @@ function JobsListContent() {
                       </span>
                       {/* Quick Status Buttons */}
                       <div className="flex gap-1 flex-wrap justify-end">
-{txn.status === 0 && (
-                            <button
-                              onClick={() => quickStatusChange(txn.id, 1)}
-                              disabled={statusChangeLoading === txn.id || viewOnly}
-                              className={`px-1.5 py-0.5 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/30 text-blue-400 rounded text-[9px] font-bold flex items-center gap-0.5 transition-all ${viewOnly ? 'opacity-50 cursor-not-allowed' : ''}`}
-                              title={viewOnly ? "Job status change sirf office ke andar se possible hai." : undefined}
-                            >
-                              {statusChangeLoading === txn.id ? (
-                                <Loader2 size={9} className="animate-spin" />
-                              ) : (
-                                <ArrowRight size={9} />
-                              )}{" "}
-                              Progress
-                            </button>
-                          )}
-                          {txn.status === 1 && (
-                            <button
-                              onClick={() => quickStatusChange(txn.id, 2)}
-                              disabled={statusChangeLoading === txn.id || viewOnly}
-                              className={`px-1.5 py-0.5 bg-teal-500/20 hover:bg-teal-500/30 border border-teal-500/30 text-teal-400 rounded text-[9px] font-bold flex items-center gap-0.5 transition-all ${viewOnly ? 'opacity-50 cursor-not-allowed' : ''}`}
-                              title={viewOnly ? "Job status change sirf office ke andar se possible hai." : undefined}
-                            >
-                              {statusChangeLoading === txn.id ? (
-                                <Loader2 size={9} className="animate-spin" />
-                              ) : (
-                                <ArrowRight size={9} />
-                              )}{" "}
-                              Done
-                            </button>
-                          )}
-                          {txn.status === 2 && (
-                            <button
-                              onClick={() => quickStatusChange(txn.id, 5)}
-                              disabled={statusChangeLoading === txn.id || viewOnly}
-                              className={`px-1.5 py-0.5 bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/30 text-purple-400 rounded text-[9px] font-bold flex items-center gap-0.5 transition-all ${viewOnly ? 'opacity-50 cursor-not-allowed' : ''}`}
-                              title={viewOnly ? "Job status change sirf office ke andar se possible hai." : undefined}
-                            >
-                              {statusChangeLoading === txn.id ? (
-                                <Loader2 size={9} className="animate-spin" />
-                              ) : (
-                                <ArrowRight size={9} />
-                              )}{" "}
-                              Deliver
-                            </button>
-                          )}
+                        {txn.status === 0 && (
+                          <button
+                            onClick={() => quickStatusChange(txn.id, 1)}
+                            disabled={statusChangeLoading === txn.id || viewOnly}
+                            className={`px-1.5 py-0.5 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/30 text-blue-400 rounded text-[9px] font-bold flex items-center gap-0.5 transition-all ${viewOnly ? "opacity-50 cursor-not-allowed" : ""}`}
+                            title={
+                              viewOnly
+                                ? "Job status change sirf office ke andar se possible hai."
+                                : undefined
+                            }
+                          >
+                            {statusChangeLoading === txn.id ? (
+                              <Loader2 size={9} className="animate-spin" />
+                            ) : (
+                              <ArrowRight size={9} />
+                            )}{" "}
+                            Progress
+                          </button>
+                        )}
+                        {txn.status === 1 && (
+                          <button
+                            onClick={() => quickStatusChange(txn.id, 2)}
+                            disabled={statusChangeLoading === txn.id || viewOnly}
+                            className={`px-1.5 py-0.5 bg-teal-500/20 hover:bg-teal-500/30 border border-teal-500/30 text-teal-400 rounded text-[9px] font-bold flex items-center gap-0.5 transition-all ${viewOnly ? "opacity-50 cursor-not-allowed" : ""}`}
+                            title={
+                              viewOnly
+                                ? "Job status change sirf office ke andar se possible hai."
+                                : undefined
+                            }
+                          >
+                            {statusChangeLoading === txn.id ? (
+                              <Loader2 size={9} className="animate-spin" />
+                            ) : (
+                              <ArrowRight size={9} />
+                            )}{" "}
+                            Done
+                          </button>
+                        )}
+                        {txn.status === 2 && (
+                          <button
+                            onClick={() => quickStatusChange(txn.id, 5)}
+                            disabled={statusChangeLoading === txn.id || viewOnly}
+                            className={`px-1.5 py-0.5 bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/30 text-purple-400 rounded text-[9px] font-bold flex items-center gap-0.5 transition-all ${viewOnly ? "opacity-50 cursor-not-allowed" : ""}`}
+                            title={
+                              viewOnly
+                                ? "Job status change sirf office ke andar se possible hai."
+                                : undefined
+                            }
+                          >
+                            {statusChangeLoading === txn.id ? (
+                              <Loader2 size={9} className="animate-spin" />
+                            ) : (
+                              <ArrowRight size={9} />
+                            )}{" "}
+                            Deliver
+                          </button>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -2556,14 +2569,16 @@ function JobsListContent() {
                       )}
                     </div>
                     <button
-                        onClick={() => handleDelete(txn.id)}
-                        disabled={viewOnly}
-                        className={`w-full flex items-center justify-center gap-1.5 p-2 bg-red-500/10 rounded-xl border border-red-500/25 text-red-400 text-[9px] font-bold hover:bg-red-500/20 active:scale-[0.98] transition-all ${viewOnly ? 'opacity-50 cursor-not-allowed' : ''}`}
-                        title={viewOnly ? "Job delete sirf office ke andar se possible hai." : undefined}
-                      >
-                        <Trash2 size={13} />
-                        <span>Delete</span>
-                      </button>
+                      onClick={() => handleDelete(txn.id)}
+                      disabled={viewOnly}
+                      className={`w-full flex items-center justify-center gap-1.5 p-2 bg-red-500/10 rounded-xl border border-red-500/25 text-red-400 text-[9px] font-bold hover:bg-red-500/20 active:scale-[0.98] transition-all ${viewOnly ? "opacity-50 cursor-not-allowed" : ""}`}
+                      title={
+                        viewOnly ? "Job delete sirf office ke andar se possible hai." : undefined
+                      }
+                    >
+                      <Trash2 size={13} />
+                      <span>Delete</span>
+                    </button>
                   </div>
                 </div>
               );
@@ -2571,15 +2586,16 @@ function JobsListContent() {
           )}
           {/* ── Card view pagination (table wala shared pager) ── */}
           {!(loading && hasLoaded) && paginatedTransactions.length > 0 && (
-            <div className="rounded-2xl border border-app overflow-hidden">
-              {paginationBar}
-            </div>
+            <div className="rounded-2xl border border-app overflow-hidden">{paginationBar}</div>
           )}
         </div>
       )}
 
       {/* ── FAB ── */}
-      <div ref={fabRef} className="fixed bottom-[136px] right-4 z-[60] flex flex-col gap-3 items-end">
+      <div
+        ref={fabRef}
+        className="fixed bottom-[136px] right-4 z-[60] flex flex-col gap-3 items-end"
+      >
         <button
           onClick={() => setFabOpen(!fabOpen)}
           className="w-12 h-12 bg-gradient-to-br from-blue-600 to-blue-700 rounded-full shadow-xl shadow-blue-500/30 flex items-center justify-center text-white border border-blue-500/30 transition-all active:scale-95"
@@ -2870,26 +2886,30 @@ function JobsListContent() {
                 </div>
               ))}
               <CanWrite message="Date change sirf office ke andar se possible hai.">
-              {/* Mobile day nav in modal */}
-              <div className="flex gap-2">
-                <button
-                  onClick={() => shiftDay(-1)}
-                  disabled={viewOnly}
-                  className={`flex-1 bg-panel-2 hover:bg-panel-2 dark:bg-panel-2 dark:hover:bg-[#2a3550] text-app dark:text-muted p-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition-colors ${viewOnly ? 'opacity-50 cursor-not-allowed' : ''}`}
-                  title={viewOnly ? "Date change sirf office ke andar se possible hai." : undefined}
-                >
-                  <ChevronLeft size={13} /> Prev Day
-                </button>
-                <button
-                  onClick={() => shiftDay(1)}
-                  disabled={viewOnly}
-                  className={`flex-1 bg-panel-2 hover:bg-panel-2 dark:bg-panel-2 dark:hover:bg-[#2a3550] text-app dark:text-muted p-2 rounded-xl text-xs font-bold flex items_center justify-center gap-1 transition-colors ${viewOnly ? 'opacity-50 cursor-not-allowed' : ''}`}
-                  title={viewOnly ? "Date change sirf office ke andar se possible hai." : undefined}
-                >
-                  Next Day <ChevronRight size={13} />
-                </button>
-              </div>
-            </CanWrite>
+                {/* Mobile day nav in modal */}
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => shiftDay(-1)}
+                    disabled={viewOnly}
+                    className={`flex-1 bg-panel-2 hover:bg-panel-2 dark:bg-panel-2 dark:hover:bg-[#2a3550] text-app dark:text-muted p-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition-colors ${viewOnly ? "opacity-50 cursor-not-allowed" : ""}`}
+                    title={
+                      viewOnly ? "Date change sirf office ke andar se possible hai." : undefined
+                    }
+                  >
+                    <ChevronLeft size={13} /> Prev Day
+                  </button>
+                  <button
+                    onClick={() => shiftDay(1)}
+                    disabled={viewOnly}
+                    className={`flex-1 bg-panel-2 hover:bg-panel-2 dark:bg-panel-2 dark:hover:bg-[#2a3550] text-app dark:text-muted p-2 rounded-xl text-xs font-bold flex items_center justify-center gap-1 transition-colors ${viewOnly ? "opacity-50 cursor-not-allowed" : ""}`}
+                    title={
+                      viewOnly ? "Date change sirf office ke andar se possible hai." : undefined
+                    }
+                  >
+                    Next Day <ChevronRight size={13} />
+                  </button>
+                </div>
+              </CanWrite>
               <div>
                 <label className="block text-xs font-bold text-muted mb-1">Status</label>
                 <select
@@ -2906,9 +2926,7 @@ function JobsListContent() {
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-bold text-muted mb-1">
-                  Spot (Location)
-                </label>
+                <label className="block text-xs font-bold text-muted mb-1">Spot (Location)</label>
                 <select
                   value={spotFilter}
                   onChange={(e) => setSpotFilter(e.target.value)}
@@ -2925,7 +2943,7 @@ function JobsListContent() {
               <button
                 onClick={clearDeliveredSpots}
                 disabled={spotCleaning || viewOnly}
-                className={`w-full bg-panel-2 hover:bg-panel-2 dark:bg-panel-2 dark:hover:bg-[#2a3550] text-app dark:text-muted p-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-1.5 transition-all disabled:opacity-60 ${viewOnly ? 'opacity-50 cursor-not-allowed' : ''}`}
+                className={`w-full bg-panel-2 hover:bg-panel-2 dark:bg-panel-2 dark:hover:bg-[#2a3550] text-app dark:text-muted p-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-1.5 transition-all disabled:opacity-60 ${viewOnly ? "opacity-50 cursor-not-allowed" : ""}`}
                 title={viewOnly ? "Spot clean sirf office ke andar se possible hai." : undefined}
               >
                 {spotCleaning ? (

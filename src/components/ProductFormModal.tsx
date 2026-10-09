@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Image from "next/image";
+import ZoomableImage from "@/components/ZoomableImage";
 import Link from "next/link";
 import {
   Plus,
@@ -304,13 +304,13 @@ export default function ProductFormModal({
                 <div className="bg-app rounded-xl border border-app p-4">
                   <div className="flex items-center gap-4 flex-wrap">
                     {safeImageSrc(imgPreview) ? (
-                      <Image
+                      <ZoomableImage
                         src={safeImageSrc(imgPreview)}
                         alt="Product"
                         width={112}
                         height={112}
                         className="w-28 h-28 rounded-xl object-cover border border-app"
-                       />
+                      />
                     ) : (
                       <div className="w-28 h-28 rounded-xl bg-white/5 border border-dashed border-app-2 flex items-center justify-center">
                         <Package size={28} className="text-muted-2" />

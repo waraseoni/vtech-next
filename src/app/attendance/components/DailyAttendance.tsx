@@ -13,7 +13,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import { useViewOnly, CanWrite } from "@/lib/viewOnly";
-import Image from "next/image";
+import ZoomableImage from "@/components/ZoomableImage";
 import {
   Calendar,
   Save,
@@ -79,13 +79,12 @@ const MechAvatar = ({
   cls?: string;
 }) =>
   image ? (
-    <Image
+    <ZoomableImage
       src={image}
       alt={name}
       width={32}
       height={32}
-      className={`${cls} rounded-full object-cover flex-shrink-0 border border-white/10 ring-1 ring-blue-500/10 cursor-zoom-in`}
-
+      className={`${cls} rounded-full object-cover flex-shrink-0 border border-white/10 ring-1 ring-blue-500/10`}
       onError={(e) => {
         (e.currentTarget as HTMLImageElement).style.display = "none";
       }}

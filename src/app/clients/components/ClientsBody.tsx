@@ -4,7 +4,7 @@ import { supabase } from "@/lib/supabase";
 import { todayIST } from "@/lib/dateUtils";
 import { downloadBlob } from "@/lib/nativePrint";
 import Link from "next/link";
-import Image from "next/image";
+import ZoomableImage from "@/components/ZoomableImage";
 import {
   Users,
   UserPlus,
@@ -38,7 +38,13 @@ import { safeImageSrc } from "@/lib/image-utils";
 import { substituteTemplate, firmVars, resolveTemplate } from "@/lib/whatsapp";
 import { toast } from "@/lib/toast";
 import { requireAdmin } from "@/lib/requireAdmin";
-import { getBalanceMeta, daysSince, inr, type Client, type ClientContactLite } from "./clientListHelpers";
+import {
+  getBalanceMeta,
+  daysSince,
+  inr,
+  type Client,
+  type ClientContactLite,
+} from "./clientListHelpers";
 import dynamic from "next/dynamic";
 
 const ClientChart = dynamic(() => import("@/app/clients/components/ClientChart"), {
@@ -167,7 +173,11 @@ export default function ClientsBody({
     const tpl = resolveTemplate(firmInfo, WA_TEMPLATE_KEY[at]);
     setWaClient(client);
     setWaMsgType(at);
-    setWaSelectedPhone(client.contacts?.find((c) => c.is_primary)?.phone || client.contacts?.[0]?.phone || client.contact);
+    setWaSelectedPhone(
+      client.contacts?.find((c) => c.is_primary)?.phone ||
+        client.contacts?.[0]?.phone ||
+        client.contact
+    );
     setWaText(
       substituteTemplate(tpl, {
         client_name: client.name,
@@ -544,10 +554,7 @@ export default function ClientsBody({
           {/* Search row */}
           <div className="flex flex-wrap gap-2 items-center">
             <div className="relative flex-1 min-w-[180px]">
-              <Search
-                size={14}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-2"
-              />
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-2" />
               <input
                 placeholder="Search name, mobile, email…"
                 value={searchTerm}
@@ -647,15 +654,12 @@ export default function ClientsBody({
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex items-start gap-3">
                         {safeImageSrc(client.image_path) ? (
-                          <Image
+                          <ZoomableImage
                             src={safeImageSrc(client.image_path)}
                             alt={client.name}
                             width={56}
                             height={56}
                             className="w-14 h-14 rounded-xl object-cover flex-shrink-0 border border-app"
-                            onDoubleClick={(e) => {
-                              e.stopPropagation();
-                            }}
                             onError={(e) => {
                               (e.currentTarget as HTMLImageElement).style.display = "none";
                             }}
@@ -673,9 +677,7 @@ export default function ClientsBody({
                             {client.name}
                           </Link>
                           <div className="flex items-center gap-3 mt-1">
-                            <span className="text-muted-2 text-[10px] font-bold">
-                              #{client.id}
-                            </span>
+                            <span className="text-muted-2 text-[10px] font-bold">#{client.id}</span>
                             {client.contact && (
                               <span className="text-muted text-[10px] font-bold flex items-center gap-0.5">
                                 <Phone size={9} />
@@ -933,15 +935,12 @@ export default function ClientsBody({
                       <td className="px-3 py-3.5 align-middle">
                         <div className="flex items-center gap-2 min-w-0">
                           {safeImageSrc(client.image_path) ? (
-                            <Image
+                            <ZoomableImage
                               src={safeImageSrc(client.image_path)}
                               alt={client.name}
                               width={48}
                               height={48}
                               className="w-12 h-12 rounded-xl object-cover flex-shrink-0 border border-app"
-                              onDoubleClick={(e) => {
-                                e.stopPropagation();
-                              }}
                               onError={(e) => {
                                 (e.currentTarget as HTMLImageElement).style.display = "none";
                               }}
@@ -1273,41 +1272,41 @@ export default function ClientsBody({
               Message Type
             </label>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              {(
-                ["reminder", "welcome", "followup", "offer", "greeting", "custom"] as const
-              ).map((type) => (
-                <button
-                  key={type}
-                  onClick={() => handleBulkWaTypeChange(type)}
-                  className={`py-2 rounded-xl text-xs font-bold border transition cursor-pointer ${
-                    bulkWaMsgType === type
-                      ? type === "reminder"
-                        ? "bg-red-600 border-red-600 !text-white"
-                        : type === "welcome"
-                          ? "bg-blue-600 border-blue-600 !text-white"
-                          : type === "followup"
-                            ? "bg-teal-600 border-teal-600 !text-white"
-                            : type === "offer"
-                              ? "bg-purple-600 border-purple-600 !text-white"
-                              : type === "greeting"
-                                ? "bg-amber-600 border-amber-600 !text-white"
-                                : "bg-slate-600 border-muted !text-white"
-                      : "theme-card text-muted-2 dark:text-muted hover:opacity-80"
-                  }`}
-                >
-                  {type === "reminder"
-                    ? "Reminder"
-                    : type === "welcome"
-                      ? "Welcome"
-                      : type === "followup"
-                        ? "Follow-up"
-                        : type === "offer"
-                          ? "Offer"
-                          : type === "greeting"
-                            ? "Greeting"
-                            : "Custom"}
-                </button>
-              ))}
+              {(["reminder", "welcome", "followup", "offer", "greeting", "custom"] as const).map(
+                (type) => (
+                  <button
+                    key={type}
+                    onClick={() => handleBulkWaTypeChange(type)}
+                    className={`py-2 rounded-xl text-xs font-bold border transition cursor-pointer ${
+                      bulkWaMsgType === type
+                        ? type === "reminder"
+                          ? "bg-red-600 border-red-600 !text-white"
+                          : type === "welcome"
+                            ? "bg-blue-600 border-blue-600 !text-white"
+                            : type === "followup"
+                              ? "bg-teal-600 border-teal-600 !text-white"
+                              : type === "offer"
+                                ? "bg-purple-600 border-purple-600 !text-white"
+                                : type === "greeting"
+                                  ? "bg-amber-600 border-amber-600 !text-white"
+                                  : "bg-slate-600 border-muted !text-white"
+                        : "theme-card text-muted-2 dark:text-muted hover:opacity-80"
+                    }`}
+                  >
+                    {type === "reminder"
+                      ? "Reminder"
+                      : type === "welcome"
+                        ? "Welcome"
+                        : type === "followup"
+                          ? "Follow-up"
+                          : type === "offer"
+                            ? "Offer"
+                            : type === "greeting"
+                              ? "Greeting"
+                              : "Custom"}
+                  </button>
+                )
+              )}
             </div>
           </div>
           <div>
@@ -1320,11 +1319,19 @@ export default function ClientsBody({
               className="w-full theme-input rounded-xl px-3 py-2.5 text-sm font-bold focus:outline-none focus:border-green-500 transition"
             >
               {(() => {
-                const opts: { label: string; phone: string }[] = (waClient?.contacts?.length
-                  ? waClient.contacts
-                  : waClient?.contact
-                    ? [({ name: null, label: "Mobile", phone: waClient.contact, is_primary: true } satisfies ClientContactLite)]
-                    : []
+                const opts: { label: string; phone: string }[] = (
+                  waClient?.contacts?.length
+                    ? waClient.contacts
+                    : waClient?.contact
+                      ? [
+                          {
+                            name: null,
+                            label: "Mobile",
+                            phone: waClient.contact,
+                            is_primary: true,
+                          } satisfies ClientContactLite,
+                        ]
+                      : []
                 ).map((c) => ({
                   label: [c.name, c.label, c.is_primary ? "★" : ""].filter(Boolean).join(" · "),
                   phone: c.phone,

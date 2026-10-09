@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import AdminPage from "@/app/components/AdminPage";
 import { supabase } from "@/lib/supabase";
-import Image from "next/image";
+import ZoomableImage from "@/components/ZoomableImage";
 import { safeImageSrc } from "@/lib/image-utils";
 import {
   Loader2,
@@ -191,13 +191,12 @@ export default function TechnicianPerformancePage() {
                   <div className="flex items-start gap-3">
                     {/* Avatar */}
                     {safeImageSrc(m.image_path) ? (
-                      <Image
+                      <ZoomableImage
                         src={safeImageSrc(m.image_path)}
                         alt={m.name}
                         width={40}
                         height={40}
                         className="w-10 h-10 rounded-full object-cover border border-white/10 flex-shrink-0"
-                        
                         onError={(e) => {
                           (e.currentTarget as HTMLImageElement).style.display = "none";
                         }}
@@ -224,17 +223,13 @@ export default function TechnicianPerformancePage() {
                           <div className="text-base font-black text-blue-400">
                             {m.jobs_completed}
                           </div>
-                          <div className="text-[9px] font-bold text-muted uppercase">
-                            Jobs Done
-                          </div>
+                          <div className="text-[9px] font-bold text-muted uppercase">Jobs Done</div>
                         </div>
                         <div>
                           <div className="text-base font-black text-emerald-400">
                             {inr(m.jobs_revenue)}
                           </div>
-                          <div className="text-[9px] font-bold text-muted uppercase">
-                            Revenue
-                          </div>
+                          <div className="text-[9px] font-bold text-muted uppercase">Revenue</div>
                         </div>
                         <div>
                           <div className="text-base font-black text-amber-400">
@@ -286,8 +281,7 @@ export default function TechnicianPerformancePage() {
                       {/* Salary */}
                       {m.salary_earned > 0 && (
                         <div className="mt-2 text-[10px] font-bold text-muted">
-                          Salary earned:{" "}
-                          <span className="text-app-2">{inr(m.salary_earned)}</span>
+                          Salary earned: <span className="text-app-2">{inr(m.salary_earned)}</span>
                         </div>
                       )}
                     </div>

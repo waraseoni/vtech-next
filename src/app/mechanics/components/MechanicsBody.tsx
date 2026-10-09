@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
-import Image from "next/image";
+import ZoomableImage from "@/components/ZoomableImage";
 import { safeImageSrc } from "@/lib/image-utils";
 import {
   Search,
@@ -500,15 +500,12 @@ export default function MechanicsBody({
                       <td className="px-4 py-3.5">
                         <div className="flex items-center gap-3">
                           {safeImageSrc(m.image_path) ? (
-                            <Image
+                            <ZoomableImage
                               src={safeImageSrc(m.image_path)}
                               alt={name}
                               width={36}
                               height={36}
                               className="w-9 h-9 rounded-xl object-cover flex-shrink-0 border border-app"
-                              onDoubleClick={(e) => {
-                                e.stopPropagation();
-                              }}
                               onError={(e) => {
                                 (e.currentTarget as HTMLImageElement).style.display = "none";
                               }}

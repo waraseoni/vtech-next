@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
-import Image from "next/image";
+import ZoomableImage from "@/components/ZoomableImage";
 import { safeImageSrc } from "@/lib/image-utils";
 import WaitingPartsBadge from "@/components/WaitingPartsBadge";
 import { fetchOpenPartCounts } from "@/lib/requiredParts";
@@ -275,13 +275,12 @@ function ClientAvatar({ name, imagePath }: { name: string; imagePath?: string })
   const src = safeImageSrc(imagePath);
   if (src) {
     return (
-      <Image
+      <ZoomableImage
         src={src}
         alt={name}
         width={144}
         height={144}
         className="w-28 h-28 md:w-36 md:h-36 rounded-2xl object-cover flex-shrink-0 shadow-lg border border-white/10"
-        
         onError={(e) => {
           (e.currentTarget as HTMLImageElement).style.display = "none";
         }}
@@ -1142,7 +1141,9 @@ export default function ViewClientProfile() {
                   <span className="flex items-center gap-1">
                     <Phone size={11} />
                     {client.contact}
-                    {contacts.filter((c) => c.phone.replace(/\D/g, "") !== client.contact.replace(/\D/g, "")).length > 0 && (
+                    {contacts.filter(
+                      (c) => c.phone.replace(/\D/g, "") !== client.contact.replace(/\D/g, "")
+                    ).length > 0 && (
                       <span className="text-[9px] font-black text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 rounded-full px-1.5 py-px">
                         +
                         {
@@ -1240,7 +1241,9 @@ export default function ViewClientProfile() {
                   >
                     <Star
                       size={12}
-                      className={c.is_primary ? "text-amber-400 flex-shrink-0" : "text-muted-2 flex-shrink-0"}
+                      className={
+                        c.is_primary ? "text-amber-400 flex-shrink-0" : "text-muted-2 flex-shrink-0"
+                      }
                       fill={c.is_primary ? "currentColor" : "none"}
                     />
                     <div className="min-w-0 flex-1">
@@ -1631,9 +1634,7 @@ export default function ViewClientProfile() {
                 {tab.icon} {tab.label}
                 <span
                   className={`text-[10px] px-1.5 py-0.5 rounded-full font-black ${
-                    activeTab === tab.key
-                      ? "bg-blue-500/20 text-blue-400"
-                      : "bg-white/5 text-muted"
+                    activeTab === tab.key ? "bg-blue-500/20 text-blue-400" : "bg-white/5 text-muted"
                   }`}
                 >
                   {tab.count}
@@ -2548,7 +2549,10 @@ export default function ViewClientProfile() {
       )}
 
       {/* ── FAB (mobile) — saare client actions ek menu me ── */}
-      <div ref={fabRef} className="md:hidden fixed bottom-[136px] right-4 z-[60] flex flex-col gap-3 items-end">
+      <div
+        ref={fabRef}
+        className="md:hidden fixed bottom-[136px] right-4 z-[60] flex flex-col gap-3 items-end"
+      >
         <button
           onClick={() => setFabOpen(!fabOpen)}
           className="w-12 h-12 bg-gradient-to-br from-blue-600 to-blue-700 rounded-full shadow-xl shadow-blue-500/30 flex items-center justify-center !text-white border border-blue-500/30 transition-all active:scale-95"

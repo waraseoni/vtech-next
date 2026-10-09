@@ -5,7 +5,7 @@ import type { Expense, Mechanic, AdvancePayment, SupplierMap } from "@/lib/serve
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { CanWrite } from "@/lib/viewOnly";
-import Image from "next/image";
+import ZoomableImage from "@/components/ZoomableImage";
 import { todayIST, startOfMonthIST, endOfMonthIST, parseISTDate, formatIST } from "@/lib/dateUtils";
 import { safeImageSrc } from "@/lib/image-utils";
 import SearchableSelect from "@/components/SearchableSelect";
@@ -79,11 +79,17 @@ const emptyStaffForm = (): StaffPaymentForm => ({
 });
 
 function money(value: number) {
-  return "₹" + (Number(value || 0)).toLocaleString("en-IN", { minimumFractionDigits: 0 });
+  return "₹" + Number(value || 0).toLocaleString("en-IN", { minimumFractionDigits: 0 });
 }
 
 function moneyFull(value: number) {
-  return "₹" + (Number(value || 0)).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return (
+    "₹" +
+    Number(value || 0).toLocaleString("en-IN", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })
+  );
 }
 
 function fmtDateTime(value: string) {
@@ -134,13 +140,12 @@ const MechAvatar = ({
 }) => {
   const src = safeImageSrc(image);
   return src ? (
-    <Image
+    <ZoomableImage
       src={src}
       alt={name}
       width={24}
       height={24}
-      className={`${cls} rounded-full object-cover flex-shrink-0 border border-white/10 ring-1 ring-blue-500/20 shadow-sm cursor-zoom-in`}
-      
+      className={`${cls} rounded-full object-cover flex-shrink-0 border border-white/10 ring-1 ring-blue-500/20 shadow-sm`}
       onError={(e) => {
         (e.currentTarget as HTMLImageElement).style.display = "none";
       }}
@@ -207,7 +212,9 @@ export default function ExpensesPageInner({
       ] = await Promise.all([
         supabase
           .from("mechanic_list")
-          .select("id, firstname, middlename, lastname, designation, status, delete_flag, image_path")
+          .select(
+            "id, firstname, middlename, lastname, designation, status, delete_flag, image_path"
+          )
           .eq("status", 1)
           .eq("delete_flag", 0)
           .order("firstname", { ascending: true }),
@@ -515,13 +522,12 @@ export default function ExpensesPageInner({
   };
 
   const dateRangeLabel =
-    fromDate === toDate
-      ? fmtDate(fromDate)
-      : `${fmtDate(fromDate)} to ${fmtDate(toDate)}`;
+    fromDate === toDate ? fmtDate(fromDate) : `${fmtDate(fromDate)} to ${fmtDate(toDate)}`;
 
-  const totals = tab === "staff"
-    ? { count: filteredStaffPayments.length, amount: staffTotal }
-    : { count: filteredShopExpenses.length, amount: expenseTotal };
+  const totals =
+    tab === "staff"
+      ? { count: filteredStaffPayments.length, amount: staffTotal }
+      : { count: filteredShopExpenses.length, amount: expenseTotal };
 
   return (
     <div className="space-y-3.5 w-full max-w-[1550px] mx-auto pb-12 px-2 sm:px-3 lg:px-4">
@@ -533,13 +539,17 @@ export default function ExpensesPageInner({
           </div>
           <div>
             <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-sm sm:text-base font-black text-white tracking-tight">Pay Outs</h1>
+              <h1 className="text-sm sm:text-base font-black text-white tracking-tight">
+                Pay Outs
+              </h1>
               <span className="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-amber-500/10 border border-amber-500/20 text-amber-400">
                 {dateRangeLabel}
               </span>
             </div>
             <p className="text-[10px] sm:text-[11px] text-muted font-medium">
-              {tab === "staff" ? "Staff payments & advances tracking" : "Shop expenses & category management"}
+              {tab === "staff"
+                ? "Staff payments & advances tracking"
+                : "Shop expenses & category management"}
             </p>
           </div>
         </div>
@@ -556,9 +566,11 @@ export default function ExpensesPageInner({
             >
               <UserRound size={12} />
               <span className="hidden sm:inline">Staff</span>
-              <span className={`text-[9px] px-1.5 py-0.2 rounded font-bold ${
-                tab === "staff" ? "bg-white/20 text-white" : "bg-slate-800 text-muted"
-              }`}>
+              <span
+                className={`text-[9px] px-1.5 py-0.2 rounded font-bold ${
+                  tab === "staff" ? "bg-white/20 text-white" : "bg-slate-800 text-muted"
+                }`}
+              >
                 {filteredStaffPayments.length}
               </span>
             </button>
@@ -572,9 +584,11 @@ export default function ExpensesPageInner({
             >
               <Receipt size={12} />
               <span className="hidden sm:inline">Shop</span>
-              <span className={`text-[9px] px-1.5 py-0.2 rounded font-bold ${
-                tab === "shop" ? "bg-white/20 text-white" : "bg-slate-800 text-muted"
-              }`}>
+              <span
+                className={`text-[9px] px-1.5 py-0.2 rounded font-bold ${
+                  tab === "shop" ? "bg-white/20 text-white" : "bg-slate-800 text-muted"
+                }`}
+              >
                 {filteredShopExpenses.length}
               </span>
             </button>
@@ -595,26 +609,42 @@ export default function ExpensesPageInner({
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-2.5">
         <div className="bg-panel border border-app rounded-xl p-2.5 sm:p-3 shadow-sm">
           <div className="flex items-center justify-between text-muted mb-0.5">
-            <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider">{tab === "staff" ? "Staff Entries" : "Expenses"}</span>
-            {tab === "staff" ? <UserRound size={13} className="text-blue-400" /> : <Receipt size={13} className="text-amber-400" />}
+            <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider">
+              {tab === "staff" ? "Staff Entries" : "Expenses"}
+            </span>
+            {tab === "staff" ? (
+              <UserRound size={13} className="text-blue-400" />
+            ) : (
+              <Receipt size={13} className="text-amber-400" />
+            )}
           </div>
-          <p className="text-base sm:text-lg font-black text-white tracking-tight">{totals.count}</p>
+          <p className="text-base sm:text-lg font-black text-white tracking-tight">
+            {totals.count}
+          </p>
           <p className="text-[9px] text-muted">Total records</p>
         </div>
         <div className="bg-panel border border-app rounded-xl p-2.5 sm:p-3 shadow-sm">
           <div className="flex items-center justify-between text-muted mb-0.5">
-            <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider">{tab === "staff" ? "Total Payout" : "Total Spent"}</span>
+            <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider">
+              {tab === "staff" ? "Total Payout" : "Total Spent"}
+            </span>
             <IndianRupee size={13} className="text-red-400" />
           </div>
-          <p className="text-base sm:text-lg font-black text-red-400 tracking-tight">{money(totals.amount)}</p>
+          <p className="text-base sm:text-lg font-black text-red-400 tracking-tight">
+            {money(totals.amount)}
+          </p>
           <p className="text-[9px] text-muted">{tab === "staff" ? "Staff paid" : "Shop spent"}</p>
         </div>
         <div className="bg-panel border border-app rounded-xl p-2.5 sm:p-3 shadow-sm">
           <div className="flex items-center justify-between text-muted mb-0.5">
-            <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider">From</span>
+            <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider">
+              From
+            </span>
             <Calendar size={13} className="text-blue-400" />
           </div>
-          <p className="text-sm sm:text-base font-black text-white tracking-tight">{fmtDate(fromDate)}</p>
+          <p className="text-sm sm:text-base font-black text-white tracking-tight">
+            {fmtDate(fromDate)}
+          </p>
           <p className="text-[9px] text-muted">Start date</p>
         </div>
         <div className="bg-panel border border-app rounded-xl p-2.5 sm:p-3 shadow-sm">
@@ -622,7 +652,9 @@ export default function ExpensesPageInner({
             <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider">To</span>
             <Calendar size={13} className="text-teal-400" />
           </div>
-          <p className="text-sm sm:text-base font-black text-white tracking-tight">{fmtDate(toDate)}</p>
+          <p className="text-sm sm:text-base font-black text-white tracking-tight">
+            {fmtDate(toDate)}
+          </p>
           <p className="text-[9px] text-muted">End date</p>
         </div>
       </div>
@@ -631,7 +663,10 @@ export default function ExpensesPageInner({
       <div className="bg-panel border border-app rounded-2xl p-2.5 sm:p-3 shadow-sm">
         <div className="grid gap-2 sm:gap-2.5 lg:items-end lg:grid-cols-[1fr_180px_180px_auto]">
           <div className="relative">
-            <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted pointer-events-none" />
+            <Search
+              size={12}
+              className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted pointer-events-none"
+            />
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -713,7 +748,9 @@ export default function ExpensesPageInner({
       </div>
 
       {err && (
-        <div className="bg-panel border border-red-500/30 rounded-2xl p-3 text-sm text-red-400 font-bold">{err}</div>
+        <div className="bg-panel border border-red-500/30 rounded-2xl p-3 text-sm text-red-400 font-bold">
+          {err}
+        </div>
       )}
 
       {/* Content Area */}
@@ -747,25 +784,49 @@ export default function ExpensesPageInner({
                       const mechanic = mechanicById.get(payment.mechanic_id);
                       return (
                         <tr key={payment.id} className="hover:bg-blue-500/[0.02] transition-colors">
-                          <td className="py-2.5 px-3 text-center text-muted font-bold text-[10px]">{i + 1}</td>
+                          <td className="py-2.5 px-3 text-center text-muted font-bold text-[10px]">
+                            {i + 1}
+                          </td>
                           <td className="py-2.5 px-3">
                             <div className="flex items-center gap-2 min-w-0">
-                              <MechAvatar image={mechanic?.image_path} name={mechanicName(mechanic)} cls="w-7 h-7 text-[10px]" />
+                              <MechAvatar
+                                image={mechanic?.image_path}
+                                name={mechanicName(mechanic)}
+                                cls="w-7 h-7 text-[10px]"
+                              />
                               <div className="min-w-0">
-                                <div className="font-bold text-white text-[11px] truncate">{mechanicName(mechanic)}</div>
-                                <div className="text-[10px] text-muted">{mechanic?.designation || "Staff"}</div>
+                                <div className="font-bold text-white text-[11px] truncate">
+                                  {mechanicName(mechanic)}
+                                </div>
+                                <div className="text-[10px] text-muted">
+                                  {mechanic?.designation || "Staff"}
+                                </div>
                               </div>
                             </div>
                           </td>
-                          <td className="py-2.5 px-3 text-[11px] text-app-2">{fmtDate(payment.date_paid)}</td>
-                          <td className="py-2.5 px-3 text-[11px] text-muted max-w-[200px] truncate">{payment.reason || "—"}</td>
-                          <td className="py-2.5 px-3 text-right font-black text-amber-400 text-xs">{moneyFull(payment.amount)}</td>
+                          <td className="py-2.5 px-3 text-[11px] text-app-2">
+                            {fmtDate(payment.date_paid)}
+                          </td>
+                          <td className="py-2.5 px-3 text-[11px] text-muted max-w-[200px] truncate">
+                            {payment.reason || "—"}
+                          </td>
+                          <td className="py-2.5 px-3 text-right font-black text-amber-400 text-xs">
+                            {moneyFull(payment.amount)}
+                          </td>
                           <td className="py-2.5 px-3 text-center">
                             <div className="flex items-center justify-center gap-1">
-                              <button onClick={() => openEditStaff(payment)} className="p-1 text-muted hover:text-blue-400 hover:bg-blue-500/10 rounded-md transition-all" title="Edit">
+                              <button
+                                onClick={() => openEditStaff(payment)}
+                                className="p-1 text-muted hover:text-blue-400 hover:bg-blue-500/10 rounded-md transition-all"
+                                title="Edit"
+                              >
                                 <Pencil size={11} />
                               </button>
-                              <button onClick={() => deleteStaffPayment(payment.id)} className="p-1 text-muted hover:text-red-400 hover:bg-red-500/10 rounded-md transition-all" title="Delete">
+                              <button
+                                onClick={() => deleteStaffPayment(payment.id)}
+                                className="p-1 text-muted hover:text-red-400 hover:bg-red-500/10 rounded-md transition-all"
+                                title="Delete"
+                              >
                                 <Trash2 size={11} />
                               </button>
                             </div>
@@ -776,10 +837,15 @@ export default function ExpensesPageInner({
                   </tbody>
                   <tfoot>
                     <tr className="bg-app border-t border-app font-bold text-xs">
-                      <td colSpan={4} className="py-2.5 px-3 text-right uppercase tracking-wider text-muted text-[10px]">
+                      <td
+                        colSpan={4}
+                        className="py-2.5 px-3 text-right uppercase tracking-wider text-muted text-[10px]"
+                      >
                         Total ({filteredStaffPayments.length} entries):
                       </td>
-                      <td className="py-2.5 px-3 text-right text-amber-400 font-black">{moneyFull(staffTotal)}</td>
+                      <td className="py-2.5 px-3 text-right text-amber-400 font-black">
+                        {moneyFull(staffTotal)}
+                      </td>
                       <td></td>
                     </tr>
                   </tfoot>
@@ -791,12 +857,17 @@ export default function ExpensesPageInner({
           {/* MOBILE CARDS */}
           <div className="md:hidden space-y-3">
             {loading ? (
-              Array(4).fill(0).map((_, i) => (
-                <div key={i} className="bg-panel border border-app rounded-2xl p-4 animate-pulse space-y-3">
-                  <div className="h-5 bg-slate-800/60 rounded-full w-1/2"></div>
-                  <div className="h-14 bg-slate-800/40 rounded-xl w-full"></div>
-                </div>
-              ))
+              Array(4)
+                .fill(0)
+                .map((_, i) => (
+                  <div
+                    key={i}
+                    className="bg-panel border border-app rounded-2xl p-4 animate-pulse space-y-3"
+                  >
+                    <div className="h-5 bg-slate-800/60 rounded-full w-1/2"></div>
+                    <div className="h-14 bg-slate-800/40 rounded-xl w-full"></div>
+                  </div>
+                ))
             ) : filteredStaffPayments.length === 0 ? (
               <div className="bg-panel border border-app rounded-2xl p-8 text-center space-y-2">
                 <UserRound size={20} className="text-muted mx-auto" />
@@ -807,14 +878,25 @@ export default function ExpensesPageInner({
               filteredStaffPayments.map((payment) => {
                 const mechanic = mechanicById.get(payment.mechanic_id);
                 return (
-                  <div key={payment.id} className="bg-panel border border-app rounded-2xl p-3.5 shadow-md space-y-3 hover:border-muted transition-all">
+                  <div
+                    key={payment.id}
+                    className="bg-panel border border-app rounded-2xl p-3.5 shadow-md space-y-3 hover:border-muted transition-all"
+                  >
                     {/* Top Row */}
                     <div className="flex items-center justify-between gap-2.5">
                       <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                        <MechAvatar image={mechanic?.image_path} name={mechanicName(mechanic)} cls="w-9 h-9 text-xs" />
+                        <MechAvatar
+                          image={mechanic?.image_path}
+                          name={mechanicName(mechanic)}
+                          cls="w-9 h-9 text-xs"
+                        />
                         <div className="min-w-0">
-                          <p className="text-white font-black text-sm truncate">{mechanicName(mechanic)}</p>
-                          <p className="text-[10px] text-muted font-medium">{mechanic?.designation || "Staff"}</p>
+                          <p className="text-white font-black text-sm truncate">
+                            {mechanicName(mechanic)}
+                          </p>
+                          <p className="text-[10px] text-muted font-medium">
+                            {mechanic?.designation || "Staff"}
+                          </p>
                         </div>
                       </div>
                       <div className="text-right flex-shrink-0 space-y-1">
@@ -831,14 +913,24 @@ export default function ExpensesPageInner({
                     <div className="bg-app p-3 rounded-xl border border-app/80">
                       <div className="flex items-start justify-between gap-3">
                         <div className="space-y-1 min-w-0">
-                          <span className="text-[9px] font-bold text-muted uppercase tracking-wider">Note</span>
+                          <span className="text-[9px] font-bold text-muted uppercase tracking-wider">
+                            Note
+                          </span>
                           <p className="text-[11px] text-app-2 truncate">{payment.reason || "—"}</p>
                         </div>
                         <div className="flex items-center gap-1.5 flex-shrink-0">
-                          <button onClick={() => openEditStaff(payment)} className="p-1.5 text-muted hover:text-blue-400 hover:bg-blue-500/10 rounded-lg transition-all" title="Edit">
+                          <button
+                            onClick={() => openEditStaff(payment)}
+                            className="p-1.5 text-muted hover:text-blue-400 hover:bg-blue-500/10 rounded-lg transition-all"
+                            title="Edit"
+                          >
                             <Pencil size={13} />
                           </button>
-                          <button onClick={() => deleteStaffPayment(payment.id)} className="p-1.5 text-muted hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all" title="Delete">
+                          <button
+                            onClick={() => deleteStaffPayment(payment.id)}
+                            className="p-1.5 text-muted hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all"
+                            title="Delete"
+                          >
                             <Trash2 size={13} />
                           </button>
                         </div>
@@ -879,27 +971,43 @@ export default function ExpensesPageInner({
                   <tbody className="divide-y divide-[#21293d]/50">
                     {filteredShopExpenses.map((expense, i) => (
                       <tr key={expense.id} className="hover:bg-blue-500/[0.02] transition-colors">
-                        <td className="py-2.5 px-3 text-center text-muted font-bold text-[10px]">{i + 1}</td>
+                        <td className="py-2.5 px-3 text-center text-muted font-bold text-[10px]">
+                          {i + 1}
+                        </td>
                         <td className="py-2.5 px-3">
                           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 text-[10px] font-bold">
                             <FileText size={9} />
                             {expense.category}
                           </span>
                         </td>
-                        <td className="py-2.5 px-3 text-[11px] text-app-2">{fmtDateTime(expense.date_created)}</td>
+                        <td className="py-2.5 px-3 text-[11px] text-app-2">
+                          {fmtDateTime(expense.date_created)}
+                        </td>
                         <td className="py-2.5 px-3 text-[11px] text-muted">
                           {expense.supplier_id != null && supplierMap[expense.supplier_id]
                             ? supplierMap[expense.supplier_id]
                             : "—"}
                         </td>
-                        <td className="py-2.5 px-3 text-[11px] text-muted max-w-[200px] truncate">{expense.remarks || "—"}</td>
-                        <td className="py-2.5 px-3 text-right font-black text-red-400 text-xs">{moneyFull(expense.amount)}</td>
+                        <td className="py-2.5 px-3 text-[11px] text-muted max-w-[200px] truncate">
+                          {expense.remarks || "—"}
+                        </td>
+                        <td className="py-2.5 px-3 text-right font-black text-red-400 text-xs">
+                          {moneyFull(expense.amount)}
+                        </td>
                         <td className="py-2.5 px-3 text-center">
                           <div className="flex items-center justify-center gap-1">
-                            <button onClick={() => openEditExpense(expense)} className="p-1 text-muted hover:text-blue-400 hover:bg-blue-500/10 rounded-md transition-all" title="Edit">
+                            <button
+                              onClick={() => openEditExpense(expense)}
+                              className="p-1 text-muted hover:text-blue-400 hover:bg-blue-500/10 rounded-md transition-all"
+                              title="Edit"
+                            >
                               <Pencil size={11} />
                             </button>
-                            <button onClick={() => deleteExpense(expense.id)} className="p-1 text-muted hover:text-red-400 hover:bg-red-500/10 rounded-md transition-all" title="Delete">
+                            <button
+                              onClick={() => deleteExpense(expense.id)}
+                              className="p-1 text-muted hover:text-red-400 hover:bg-red-500/10 rounded-md transition-all"
+                              title="Delete"
+                            >
                               <Trash2 size={11} />
                             </button>
                           </div>
@@ -909,10 +1017,15 @@ export default function ExpensesPageInner({
                   </tbody>
                   <tfoot>
                     <tr className="bg-app border-t border-app font-bold text-xs">
-                      <td colSpan={5} className="py-2.5 px-3 text-right uppercase tracking-wider text-muted text-[10px]">
+                      <td
+                        colSpan={5}
+                        className="py-2.5 px-3 text-right uppercase tracking-wider text-muted text-[10px]"
+                      >
                         Total ({filteredShopExpenses.length} entries):
                       </td>
-                      <td className="py-2.5 px-3 text-right text-red-400 font-black">{moneyFull(expenseTotal)}</td>
+                      <td className="py-2.5 px-3 text-right text-red-400 font-black">
+                        {moneyFull(expenseTotal)}
+                      </td>
                       <td></td>
                     </tr>
                   </tfoot>
@@ -924,12 +1037,17 @@ export default function ExpensesPageInner({
           {/* MOBILE CARDS */}
           <div className="md:hidden space-y-3">
             {loading ? (
-              Array(4).fill(0).map((_, i) => (
-                <div key={i} className="bg-panel border border-app rounded-2xl p-4 animate-pulse space-y-3">
-                  <div className="h-5 bg-slate-800/60 rounded-full w-1/2"></div>
-                  <div className="h-14 bg-slate-800/40 rounded-xl w-full"></div>
-                </div>
-              ))
+              Array(4)
+                .fill(0)
+                .map((_, i) => (
+                  <div
+                    key={i}
+                    className="bg-panel border border-app rounded-2xl p-4 animate-pulse space-y-3"
+                  >
+                    <div className="h-5 bg-slate-800/60 rounded-full w-1/2"></div>
+                    <div className="h-14 bg-slate-800/40 rounded-xl w-full"></div>
+                  </div>
+                ))
             ) : filteredShopExpenses.length === 0 ? (
               <div className="bg-panel border border-app rounded-2xl p-8 text-center space-y-2">
                 <Receipt size={20} className="text-muted mx-auto" />
@@ -938,7 +1056,10 @@ export default function ExpensesPageInner({
               </div>
             ) : (
               filteredShopExpenses.map((expense) => (
-                <div key={expense.id} className="bg-panel border border-app rounded-2xl p-3.5 shadow-md space-y-3 hover:border-muted transition-all">
+                <div
+                  key={expense.id}
+                  className="bg-panel border border-app rounded-2xl p-3.5 shadow-md space-y-3 hover:border-muted transition-all"
+                >
                   {/* Top Row */}
                   <div className="flex items-center justify-between gap-2.5">
                     <div className="min-w-0 flex-1">
@@ -966,14 +1087,24 @@ export default function ExpensesPageInner({
                   <div className="bg-app p-3 rounded-xl border border-app/80">
                     <div className="flex items-start justify-between gap-3">
                       <div className="space-y-1 min-w-0">
-                        <span className="text-[9px] font-bold text-muted uppercase tracking-wider">Remarks</span>
+                        <span className="text-[9px] font-bold text-muted uppercase tracking-wider">
+                          Remarks
+                        </span>
                         <p className="text-[11px] text-app-2 truncate">{expense.remarks || "—"}</p>
                       </div>
                       <div className="flex items-center gap-1.5 flex-shrink-0">
-                        <button onClick={() => openEditExpense(expense)} className="p-1.5 text-muted hover:text-blue-400 hover:bg-blue-500/10 rounded-lg transition-all" title="Edit">
+                        <button
+                          onClick={() => openEditExpense(expense)}
+                          className="p-1.5 text-muted hover:text-blue-400 hover:bg-blue-500/10 rounded-lg transition-all"
+                          title="Edit"
+                        >
                           <Pencil size={13} />
                         </button>
-                        <button onClick={() => deleteExpense(expense.id)} className="p-1.5 text-muted hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all" title="Delete">
+                        <button
+                          onClick={() => deleteExpense(expense.id)}
+                          className="p-1.5 text-muted hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all"
+                          title="Delete"
+                        >
                           <Trash2 size={13} />
                         </button>
                       </div>
@@ -992,7 +1123,7 @@ export default function ExpensesPageInner({
           className="fixed inset-0 z-[70] flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-150"
           onClick={(e) => e.target === e.currentTarget && closeModals()}
         >
-          <div className="bg-panel border border-app rounded-2xl w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-150"> 
+          <div className="bg-panel border border-app rounded-2xl w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-150">
             <div className="px-4 py-3.5 bg-app border-b border-app flex items-center justify-between sticky top-0 z-10">
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-xl bg-blue-500/20 border border-blue-500/30 flex items-center justify-center text-blue-400">
@@ -1005,13 +1136,18 @@ export default function ExpensesPageInner({
                   <p className="text-[10px] text-muted">Staff ko diye advance ya salary payment</p>
                 </div>
               </div>
-              <button onClick={closeModals} className="w-7 h-7 rounded-lg bg-panel border border-app text-muted hover:text-white flex items-center justify-center transition-colors">
+              <button
+                onClick={closeModals}
+                className="w-7 h-7 rounded-lg bg-panel border border-app text-muted hover:text-white flex items-center justify-center transition-colors"
+              >
                 <X size={14} />
               </button>
             </div>
             <form onSubmit={saveStaffPayment} className="p-4 space-y-4">
               <label className="block">
-                <span className="block text-[10px] font-black uppercase tracking-wider text-muted mb-1.5">Staff</span>
+                <span className="block text-[10px] font-black uppercase tracking-wider text-muted mb-1.5">
+                  Staff
+                </span>
                 <SearchableSelect
                   value={staffForm.mechanic_id || null}
                   options={mechanics.map((mechanic) => ({
@@ -1025,7 +1161,9 @@ export default function ExpensesPageInner({
               </label>
               <div className="grid grid-cols-2 gap-3">
                 <label className="block">
-                  <span className="block text-[10px] font-black uppercase tracking-wider text-muted mb-1.5">Amount</span>
+                  <span className="block text-[10px] font-black uppercase tracking-wider text-muted mb-1.5">
+                    Amount
+                  </span>
                   <input
                     type="number"
                     step="0.01"
@@ -1036,17 +1174,23 @@ export default function ExpensesPageInner({
                   />
                 </label>
                 <label className="block">
-                  <span className="block text-[10px] font-black uppercase tracking-wider text-muted mb-1.5">Payment Date</span>
+                  <span className="block text-[10px] font-black uppercase tracking-wider text-muted mb-1.5">
+                    Payment Date
+                  </span>
                   <input
                     type="date"
                     value={staffForm.date_paid}
-                    onChange={(e) => setStaffForm((prev) => ({ ...prev, date_paid: e.target.value }))}
+                    onChange={(e) =>
+                      setStaffForm((prev) => ({ ...prev, date_paid: e.target.value }))
+                    }
                     className="w-full px-3 py-2.5 bg-app border border-app rounded-xl text-sm text-white outline-none focus:border-blue-500/60 transition-all [color-scheme:dark]"
                   />
                 </label>
               </div>
               <label className="block">
-                <span className="block text-[10px] font-black uppercase tracking-wider text-muted mb-1.5">Reason / Note</span>
+                <span className="block text-[10px] font-black uppercase tracking-wider text-muted mb-1.5">
+                  Reason / Note
+                </span>
                 <textarea
                   value={staffForm.reason}
                   onChange={(e) => setStaffForm((prev) => ({ ...prev, reason: e.target.value }))}
@@ -1056,12 +1200,20 @@ export default function ExpensesPageInner({
                 />
               </label>
               <div className="flex gap-2 pt-1">
-                <button type="button" onClick={closeModals} className="flex-1 py-2.5 bg-app hover:bg-panel-2 border border-app rounded-xl text-xs font-bold text-app-2 hover:text-white transition-all active:scale-95">
+                <button
+                  type="button"
+                  onClick={closeModals}
+                  className="flex-1 py-2.5 bg-app hover:bg-panel-2 border border-app rounded-xl text-xs font-bold text-app-2 hover:text-white transition-all active:scale-95"
+                >
                   Cancel
                 </button>
                 {/* GEOFENCE (Tier A): staff bahar ho to save block + toast */}
                 <CanWrite>
-                  <button type="submit" disabled={saving} className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-blue-600 hover:bg-blue-500 rounded-xl text-xs font-bold text-white transition-all active:scale-95 shadow-sm">
+                  <button
+                    type="submit"
+                    disabled={saving}
+                    className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-blue-600 hover:bg-blue-500 rounded-xl text-xs font-bold text-white transition-all active:scale-95 shadow-sm"
+                  >
                     {saving ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />}
                     {staffForm.id ? "Update" : "Save"}
                   </button>
@@ -1091,17 +1243,24 @@ export default function ExpensesPageInner({
                   <p className="text-[10px] text-muted">Shop kharch category ke saath</p>
                 </div>
               </div>
-              <button onClick={closeModals} className="w-7 h-7 rounded-lg bg-panel border border-app text-muted hover:text-white flex items-center justify-center transition-colors">
+              <button
+                onClick={closeModals}
+                className="w-7 h-7 rounded-lg bg-panel border border-app text-muted hover:text-white flex items-center justify-center transition-colors"
+              >
                 <X size={14} />
               </button>
             </div>
             <form onSubmit={saveExpense} className="p-4 space-y-4">
               <label className="block">
-                <span className="block text-[10px] font-black uppercase tracking-wider text-muted mb-1.5">Category</span>
+                <span className="block text-[10px] font-black uppercase tracking-wider text-muted mb-1.5">
+                  Category
+                </span>
                 <input
                   list="expense-categories"
                   value={expenseForm.category}
-                  onChange={(e) => setExpenseForm((prev) => ({ ...prev, category: e.target.value }))}
+                  onChange={(e) =>
+                    setExpenseForm((prev) => ({ ...prev, category: e.target.value }))
+                  }
                   className="w-full px-3 py-2.5 bg-app border border-app rounded-xl text-sm text-white outline-none focus:border-blue-500/60 transition-all placeholder:text-app [color-scheme:dark]"
                   placeholder="Rent, travel, office, material..."
                 />
@@ -1117,18 +1276,24 @@ export default function ExpensesPageInner({
               </label>
               <div className="grid grid-cols-2 gap-3">
                 <label className="block">
-                  <span className="block text-[10px] font-black uppercase tracking-wider text-muted mb-1.5">Amount</span>
+                  <span className="block text-[10px] font-black uppercase tracking-wider text-muted mb-1.5">
+                    Amount
+                  </span>
                   <input
                     type="number"
                     step="0.01"
                     value={expenseForm.amount}
-                    onChange={(e) => setExpenseForm((prev) => ({ ...prev, amount: e.target.value }))}
+                    onChange={(e) =>
+                      setExpenseForm((prev) => ({ ...prev, amount: e.target.value }))
+                    }
                     className="w-full px-3 py-2.5 bg-app border border-app rounded-xl text-sm text-white outline-none focus:border-blue-500/60 transition-all placeholder:text-app [color-scheme:dark]"
                     placeholder="0.00"
                   />
                 </label>
                 <label className="block">
-                  <span className="block text-[10px] font-black uppercase tracking-wider text-muted mb-1.5">Date</span>
+                  <span className="block text-[10px] font-black uppercase tracking-wider text-muted mb-1.5">
+                    Date
+                  </span>
                   <input
                     type="date"
                     value={expenseForm.date}
@@ -1138,7 +1303,9 @@ export default function ExpensesPageInner({
                 </label>
               </div>
               <label className="block">
-                <span className="block text-[10px] font-black uppercase tracking-wider text-muted mb-1.5">Remarks</span>
+                <span className="block text-[10px] font-black uppercase tracking-wider text-muted mb-1.5">
+                  Remarks
+                </span>
                 <textarea
                   value={expenseForm.remarks}
                   onChange={(e) => setExpenseForm((prev) => ({ ...prev, remarks: e.target.value }))}
@@ -1148,12 +1315,20 @@ export default function ExpensesPageInner({
                 />
               </label>
               <div className="flex gap-2 pt-1">
-                <button type="button" onClick={closeModals} className="flex-1 py-2.5 bg-app hover:bg-panel-2 border border-app rounded-xl text-xs font-bold text-app-2 hover:text-white transition-all active:scale-95">
+                <button
+                  type="button"
+                  onClick={closeModals}
+                  className="flex-1 py-2.5 bg-app hover:bg-panel-2 border border-app rounded-xl text-xs font-bold text-app-2 hover:text-white transition-all active:scale-95"
+                >
                   Cancel
                 </button>
                 {/* GEOFENCE (Tier A): staff bahar ho to save block + toast */}
                 <CanWrite>
-                  <button type="submit" disabled={saving} className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-blue-600 hover:bg-blue-500 rounded-xl text-xs font-bold text-white transition-all active:scale-95 shadow-sm">
+                  <button
+                    type="submit"
+                    disabled={saving}
+                    className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-blue-600 hover:bg-blue-500 rounded-xl text-xs font-bold text-white transition-all active:scale-95 shadow-sm"
+                  >
                     {saving ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />}
                     {expenseForm.id ? "Update" : "Save"}
                   </button>

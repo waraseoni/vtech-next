@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import Image from "next/image";
+import ZoomableImage from "@/components/ZoomableImage";
 import { supabase } from "@/lib/supabase";
 import {
   Package,
@@ -62,8 +62,7 @@ type Props = {
 
 const inr = (n: number) =>
   "₹" + (n || 0).toLocaleString("en-IN", { minimumFractionDigits: 0, maximumFractionDigits: 2 });
-const inrShort = (n: number) =>
-  "₹" + Math.round(n || 0).toLocaleString("en-IN");
+const inrShort = (n: number) => "₹" + Math.round(n || 0).toLocaleString("en-IN");
 
 const clientInitials = (name: string) =>
   name
@@ -84,13 +83,12 @@ const ClientAvatar = ({
 }) => {
   const src = safeImageSrc(image);
   return src ? (
-    <Image
+    <ZoomableImage
       src={src}
       alt={name}
       width={32}
       height={32}
-      className={`${cls} rounded-full object-cover flex-shrink-0 border border-white/10 ring-1 ring-violet-500/20 shadow-sm cursor-zoom-in`}
-      
+      className={`${cls} rounded-full object-cover flex-shrink-0 border border-white/10 ring-1 ring-violet-500/20 shadow-sm`}
       onError={(e) => {
         (e.currentTarget as HTMLImageElement).style.display = "none";
       }}
@@ -123,13 +121,12 @@ const MechAvatar = ({
 }) => {
   const src = safeImageSrc(image);
   return src ? (
-    <Image
+    <ZoomableImage
       src={src}
       alt={name}
       width={24}
       height={24}
-      className={`${cls} rounded-full object-cover flex-shrink-0 border border-white/10 ring-1 ring-blue-500/20 shadow-sm cursor-zoom-in`}
-      
+      className={`${cls} rounded-full object-cover flex-shrink-0 border border-white/10 ring-1 ring-blue-500/20 shadow-sm`}
       onError={(e) => {
         (e.currentTarget as HTMLImageElement).style.display = "none";
       }}
@@ -199,7 +196,9 @@ export default function DeliveredReportClient({ fromDate, toDate, clientId }: Pr
     (async () => {
       const { data: sys } = await supabase.from("system_info").select("meta_field, meta_value");
       const info: Record<string, string> = {};
-      (sys || []).forEach((r) => { info[r.meta_field] = r.meta_value; });
+      (sys || []).forEach((r) => {
+        info[r.meta_field] = r.meta_value;
+      });
       setFirmInfo(info);
     })();
   }, []);
@@ -241,34 +240,60 @@ export default function DeliveredReportClient({ fromDate, toDate, clientId }: Pr
           { data: mechData },
         ] = await Promise.all([
           clientIds.length > 0
-            ? supabase.from("client_list").select("id, firstname, middlename, lastname, contact, opening_balance, image_path").in("id", clientIds)
+            ? supabase
+                .from("client_list")
+                .select("id, firstname, middlename, lastname, contact, opening_balance, image_path")
+                .in("id", clientIds)
             : Promise.resolve({ data: [] }),
           // Billed = sirf DELIVERED (status=5) jobs — canonical formula
           // (client-due.ts). Pehle yahan status filter nahi tha, isliye client
           // ke pending/in-progress jobs bhi due me ginte the. del_status=0
           // page ki list ke consistent.
           clientIds.length > 0
-            ? supabase.from("transaction_list").select("client_name, amount").eq("status", 5).eq("del_status", 0).in("client_name", clientIds)
+            ? supabase
+                .from("transaction_list")
+                .select("client_name, amount")
+                .eq("status", 5)
+                .eq("del_status", 0)
+                .in("client_name", clientIds)
             : Promise.resolve({ data: [] }),
           // Saare payments (service + loan-linked) — partitioning helper karta hai
           clientIds.length > 0
-            ? supabase.from("client_payments").select("client_id, amount, discount, loan_id").in("client_id", clientIds)
+            ? supabase
+                .from("client_payments")
+                .select("client_id, amount, discount, loan_id")
+                .in("client_id", clientIds)
             : Promise.resolve({ data: [] }),
           clientIds.length > 0
-            ? supabase.from("direct_sales").select("client_id, total_amount").in("client_id", clientIds)
+            ? supabase
+                .from("direct_sales")
+                .select("client_id, total_amount")
+                .in("client_id", clientIds)
             : Promise.resolve({ data: [] }),
           // ACTIVE loans sirf — ye balance ko badhate hain (canonical ke mutabik)
           clientIds.length > 0
-            ? supabase.from("client_loans").select("id, client_id, total_payable").eq("status", 1).in("client_id", clientIds)
+            ? supabase
+                .from("client_loans")
+                .select("id, client_id, total_payable")
+                .eq("status", 1)
+                .in("client_id", clientIds)
             : Promise.resolve({ data: [] }),
           mechIds.length > 0
-            ? supabase.from("mechanic_list").select("id, firstname, lastname, image_path").in("id", mechIds)
+            ? supabase
+                .from("mechanic_list")
+                .select("id, firstname, lastname, image_path")
+                .in("id", mechIds)
             : Promise.resolve({ data: [] }),
         ]);
-        const clientMap: Record<number, { name: string; contact: string; opening_balance: number; image_path: string | null }> = {};
+        const clientMap: Record<
+          number,
+          { name: string; contact: string; opening_balance: number; image_path: string | null }
+        > = {};
         (clientsData || []).forEach((c) => {
           clientMap[c.id] = {
-            name: `${c.firstname} ${c.middlename || ""} ${c.lastname || ""}`.replace(/\s+/g, " ").trim(),
+            name: `${c.firstname} ${c.middlename || ""} ${c.lastname || ""}`
+              .replace(/\s+/g, " ")
+              .trim(),
             contact: c.contact || "",
             opening_balance: c.opening_balance || 0,
             image_path: c.image_path || null,
@@ -296,24 +321,42 @@ export default function DeliveredReportClient({ fromDate, toDate, clientId }: Pr
         setClientTotals(totals);
         setTransactions(
           txData.map((t) => {
-            const client = clientMap[t.client_name] || { name: "Unknown", contact: "", opening_balance: 0, image_path: null };
+            const client = clientMap[t.client_name] || {
+              name: "Unknown",
+              contact: "",
+              opening_balance: 0,
+              image_path: null,
+            };
             const mech = t.mechanic_id ? mechMap[t.mechanic_id] : null;
             return {
-              id: t.id, job_id: t.job_id, date_completed: t.date_completed, item: t.item,
-              amount: t.amount || 0, client_id: t.client_name, client_name: client.name,
-              client_contact: client.contact, client_image: client.image_path,
-              mechanic_name: mech?.name || "Not Assigned", mechanic_image: mech?.image_path || null,
+              id: t.id,
+              job_id: t.job_id,
+              date_completed: t.date_completed,
+              item: t.item,
+              amount: t.amount || 0,
+              client_id: t.client_name,
+              client_name: client.name,
+              client_contact: client.contact,
+              client_image: client.image_path,
+              mechanic_name: mech?.name || "Not Assigned",
+              mechanic_image: mech?.image_path || null,
               opening_balance: client.opening_balance,
             };
           })
         );
-      } catch (err) { console.error("Error:", err); }
-      finally { setLoading(false); setRefreshing(false); }
+      } catch (err) {
+        console.error("Error:", err);
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
+      }
     },
     [from, to, selectedClientId]
   );
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   const handleFilter = (e: React.FormEvent) => {
     e.preventDefault();
@@ -375,7 +418,8 @@ export default function DeliveredReportClient({ fromDate, toDate, clientId }: Pr
     // paid + active loans − loan repaid (client-due.ts ka single source).
     const balance = totals.netBalance;
     if (balance > 0) return { type: "due", label: "Due", value: balance, color: "red" };
-    else if (balance < 0) return { type: "adv", label: "Advance", value: Math.abs(balance), color: "emerald" };
+    else if (balance < 0)
+      return { type: "adv", label: "Advance", value: Math.abs(balance), color: "emerald" };
     return { type: "clear", label: "Clear", value: 0, color: "slate" };
   };
 
@@ -427,7 +471,12 @@ export default function DeliveredReportClient({ fromDate, toDate, clientId }: Pr
             <RefreshCw size={13} className={refreshing ? "animate-spin text-blue-400" : ""} />
           </button>
           <button
-            onClick={() => window.open(`/api/print-delivered?from=${from}&to=${to}&client_id=${selectedClientId}`, "_blank")}
+            onClick={() =>
+              window.open(
+                `/api/print-delivered?from=${from}&to=${to}&client_id=${selectedClientId}`,
+                "_blank"
+              )
+            }
             className="p-1.5 bg-app hover:bg-panel-2 border border-app rounded-xl text-muted hover:text-white transition-all flex-shrink-0"
             title="Print"
           >
@@ -440,7 +489,9 @@ export default function DeliveredReportClient({ fromDate, toDate, clientId }: Pr
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-2.5">
         <div className="bg-panel border border-app rounded-xl p-2.5 sm:p-3 shadow-sm">
           <div className="flex items-center justify-between text-muted mb-0.5">
-            <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider">Delivered</span>
+            <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider">
+              Delivered
+            </span>
             <Package size={13} className="text-emerald-400" />
           </div>
           <p className="text-base sm:text-lg font-black text-white tracking-tight">{stats.count}</p>
@@ -448,23 +499,33 @@ export default function DeliveredReportClient({ fromDate, toDate, clientId }: Pr
         </div>
         <div className="bg-panel border border-app rounded-xl p-2.5 sm:p-3 shadow-sm">
           <div className="flex items-center justify-between text-muted mb-0.5">
-            <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider">Total Value</span>
+            <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider">
+              Total Value
+            </span>
             <IndianRupee size={13} className="text-emerald-400" />
           </div>
-          <p className="text-base sm:text-lg font-black text-emerald-400 tracking-tight">{inrShort(stats.total)}</p>
+          <p className="text-base sm:text-lg font-black text-emerald-400 tracking-tight">
+            {inrShort(stats.total)}
+          </p>
           <p className="text-[9px] text-muted">Billed amount</p>
         </div>
         <div className="bg-panel border border-app rounded-xl p-2.5 sm:p-3 shadow-sm">
           <div className="flex items-center justify-between text-muted mb-0.5">
-            <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider">Clients</span>
+            <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider">
+              Clients
+            </span>
             <Users size={13} className="text-blue-400" />
           </div>
-          <p className="text-base sm:text-lg font-black text-white tracking-tight">{stats.unique}</p>
+          <p className="text-base sm:text-lg font-black text-white tracking-tight">
+            {stats.unique}
+          </p>
           <p className="text-[9px] text-muted">Unique clients</p>
         </div>
         <div className="bg-panel border border-app rounded-xl p-2.5 sm:p-3 shadow-sm">
           <div className="flex items-center justify-between text-muted mb-0.5">
-            <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider">Avg Bill</span>
+            <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider">
+              Avg Bill
+            </span>
             <TrendingUp size={13} className="text-amber-400" />
           </div>
           <p className="text-base sm:text-lg font-black text-amber-300 tracking-tight">
@@ -480,16 +541,34 @@ export default function DeliveredReportClient({ fromDate, toDate, clientId }: Pr
           <div className="flex flex-col md:flex-row items-stretch md:items-center gap-2">
             {/* Date Range */}
             <div className="flex items-center justify-between sm:justify-start gap-1 bg-app p-1 rounded-xl border border-app">
-              <button type="button" onClick={() => goToDay("prev")} className="w-7 h-7 flex items-center justify-center rounded-lg text-muted hover:text-white hover:bg-white/5 transition-all">
+              <button
+                type="button"
+                onClick={() => goToDay("prev")}
+                className="w-7 h-7 flex items-center justify-center rounded-lg text-muted hover:text-white hover:bg-white/5 transition-all"
+              >
                 <ChevronLeft size={15} />
               </button>
               <div className="flex items-center gap-1 px-1">
                 <Calendar size={12} className="text-blue-400 flex-shrink-0" />
-                <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="bg-transparent text-[11px] font-bold text-white outline-none cursor-pointer [color-scheme:dark]" />
+                <input
+                  type="date"
+                  value={from}
+                  onChange={(e) => setFrom(e.target.value)}
+                  className="bg-transparent text-[11px] font-bold text-white outline-none cursor-pointer [color-scheme:dark]"
+                />
                 <span className="text-muted-2 text-[10px] mx-0.5">to</span>
-                <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="bg-transparent text-[11px] font-bold text-white outline-none cursor-pointer [color-scheme:dark]" />
+                <input
+                  type="date"
+                  value={to}
+                  onChange={(e) => setTo(e.target.value)}
+                  className="bg-transparent text-[11px] font-bold text-white outline-none cursor-pointer [color-scheme:dark]"
+                />
               </div>
-              <button type="button" onClick={() => goToDay("next")} className="w-7 h-7 flex items-center justify-center rounded-lg text-muted hover:text-white hover:bg-white/5 transition-all">
+              <button
+                type="button"
+                onClick={() => goToDay("next")}
+                className="w-7 h-7 flex items-center justify-center rounded-lg text-muted hover:text-white hover:bg-white/5 transition-all"
+              >
                 <ChevronRight size={15} />
               </button>
             </div>
@@ -507,10 +586,17 @@ export default function DeliveredReportClient({ fromDate, toDate, clientId }: Pr
 
             {/* Action Buttons */}
             <div className="flex items-center gap-1.5">
-              <button type="submit" className="inline-flex items-center gap-1 px-2.5 py-1 bg-blue-600 hover:bg-blue-500 rounded-xl text-xs font-bold text-white transition-all shadow-sm active:scale-95">
+              <button
+                type="submit"
+                className="inline-flex items-center gap-1 px-2.5 py-1 bg-blue-600 hover:bg-blue-500 rounded-xl text-xs font-bold text-white transition-all shadow-sm active:scale-95"
+              >
                 <Filter size={12} /> Apply
               </button>
-              <button type="button" onClick={resetFilter} className="inline-flex items-center gap-1 px-2.5 py-1 bg-app hover:bg-panel-2 border border-app rounded-xl text-xs font-bold text-app-2 hover:text-white transition-all shadow-sm active:scale-95">
+              <button
+                type="button"
+                onClick={resetFilter}
+                className="inline-flex items-center gap-1 px-2.5 py-1 bg-app hover:bg-panel-2 border border-app rounded-xl text-xs font-bold text-app-2 hover:text-white transition-all shadow-sm active:scale-95"
+              >
                 <RefreshCw size={11} /> Reset
               </button>
             </div>
@@ -536,11 +622,15 @@ export default function DeliveredReportClient({ fromDate, toDate, clientId }: Pr
             </thead>
             <tbody className="divide-y divide-[#21293d]/50">
               {loading ? (
-                Array(5).fill(0).map((_, i) => (
-                  <tr key={i} className="animate-pulse">
-                    <td colSpan={8} className="py-3 px-3"><div className="h-3 bg-slate-800/60 rounded-full w-full"></div></td>
-                  </tr>
-                ))
+                Array(5)
+                  .fill(0)
+                  .map((_, i) => (
+                    <tr key={i} className="animate-pulse">
+                      <td colSpan={8} className="py-3 px-3">
+                        <div className="h-3 bg-slate-800/60 rounded-full w-full"></div>
+                      </td>
+                    </tr>
+                  ))
               ) : transactions.length === 0 ? (
                 <tr>
                   <td colSpan={8} className="py-8 px-3 text-center">
@@ -549,7 +639,9 @@ export default function DeliveredReportClient({ fromDate, toDate, clientId }: Pr
                         <Package size={15} />
                       </div>
                       <p className="text-white font-bold text-xs">No delivered items found</p>
-                      <p className="text-muted text-[10px]">Try changing the date range or client.</p>
+                      <p className="text-muted text-[10px]">
+                        Try changing the date range or client.
+                      </p>
                     </div>
                   </td>
                 </tr>
@@ -558,20 +650,38 @@ export default function DeliveredReportClient({ fromDate, toDate, clientId }: Pr
                   const balanceInfo = getBalanceInfo(tx.client_id);
                   return (
                     <tr key={tx.id} className="hover:bg-blue-500/[0.02] transition-colors group">
-                      <td className="py-2 px-3 text-center text-muted font-bold text-[10px]">{idx + 1}</td>
+                      <td className="py-2 px-3 text-center text-muted font-bold text-[10px]">
+                        {idx + 1}
+                      </td>
                       <td className="py-2 px-3">
-                        <Link href={`/jobs/${tx.id}/view`} className="text-blue-400 hover:text-blue-300 font-bold transition-colors">
+                        <Link
+                          href={`/jobs/${tx.id}/view`}
+                          className="text-blue-400 hover:text-blue-300 font-bold transition-colors"
+                        >
                           #{tx.job_id}
                         </Link>
                       </td>
                       <td className="py-2 px-3 text-[10px] text-muted">
-                        {formatIST(tx.date_completed, { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit", hour12: true })}
+                        {formatIST(tx.date_completed, {
+                          day: "2-digit",
+                          month: "short",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                          hour12: true,
+                        })}
                       </td>
                       <td className="py-2 px-3">
                         <div className="flex items-center gap-1.5 min-w-0">
-                          <ClientAvatar image={tx.client_image} name={tx.client_name} cls="w-5 h-5 text-[9px]" />
+                          <ClientAvatar
+                            image={tx.client_image}
+                            name={tx.client_name}
+                            cls="w-5 h-5 text-[9px]"
+                          />
                           <div className="min-w-0">
-                            <Link href={`/clients/${tx.client_id}/view`} className="text-white font-bold hover:text-blue-400 transition-colors block truncate max-w-[120px] text-[11px]">
+                            <Link
+                              href={`/clients/${tx.client_id}/view`}
+                              className="text-white font-bold hover:text-blue-400 transition-colors block truncate max-w-[120px] text-[11px]"
+                            >
                               {tx.client_name}
                             </Link>
                             <p className="text-[9px] text-muted">{tx.client_contact || "—"}</p>
@@ -579,16 +689,24 @@ export default function DeliveredReportClient({ fromDate, toDate, clientId }: Pr
                         </div>
                       </td>
                       <td className="py-2 px-3">
-                        <span className="text-[11px] text-app-2 truncate max-w-[140px] block">{tx.item}</span>
+                        <span className="text-[11px] text-app-2 truncate max-w-[140px] block">
+                          {tx.item}
+                        </span>
                       </td>
-                      <td className="py-2 px-3 text-right font-black text-emerald-400 text-xs">{inr(tx.amount)}</td>
+                      <td className="py-2 px-3 text-right font-black text-emerald-400 text-xs">
+                        {inr(tx.amount)}
+                      </td>
                       <td className="py-2 px-3 text-center">
                         {balanceInfo && (
-                          <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-lg text-[9px] font-bold ${
-                            balanceInfo.color === "red" ? "bg-red-500/10 text-red-400 border border-red-500/20"
-                              : balanceInfo.color === "emerald" ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
-                              : "bg-slate-800/60 text-muted border border-slate-700/50"
-                          }`}>
+                          <span
+                            className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-lg text-[9px] font-bold ${
+                              balanceInfo.color === "red"
+                                ? "bg-red-500/10 text-red-400 border border-red-500/20"
+                                : balanceInfo.color === "emerald"
+                                  ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
+                                  : "bg-slate-800/60 text-muted border border-slate-700/50"
+                            }`}
+                          >
                             {balanceInfo.type === "clear" && <CheckCircle2 size={9} />}
                             {balanceInfo.label}: {inr(balanceInfo.value)}
                           </span>
@@ -596,13 +714,26 @@ export default function DeliveredReportClient({ fromDate, toDate, clientId }: Pr
                       </td>
                       <td className="py-2 px-3 text-center">
                         <div className="flex items-center justify-center gap-1">
-                          <button onClick={() => setShowDetailModal(tx)} className="p-1 text-muted hover:text-blue-400 hover:bg-blue-500/10 rounded-md transition-all" title="View Details">
+                          <button
+                            onClick={() => setShowDetailModal(tx)}
+                            className="p-1 text-muted hover:text-blue-400 hover:bg-blue-500/10 rounded-md transition-all"
+                            title="View Details"
+                          >
                             <Eye size={11} />
                           </button>
-                          <a href={`/pdf/bill_template.php?job_id=${tx.job_id}`} target="_blank" className="p-1 text-muted hover:text-emerald-400 hover:bg-emerald-500/10 rounded-md transition-all" title="Print Bill">
+                          <a
+                            href={`/pdf/bill_template.php?job_id=${tx.job_id}`}
+                            target="_blank"
+                            className="p-1 text-muted hover:text-emerald-400 hover:bg-emerald-500/10 rounded-md transition-all"
+                            title="Print Bill"
+                          >
                             <Receipt size={11} />
                           </a>
-                          <button onClick={() => sendWA(tx)} className="p-1 text-muted hover:text-green-400 hover:bg-green-500/10 rounded-md transition-all" title="WhatsApp">
+                          <button
+                            onClick={() => sendWA(tx)}
+                            className="p-1 text-muted hover:text-green-400 hover:bg-green-500/10 rounded-md transition-all"
+                            title="WhatsApp"
+                          >
                             <MessageCircle size={11} />
                           </button>
                         </div>
@@ -615,10 +746,15 @@ export default function DeliveredReportClient({ fromDate, toDate, clientId }: Pr
             {!loading && transactions.length > 0 && (
               <tfoot>
                 <tr className="bg-app border-t border-app font-bold text-xs">
-                  <td colSpan={5} className="py-2 px-3 text-right uppercase tracking-wider text-muted text-[10px]">
+                  <td
+                    colSpan={5}
+                    className="py-2 px-3 text-right uppercase tracking-wider text-muted text-[10px]"
+                  >
                     Total ({stats.count} items):
                   </td>
-                  <td className="py-2 px-3 text-right text-emerald-400 font-black">{inr(stats.total)}</td>
+                  <td className="py-2 px-3 text-right text-emerald-400 font-black">
+                    {inr(stats.total)}
+                  </td>
                   <td colSpan={2}></td>
                 </tr>
               </tfoot>
@@ -630,12 +766,17 @@ export default function DeliveredReportClient({ fromDate, toDate, clientId }: Pr
       {/* MOBILE CARDS */}
       <div className="md:hidden space-y-3">
         {loading ? (
-          Array(4).fill(0).map((_, i) => (
-            <div key={i} className="bg-panel border border-app rounded-2xl p-4 animate-pulse space-y-3">
-              <div className="h-5 bg-slate-800/60 rounded-full w-1/2"></div>
-              <div className="h-14 bg-slate-800/40 rounded-xl w-full"></div>
-            </div>
-          ))
+          Array(4)
+            .fill(0)
+            .map((_, i) => (
+              <div
+                key={i}
+                className="bg-panel border border-app rounded-2xl p-4 animate-pulse space-y-3"
+              >
+                <div className="h-5 bg-slate-800/60 rounded-full w-1/2"></div>
+                <div className="h-14 bg-slate-800/40 rounded-xl w-full"></div>
+              </div>
+            ))
         ) : transactions.length === 0 ? (
           <div className="bg-panel border border-app rounded-2xl p-8 text-center space-y-2">
             <Package size={20} className="text-muted mx-auto" />
@@ -646,20 +787,35 @@ export default function DeliveredReportClient({ fromDate, toDate, clientId }: Pr
           transactions.map((tx) => {
             const balanceInfo = getBalanceInfo(tx.client_id);
             return (
-              <div key={tx.id} className="bg-panel border border-app rounded-2xl p-3.5 shadow-md space-y-3 hover:border-muted transition-all">
+              <div
+                key={tx.id}
+                className="bg-panel border border-app rounded-2xl p-3.5 shadow-md space-y-3 hover:border-muted transition-all"
+              >
                 {/* Top Row */}
                 <div className="flex items-start justify-between gap-2.5">
                   <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                    <ClientAvatar image={tx.client_image} name={tx.client_name} cls="w-10 h-10 text-xs" />
+                    <ClientAvatar
+                      image={tx.client_image}
+                      name={tx.client_name}
+                      cls="w-10 h-10 text-xs"
+                    />
                     <div className="min-w-0">
-                      <Link href={`/clients/${tx.client_id}/view`} className="text-white font-black text-sm hover:text-blue-400 transition-colors truncate block">
+                      <Link
+                        href={`/clients/${tx.client_id}/view`}
+                        className="text-white font-black text-sm hover:text-blue-400 transition-colors truncate block"
+                      >
                         {tx.client_name}
                       </Link>
-                      <p className="text-[10px] text-muted font-medium truncate">{tx.client_contact || "—"}</p>
+                      <p className="text-[10px] text-muted font-medium truncate">
+                        {tx.client_contact || "—"}
+                      </p>
                     </div>
                   </div>
                   <div className="text-right flex-shrink-0 space-y-1">
-                    <Link href={`/jobs/${tx.id}/view`} className="inline-block text-blue-400 font-black text-[11px] hover:text-blue-300">
+                    <Link
+                      href={`/jobs/${tx.id}/view`}
+                      className="inline-block text-blue-400 font-black text-[11px] hover:text-blue-300"
+                    >
                       #{tx.job_id}
                     </Link>
                     <span className="inline-block px-2 py-0.5 rounded font-black text-[9px] uppercase tracking-wider bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
@@ -667,7 +823,13 @@ export default function DeliveredReportClient({ fromDate, toDate, clientId }: Pr
                     </span>
                     <p className="text-[9px] font-bold text-muted flex items-center gap-1 justify-end">
                       <Clock size={9} />
-                      {formatIST(tx.date_completed, { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit", hour12: true })}
+                      {formatIST(tx.date_completed, {
+                        day: "2-digit",
+                        month: "short",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        hour12: true,
+                      })}
                     </p>
                   </div>
                 </div>
@@ -676,24 +838,40 @@ export default function DeliveredReportClient({ fromDate, toDate, clientId }: Pr
                 <div className="bg-app p-3 rounded-xl border border-app/80">
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1">
-                      <span className="text-[9px] font-bold text-muted uppercase tracking-wider">Mechanic</span>
+                      <span className="text-[9px] font-bold text-muted uppercase tracking-wider">
+                        Mechanic
+                      </span>
                       <div className="flex items-center gap-1.5">
-                        <MechAvatar image={tx.mechanic_image} name={tx.mechanic_name} cls="w-5 h-5 text-[8px]" />
-                        <p className="font-bold text-blue-400 text-[11px] truncate max-w-[80px]">{tx.mechanic_name}</p>
+                        <MechAvatar
+                          image={tx.mechanic_image}
+                          name={tx.mechanic_name}
+                          cls="w-5 h-5 text-[8px]"
+                        />
+                        <p className="font-bold text-blue-400 text-[11px] truncate max-w-[80px]">
+                          {tx.mechanic_name}
+                        </p>
                       </div>
                     </div>
                     <div className="space-y-1 text-right">
-                      <span className="text-[9px] font-bold text-muted uppercase tracking-wider">Item</span>
+                      <span className="text-[9px] font-bold text-muted uppercase tracking-wider">
+                        Item
+                      </span>
                       <p className="font-bold text-app-2 text-[11px] truncate">{tx.item}</p>
                     </div>
                     <div className="space-y-1">
-                      <span className="text-[9px] font-bold text-muted uppercase tracking-wider">Balance</span>
+                      <span className="text-[9px] font-bold text-muted uppercase tracking-wider">
+                        Balance
+                      </span>
                       {balanceInfo ? (
-                        <p className={`font-black text-[11px] ${
-                          balanceInfo.color === "red" ? "text-red-400"
-                            : balanceInfo.color === "emerald" ? "text-emerald-400"
-                            : "text-muted"
-                        }`}>
+                        <p
+                          className={`font-black text-[11px] ${
+                            balanceInfo.color === "red"
+                              ? "text-red-400"
+                              : balanceInfo.color === "emerald"
+                                ? "text-emerald-400"
+                                : "text-muted"
+                          }`}
+                        >
                           {balanceInfo.label}: {inr(balanceInfo.value)}
                         </p>
                       ) : (
@@ -701,7 +879,9 @@ export default function DeliveredReportClient({ fromDate, toDate, clientId }: Pr
                       )}
                     </div>
                     <div className="space-y-1 text-right">
-                      <span className="text-[9px] font-bold text-muted uppercase tracking-wider">Amount</span>
+                      <span className="text-[9px] font-bold text-muted uppercase tracking-wider">
+                        Amount
+                      </span>
                       <p className="font-black text-emerald-400 text-xs">{inr(tx.amount)}</p>
                     </div>
                   </div>
@@ -709,13 +889,23 @@ export default function DeliveredReportClient({ fromDate, toDate, clientId }: Pr
 
                 {/* Card Actions */}
                 <div className="flex items-center gap-2 pt-0.5">
-                  <Link href={`/jobs/${tx.id}/view`} className="flex-1 inline-flex items-center justify-center gap-1 py-2 bg-app hover:bg-panel-2 border border-app rounded-xl text-xs font-bold text-muted hover:text-white transition-all active:scale-95">
+                  <Link
+                    href={`/jobs/${tx.id}/view`}
+                    className="flex-1 inline-flex items-center justify-center gap-1 py-2 bg-app hover:bg-panel-2 border border-app rounded-xl text-xs font-bold text-muted hover:text-white transition-all active:scale-95"
+                  >
                     <Eye size={13} /> View
                   </Link>
-                  <a href={`/pdf/bill_template.php?job_id=${tx.job_id}`} target="_blank" className="flex-1 inline-flex items-center justify-center gap-1 py-2 bg-app hover:bg-panel-2 border border-app rounded-xl text-xs font-bold text-muted hover:text-white transition-all active:scale-95">
+                  <a
+                    href={`/pdf/bill_template.php?job_id=${tx.job_id}`}
+                    target="_blank"
+                    className="flex-1 inline-flex items-center justify-center gap-1 py-2 bg-app hover:bg-panel-2 border border-app rounded-xl text-xs font-bold text-muted hover:text-white transition-all active:scale-95"
+                  >
                     <Receipt size={12} /> Bill
                   </a>
-                  <button onClick={() => sendWA(tx)} className="flex-1 inline-flex items-center justify-center gap-1 py-2 bg-green-600/10 hover:bg-green-600/20 border border-green-500/20 rounded-xl text-xs font-bold text-green-400 transition-all active:scale-95">
+                  <button
+                    onClick={() => sendWA(tx)}
+                    className="flex-1 inline-flex items-center justify-center gap-1 py-2 bg-green-600/10 hover:bg-green-600/20 border border-green-500/20 rounded-xl text-xs font-bold text-green-400 transition-all active:scale-95"
+                  >
                     <MessageCircle size={12} /> WA
                   </button>
                 </div>
@@ -753,47 +943,75 @@ export default function DeliveredReportClient({ fromDate, toDate, clientId }: Pr
               <div className="grid grid-cols-2 gap-2">
                 <div className="bg-app p-2.5 rounded-xl border border-app/80">
                   <p className="text-[9px] text-muted font-bold uppercase tracking-wider">Client</p>
-                  <p className="text-[11px] font-bold text-white mt-0.5 truncate">{showDetailModal.client_name}</p>
+                  <p className="text-[11px] font-bold text-white mt-0.5 truncate">
+                    {showDetailModal.client_name}
+                  </p>
                 </div>
                 <div className="bg-app p-2.5 rounded-xl border border-app/80">
-                  <p className="text-[9px] text-muted font-bold uppercase tracking-wider">Contact</p>
-                  <p className="text-[11px] font-bold text-white mt-0.5 truncate">{showDetailModal.client_contact || "—"}</p>
+                  <p className="text-[9px] text-muted font-bold uppercase tracking-wider">
+                    Contact
+                  </p>
+                  <p className="text-[11px] font-bold text-white mt-0.5 truncate">
+                    {showDetailModal.client_contact || "—"}
+                  </p>
                 </div>
                 <div className="bg-app p-2.5 rounded-xl border border-app/80">
                   <p className="text-[9px] text-muted font-bold uppercase tracking-wider">Date</p>
                   <p className="text-[11px] font-bold text-white mt-0.5">
-                    {formatIST(showDetailModal.date_completed, { day: "2-digit", month: "short", year: "numeric" })}
+                    {formatIST(showDetailModal.date_completed, {
+                      day: "2-digit",
+                      month: "short",
+                      year: "numeric",
+                    })}
                   </p>
                 </div>
                 <div className="bg-app p-2.5 rounded-xl border border-app/80">
                   <p className="text-[9px] text-muted font-bold uppercase tracking-wider">Amount</p>
-                  <p className="text-[11px] font-black text-emerald-400 mt-0.5">{inr(showDetailModal.amount)}</p>
+                  <p className="text-[11px] font-black text-emerald-400 mt-0.5">
+                    {inr(showDetailModal.amount)}
+                  </p>
                 </div>
               </div>
               <div className="bg-app p-2.5 rounded-xl border border-app/80">
-                <p className="text-[9px] text-muted font-bold uppercase tracking-wider">Item Details</p>
+                <p className="text-[9px] text-muted font-bold uppercase tracking-wider">
+                  Item Details
+                </p>
                 <p className="text-[11px] text-app-2 mt-0.5">{showDetailModal.item}</p>
               </div>
               {(() => {
                 const balanceInfo = getBalanceInfo(showDetailModal.client_id);
-                return balanceInfo && (
-                  <div className="bg-app p-2.5 rounded-xl border border-app/80">
-                    <p className="text-[9px] text-muted font-bold uppercase tracking-wider">Client Balance</p>
-                    <p className={`text-[11px] font-black mt-0.5 ${
-                      balanceInfo.color === "red" ? "text-red-400"
-                        : balanceInfo.color === "emerald" ? "text-emerald-400"
-                        : "text-muted"
-                    }`}>
-                      {balanceInfo.label}: {inr(balanceInfo.value)}
-                    </p>
-                  </div>
+                return (
+                  balanceInfo && (
+                    <div className="bg-app p-2.5 rounded-xl border border-app/80">
+                      <p className="text-[9px] text-muted font-bold uppercase tracking-wider">
+                        Client Balance
+                      </p>
+                      <p
+                        className={`text-[11px] font-black mt-0.5 ${
+                          balanceInfo.color === "red"
+                            ? "text-red-400"
+                            : balanceInfo.color === "emerald"
+                              ? "text-emerald-400"
+                              : "text-muted"
+                        }`}
+                      >
+                        {balanceInfo.label}: {inr(balanceInfo.value)}
+                      </p>
+                    </div>
+                  )
                 );
               })()}
               <div className="flex gap-2 pt-1">
-                <Link href={`/jobs/${showDetailModal.id}/view`} className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-blue-600 hover:bg-blue-500 rounded-xl text-xs font-bold text-white transition-all active:scale-95 shadow-sm">
+                <Link
+                  href={`/jobs/${showDetailModal.id}/view`}
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-blue-600 hover:bg-blue-500 rounded-xl text-xs font-bold text-white transition-all active:scale-95 shadow-sm"
+                >
                   <Eye size={13} /> View Job
                 </Link>
-                <button onClick={() => sendWA(showDetailModal)} className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 rounded-xl text-xs font-bold text-white transition-all active:scale-95 shadow-sm">
+                <button
+                  onClick={() => sendWA(showDetailModal)}
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 rounded-xl text-xs font-bold text-white transition-all active:scale-95 shadow-sm"
+                >
                   <MessageCircle size={13} /> WhatsApp
                 </button>
               </div>

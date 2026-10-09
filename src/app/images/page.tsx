@@ -1,18 +1,9 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
-import Image from "next/image";
+import ZoomableImage from "@/components/ZoomableImage";
 import { useRouter } from "next/navigation";
 import { supabase, getCachedUser } from "@/lib/supabase";
-import {
-  Images,
-  RefreshCw,
-  Trash2,
-  Download,
-  Copy,
-  Check,
-  Loader2,
-  Link2,
-} from "lucide-react";
+import { Images, RefreshCw, Trash2, Download, Copy, Check, Loader2, Link2 } from "lucide-react";
 import { toast } from "@/lib/toast";
 
 type BucketFile = {
@@ -307,13 +298,12 @@ export default function ImagesPage() {
                         Orphan
                       </span>
                     )}
-                    <Image
+                    <ZoomableImage
                       src={f.url}
                       alt={f.name}
                       fill
                       className="w-full h-full object-contain p-1"
                       sizes="200px"
-                      
                     />
                     <input
                       type="checkbox"

@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import Image from "next/image";
+import ZoomableImage from "@/components/ZoomableImage";
 import { safeImageSrc } from "@/lib/image-utils";
 import { supabase } from "@/lib/supabase";
 import {
@@ -461,13 +461,12 @@ export default function MechanicDetailPage() {
           </Link>
           <div className="relative flex-shrink-0">
             {safeImageSrc(mechanic?.image_path) ? (
-              <Image
+              <ZoomableImage
                 src={safeImageSrc(mechanic?.image_path)}
                 alt={name}
                 width={56}
                 height={56}
                 className="w-14 h-14 rounded-xl object-cover shadow-lg border border-white/10 flex-shrink-0"
-                
                 onError={(e) => {
                   (e.currentTarget as HTMLImageElement).style.display = "none";
                 }}
@@ -717,9 +716,7 @@ export default function MechanicDetailPage() {
               {tab.label}
               <span
                 className={`px-1.5 py-0.5 rounded-full text-[10px] ${
-                  activeTab === tab.key
-                    ? "bg-blue-500/20 text-blue-400"
-                    : "bg-muted/20 text-muted"
+                  activeTab === tab.key ? "bg-blue-500/20 text-blue-400" : "bg-muted/20 text-muted"
                 }`}
               >
                 {tab.count}

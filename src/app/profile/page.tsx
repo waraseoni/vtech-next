@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase, getCachedUser } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
+import ZoomableImage from "@/components/ZoomableImage";
 import {
   User,
   Mail,
@@ -245,13 +245,12 @@ export default function ProfilePage() {
           {/* Avatar circle */}
           <div className="relative flex-shrink-0">
             {avatarUrl ? (
-              <Image
+              <ZoomableImage
                 src={avatarUrl}
                 alt={fullName || "User"}
                 width={64}
                 height={64}
                 className="w-16 h-16 rounded-2xl object-cover flex-shrink-0 shadow-lg border border-white/10"
-                
                 onError={(e) => {
                   (e.currentTarget as HTMLImageElement).style.display = "none";
                 }}

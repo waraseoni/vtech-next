@@ -3,7 +3,7 @@ import { useState, useEffect, use, useRef } from "react";
 import { supabase, getCachedUser } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import Image from "next/image";
+import ZoomableImage from "@/components/ZoomableImage";
 import {
   Save,
   ArrowLeft,
@@ -248,13 +248,12 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
           <div className="flex items-center gap-3">
             <div className="relative flex-shrink-0">
               {avatarUrl ? (
-                <Image
+                <ZoomableImage
                   src={avatarUrl}
                   alt={fullName || "User"}
                   width={40}
                   height={40}
                   className="w-10 h-10 rounded-xl object-cover flex-shrink-0 border border-white/10"
-                  
                   onError={(e) => {
                     (e.currentTarget as HTMLImageElement).style.display = "none";
                   }}

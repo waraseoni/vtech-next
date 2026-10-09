@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase, getCachedUser } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import Image from "next/image";
+import ZoomableImage from "@/components/ZoomableImage";
 import {
   Users,
   UserPlus,
@@ -77,15 +77,22 @@ export default function UsersPage() {
     let cancelled = false;
     (async () => {
       try {
-        const { data: pres } = await supabase.from("user_presence").select("user_id, status, last_seen");
+        const { data: pres } = await supabase
+          .from("user_presence")
+          .select("user_id, status, last_seen");
         if (cancelled) return;
         const pm: Record<string, Presence> = {};
         (pres || []).forEach((r) => (pm[r.user_id] = { status: r.status, last_seen: r.last_seen }));
         setPresenceMap(pm);
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
     })();
     const sub = subscribePresence((userId, row) => {
-      setPresenceMap((prev) => ({ ...prev, [userId]: { status: row.status, last_seen: row.last_seen } }));
+      setPresenceMap((prev) => ({
+        ...prev,
+        [userId]: { status: row.status, last_seen: row.last_seen },
+      }));
     });
     return () => {
       cancelled = true;
@@ -255,15 +262,12 @@ export default function UsersPage() {
   // ── Avatar initials ───────────────────────────────────────────────────────
   const avatar = (name: string | null, role: string | null, avatarUrl?: string | null) =>
     avatarUrl ? (
-      <Image
+      <ZoomableImage
         src={avatarUrl}
         alt={name || "User"}
         width={36}
         height={36}
         className="w-9 h-9 rounded-xl object-cover flex-shrink-0 border border-app"
-        onDoubleClick={(e) => {
-          e.stopPropagation();
-        }}
         onError={(e) => {
           (e.target as HTMLImageElement).style.display = "none";
         }}
@@ -504,8 +508,8 @@ export default function UsersPage() {
             ⚠ Agar users nahi dikh rahe
           </p>
           <p className="text-xs text-app leading-relaxed">
-            Supabase → Table Editor → <code className="text-muted">profiles</code> table mein
-            check karo ki rows hain ya nahi। Agar nahi hain to pehle{" "}
+            Supabase → Table Editor → <code className="text-muted">profiles</code> table mein check
+            karo ki rows hain ya nahi। Agar nahi hain to pehle{" "}
             <strong className="text-muted">Create New</strong> se user banao। Ya{" "}
             <code className="text-muted">SUPABASE_SERVICE_ROLE_KEY</code> .env.local mein check
             karo।
@@ -644,8 +648,8 @@ export default function UsersPage() {
               </div>
               <h3 className="text-base font-black text-white">User Delete Karein?</h3>
               <p className="text-sm text-muted">
-                <strong className="text-app-2">{deleteUser.full_name}</strong> ko permanently
-                delete karna chahte ho? Yeh action undo nahi ho sakta।
+                <strong className="text-app-2">{deleteUser.full_name}</strong> ko permanently delete
+                karna chahte ho? Yeh action undo nahi ho sakta।
               </p>
             </div>
             <div className="flex gap-3 mt-5">

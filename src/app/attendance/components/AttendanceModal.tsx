@@ -10,7 +10,7 @@
 // ─────────────────────────────────────────────────────────────────
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
-import Image from "next/image";
+import ZoomableImage from "@/components/ZoomableImage";
 import {
   X,
   Check,
@@ -230,13 +230,12 @@ export default function AttendanceModal({
           <div className="bg-app border border-app rounded-xl px-3 py-2.5 flex items-center justify-between">
             <div className="flex items-center gap-2.5 min-w-0">
               {mechanicImage ? (
-                <Image
+                <ZoomableImage
                   src={mechanicImage}
                   alt={mechanicName}
                   width={32}
                   height={32}
                   className="w-8 h-8 rounded-full object-cover flex-shrink-0 border border-white/10"
-
                   onError={(e) => {
                     (e.currentTarget as HTMLImageElement).style.display = "none";
                   }}

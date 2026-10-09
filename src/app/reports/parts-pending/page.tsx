@@ -18,6 +18,7 @@ import {
   CalendarDays,
 } from "lucide-react";
 import Link from "next/link";
+import ZoomableImage from "@/components/ZoomableImage";
 const JOB_STATUS: Record<number, { label: string; cls: string }> = {
   0: { label: "Pending", cls: "bg-muted/15 text-app-2 border-muted/30" },
   1: { label: "In Progress", cls: "bg-sky-500/15 text-sky-300 border-sky-500/30" },
@@ -282,12 +283,12 @@ export default function PartsPendingReport() {
                       >
                         <div className="flex items-center gap-3 min-w-0">
                           {p.photo_url ? (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img
+                            <ZoomableImage
                               src={p.photo_url}
                               alt={p.product_name}
+                              width={36}
+                              height={36}
                               className="w-9 h-9 rounded-lg object-cover border border-app flex-shrink-0"
-                              
                             />
                           ) : (
                             <div className="w-9 h-9 rounded-lg bg-app border border-app flex items-center justify-center flex-shrink-0">

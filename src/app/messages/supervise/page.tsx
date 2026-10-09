@@ -6,11 +6,9 @@ import { supabase, getCachedUser } from "@/lib/supabase";
 import { safeImageSrc } from "@/lib/image-utils";
 import { Users, Search, RefreshCw, ShieldAlert, Eye } from "lucide-react";
 import PageLoader from "@/components/PageLoader";
-import {
-  fetchPairMessages,
-  type Message,
-  type ProfileLite,
-} from "@/lib/messaging";
+import Lightbox from "@/components/Lightbox";
+import ZoomableImage from "@/components/ZoomableImage";
+import { fetchPairMessages, type Message, type ProfileLite } from "@/lib/messaging";
 import { mediaPublicUrl } from "@/lib/media";
 const fmtTime = (s: string) =>
   new Date(s).toLocaleTimeString("en-IN", {
@@ -32,16 +30,25 @@ const fmtDay = (s: string) => {
 
 const avatarInitial = (n: string | null | undefined) => (n || "?").trim().charAt(0).toUpperCase();
 
-function Avatar({ name, url, size = 36 }: { name: string | null | undefined; url?: string | null; size?: number }) {
+function Avatar({
+  name,
+  url,
+  size = 36,
+}: {
+  name: string | null | undefined;
+  url?: string | null;
+  size?: number;
+}) {
   if (url) {
     const src = safeImageSrc(url);
     return (
-      <img
+      <ZoomableImage
         src={src}
         alt={name || "avatar"}
+        width={size}
+        height={size}
         style={{ width: size, height: size }}
         className="rounded-full object-cover bg-slate-700 shrink-0"
-        
       />
     );
   }
@@ -68,6 +75,8 @@ export default function SupervisePage() {
   const [profileMap, setProfileMap] = useState<Record<string, ProfileLite>>({});
   const [msgs, setMsgs] = useState<Message[]>([]);
   const [fetching, setFetching] = useState(false);
+  // Chat photo par click → zoom lightbox
+  const [zoomMedia, setZoomMedia] = useState<string | null>(null);
   const profileMapRef = useRef<Record<string, ProfileLite>>({});
 
   const nameOf = (id: string) => profileMap[id]?.full_name || "?";
@@ -90,7 +99,9 @@ export default function SupervisePage() {
     let cancelled = false;
     (async () => {
       try {
-        const { data: { user } } = await getCachedUser();
+        const {
+          data: { user },
+        } = await getCachedUser();
         if (!user) {
           router.push("/login");
           return;
@@ -144,8 +155,8 @@ export default function SupervisePage() {
         <ShieldAlert size={40} className="text-rose-500/70" />
         <h1 className="text-lg font-bold text-app">Access Denied</h1>
         <p className="text-sm text-muted max-w-xs">
-          Ye tool sirf admin ya developer use kar sakta hai. Staff messages
-          kaise dekhega yahan allowed nahi.
+          Ye tool sirf admin ya developer use kar sakta hai. Staff messages kaise dekhega yahan
+          allowed nahi.
         </p>
       </div>
     );
@@ -299,9 +310,10 @@ export default function SupervisePage() {
                             <img
                               src={mediaPublicUrl(m.media_url!)}
                               alt={m.media_name || "media"}
-                              className="max-h-48 w-auto rounded-lg border border-black/20"
+                              className="max-h-48 w-auto rounded-lg border border-black/20 cursor-zoom-in"
                               loading="lazy"
-                               />
+                              onClick={() => setZoomMedia(mediaPublicUrl(m.media_url!))}
+                            />
                           ) : (
                             <a
                               href={mediaPublicUrl(m.media_url!)}
@@ -316,9 +328,7 @@ export default function SupervisePage() {
                       )}
                       {m.content !== m.media_name && <span>{m.content}</span>}
                     </div>
-                    <span
-                      className={`text-[10px] text-muted ${mine ? "text-right" : ""}`}
-                    >
+                    <span className={`text-[10px] text-muted ${mine ? "text-right" : ""}`}>
                       {fmtDay(m.created_at)}
                     </span>
                   </div>
@@ -331,9 +341,13 @@ export default function SupervisePage() {
 
       <p className="mt-4 flex items-start gap-1.5 text-xs text-muted">
         <ShieldAlert size={14} className="shrink-0 mt-0.5" />
-        Ye read-only supervision hai — messages ko edit/delete nahi kar sakte. RLS ki wajah se
-        sirf admin/developer ke account ko database me sab chats dikhti hain.
+        Ye read-only supervision hai — messages ko edit/delete nahi kar sakte. RLS ki wajah se sirf
+        admin/developer ke account ko database me sab chats dikhti hain.
       </p>
+
+      {zoomMedia && (
+        <Lightbox src={zoomMedia} alt="Attachment" onClose={() => setZoomMedia(null)} />
+      )}
     </div>
   );
 }

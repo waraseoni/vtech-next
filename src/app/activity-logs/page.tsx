@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
-import Image from "next/image";
+import ZoomableImage from "@/components/ZoomableImage";
 import {
   History,
   Search,
@@ -20,7 +20,7 @@ import {
 import { formatIST } from "@/lib/dateUtils";
 import { GeoPin } from "@/app/components/ViewOnlyBanner";
 import PageLoader from "@/components/PageLoader";
-  import Link from "next/link";
+import Link from "next/link";
 
 interface LogEntry {
   id: number;
@@ -57,13 +57,12 @@ const UserAvatar = ({
   cls?: string;
 }) =>
   image ? (
-    <Image
+    <ZoomableImage
       src={image}
       alt={name || "User"}
       width={32}
       height={32}
-      className={`${cls} rounded-full object-cover flex-shrink-0 border border-white/10 cursor-zoom-in`}
-      
+      className={`${cls} rounded-full object-cover flex-shrink-0 border border-white/10`}
       onError={(e) => {
         (e.currentTarget as HTMLImageElement).style.display = "none";
       }}
@@ -539,9 +538,7 @@ export default function ActivityLogsPage() {
                       </div>
                     </div>
                     <div className="mt-3">
-                      <span className="text-app-2 font-bold text-sm block mb-1">
-                        {log.action}
-                      </span>
+                      <span className="text-app-2 font-bold text-sm block mb-1">{log.action}</span>
                       <p className="text-muted text-xs leading-relaxed mb-2">
                         {formatDetails(log.details, log.module)}
                       </p>

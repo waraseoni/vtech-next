@@ -7,7 +7,7 @@
 // Behavior 1:1 same — sirf pehla paint server se aata hai.
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
-import Image from "next/image";
+import ZoomableImage from "@/components/ZoomableImage";
 import { safeImageSrc } from "@/lib/image-utils";
 import { supabase } from "@/lib/supabase";
 import { stockStatusStyle, stockBarColor, alertThreshold, stockValue } from "@/lib/inventory";
@@ -95,7 +95,12 @@ async function fetchLocationsMap(ids: number[]): Promise<Map<number, LocRow[]>> 
     const plLocsData = (res.ok ? await res.json() : {}) as Record<string, unknown>;
     Object.entries(plLocsData || {}).forEach(([pid, locs]) => {
       const arr = Array.isArray(locs)
-        ? (locs as { zone?: string | null; rack?: string | null; bin?: string | null; box?: string | null }[])
+        ? (locs as {
+            zone?: string | null;
+            rack?: string | null;
+            bin?: string | null;
+            box?: string | null;
+          }[])
         : [];
       const mapped = (arr || []).map((loc) => ({
         zone: loc?.zone ?? "",
@@ -111,7 +116,10 @@ async function fetchLocationsMap(ids: number[]): Promise<Map<number, LocRow[]>> 
   return locMap;
 }
 
-function placesOf(locMap: Map<number, LocRow[]>, pid: number): { place: string | null; places: string[] } {
+function placesOf(
+  locMap: Map<number, LocRow[]>,
+  pid: number
+): { place: string | null; places: string[] } {
   const locs = locMap.get(pid) || [];
   const placePaths = locs.map((l) => locPath(l)).filter(Boolean);
   return { place: placePaths[0] || null, places: placePaths };
@@ -201,9 +209,7 @@ export function InventoryClient({
       if (!ids.length) return;
       const locMap = await fetchLocationsMap(ids);
       if (!alive || locMap.size === 0) return;
-      setProducts((prev) =>
-        prev.map((p) => ({ ...p, ...placesOf(locMap, p.id) }))
-      );
+      setProducts((prev) => prev.map((p) => ({ ...p, ...placesOf(locMap, p.id) })));
     })();
     return () => {
       alive = false;
@@ -478,9 +484,7 @@ export function InventoryClient({
         <div className="text-center">
           <ShieldCheck size={40} className="text-app mx-auto mb-3" />
           <h1 className="text-lg font-black text-white tracking-tight">Admin only</h1>
-          <p className="text-muted-2 text-sm mt-1">
-            Stock Overview sirf admin dekh sakta hai.
-          </p>
+          <p className="text-muted-2 text-sm mt-1">Stock Overview sirf admin dekh sakta hai.</p>
         </div>
       </div>
     );
@@ -659,10 +663,7 @@ export function InventoryClient({
         <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
           {/* Search */}
           <div className="relative flex-1">
-            <Search
-              className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-2"
-              size={15}
-            />
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-2" size={15} />
             <input
               type="text"
               placeholder="Search products, descriptions, barcode..."
@@ -847,15 +848,12 @@ export function InventoryClient({
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-3">
                             {safeImageSrc(p.image_path) ? (
-                              <Image
+                              <ZoomableImage
                                 src={safeImageSrc(p.image_path)}
                                 alt={p.name}
                                 width={48}
                                 height={48}
                                 className="w-12 h-12 rounded-xl object-cover flex-shrink-0 border border-app"
-                                onDoubleClick={(e) => {
-                                  e.stopPropagation();
-                                }}
                                 onError={(e) => {
                                   (e.currentTarget as HTMLImageElement).style.display = "none";
                                 }}
@@ -1006,9 +1004,7 @@ export function InventoryClient({
                       <td colSpan={9} className="py-20 text-center">
                         <Package size={36} className="mx-auto text-app mb-3" />
                         <p className="text-muted-2 font-bold text-sm">No products found</p>
-                        <p className="text-app text-xs mt-1">
-                          Try adjusting your search or filter
-                        </p>
+                        <p className="text-app text-xs mt-1">Try adjusting your search or filter</p>
                       </td>
                     </tr>
                   )}
@@ -1116,15 +1112,12 @@ export function InventoryClient({
                   <div className="flex items-start justify-between gap-2 mb-3">
                     <div className="flex items-center gap-3 min-w-0">
                       {safeImageSrc(p.image_path) ? (
-                        <Image
+                        <ZoomableImage
                           src={safeImageSrc(p.image_path)}
                           alt={p.name}
                           width={48}
                           height={48}
                           className="w-12 h-12 rounded-xl object-cover flex-shrink-0 border border-app"
-                          onDoubleClick={(e) => {
-                            e.stopPropagation();
-                          }}
                           onError={(e) => {
                             (e.currentTarget as HTMLImageElement).style.display = "none";
                           }}
@@ -1194,9 +1187,7 @@ export function InventoryClient({
                       <span className="text-[10px] text-app font-bold uppercase tracking-wider">
                         Stock Level
                       </span>
-                      <span className="text-[10px] font-bold text-muted">
-                        {pct.toFixed(0)}%
-                      </span>
+                      <span className="text-[10px] font-bold text-muted">{pct.toFixed(0)}%</span>
                     </div>
                     <div className="w-full h-1.5 bg-white/[0.04] rounded-full overflow-hidden">
                       <div
@@ -1229,9 +1220,7 @@ export function InventoryClient({
                           <FileText size={10} />
                           {p.poCodes.slice(0, 2).join(", ")}
                           {p.poCodes.length > 2 && (
-                            <span className="text-app font-bold">
-                              +{p.poCodes.length - 2}
-                            </span>
+                            <span className="text-app font-bold">+{p.poCodes.length - 2}</span>
                           )}
                         </span>
                       )}
@@ -1384,9 +1373,9 @@ export function InventoryClient({
                     </span>
                   </Link>
                 ))}
-              </div>
             </div>
           </div>
+        </div>
       )}
 
       {/* ── QUICK SCAN MODAL ── */}

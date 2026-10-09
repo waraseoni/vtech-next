@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Image from "next/image";
+import ZoomableImage from "@/components/ZoomableImage";
 import { supabase } from "@/lib/supabase";
 import { compressImage } from "@/lib/imageCompression";
 import { openCamera } from "@/lib/nativeCamera";
@@ -58,7 +58,13 @@ export type ContactPerson = {
 export const CONTACT_LABELS = ["Mobile", "Office", "WhatsApp", "Shop", "Other"];
 
 const defaultPersons: ContactPerson[] = [
-  { name: "", role: "", notes: "", is_primary: true, phones: [{ label: "Mobile", phone: "", is_primary: true }] },
+  {
+    name: "",
+    role: "",
+    notes: "",
+    is_primary: true,
+    phones: [{ label: "Mobile", phone: "", is_primary: true }],
+  },
 ];
 
 type Props = {
@@ -153,7 +159,10 @@ export default function SupplierFormModal({ open, editing, onClose, onSaved }: P
           const { data: phoneRows } = await supabase
             .from("supplier_contact_phones")
             .select("id, person_id, label, phone, is_primary")
-            .in("person_id", persons.map((p) => p.id));
+            .in(
+              "person_id",
+              persons.map((p) => p.id)
+            );
           const phoneMap: Record<number, ContactPhone[]> = {};
           for (const ph of (phoneRows || []) as Array<ContactPhone & { person_id: number }>) {
             if (!phoneMap[ph.person_id]) phoneMap[ph.person_id] = [];
@@ -247,7 +256,13 @@ export default function SupplierFormModal({ open, editing, onClose, onSaved }: P
   const addPerson = () => {
     setContacts((prev) => [
       ...prev,
-      { name: "", role: "", notes: "", is_primary: prev.length === 0, phones: [{ label: "Mobile", phone: "", is_primary: true }] },
+      {
+        name: "",
+        role: "",
+        notes: "",
+        is_primary: prev.length === 0,
+        phones: [{ label: "Mobile", phone: "", is_primary: true }],
+      },
     ]);
   };
 
@@ -272,7 +287,9 @@ export default function SupplierFormModal({ open, editing, onClose, onSaved }: P
   const setPrimaryPhone = (pi: number, phi: number) => {
     setContacts((prev) =>
       prev.map((p, pi2) =>
-        pi2 === pi ? { ...p, phones: p.phones.map((ph, phi2) => ({ ...ph, is_primary: phi2 === phi })) } : p
+        pi2 === pi
+          ? { ...p, phones: p.phones.map((ph, phi2) => ({ ...ph, is_primary: phi2 === phi })) }
+          : p
       )
     );
   };
@@ -281,7 +298,13 @@ export default function SupplierFormModal({ open, editing, onClose, onSaved }: P
     setContacts((prev) =>
       prev.map((p, pi2) =>
         pi2 === pi
-          ? { ...p, phones: [...p.phones, { label: "Mobile", phone: "", is_primary: p.phones.length === 0 }] }
+          ? {
+              ...p,
+              phones: [
+                ...p.phones,
+                { label: "Mobile", phone: "", is_primary: p.phones.length === 0 },
+              ],
+            }
           : p
       )
     );
@@ -372,7 +395,10 @@ export default function SupplierFormModal({ open, editing, onClose, onSaved }: P
       const { error } = await supabase
         .from("supplier_contact_persons")
         .delete()
-        .in("id", stale.map((e) => e.id));
+        .in(
+          "id",
+          stale.map((e) => e.id)
+        );
       if (error) throw error;
     }
   };
@@ -399,9 +425,11 @@ export default function SupplierFormModal({ open, editing, onClose, onSaved }: P
           .filter((ph) => ph.phone !== ""),
       }))
       .filter((p) => p.name !== "");
-    if (validPersons.length > 0 && !validPersons.some((p) => p.is_primary)) validPersons[0].is_primary = true;
+    if (validPersons.length > 0 && !validPersons.some((p) => p.is_primary))
+      validPersons[0].is_primary = true;
     for (const p of validPersons) {
-      if (p.phones.length > 0 && !p.phones.some((ph) => ph.is_primary)) p.phones[0].is_primary = true;
+      if (p.phones.length > 0 && !p.phones.some((ph) => ph.is_primary))
+        p.phones[0].is_primary = true;
     }
     const primaryPerson = validPersons.find((p) => p.is_primary) || validPersons[0];
     const primary =
@@ -499,13 +527,12 @@ export default function SupplierFormModal({ open, editing, onClose, onSaved }: P
             <div className="bg-app rounded-xl border border-app p-4">
               <div className="flex items-center gap-4 flex-wrap">
                 {previewSrc ? (
-                  <Image
+                  <ZoomableImage
                     src={previewSrc}
                     alt="Visiting card"
                     width={112}
                     height={112}
                     className="w-28 h-28 rounded-xl object-cover border border-app"
-                    
                   />
                 ) : (
                   <div className="w-28 h-28 rounded-xl bg-white/5 border border-dashed border-app-2 flex items-center justify-center">
@@ -617,10 +644,7 @@ export default function SupplierFormModal({ open, editing, onClose, onSaved }: P
               <span className="text-app">(firm ke 1 se zyada person, har ke 1+ mobile)</span>
             </label>
             {contacts.map((p, pi) => (
-              <div
-                key={pi}
-                className="bg-panel-2/60 border border-app rounded-xl p-3 space-y-3"
-              >
+              <div key={pi} className="bg-panel-2/60 border border-app rounded-xl p-3 space-y-3">
                 <div className="flex items-center gap-2">
                   <button
                     type="button"

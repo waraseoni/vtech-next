@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
-import Image from "next/image";
+import ZoomableImage from "@/components/ZoomableImage";
 import SearchableSelect from "@/components/SearchableSelect";
 import {
   Loader2,
@@ -26,7 +26,7 @@ const inr = (n: number) =>
   "₹" + (n || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 import { currentMonthIST, parseISTDate } from "@/lib/dateUtils";
 import { logActivity } from "@/lib/activity";
-  // Mechanic avatar — photo ho to photo, warna 2-letter initials.
+// Mechanic avatar — photo ho to photo, warna 2-letter initials.
 const mechInitials = (name: string) =>
   name
     .split(" ")
@@ -45,13 +45,12 @@ const MechAvatar = ({
   cls?: string;
 }) =>
   image ? (
-    <Image
+    <ZoomableImage
       src={image}
       alt={name}
       width={32}
       height={32}
-      className={`${cls} rounded-full object-cover flex-shrink-0 border border-white/10 cursor-zoom-in`}
-      
+      className={`${cls} rounded-full object-cover flex-shrink-0 border border-white/10`}
       onError={(e) => {
         (e.currentTarget as HTMLImageElement).style.display = "none";
       }}
@@ -482,9 +481,7 @@ function CommissionContent() {
           <button
             onClick={() => setTab("statement")}
             className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${
-              activeTab === "statement"
-                ? "bg-blue-600 text-white"
-                : "text-muted hover:text-app-2"
+              activeTab === "statement" ? "bg-blue-600 text-white" : "text-muted hover:text-app-2"
             }`}
           >
             <FileText size={14} /> Statement
@@ -492,9 +489,7 @@ function CommissionContent() {
           <button
             onClick={() => setTab("master")}
             className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${
-              activeTab === "master"
-                ? "bg-blue-600 text-white"
-                : "text-muted hover:text-app-2"
+              activeTab === "master" ? "bg-blue-600 text-white" : "text-muted hover:text-app-2"
             }`}
           >
             <Settings size={14} /> Rate Master
@@ -563,13 +558,8 @@ function CommissionContent() {
           {!loading && mechanicId === "all" && summary.length > 1 && (
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
               {summary.map((e) => (
-                <div
-                  key={e.name}
-                  className="bg-panel border border-app rounded-xl px-4 py-3"
-                >
-                  <p className="text-[10px] text-muted font-bold uppercase truncate">
-                    {e.name}
-                  </p>
+                <div key={e.name} className="bg-panel border border-app rounded-xl px-4 py-3">
+                  <p className="text-[10px] text-muted font-bold uppercase truncate">{e.name}</p>
                   <p className="text-base font-black text-emerald-400 mt-1">{inr(e.total)}</p>
                   <p className="text-[10px] text-muted-2 mt-0.5">{e.jobs} jobs</p>
                 </div>
@@ -580,9 +570,7 @@ function CommissionContent() {
           {/* Table */}
           <div className="bg-panel border border-app rounded-2xl overflow-hidden">
             <div className="px-5 py-3 border-b border-app flex items-center justify-between flex-wrap gap-2">
-              <h2 className="text-sm font-bold text-app-2">
-                Commission Statement — {monthLabel}
-              </h2>
+              <h2 className="text-sm font-bold text-app-2">Commission Statement — {monthLabel}</h2>
               <div className="text-right">
                 <p className="text-[10px] font-black uppercase text-muted">Total Commission</p>
                 <p className="text-lg font-black text-emerald-400">{inr(totalComm)}</p>

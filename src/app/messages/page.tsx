@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import Image from "next/image";
+import ZoomableImage from "@/components/ZoomableImage";
 import { supabase, getCachedUser } from "@/lib/supabase";
 import { safeImageSrc } from "@/lib/image-utils";
 import {
@@ -22,6 +22,7 @@ import {
   Eye,
 } from "lucide-react";
 import PageLoader from "@/components/PageLoader";
+import Lightbox from "@/components/Lightbox";
 import {
   fetchConversations,
   fetchMessages,
@@ -59,8 +60,7 @@ const fmtDay = (s: string) => {
     month: "short",
   });
 };
-const avatarInitial = (n: string | null | undefined) =>
-  (n || "?").trim().charAt(0).toUpperCase();
+const avatarInitial = (n: string | null | undefined) => (n || "?").trim().charAt(0).toUpperCase();
 
 // circular avatar — jb avatar_url ho to image, warna initials circle.
 function Avatar({
@@ -76,13 +76,12 @@ function Avatar({
   const cls = size === "md" ? "w-10 h-10 text-sm" : "w-9 h-9 text-sm";
   if (src) {
     return (
-      <Image
+      <ZoomableImage
         src={src}
         alt={name || "User"}
         width={40}
         height={40}
-        className={`${cls} rounded-full object-cover border border-app cursor-zoom-in`}
-        
+        className={`${cls} rounded-full object-cover border border-app`}
         onError={(e) => {
           (e.target as HTMLImageElement).style.display = "none";
         }}
@@ -109,9 +108,7 @@ export default function MessagesPage() {
   const [profiles, setProfiles] = useState<ProfileLite[]>([]);
   const [presenceMap, setPresenceMap] = useState<Record<string, Presence>>({});
 
-  const [activeId, setActiveId] = useState<string | null>(
-    searchParams.get("to") || null
-  );
+  const [activeId, setActiveId] = useState<string | null>(searchParams.get("to") || null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [sending, setSending] = useState(false);
   const [draft, setDraft] = useState("");
@@ -123,6 +120,8 @@ export default function MessagesPage() {
   // "Confirm?", 3s ke andar wahi message par dobara click = pakka delete).
   const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
   const confirmTimer = useRef<number | null>(null);
+  // Chat photo par click → zoom lightbox (new tab ka anchor fallback rakha hai)
+  const [zoomMedia, setZoomMedia] = useState<string | null>(null);
   // delete rights: staff sirf apna send-kiya hua delete kare; admin/developer sab.
   const [myRole, setMyRole] = useState<string>("");
 
@@ -207,7 +206,9 @@ export default function MessagesPage() {
     let cancelled = false;
     (async () => {
       try {
-        const { data: { user } } = await getCachedUser();
+        const {
+          data: { user },
+        } = await getCachedUser();
         if (!user) {
           router.push("/login");
           return;
@@ -270,7 +271,9 @@ export default function MessagesPage() {
           .select("user_id, status, last_seen");
         if (!presErr && !cancelled) {
           const pmap: Record<string, Presence> = {};
-          (pres || []).forEach((r) => (pmap[r.user_id] = { status: r.status, last_seen: r.last_seen }));
+          (pres || []).forEach(
+            (r) => (pmap[r.user_id] = { status: r.status, last_seen: r.last_seen })
+          );
           setPresenceMap(pmap);
           // conversations
           const convs = await fetchConversations(user.id, plist, pmap);
@@ -310,79 +313,80 @@ export default function MessagesPage() {
   }, []);
 
   // live messages — update conversations (list) + active chat + clear unread
-  const onIncoming = useCallback((msg: Message, action: "insert" | "update") => {
-    const me = meIdRef.current;
-    const otherId = msg.sender_id === me ? msg.recipient_id : msg.sender_id;
+  const onIncoming = useCallback(
+    (msg: Message, action: "insert" | "update") => {
+      const me = meIdRef.current;
+      const otherId = msg.sender_id === me ? msg.recipient_id : msg.sender_id;
 
-    if (action === "update") {
-      // delivery/read tick update ya delete — active chat me reflect karo
-      if (activeRef.current === msg.sender_id && msg.recipient_id === me) {
-        setMessages((prev) =>
-          prev.map((m) =>
-            m.id === msg.id
-              ? { ...m, delivered_at: msg.delivered_at, read_at: msg.read_at }
-              : m
-          )
+      if (action === "update") {
+        // delivery/read tick update ya delete — active chat me reflect karo
+        if (activeRef.current === msg.sender_id && msg.recipient_id === me) {
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === msg.id ? { ...m, delivered_at: msg.delivered_at, read_at: msg.read_at } : m
+            )
+          );
+        }
+        return;
+      }
+
+      // INSERT — naya message
+      setConversations((prev) => {
+        const list = [...prev];
+        const existing = list.find((c) => c.other.id === otherId);
+        const otherProf: ProfileLite = existing?.other ||
+          profileMapRef.current[otherId] || {
+            id: otherId,
+            full_name: otherId.slice(0, 8),
+            role: null,
+          };
+        if (existing) {
+          list[list.indexOf(existing)] = {
+            ...existing,
+            lastMessage: msg,
+            unread:
+              msg.recipient_id === me && activeRef.current !== otherId
+                ? existing.unread + 1
+                : existing.unread,
+          };
+        } else {
+          list.unshift({
+            other: otherProf,
+            lastMessage: msg,
+            unread: msg.recipient_id === me ? 1 : 0,
+            presence: presenceMap[otherId] || null,
+          });
+        }
+        list.sort(
+          (a, b) =>
+            (b.lastMessage ? new Date(b.lastMessage.created_at).getTime() : 0) -
+            (a.lastMessage ? new Date(a.lastMessage.created_at).getTime() : 0)
         );
-      }
-      return;
-    }
-
-    // INSERT — naya message
-    setConversations((prev) => {
-      const list = [...prev];
-      const existing = list.find((c) => c.other.id === otherId);
-      const otherProf: ProfileLite =
-        existing?.other || profileMapRef.current[otherId] || {
-          id: otherId,
-          full_name: otherId.slice(0, 8),
-          role: null,
-        };
-      if (existing) {
-        list[list.indexOf(existing)] = {
-          ...existing,
-          lastMessage: msg,
-          unread:
-            msg.recipient_id === me && activeRef.current !== otherId
-              ? existing.unread + 1
-              : existing.unread,
-        };
-      } else {
-        list.unshift({
-          other: otherProf,
-          lastMessage: msg,
-          unread: msg.recipient_id === me ? 1 : 0,
-          presence: presenceMap[otherId] || null,
+        convRef.current = list;
+        return list;
+      });
+      if (activeRef.current === msg.sender_id) {
+        setMessages((prev) => {
+          if (prev.some((m) => m.id === msg.id)) return prev;
+          const next = [...prev, msg];
+          msgsRef.current = next;
+          return next;
         });
+        if (msg.recipient_id === me) {
+          void markRead(me, msg.sender_id);
+        }
+        requestAnimationFrame(() => {
+          listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: "smooth" });
+        });
+      } else {
+        // active nahi to bas delivered mark karo (double tick) — read baad me
+        if (msg.recipient_id === me) {
+          void markDelivered(me, msg.sender_id);
+        }
       }
-      list.sort(
-        (a, b) =>
-          (b.lastMessage ? new Date(b.lastMessage.created_at).getTime() : 0) -
-          (a.lastMessage ? new Date(a.lastMessage.created_at).getTime() : 0)
-      );
-      convRef.current = list;
-      return list;
-    });
-    if (activeRef.current === msg.sender_id) {
-      setMessages((prev) => {
-        if (prev.some((m) => m.id === msg.id)) return prev;
-        const next = [...prev, msg];
-        msgsRef.current = next;
-        return next;
-      });
-      if (msg.recipient_id === me) {
-        void markRead(me, msg.sender_id);
-      }
-      requestAnimationFrame(() => {
-        listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: "smooth" });
-      });
-    } else {
-      // active nahi to bas delivered mark karo (double tick) — read baad me
-      if (msg.recipient_id === me) {
-        void markDelivered(me, msg.sender_id);
-      }
-    }
-  }, [presenceMap]);
+    },
+    [presenceMap]
+  );
 
   useEffect(() => {
     if (!meIdRef.current) return;
@@ -419,55 +423,61 @@ export default function MessagesPage() {
     }, 1300);
     broadcastTyping(activeRef.current, meIdRef.current);
   }, [draft, activeId]);
-  useEffect(() => () => {
-    if (typingTimer.current) window.clearTimeout(typingTimer.current);
-  }, []);
+  useEffect(
+    () => () => {
+      if (typingTimer.current) window.clearTimeout(typingTimer.current);
+    },
+    []
+  );
 
   // load active conversation messages
-  const openConversation = useCallback(async (id: string, profiles: ProfileLite[]) => {
-    activeRef.current = id;
-    setActiveId(id);
-    const me = meIdRef.current;
-    // ensure target conversation exists (offline/new user bhi chat pane open kare)
-    setConversations((prev) => {
-      if (prev.some((c) => c.other.id === id)) return prev;
-      const prof = profiles.find((p) => p.id === id);
-      const entry: Conversation = {
-        other:
-          prof ||
-          ({
-            id,
-            full_name: "User",
-            role: null,
-          } as ProfileLite),
-        lastMessage: null,
-        unread: 0,
-        presence: presenceMap[id] || null,
-      };
-      const next = [entry, ...prev];
-      convRef.current = next;
-      return next;
-    });
-    setMessages([]);
-    msgsRef.current = [];
-    const history = await fetchMessages(me, id);
-    setMessages(history);
-    msgsRef.current = history;
-    void markRead(me, id);
-    // clear unread locally
-    setConversations((prev) =>
-      prev.map((c) => (c.other.id === id ? { ...c, unread: 0 } : c))
-    );
-    requestAnimationFrame(() => {
-      if (listRef.current) listRef.current.scrollTop = listRef.current.scrollHeight;
-    });
-    // URL sync (mobile back ke liye)
-    try {
-      const sp = new URLSearchParams(searchParams.toString());
-      sp.set("to", id);
-      window.history.replaceState(null, "", `/messages?${sp.toString()}`);
-    } catch { /* ignore */ }
-  }, [searchParams, presenceMap]);
+  const openConversation = useCallback(
+    async (id: string, profiles: ProfileLite[]) => {
+      activeRef.current = id;
+      setActiveId(id);
+      const me = meIdRef.current;
+      // ensure target conversation exists (offline/new user bhi chat pane open kare)
+      setConversations((prev) => {
+        if (prev.some((c) => c.other.id === id)) return prev;
+        const prof = profiles.find((p) => p.id === id);
+        const entry: Conversation = {
+          other:
+            prof ||
+            ({
+              id,
+              full_name: "User",
+              role: null,
+            } as ProfileLite),
+          lastMessage: null,
+          unread: 0,
+          presence: presenceMap[id] || null,
+        };
+        const next = [entry, ...prev];
+        convRef.current = next;
+        return next;
+      });
+      setMessages([]);
+      msgsRef.current = [];
+      const history = await fetchMessages(me, id);
+      setMessages(history);
+      msgsRef.current = history;
+      void markRead(me, id);
+      // clear unread locally
+      setConversations((prev) => prev.map((c) => (c.other.id === id ? { ...c, unread: 0 } : c)));
+      requestAnimationFrame(() => {
+        if (listRef.current) listRef.current.scrollTop = listRef.current.scrollHeight;
+      });
+      // URL sync (mobile back ke liye)
+      try {
+        const sp = new URLSearchParams(searchParams.toString());
+        sp.set("to", id);
+        window.history.replaceState(null, "", `/messages?${sp.toString()}`);
+      } catch {
+        /* ignore */
+      }
+    },
+    [searchParams, presenceMap]
+  );
 
   // todo: on first load if URL has ?to=, open it after profiles load
   useEffect(() => {
@@ -562,7 +572,9 @@ export default function MessagesPage() {
     // sender/recipient dono delete kar sakte hain — row + (agar media ho) storage hatao
     try {
       if (m.media_url) await deleteMedia(m.media_url);
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
     await supabase.from("messages").delete().eq("id", m.id);
     setMessages((prev) => prev.filter((x) => x.id !== m.id));
     msgsRef.current = msgsRef.current.filter((x) => x.id !== m.id);
@@ -592,7 +604,6 @@ export default function MessagesPage() {
     }
   };
 
-
   const filteredProfiles = profiles.filter(
     (p) =>
       !conversations.some((c) => c.other.id === p.id) &&
@@ -618,221 +629,236 @@ export default function MessagesPage() {
       <div className="min-h-screen flex items-center justify-center p-6">
         <div className="text-center text-muted text-sm">
           <Inbox className="mx-auto mb-3" size={40} />
-          Koi aur staff/admin registered nahi hai — messenger sirf staff/admin ke beech chat ke liye hai.
+          Koi aur staff/admin registered nahi hai — messenger sirf staff/admin ke beech chat ke liye
+          hai.
         </div>
       </div>
     );
   }
 
   // ── Chat pane ──────────────────────────────────────────────────────
-  const chatPane = activeId && activeConv ? (
-    <div className="flex-1 flex flex-col min-h-0 border-l border-white/5">
-      {/* header */}
-      <div className="flex items-center gap-3 px-4 h-14 border-b border-white/5 bg-white/[0.02]">
-        {isMobile && (
-          <button
-            onClick={() => {
-              activeRef.current = null;
-              setActiveId(null);
-              try {
-                const sp = new URLSearchParams(searchParams.toString());
-                sp.delete("to");
-                window.history.replaceState(null, "", `/messages${sp.toString()}`);
-              } catch { /* ignore */ }
-            }}
-            className="w-9 h-9 flex items-center justify-center rounded-xl text-muted hover:bg-white/[0.06]"
-          >
-            <ArrowLeft size={18} />
-          </button>
-        )}
-        <div className="relative">
-          <Avatar name={activeConv.other.full_name} avatarUrl={activeConv.other.avatar_url} />
-          {isOnline(activeConv.presence) && (
-            <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-500 border-2 border-app" />
+  const chatPane =
+    activeId && activeConv ? (
+      <div className="flex-1 flex flex-col min-h-0 border-l border-white/5">
+        {/* header */}
+        <div className="flex items-center gap-3 px-4 h-14 border-b border-white/5 bg-white/[0.02]">
+          {isMobile && (
+            <button
+              onClick={() => {
+                activeRef.current = null;
+                setActiveId(null);
+                try {
+                  const sp = new URLSearchParams(searchParams.toString());
+                  sp.delete("to");
+                  window.history.replaceState(null, "", `/messages${sp.toString()}`);
+                } catch {
+                  /* ignore */
+                }
+              }}
+              className="w-9 h-9 flex items-center justify-center rounded-xl text-muted hover:bg-white/[0.06]"
+            >
+              <ArrowLeft size={18} />
+            </button>
           )}
+          <div className="relative">
+            <Avatar name={activeConv.other.full_name} avatarUrl={activeConv.other.avatar_url} />
+            {isOnline(activeConv.presence) && (
+              <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-500 border-2 border-app" />
+            )}
+          </div>
+          <div className="min-w-0">
+            <p className="text-sm font-bold text-app-2 truncate">
+              {activeConv.other.full_name || "User"}
+            </p>
+            <p
+              className={`text-[10px] font-semibold ${
+                typingFrom
+                  ? "text-emerald-400"
+                  : isOnline(activeConv.presence)
+                    ? "text-emerald-400"
+                    : "text-muted"
+              }`}
+            >
+              {typingFrom
+                ? "typing…"
+                : isOnline(activeConv.presence)
+                  ? "Online"
+                  : activeConv.presence
+                    ? `Last seen ${lastSeenText(activeConv.presence)}`
+                    : "Offline"}
+            </p>
+          </div>
         </div>
-        <div className="min-w-0">
-          <p className="text-sm font-bold text-app-2 truncate">
-            {activeConv.other.full_name || "User"}
-          </p>
-          <p
-            className={`text-[10px] font-semibold ${
-              typingFrom ? "text-emerald-400" : isOnline(activeConv.presence) ? "text-emerald-400" : "text-muted"
-            }`}
-          >
-            {typingFrom
-              ? "typing…"
-              : isOnline(activeConv.presence)
-                ? "Online"
-                : activeConv.presence
-                  ? `Last seen ${lastSeenText(activeConv.presence)}`
-                  : "Offline"}
-          </p>
-        </div>
-      </div>
-      {/* messages */}
-      <div ref={listRef} className="flex-1 overflow-y-auto p-4 space-y-2">
-        {messages.length === 0 && (
-          <p className="text-center text-muted text-xs pt-10">
-            Abhi koi message nahi — pehla message bhejo
-          </p>
-        )}
-        {messages.map((m) => {
-          const mine = m.sender_id === meId;
-          const isMedia = !!m.media_url;
-          return (
-            <div key={m.id} className={`flex ${mine ? "justify-end" : "justify-start"}`}>
-              <div
-                className={`relative max-w-[80%] px-3 py-2 rounded-2xl text-sm leading-snug ${
-                  mine
-                    ? "bg-blue-600 text-white rounded-br-md"
-                    : "bg-white/[0.06] text-app-2 rounded-bl-md"
-                }`}
-              >
-                {isMedia && (
-                  <div className="mb-1.5">
-                    {m.media_type?.startsWith("image/") ? (
-                      <a href={mediaPublicUrl(m.media_url!)} target="_blank" rel="noreferrer">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={mediaPublicUrl(m.media_url!)}
-                          alt={m.media_name || "media"}
-                          className="max-h-56 w-auto max-w-full rounded-lg border border-black/20"
-                          loading="lazy"
-                        />
-                      </a>
-                    ) : (
-                      <a
-                        href={mediaPublicUrl(m.media_url!)}
-                        target="_blank"
-                        rel="noreferrer"
-                        className={`flex items-center gap-2 text-xs font-semibold underline ${
-                          mine ? "text-blue-100" : "text-blue-300"
-                        }`}
-                      >
-                        <ImageIcon size={14} /> {m.media_name || "File"}
-                      </a>
-                    )}
-                  </div>
-                )}
-                {m.content && !(isMedia && m.content === m.media_name) && (
-                  <p className="whitespace-pre-wrap break-words">{m.content}</p>
-                )}
+        {/* messages */}
+        <div ref={listRef} className="flex-1 overflow-y-auto p-4 space-y-2">
+          {messages.length === 0 && (
+            <p className="text-center text-muted text-xs pt-10">
+              Abhi koi message nahi — pehla message bhejo
+            </p>
+          )}
+          {messages.map((m) => {
+            const mine = m.sender_id === meId;
+            const isMedia = !!m.media_url;
+            return (
+              <div key={m.id} className={`flex ${mine ? "justify-end" : "justify-start"}`}>
                 <div
-                  className={`flex items-center gap-1 mt-1 text-[9px] ${
-                    mine ? "text-blue-200" : "text-muted"
+                  className={`relative max-w-[80%] px-3 py-2 rounded-2xl text-sm leading-snug ${
+                    mine
+                      ? "bg-blue-600 text-white rounded-br-md"
+                      : "bg-white/[0.06] text-app-2 rounded-bl-md"
                   }`}
                 >
-                  {fmtDay(m.created_at)}
-                  {mine && (
-                    <span className="flex items-center">
-                      {m.read_at ? (
-                        <CheckCheck size={11} className="text-sky-300" />
-                      ) : m.delivered_at ? (
-                        <CheckCheck size={11} className="opacity-60" />
+                  {isMedia && (
+                    <div className="mb-1.5">
+                      {m.media_type?.startsWith("image/") ? (
+                        <a
+                          href={mediaPublicUrl(m.media_url!)}
+                          target="_blank"
+                          rel="noreferrer"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            setZoomMedia(mediaPublicUrl(m.media_url!));
+                          }}
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={mediaPublicUrl(m.media_url!)}
+                            alt={m.media_name || "media"}
+                            className="max-h-56 w-auto max-w-full rounded-lg border border-black/20 cursor-zoom-in"
+                            loading="lazy"
+                          />
+                        </a>
                       ) : (
-                        <Check size={11} className="opacity-60" />
+                        <a
+                          href={mediaPublicUrl(m.media_url!)}
+                          target="_blank"
+                          rel="noreferrer"
+                          className={`flex items-center gap-2 text-xs font-semibold underline ${
+                            mine ? "text-blue-100" : "text-blue-300"
+                          }`}
+                        >
+                          <ImageIcon size={14} /> {m.media_name || "File"}
+                        </a>
                       )}
-                    </span>
+                    </div>
                   )}
-                  {(myRole === "admin" || myRole === "developer" || mine) && (
-                    confirmDeleteId === m.id ? (
-                      <button
-                        onClick={() => handleDeleteClick(m)}
-                        title="Confirm delete"
-                        className="ml-1 px-1.5 py-0.5 rounded bg-rose-500/20 border border-rose-500/40 text-rose-300 font-black text-[9px] uppercase"
-                      >
-                        Confirm?
-                      </button>
-                    ) : (
-                      <button
-                        onClick={() => handleDeleteClick(m)}
-                        title="Delete"
-                        className="ml-1 p-0.5 rounded hover:bg-white/10 text-muted hover:text-rose-300"
-                      >
-                        <Trash2 size={10} />
-                      </button>
-                    )
+                  {m.content && !(isMedia && m.content === m.media_name) && (
+                    <p className="whitespace-pre-wrap break-words">{m.content}</p>
                   )}
+                  <div
+                    className={`flex items-center gap-1 mt-1 text-[9px] ${
+                      mine ? "text-blue-200" : "text-muted"
+                    }`}
+                  >
+                    {fmtDay(m.created_at)}
+                    {mine && (
+                      <span className="flex items-center">
+                        {m.read_at ? (
+                          <CheckCheck size={11} className="text-sky-300" />
+                        ) : m.delivered_at ? (
+                          <CheckCheck size={11} className="opacity-60" />
+                        ) : (
+                          <Check size={11} className="opacity-60" />
+                        )}
+                      </span>
+                    )}
+                    {(myRole === "admin" || myRole === "developer" || mine) &&
+                      (confirmDeleteId === m.id ? (
+                        <button
+                          onClick={() => handleDeleteClick(m)}
+                          title="Confirm delete"
+                          className="ml-1 px-1.5 py-0.5 rounded bg-rose-500/20 border border-rose-500/40 text-rose-300 font-black text-[9px] uppercase"
+                        >
+                          Confirm?
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => handleDeleteClick(m)}
+                          title="Delete"
+                          className="ml-1 p-0.5 rounded hover:bg-white/10 text-muted hover:text-rose-300"
+                        >
+                          <Trash2 size={10} />
+                        </button>
+                      ))}
+                  </div>
                 </div>
               </div>
-            </div>
-          );
-        })}
-      </div>
-      {/* input */}
-      <div className="p-3 border-t border-white/5 bg-white/[0.02]">
-        {sendErr && (
-          <p className="mb-2 text-[11px] font-semibold text-rose-400 px-1">{sendErr}</p>
-        )}
-        {pendingMedia.length > 0 && (
-          <div className="flex flex-wrap gap-2 mb-2">
-            {pendingMedia.map((f, i) => (
-              <div
-                key={i}
-                className="relative flex items-center gap-2 px-3 py-1.5 rounded-lg bg-app border border-app text-xs text-app-2"
-              >
-                {f.type.startsWith("image/") ? <ImageIcon size={14} /> : <Paperclip size={14} />}
-                <span className="max-w-[140px] truncate">{f.name}</span>
-                <button
-                  onClick={() => removePending(i)}
-                  className="text-muted hover:text-rose-300"
+            );
+          })}
+        </div>
+        {/* input */}
+        <div className="p-3 border-t border-white/5 bg-white/[0.02]">
+          {sendErr && (
+            <p className="mb-2 text-[11px] font-semibold text-rose-400 px-1">{sendErr}</p>
+          )}
+          {pendingMedia.length > 0 && (
+            <div className="flex flex-wrap gap-2 mb-2">
+              {pendingMedia.map((f, i) => (
+                <div
+                  key={i}
+                  className="relative flex items-center gap-2 px-3 py-1.5 rounded-lg bg-app border border-app text-xs text-app-2"
                 >
-                  <X size={13} />
-                </button>
-              </div>
-            ))}
+                  {f.type.startsWith("image/") ? <ImageIcon size={14} /> : <Paperclip size={14} />}
+                  <span className="max-w-[140px] truncate">{f.name}</span>
+                  <button
+                    onClick={() => removePending(i)}
+                    className="text-muted hover:text-rose-300"
+                  >
+                    <X size={13} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+          <div className="flex items-center gap-2">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt"
+              multiple
+              className="hidden"
+              onChange={(e) => {
+                pickFiles(e.target.files);
+                e.target.value = "";
+              }}
+            />
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={sending || uploading}
+              title="Attach media"
+              className="w-11 h-11 flex-shrink-0 flex items-center justify-center rounded-xl bg-app border border-app text-muted hover:text-blue-400 hover:border-blue-500/40 disabled:opacity-40 transition-all"
+            >
+              <Paperclip size={18} />
+            </button>
+            <input
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  void send();
+                }
+              }}
+              placeholder={`${activeConv.other.full_name || "User"} ko message likho…`}
+              className="flex-1 px-4 py-2.5 rounded-xl bg-app border border-app text-sm text-white outline-none focus:border-blue-500/60 placeholder:text-muted-2"
+            />
+            <button
+              onClick={() => void send()}
+              disabled={sending || (!draft.trim() && pendingMedia.length === 0)}
+              className="w-11 h-11 flex-shrink-0 flex items-center justify-center rounded-xl bg-blue-600 text-white hover:bg-blue-500 disabled:opacity-40 transition-all"
+            >
+              {uploading ? (
+                <Loader2 size={18} className="animate-spin" />
+              ) : sending ? (
+                <Loader2 size={18} className="animate-spin" />
+              ) : (
+                <Send size={18} />
+              )}
+            </button>
           </div>
-        )}
-        <div className="flex items-center gap-2">
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt"
-            multiple
-            className="hidden"
-            onChange={(e) => {
-              pickFiles(e.target.files);
-              e.target.value = "";
-            }}
-          />
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            disabled={sending || uploading}
-            title="Attach media"
-            className="w-11 h-11 flex-shrink-0 flex items-center justify-center rounded-xl bg-app border border-app text-muted hover:text-blue-400 hover:border-blue-500/40 disabled:opacity-40 transition-all"
-          >
-            <Paperclip size={18} />
-          </button>
-          <input
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                void send();
-              }
-            }}
-            placeholder={`${activeConv.other.full_name || "User"} ko message likho…`}
-            className="flex-1 px-4 py-2.5 rounded-xl bg-app border border-app text-sm text-white outline-none focus:border-blue-500/60 placeholder:text-muted-2"
-          />
-          <button
-            onClick={() => void send()}
-            disabled={sending || (!draft.trim() && pendingMedia.length === 0)}
-            className="w-11 h-11 flex-shrink-0 flex items-center justify-center rounded-xl bg-blue-600 text-white hover:bg-blue-500 disabled:opacity-40 transition-all"
-          >
-            {uploading ? (
-              <Loader2 size={18} className="animate-spin" />
-            ) : sending ? (
-              <Loader2 size={18} className="animate-spin" />
-            ) : (
-              <Send size={18} />
-            )}
-          </button>
         </div>
       </div>
-    </div>
-  ) : null;
+    ) : null;
 
   // ── Conversation list pane ─────────────────────────────────────────
   const listPane = (
@@ -922,9 +948,7 @@ export default function MessagesPage() {
                   <Avatar name={p.full_name} avatarUrl={p.avatar_url} size="md" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-sm font-bold text-app-2 truncate">
-                    {p.full_name || "User"}
-                  </p>
+                  <p className="text-sm font-bold text-app-2 truncate">{p.full_name || "User"}</p>
                   <p className="text-xs text-muted truncate">{p.role || "staff"} • Start chat</p>
                 </div>
               </button>
@@ -949,12 +973,11 @@ export default function MessagesPage() {
     // (ViewOnlyBanner visible hone par bhi, aur keyboard khulte par bhi).
     // 0 = pehla render/ssr: flex-none se content apni height le leta hai.
     return (
-      <div
-        ref={shellRef}
-        className="flex"
-        style={shellH ? { height: `${shellH}px` } : undefined}
-      >
+      <div ref={shellRef} className="flex" style={shellH ? { height: `${shellH}px` } : undefined}>
         {chatPane ? chatPane : listPane}
+        {zoomMedia && (
+          <Lightbox src={zoomMedia} alt="Attachment" onClose={() => setZoomMedia(null)} />
+        )}
       </div>
     );
   }
@@ -969,6 +992,9 @@ export default function MessagesPage() {
             Baat-cheet shuru karne ke liye left me kisi user ko select karo
           </div>
         </div>
+      )}
+      {zoomMedia && (
+        <Lightbox src={zoomMedia} alt="Attachment" onClose={() => setZoomMedia(null)} />
       )}
     </div>
   );

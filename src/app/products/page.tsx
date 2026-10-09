@@ -17,7 +17,7 @@ import {
   Boxes,
 } from "lucide-react";
 import Link from "next/link";
-import Image from "next/image";
+import ZoomableImage from "@/components/ZoomableImage";
 import { safeImageSrc } from "@/lib/image-utils";
 import ProductFormModal from "@/components/ProductFormModal";
 import { requireAdmin } from "@/lib/requireAdmin";
@@ -159,10 +159,7 @@ export default function ProductsPage() {
         <div className="px-5 py-3.5 border-b border-app flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div className="flex items-center gap-3 flex-wrap">
             <div className="relative flex-1 min-w-[180px]">
-              <Search
-                size={14}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-2"
-              />
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-2" />
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
@@ -246,15 +243,12 @@ export default function ProductsPage() {
                           <td className="px-4 py-3.5">
                             <div className="flex items-center gap-2">
                               {safeImageSrc(p.image_path) ? (
-                                <Image
+                                <ZoomableImage
                                   src={safeImageSrc(p.image_path)}
                                   alt={p.name}
                                   width={48}
                                   height={48}
                                   className="w-12 h-12 rounded-xl object-cover flex-shrink-0 border border-app"
-                                  onDoubleClick={(e) => {
-                                    e.stopPropagation();
-                                  }}
                                   onError={(e) => {
                                     (e.currentTarget as HTMLImageElement).style.display = "none";
                                   }}
@@ -289,9 +283,7 @@ export default function ProductsPage() {
                               <span className="text-app text-xs">—</span>
                             )}
                           </td>
-                          <td className="px-4 py-3.5 text-right text-muted">
-                            {inr(p.cost_price)}
-                          </td>
+                          <td className="px-4 py-3.5 text-right text-muted">{inr(p.cost_price)}</td>
                           <td className="px-4 py-3.5 text-right">
                             <span className="font-black text-emerald-400">{inr(p.price)}</span>
                           </td>
@@ -376,15 +368,12 @@ export default function ProductsPage() {
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex items-center gap-3 min-w-0">
                           {safeImageSrc(p.image_path) ? (
-                            <Image
+                            <ZoomableImage
                               src={safeImageSrc(p.image_path)}
                               alt={p.name}
                               width={40}
                               height={40}
                               className="w-10 h-10 rounded-xl object-cover flex-shrink-0 border border-app"
-                              onDoubleClick={(e) => {
-                                e.stopPropagation();
-                              }}
                               onError={(e) => {
                                 (e.currentTarget as HTMLImageElement).style.display = "none";
                               }}
@@ -395,9 +384,7 @@ export default function ProductsPage() {
                             </div>
                           )}
                           <div className="min-w-0">
-                            <div className="font-bold text-app-2 text-sm truncate">
-                              {p.name}
-                            </div>
+                            <div className="font-bold text-app-2 text-sm truncate">{p.name}</div>
                             <div className="text-xs text-muted-2 truncate">
                               {p.description || "—"}
                             </div>
@@ -533,7 +520,6 @@ export default function ProductsPage() {
           </div>
         )}
       </div>
-
 
       {/* Add/Edit Modal — shared reusable component (products + inventory) */}
       <ProductFormModal

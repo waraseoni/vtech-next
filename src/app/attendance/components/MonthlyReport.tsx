@@ -14,7 +14,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef, useLayoutEffect } from "react";
 import { createPortal } from "react-dom";
 import { supabase } from "@/lib/supabase";
-import Image from "next/image";
+import ZoomableImage from "@/components/ZoomableImage";
 import {
   ChevronLeft,
   ChevronRight,
@@ -99,13 +99,12 @@ const MechAvatar = ({
   cls?: string;
 }) =>
   image ? (
-    <Image
+    <ZoomableImage
       src={image}
       alt={name}
       width={28}
       height={28}
-      className={`${cls} rounded-full object-cover flex-shrink-0 border border-white/10 ring-1 ring-blue-500/10 cursor-zoom-in`}
-
+      className={`${cls} rounded-full object-cover flex-shrink-0 border border-white/10 ring-1 ring-blue-500/10`}
       onError={(e) => {
         (e.currentTarget as HTMLImageElement).style.display = "none";
       }}
