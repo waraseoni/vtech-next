@@ -1,25 +1,74 @@
 # Crop Editor Plan — 4-side resize + best practices (selection improvement)
 
-> **Status: PLAN ONLY (2026-10-09) — implementation gated, user approval pending.**
+> **Status: DONE (2026-10-11) — implement ho chuka hai, Phase 3 manual matrix
+> user device test pending.** Gates green (prettier/eslint 0 errors/tsc/vitest
+> 321/321). `react-easy-crop` hata ke `react-image-crop@11.1.2` laga; contract
+> `openCropper` frozen — 10+ call sites zero change.
+>
 > User feedback (2026-10-09): crop feature abhi sudharne ki zaroorat hai —
 > **selection area "charo or se" resize hona chahiye** (4 side/corner handles se
-> selected area theek se define kar sake) — "jo abhi nahi ho raha". Plan banao,
-> **bad me theek karenge**. **Abhi koi code nahi.**
+> selected area theek se define kar sake) — "jo abhi nahi ho raha".
+> Plan approved via "aapki recommendation ke anusar chaliye" (2026-10-11).
+
+## 0. Implementation log (2026-10-11)
+
+**Phase 0 findings (source-verified):**
+
+- `react-easy-crop@6.2.3` me crop area ka **koi resize mechanism hi nahi** —
+  na corner handles, na edge handles (CSS me handle elements hain hi nahi;
+  JS me sirf image drag/`onDragStart` + pinch; crop rect `getCropSize()` se
+  fixed). Yaani user ki shikayat 100% sahi thi — "charo or se" ka scope hi
+  nahi tha. → **Option A (config fix) ruled out**, Option B confirmed.
+- `advanced-cropper` = 2 saal stale + beta warning → reject.
+  **`react-image-crop@11.1.2`** chuna: 4 mahine pehle release, 2.3M weekly
+  downloads, 0 dependencies, <5KB gzip, ISC/OSI, touch + **full keyboard
+  a11y** (arrow-key nudge/resize + aria labels — bonus).
+- **Mobile library bug mila**: `(pointer: coarse)` media query
+  `.ReactCrop .ord-n/e/s/w { display:none }` drag-bar ke saath selector
+  collision karta hai → edge **handles bhi** chhup jaate the (phone par sirf
+  4 corner). Fix: app override in `globals.css` section 7 (specificity 0,3,0),
+  sirf handles wapas (6px drag-bars touch par intentional hidden).
+
+**Kya bana (Phase 1):**
+
+- `ImageCropperModal.tsx` rewrite: `ReactCrop` 8 handles (4 corner + 4 edge,
+  free mode), min crop 40px display, touch handles 44px (CSS var override),
+  desktop 16px, rule-of-thirds grid, move = selection andar drag.
+- State **percent me** (display-scaling se independent) → output par
+  natural dims se convert + clamp → `cropImage` (pari space = original image).
+- **Rotate ±90 = pre-rotate**: canvas se naya objectURL (JPEG 0.98), revoke
+  lifecycle session cleanup me; reset/original par wapas session src.
+  `cropImage` se rotation param + `Area` react-easy-crop type hataya — util
+  ab self-contained (defensive clamp, single encode).
+- **Reset button** (crop/rotation/ratio default par), **Esc = Cancel**,
+  **live size label** (`800 × 600 px`), error banner/spinner parity.
+- Ratio: caller-fixed (cover) = Fixed/Free toggle same; free callers = nayi
+  **presets row Free/1:1/4:3/16:9** (§9-Q1 haan).
+- **Zoom buttons hata diye** — fixed-rect ka crutch the; ab resizable selection
+  hi zoom ka kaam karta hai. Session-per-`key={src}` pattern se manual reset
+  code bhi gaya.
+- `react-easy-crop` uninstall kiya (dependency 1 kam).
+
+**Deferred (Phase 2 — alag story):** EXIF explicit normalize (browsers
+auto-apply `image-orientation: from-image`, parity with old flow), PNG alpha
+output (aaj bhi JPEG export — pre-existing behavior, logo bhi isi se jaata
+tha), >2048px decode cap. **§9-Q4 device acceptance = user ka phone test
+Phase 3 matrix par (abhi pending).**
 
 ---
 
 ## 1. Current state (facts)
 
-| Fact                                 | Detail                                                                                                                                                                                                                                                                               |
-| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Library                              | `react-easy-crop@6.2.3` andar `src/components/ImageCropperModal.tsx` (225 lines)                                                                                                                                                                                                     |
-| Contract                             | `useImageUpload` hook → `openCropper(file, { aspect?, title?, maxDim? }) → Promise<File \| null>` — **10+ call sites isi API par depend**                                                                                                                                            |
-| Call sites                           | Pre-existing 6 (profile, users edit, mechanics, clients view, ProductFormModal, SupplierFormModal) + naye: jobs item photos (multi-file), required-parts row + form, settings logo/cover + **edit-existing flows** (Lightbox Edit button)                                            |
-| Abhi available                       | Rotate ±90°, zoom buttons 1–4x, Fixed/Free toggle (jab aspect diya ho), "Original rakho" passthrough, maxDim output cap, busy/error states, blob URL lifecycle (hook revoke)                                                                                                         |
-| Handle reality (to verify — Phase 0) | react-easy-crop ke docs/source ke hisaab se **sirf 4 CORNER handles** milte hain — **edge/side handles nahi**. Isliye "charo taraf se resize" ki expectation isi se toot-ti hai. Config bug bhi ho sakta hai (handles hain par kaam nahi rahe) — dono cases Phase 0 me confirm honge |
-| Free vs fixed                        | `aspect = 0` (free) par behavior config-dependent; fixed ratio me corner-drag sirf ratio maintain karte hain                                                                                                                                                                         |
-| Output flow                          | Crop → blob → `File` → caller `compressImage` (jobs ≤100KB rule) → upload/save. **Ye pipeline change nahi karna**                                                                                                                                                                    |
-| Kyun abhi theek nahi                 | User tested (jobs/spare/cover) — selection rectangle ko side se (edge) grip karke size/position define nahi kar pate                                                                                                                                                                 |
+| Fact                                | Detail                                                                                                                                                                                                                                    |
+| ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Library                             | `react-easy-crop@6.2.3` andar `src/components/ImageCropperModal.tsx` (225 lines)                                                                                                                                                          |
+| Contract                            | `useImageUpload` hook → `openCropper(file, { aspect?, title?, maxDim? }) → Promise<File \| null>` — **10+ call sites isi API par depend**                                                                                                 |
+| Call sites                          | Pre-existing 6 (profile, users edit, mechanics, clients view, ProductFormModal, SupplierFormModal) + naye: jobs item photos (multi-file), required-parts row + form, settings logo/cover + **edit-existing flows** (Lightbox Edit button) |
+| Abhi available                      | Rotate ±90°, zoom buttons 1–4x, Fixed/Free toggle (jab aspect diya ho), "Original rakho" passthrough, maxDim output cap, busy/error states, blob URL lifecycle (hook revoke)                                                              |
+| Handle reality (Phase 0 me confirm) | ~~sirf 4 corner~~ → **asal finding: koi resize handle the hi nahi** (react-easy-crop crop rect fixed deta hai). Detail §0 Implementation log me                                                                                           |
+| Free vs fixed                       | `aspect = 0` (free) par behavior config-dependent; fixed ratio me corner-drag sirf ratio maintain karte hain                                                                                                                              |
+| Output flow                         | Crop → blob → `File` → caller `compressImage` (jobs ≤100KB rule) → upload/save. **Ye pipeline change nahi karna**                                                                                                                         |
+| Kyun abhi theek nahi                | User tested (jobs/spare/cover) — selection rectangle ko side se (edge) grip karke size/position define nahi kar pate                                                                                                                      |
 
 **Ek fix = 10+ jagah impact** (sab isi modal+hook ko use karte hain) — isi liye
 contract (`openCropper` API) ko **frozen** rakhna hai, sirf modal internals badalne hain.
@@ -98,23 +147,29 @@ solve ho jaye toh best), warna **B + `advanced-cropper`**.
 
 ## 5. Phase 1 — Implementation checklist
 
-- [ ] `ImageCropperModal` ka cropper area swap/fix (contract `openCropper` same)
-- [ ] **8 handles**: 4 corner + 4 edge; min crop size clamp (display ~48px) —
-      selection kabhi zero na ho
-- [ ] Handle styling: white ring + dark shadow halo; visible hit area ≥14px,
-      touch target ≥44px; hover/active feedback
-- [ ] Move: selection ke andar drag = rectangle move (image nahi) — expected UX
-- [ ] Ratio: Free (default) + caller-fixed (cover) lock + existing Fixed/Free
-      toggle banaye rakho; **bonus (open Q1)** presets row: 1:1 / 4:3 / 16:9
-- [ ] Live size label: `800 × 600 px` (selection ke saath)
-- [ ] **Esc = Cancel** (abhi cropper me Esc kuch nahi karta; close-first design
-      ki wajah se lightbox ke saath conflict nahi)
-- [ ] Reset button — crop position + zoom + rotation ek click me
-- [ ] Keyboard a11y: arrows = move, shift+arrows = resize (library support ho toh)
-- [ ] Parity: rotate ±90, zoom buttons, "Original rakho" (`null`), busy spinner,
-      error banner — sab waise hi
-- [ ] Blob URL revoke = `useImageUpload` ka existing lifecycle (modal src koi
-      create kare toh wahi revoke kare)
+- [x] `ImageCropperModal` ka cropper area swap/fix (contract `openCropper` same)
+- [x] **8 handles**: 4 corner + 4 edge (free mode); min crop size clamp
+      (display 40px) — selection kabhi zero nahi hoti
+- [x] Handle styling: library default (dark fill + white border — any bg par
+      visible); touch target 44px (CSS var), desktop 16px
+- [x] Move: selection ke andar drag = rectangle move (image nahi)
+- [x] Ratio: Free (default) + caller-fixed (cover) ka Fixed/Free toggle +
+      presets row Free/1:1/4:3/16:9 (free callers ke liye — Q1 haan)
+- [x] Live size label: `800 × 600 px` (selection ke saath)
+- [x] **Esc = Cancel**
+- [x] Reset button — crop position + rotation + ratio default par (rotate
+      pre-rotate hai isliye rotation wapas original src par reset hota hai)
+- [x] Keyboard a11y: arrows = move/resize (library built-in, aria labels ke
+      saath)
+- [x] Parity: rotate ±90, "Original rakho" (`null`), busy spinner, error
+      banner — zoom buttons **jaan-bujh kar nahi** (fixed-rect ka crutch the;
+      resizable selection unki jagah le raha hai)
+- [x] Blob URL revoke = generate kiye hue rotate URLs session cleanup me;
+      `useImageUpload` ka existing lifecycle unchanged
+
+**Touch note:** library ka mobile query edge handles chhupata tha →
+`globals.css` §7 override. Fixed-aspect mode me corner-only (desktop parity —
+aspect JS maintain karta hai).
 
 ---
 
@@ -163,16 +218,17 @@ pre-existing warnings), `tsc --noEmit`, `vitest run` (321+).
 
 ---
 
-## 9. Open questions (user se)
+## 9. Open questions (user se) — resolved
 
-1. **Presets row** chahiye (Free / 1:1 / 4:3 / 16:9) ya sirf Free + caller-fixed
-   ratio (current behavior) kaafi hai?
-2. Fine rotate (±1°) kabhi zaroorat ya ±90° enough?
-3. Implement **kab** — abhi, ya salary P4/P5 plan ke baad (priority order)?
-4. Confirm device: shop ka actual phone kaunsa hai (iOS/Android) — usi par
-   final acceptance.
+1. **Presets row** → **YES** (implemented: Free / 1:1 / 4:3 / 16:9, sirf free
+   callers ke liye; cover jaise caller-fixed ratio par sirf Fixed/Free toggle).
+2. Fine rotate (±1°) → **NO** (±90° enough).
+3. Implement kab → **abhi** (salary P4/P5 plan ke pehle; user approved).
+4. Device acceptance → **user ka actual phone** Phase 3 matrix par — abhi
+   pending (gates green, UI/user device test baaki).
 
 ---
 
-**Next step:** user ka "go" → Phase 0 investigation → Option A/B decide →
-Phase 1–3 execute → ye file me status update (PLAN → DONE date).
+**Next step:** user Phase 3 manual matrix chalaye (§7 — jobs add/edit, parts,
+settings logo/cover, pre-existing 6, phone touch) → issues aayein toh fix
+sweep; sab clean ho toh ye file me "device verified" note.

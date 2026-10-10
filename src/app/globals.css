@@ -365,11 +365,11 @@ html[data-theme="light"] textarea {
    banate the. Light me slate-200 (#e2e8f0).
    (Tailwind v4 shape: :where(.divide-\[…\]>:not(:last-child)))
    ============================================ */
-html[data-theme="light"] :where(.divide-\[\#161b27\]>:not(:last-child)),
-html[data-theme="light"] :where(.divide-\[\#1a2030\]>:not(:last-child)),
-html[data-theme="light"] :where(.divide-\[\#1a2133\]>:not(:last-child)),
-html[data-theme="light"] :where(.divide-\[\#1a2234\]>:not(:last-child)),
-html[data-theme="light"] :where(.divide-\[\#21293d\]>:not(:last-child)) {
+html[data-theme="light"] :where(.divide-\[\#161b27\] > :not(:last-child)),
+html[data-theme="light"] :where(.divide-\[\#1a2030\] > :not(:last-child)),
+html[data-theme="light"] :where(.divide-\[\#1a2133\] > :not(:last-child)),
+html[data-theme="light"] :where(.divide-\[\#1a2234\] > :not(:last-child)),
+html[data-theme="light"] :where(.divide-\[\#21293d\] > :not(:last-child)) {
   border-color: #e2e8f0 !important;
 }
 
@@ -2815,4 +2815,22 @@ html[data-density="compact"] .gap-3 {
 }
 html[data-density="compact"] .space-y-3 > :not([hidden]) ~ :not([hidden]) {
   margin-top: 0.6rem;
+}
+
+/* 7. react-image-crop — touch (pointer: coarse) par edge handles wapas dikhao.
+   Library ka mobile media query `.ReactCrop .ord-n/e/s/w { display: none }`
+   drag-bar ke saath selector collision ki wajah se edge HANDLES bhi hide kar
+   deta hai — phone par FREE mode me sirf 4 corner bachte the, jabki requirement
+   "charo taraf se resize" hai. Ye rule sirf handle elements ko wapas laata hai
+   (thin drag-bars touch par theek se kaam nahi karte, wo hidden rehte hain).
+   Specificity (0,3,0) > library ki (0,2,0), isliye cascade order pe depend nahi.
+   Fixed-aspect mode me corner-only design desktop par bhi same hai (aspect JS
+   maintain karta hai) — wo unchanged. */
+@media (pointer: coarse) {
+  .ReactCrop .ReactCrop__drag-handle.ord-n,
+  .ReactCrop .ReactCrop__drag-handle.ord-e,
+  .ReactCrop .ReactCrop__drag-handle.ord-s,
+  .ReactCrop .ReactCrop__drag-handle.ord-w {
+    display: block;
+  }
 }

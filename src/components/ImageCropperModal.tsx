@@ -1,19 +1,61 @@
-import { useRef, useState } from "react";
-import Cropper from "react-easy-crop";
-import { X, RotateCcw, RotateCw, ZoomIn, ZoomOut, Scissors, Check } from "lucide-react";
-import type { Area, Point } from "react-easy-crop";
+import { useEffect, useRef, useState, type CSSProperties, type SyntheticEvent } from "react";
+import ReactCrop, { centerCrop, makeAspectCrop, type PercentCrop } from "react-image-crop";
+import "react-image-crop/dist/ReactCrop.css";
+import { X, RotateCcw, RotateCw, RefreshCcw, Scissors, Check } from "lucide-react";
 import { cropImage } from "@/lib/imageCropper";
 
 type ImageCropperModalProps = {
   open: boolean;
   src: string;
   title?: string;
-  aspect?: number; // undefined = free (koi toggle nahi)
+  aspect?: number; // undefined = free caller (ratio presets dikhao)
   maxDim?: number;
   onCancel: () => void;
   // blob = cropped result; null = "original kaise hai waise rakho"
   onConfirm: (blob: Blob | null) => void;
 };
+
+type CropSessionProps = Omit<ImageCropperModalProps, "open">;
+
+// ReactCrop ko hamesha percent crop state chahiye — output natural px me
+// nikalte hain (imgDims se convert), warna display-scaling pe galat cut jayega.
+const emptyCrop: PercentCrop = { x: 0, y: 0, width: 0, height: 0, unit: "%" };
+
+const RATIOS: { label: string; value: number | null }[] = [
+  { label: "Free", value: null },
+  { label: "1:1", value: 1 },
+  { label: "4:3", value: 4 / 3 },
+  { label: "16:9", value: 16 / 9 },
+];
+
+// Display ke liye 90°-step rotation. react-easy-crop rotation virtuously
+// dikhata tha; ReactCrop ko rotate karne ke liye src hi naya banao (canvas),
+// phir wahi src cropImage ko jayega (rotation param nahi bachega).
+async function rotateSrc(src: string, deg: 90 | -90): Promise<string> {
+  const img = new Image();
+  img.src = src;
+  await img.decode();
+  const canvas = document.createElement("canvas");
+  canvas.width = img.naturalHeight;
+  canvas.height = img.naturalWidth;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Canvas not supported");
+  ctx.translate(canvas.width / 2, canvas.height / 2);
+  ctx.rotate((deg * Math.PI) / 180);
+  ctx.drawImage(img, -img.naturalWidth / 2, -img.naturalHeight / 2);
+  const blob = await new Promise<Blob | null>((resolve) =>
+    canvas.toBlob(resolve, "image/jpeg", 0.98)
+  );
+  if (!blob) throw new Error("Rotate fail");
+  return URL.createObjectURL(blob);
+}
+
+function defaultCrop(w: number, h: number, ratio?: number): PercentCrop {
+  if (ratio) {
+    return centerCrop(makeAspectCrop({ unit: "%", width: 90 }, ratio, w, h), w, h);
+  }
+  return centerCrop({ unit: "%", x: 0, y: 0, width: 90, height: 90 }, w, h);
+}
 
 export default function ImageCropperModal({
   open,
@@ -24,35 +66,121 @@ export default function ImageCropperModal({
   onCancel,
   onConfirm,
 }: ImageCropperModalProps) {
-  const [crop, setCrop] = useState<Point>({ x: 0, y: 0 });
-  const [zoom, setZoom] = useState(1);
-  const [rotation, setRotation] = useState(0);
-  const [freeAspect, setFreeAspect] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const [cropReady, setCropReady] = useState(false);
-  const [err, setErr] = useState("");
-  const areaRef = useRef<Area | null>(null);
-
   if (!open) return null;
+  // src change = naya session (state/rotated URLs fresh); close par session
+  // unmount hota hai isliye manual reset ki zaroorat nahi.
+  return (
+    <CropSession
+      key={src}
+      src={src}
+      title={title}
+      aspect={aspect}
+      maxDim={maxDim}
+      onCancel={onCancel}
+      onConfirm={onConfirm}
+    />
+  );
+}
 
-  const reset = () => {
-    setCrop({ x: 0, y: 0 });
-    setZoom(1);
-    setRotation(0);
+function CropSession({ src, title, aspect, maxDim = 1200, onCancel, onConfirm }: CropSessionProps) {
+  const [displaySrc, setDisplaySrc] = useState(src);
+  const [crop, setCrop] = useState<PercentCrop>(emptyCrop);
+  const [imgDims, setImgDims] = useState<{ w: number; h: number } | null>(null);
+  const [freeAspect, setFreeAspect] = useState(false);
+  const [preset, setPreset] = useState<number | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [rotating, setRotating] = useState(false);
+  const [err, setErr] = useState("");
+  const genUrlRef = useRef<string | null>(null);
+
+  useEffect(
+    () => () => {
+      if (genUrlRef.current) URL.revokeObjectURL(genUrlRef.current);
+    },
+    []
+  );
+
+  const frozen = busy || rotating;
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && !frozen) onCancel();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [frozen, onCancel]);
+
+  const activeAspect =
+    aspect !== undefined ? (freeAspect ? undefined : aspect) : (preset ?? undefined);
+
+  const onImageLoad = (e: SyntheticEvent<HTMLImageElement>) => {
+    const { naturalWidth: w, naturalHeight: h } = e.currentTarget;
+    setImgDims({ w, h });
+    setCrop(defaultCrop(w, h, activeAspect));
+  };
+
+  // Current selection ki width se naya ratio apply (clamped + re-centered).
+  const applyAspect = (ratio: number) => {
+    if (!imgDims) return;
+    const { w, h } = imgDims;
+    setCrop(centerCrop(makeAspectCrop({ unit: "%", width: crop.width || 90 }, ratio, w, h), w, h));
+  };
+
+  const applyPreset = (value: number | null) => {
+    setPreset(value);
+    if (value != null) applyAspect(value);
+  };
+
+  const goFixed = () => {
     setFreeAspect(false);
-    setBusy(false);
-    setCropReady(false);
+    if (aspect) applyAspect(aspect);
+  };
+
+  const handleRotate = async (deg: 90 | -90) => {
+    if (frozen) return;
+    setRotating(true);
     setErr("");
-    areaRef.current = null;
+    try {
+      const next = await rotateSrc(displaySrc, deg);
+      if (genUrlRef.current) URL.revokeObjectURL(genUrlRef.current);
+      genUrlRef.current = next;
+      // Naya src load hote hi default crop onImageLoad me set hoga.
+      setImgDims(null);
+      setCrop(emptyCrop);
+      setDisplaySrc(next);
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Rotate fail");
+    } finally {
+      setRotating(false);
+    }
+  };
+
+  const handleReset = () => {
+    if (frozen) return;
+    if (genUrlRef.current) {
+      URL.revokeObjectURL(genUrlRef.current);
+      genUrlRef.current = null;
+    }
+    setErr("");
+    setFreeAspect(false);
+    setPreset(null);
+    setImgDims(null);
+    setCrop(emptyCrop);
+    setDisplaySrc(src); // session original — onLoad default crop dobara set karega
   };
 
   const handleConfirm = async () => {
-    if (!areaRef.current) return;
+    if (!imgDims || frozen || !crop.width || !crop.height) return;
     setBusy(true);
     setErr("");
     try {
-      const blob = await cropImage(src, areaRef.current, rotation, maxDim);
-      reset();
+      const { w, h } = imgDims;
+      // Percent → natural px, image bounds ke andar clamped.
+      const sx = Math.min(Math.round((crop.x / 100) * w), w - 1);
+      const sy = Math.min(Math.round((crop.y / 100) * h), h - 1);
+      const sw = Math.max(1, Math.min(Math.round((crop.width / 100) * w), w - sx));
+      const sh = Math.max(1, Math.min(Math.round((crop.height / 100) * h), h - sy));
+      const blob = await cropImage(displaySrc, { x: sx, y: sy, width: sw, height: sh }, maxDim);
       onConfirm(blob);
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Crop fail");
@@ -60,10 +188,12 @@ export default function ImageCropperModal({
     }
   };
 
-  const handleAsIs = () => {
-    reset();
-    onConfirm(null);
-  };
+  const sizeLabel =
+    imgDims && crop.width > 0 && crop.height > 0
+      ? `${Math.round((imgDims.w * crop.width) / 100)} × ${Math.round(
+          (imgDims.h * crop.height) / 100
+        )} px`
+      : null;
 
   return (
     <div className="fixed inset-0 z-[80] flex flex-col bg-black/95">
@@ -75,11 +205,8 @@ export default function ImageCropperModal({
         </h3>
         <button
           type="button"
-          onClick={() => {
-            reset();
-            onCancel();
-          }}
-          disabled={busy}
+          onClick={onCancel}
+          disabled={frozen}
           className="p-2 rounded-lg text-muted hover:text-white hover:bg-white/10 transition-colors disabled:opacity-50"
           aria-label="Close"
         >
@@ -87,26 +214,33 @@ export default function ImageCropperModal({
         </button>
       </div>
 
-      {/* Cropper */}
-      <div className="relative flex-1 min-h-0 bg-black">
-        <Cropper
-          image={src}
+      {/* Cropper — 8 handles (4 corner + 4 edge), keyboard accessible */}
+      <div
+        className="relative flex-1 min-h-0 bg-black overflow-hidden flex items-center justify-center p-6"
+        style={
+          {
+            "--rc-drag-handle-size": "16px",
+            "--rc-drag-handle-mobile-size": "44px",
+          } as CSSProperties
+        }
+      >
+        <ReactCrop
           crop={crop}
-          zoom={zoom}
-          rotation={rotation}
-          minZoom={1}
-          maxZoom={4}
-          zoomSpeed={1.2}
-          aspect={aspect && !freeAspect ? aspect : 0}
-          showGrid
-          style={{ containerStyle: { background: "#000" } }}
-          onCropChange={setCrop}
-          onZoomChange={setZoom}
-          onCropComplete={(_, area) => {
-            areaRef.current = area;
-            setCropReady(true);
-          }}
-        />
+          onChange={(_, percentCrop) => setCrop(percentCrop)}
+          aspect={activeAspect}
+          minWidth={40}
+          minHeight={40}
+          ruleOfThirds
+          disabled={frozen}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={displaySrc}
+            alt="Crop photo"
+            onLoad={onImageLoad}
+            className="block max-h-[55vh] max-w-full object-contain select-none"
+          />
+        </ReactCrop>
       </div>
 
       {/* Controls */}
@@ -120,50 +254,50 @@ export default function ImageCropperModal({
         <div className="flex items-center gap-2 flex-wrap">
           <button
             type="button"
-            onClick={() => setRotation((r) => (r - 90 + 360) % 360)}
-            disabled={busy}
+            onClick={() => void handleRotate(-90)}
+            disabled={frozen}
             className="flex-1 min-w-[70px] flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-xs text-white hover:bg-white/10 transition-colors disabled:opacity-50"
           >
-            <RotateCcw size={14} /> Rotate
+            {rotating ? (
+              <span className="inline-block w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+            ) : (
+              <RotateCcw size={14} />
+            )}{" "}
+            Rotate
           </button>
           <button
             type="button"
-            onClick={() => setRotation((r) => (r + 90) % 360)}
-            disabled={busy}
+            onClick={() => void handleRotate(90)}
+            disabled={frozen}
             className="flex-1 min-w-[70px] flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-xs text-white hover:bg-white/10 transition-colors disabled:opacity-50"
           >
             <RotateCw size={14} /> Rotate
           </button>
           <button
             type="button"
-            onClick={() => setZoom((z) => Math.min(4, z + 0.25))}
-            disabled={busy}
+            onClick={handleReset}
+            disabled={frozen}
             className="flex-1 min-w-[70px] flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-xs text-white hover:bg-white/10 transition-colors disabled:opacity-50"
           >
-            <ZoomIn size={14} /> Zoom+
+            <RefreshCcw size={14} /> Reset
           </button>
-          <button
-            type="button"
-            onClick={() => setZoom((z) => Math.max(1, z - 0.25))}
-            disabled={busy}
-            className="flex-1 min-w-[70px] flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-xs text-white hover:bg-white/10 transition-colors disabled:opacity-50"
-          >
-            <ZoomOut size={14} /> Zoom−
-          </button>
+          {sizeLabel && (
+            <span className="px-2.5 py-2 rounded-xl bg-white/5 border border-white/10 text-[10px] font-mono text-muted tabular-nums">
+              {sizeLabel}
+            </span>
+          )}
         </div>
 
-        {aspect && (
+        {aspect !== undefined ? (
           <div className="flex items-center justify-between text-[10px] text-muted uppercase tracking-wider">
             <span>Crop Area</span>
             <div className="flex gap-1">
               <button
                 type="button"
-                onClick={() => setFreeAspect(false)}
-                disabled={busy}
+                onClick={goFixed}
+                disabled={frozen}
                 className={`px-2.5 py-1 rounded-lg text-[10px] font-bold ${
-                  !freeAspect
-                    ? "bg-blue-600 text-white"
-                    : "bg-white/5 text-muted hover:text-white"
+                  !freeAspect ? "bg-blue-600 text-white" : "bg-white/5 text-muted hover:text-white"
                 }`}
               >
                 Fixed
@@ -171,15 +305,34 @@ export default function ImageCropperModal({
               <button
                 type="button"
                 onClick={() => setFreeAspect(true)}
-                disabled={busy}
+                disabled={frozen}
                 className={`px-2.5 py-1 rounded-lg text-[10px] font-bold ${
-                  freeAspect
-                    ? "bg-blue-600 text-white"
-                    : "bg-white/5 text-muted hover:text-white"
+                  freeAspect ? "bg-blue-600 text-white" : "bg-white/5 text-muted hover:text-white"
                 }`}
               >
                 Free
               </button>
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-center justify-between text-[10px] text-muted uppercase tracking-wider">
+            <span>Ratio</span>
+            <div className="flex gap-1">
+              {RATIOS.map((r) => (
+                <button
+                  key={r.label}
+                  type="button"
+                  onClick={() => applyPreset(r.value)}
+                  disabled={frozen}
+                  className={`px-2.5 py-1 rounded-lg text-[10px] font-bold ${
+                    preset === r.value
+                      ? "bg-blue-600 text-white"
+                      : "bg-white/5 text-muted hover:text-white"
+                  }`}
+                >
+                  {r.label}
+                </button>
+              ))}
             </div>
           </div>
         )}
@@ -187,27 +340,24 @@ export default function ImageCropperModal({
         <div className="flex items-center gap-2">
           <button
             type="button"
-            onClick={() => {
-              reset();
-              onCancel();
-            }}
-            disabled={busy}
+            onClick={onCancel}
+            disabled={frozen}
             className="px-4 py-2.5 rounded-xl border border-white/10 text-sm text-app-2 hover:bg-white/5 transition-colors disabled:opacity-50"
           >
             Cancel
           </button>
           <button
             type="button"
-            onClick={handleAsIs}
-            disabled={busy}
-            className="flex-1 px-4 py-2.5 rounded-xl border border-white/10 text-sm text-white hover:bg-white/10 transition-colors disabled:opacity-50"
+            onClick={() => onConfirm(null)}
+            disabled={frozen}
+            className="flex-1 px-4 py-2.5 rounded-xl border border-white/10 text-sm text-white hover:bg-white/5 transition-colors disabled:opacity-50"
           >
             Original rakho
           </button>
           <button
             type="button"
-            onClick={handleConfirm}
-            disabled={busy || !cropReady}
+            onClick={() => void handleConfirm()}
+            disabled={frozen || !crop.width || !imgDims}
             className="flex-1 px-4 py-2.5 rounded-xl bg-blue-600 text-sm font-bold text-white hover:bg-blue-500 transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5"
           >
             {busy ? (
