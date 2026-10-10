@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.54.0](https://github.com/waraseoni/vtech-next/compare/v1.53.0...v1.54.0) (2026-10-10)
+
+### Features
+
+* **crop:** 8-handle resizable selection — react-easy-crop se react-image-crop swap ([b8a9829](https://github.com/waraseoni/vtech-next/commit/b8a98290e001f9f16d59c100d78075a2e7618960))
+
 ## [1.53.0](https://github.com/waraseoni/vtech-next/compare/v1.52.0...v1.53.0) (2026-10-10)
 
 ### Features
