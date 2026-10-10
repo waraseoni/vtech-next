@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -79,6 +79,8 @@ export default function BulkEditPage() {
   const [rowLoading, setRowLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  const [selected, setSelected] = useState<Set<number>>(new Set());
+  const [loadedFrom, setLoadedFrom] = useState("");
 
   // ── Fetch master data ──────────────────────────────────────────────────────
   const fetchMaster = useCallback(async () => {
@@ -120,6 +122,8 @@ export default function BulkEditPage() {
     setRows([]);
     setLoaded(false);
     setGlobalClient("");
+    setSelected(new Set());
+    setLoadedFrom(sourceClient);
     try {
       const { data, error } = await supabase
         .from("transaction_list")
@@ -150,8 +154,7 @@ export default function BulkEditPage() {
       }));
       setRows(tRows);
       setLoaded(true);
-      if (tRows.length === 0)
-        toast.warning("Is client ke koi transactions nahi mile.");
+      if (tRows.length === 0) toast.warning("Is client ke koi transactions nahi mile.");
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Load failed!";
       toast.error(msg);
@@ -165,13 +168,80 @@ export default function BulkEditPage() {
     setRows((prev) => prev.map((r) => (r.id === id ? { ...r, [field]: val } : r)));
   };
 
-  // ── Apply global client to all rows ────────────────────────────────────────
+  const labelOf = (cid: string) => {
+    const c = clients.find((x) => x.id === Number(cid));
+    return c ? clientLabel(c) : "Unknown";
+  };
+
+  // ── Selection: tick wali rows = Target Client follow karte hain ────────────
+  const masterRef = useRef<HTMLInputElement>(null);
+  const masterRef2 = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    const ind = selected.size > 0 && selected.size < rows.length;
+    for (const el of [masterRef.current, masterRef2.current]) {
+      if (el) el.indeterminate = ind;
+    }
+  }, [selected, rows.length]);
+
+  const toggleRow = (row: TxnRow, checked: boolean) => {
+    if (checked) {
+      if (!globalClient) {
+        toast.warning("Pehle Target Client select karo!");
+        return;
+      }
+      const label = labelOf(globalClient);
+      setSelected((prev) => new Set(prev).add(row.id));
+      setRows((prev) =>
+        prev.map((r) =>
+          r.id === row.id ? { ...r, client_id: globalClient, client_name: label } : r
+        )
+      );
+    } else {
+      // Untick = transfer nahi — row wapas Source Client par
+      setSelected((prev) => {
+        const n = new Set(prev);
+        n.delete(row.id);
+        return n;
+      });
+      setRows((prev) =>
+        prev.map((r) =>
+          r.id === row.id ? { ...r, client_id: loadedFrom, client_name: labelOf(loadedFrom) } : r
+        )
+      );
+    }
+  };
+
+  const toggleAll = (checked: boolean) => {
+    if (!checked) {
+      // Sirf tick wali rows wapas Source par — manual custom targets safe
+      const sel = selected;
+      setRows((prev) =>
+        prev.map((r) =>
+          sel.has(r.id) ? { ...r, client_id: loadedFrom, client_name: labelOf(loadedFrom) } : r
+        )
+      );
+      setSelected(new Set());
+      return;
+    }
+    if (!globalClient) {
+      toast.warning("Pehle Target Client select karo!");
+      return;
+    }
+    const label = labelOf(globalClient);
+    setRows((prev) => prev.map((r) => ({ ...r, client_id: globalClient, client_name: label })));
+    setSelected(new Set(rows.map((r) => r.id)));
+  };
+
+  // ── Apply target client → sirf tick wali rows ──────────────────────────────
   const applyGlobalClient = (cid: string) => {
     setGlobalClient(cid);
     if (!cid) return;
-    const c = clients.find((x) => x.id === Number(cid));
-    const label = c ? clientLabel(c) : "Unknown";
-    setRows((prev) => prev.map((r) => ({ ...r, client_id: cid, client_name: label })));
+    if (cid === loadedFrom) toast.warning("Target Client = Source Client hai!");
+    const label = labelOf(cid);
+    const sel = selected;
+    setRows((prev) =>
+      prev.map((r) => (sel.has(r.id) ? { ...r, client_id: cid, client_name: label } : r))
+    );
   };
 
   // ── Save all ───────────────────────────────────────────────────────────────
@@ -184,6 +254,16 @@ export default function BulkEditPage() {
     const invalid = rows.filter((r) => !r.client_id.trim() || !r.item.trim() || !r.fault.trim());
     if (invalid.length > 0) {
       toast.error(`${invalid.length} row(s) mein Client/Item/Fault khaali hai!`);
+      return;
+    }
+
+    const clientChanges = rows.filter((r) => r.client_id !== loadedFrom).length;
+    if (
+      clientChanges > 0 &&
+      !confirm(
+        `${rows.length} row(s) update honge — unme se ${clientChanges} ka client ${labelOf(loadedFrom)} se badal raha hai. Save karein?`
+      )
+    ) {
       return;
     }
 
@@ -308,7 +388,7 @@ export default function BulkEditPage() {
             <div>
               <label className="block text-[10px] font-bold uppercase tracking-wider text-muted mb-1.5">
                 <span className="inline-flex items-center gap-1">
-                  <Users size={11} /> Apply New Client to All
+                  <Users size={11} /> Target Client <span className="text-red-400">*</span>
                 </span>
               </label>
               <SearchableSelect
@@ -319,10 +399,38 @@ export default function BulkEditPage() {
                 clearLabel="Select Target Client"
               />
               <p className="text-[10px] text-muted-2 mt-1">
-                Saari rows ka client ek saath badlega.
+                Sirf tick (✓) wali rows ka client isse badlega.
               </p>
             </div>
           </div>
+
+          {/* ── Selection bar (master checkbox + counter) ── */}
+          {loaded && rows.length > 0 && (
+            <div className="mt-4 pt-4 border-t border-app flex items-center gap-3 flex-wrap">
+              <label className="flex items-center gap-2 cursor-pointer select-none">
+                <input
+                  ref={masterRef}
+                  type="checkbox"
+                  checked={rows.length > 0 && selected.size === rows.length}
+                  onChange={(e) => toggleAll(e.target.checked)}
+                  className="w-4 h-4 accent-blue-500"
+                  aria-label="Select all jobs"
+                />
+                <span className="text-xs font-bold text-app-2">Select all</span>
+              </label>
+              <span className="text-[10px] font-black uppercase tracking-wider px-2 py-1 rounded-lg bg-blue-500/15 text-blue-300 tabular-nums">
+                {selected.size} / {rows.length} selected
+              </span>
+              {selected.size > 0 && globalClient && (
+                <span className="text-[10px] font-bold text-emerald-300">
+                  → {labelOf(globalClient)} par transfer honge
+                </span>
+              )}
+              <span className="text-[10px] text-muted-2 sm:ml-auto">
+                Tick = Target Client follow; untick = Source par wapas.
+              </span>
+            </div>
+          )}
         </div>
 
         {rowLoading && (
@@ -346,6 +454,16 @@ export default function BulkEditPage() {
             <table className="w-full text-xs">
               <thead>
                 <tr className="bg-blue-900/40 border-b border-app">
+                  <th className="px-2 py-3 text-center w-10">
+                    <input
+                      ref={masterRef2}
+                      type="checkbox"
+                      checked={rows.length > 0 && selected.size === rows.length}
+                      onChange={(e) => toggleAll(e.target.checked)}
+                      className="w-4 h-4 accent-blue-500"
+                      aria-label="Select all jobs"
+                    />
+                  </th>
                   <th className="px-3 py-3 text-center text-[9px] font-black text-blue-300 uppercase w-10">
                     #
                   </th>
@@ -374,7 +492,21 @@ export default function BulkEditPage() {
               </thead>
               <tbody className="divide-y divide-[#21293d]">
                 {rows.map((row, i) => (
-                  <tr key={row.id} className="hover:bg-white/[0.015] transition-colors">
+                  <tr
+                    key={row.id}
+                    className={`transition-colors ${
+                      selected.has(row.id) ? "bg-emerald-500/[0.06]" : "hover:bg-white/[0.015]"
+                    }`}
+                  >
+                    <td className="px-2 py-2.5 text-center">
+                      <input
+                        type="checkbox"
+                        checked={selected.has(row.id)}
+                        onChange={(e) => toggleRow(row, e.target.checked)}
+                        className="w-4 h-4 accent-emerald-500 cursor-pointer"
+                        aria-label={`Job ${row.job_id} select karo`}
+                      />
+                    </td>
                     <td className="px-3 py-2.5 text-center text-muted-2 font-bold">{i + 1}</td>
                     <td className="px-3 py-2.5">
                       <div className="flex items-center gap-1 bg-app border border-app rounded-lg px-2.5 py-1.5 justify-center">
@@ -455,11 +587,25 @@ export default function BulkEditPage() {
             {rows.map((row, i) => (
               <div
                 key={row.id}
-                className="bg-panel border border-app border-l-4 border-l-blue-500 rounded-2xl p-4 relative"
+                className={`rounded-2xl p-4 relative border border-app border-l-4 ${
+                  selected.has(row.id)
+                    ? "bg-panel border-l-emerald-400"
+                    : "bg-panel border-l-blue-500"
+                }`}
               >
-                <span className="absolute top-3 right-4 text-app font-black text-lg">
-                  #{i + 1}
-                </span>
+                <span className="absolute top-3 right-4 text-app font-black text-lg">#{i + 1}</span>
+                <label className="flex items-center gap-2 mb-3 cursor-pointer select-none w-fit">
+                  <input
+                    type="checkbox"
+                    checked={selected.has(row.id)}
+                    onChange={(e) => toggleRow(row, e.target.checked)}
+                    className="w-4 h-4 accent-emerald-500"
+                    aria-label={`Job ${row.job_id} select karo`}
+                  />
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-muted">
+                    Transfer to Target Client
+                  </span>
+                </label>
                 <div className="grid grid-cols-2 gap-3 mb-3">
                   <div>
                     <label className={lCls}>Job ID</label>
