@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.53.0](https://github.com/waraseoni/vtech-next/compare/v1.52.0...v1.53.0) (2026-10-10)
+
+### Features
+
+* **bulk-edit:** row checkboxes — ticked rows Target Client follow, select-all + counter + pre-save confirm ([01f38d8](https://github.com/waraseoni/vtech-next/commit/01f38d8499a1b1ded84e6435855006e2c8e8e122))
+
 ## [1.52.0](https://github.com/waraseoni/vtech-next/compare/v1.51.1...v1.52.0) (2026-10-09)
 
 ### Features
