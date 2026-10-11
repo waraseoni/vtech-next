@@ -79,10 +79,7 @@ import dynamic from "next/dynamic";
 // NativePrintPreview sirf native print preview routes par dikhta hai (opens
 // null). Dynamic chunk: capgo printer + nativePrint bridge shell ke critical
 // JS me nahi khinchte — first paint + parse kam hota hai.
-const NativePrintPreview = dynamic(
-  () => import("@/components/NativePrintPreview"),
-  { ssr: false }
-);
+const NativePrintPreview = dynamic(() => import("@/components/NativePrintPreview"), { ssr: false });
 import SwipeNavigation from "@/components/SwipeNavigation";
 import { ShortcutHelpOverlay } from "@/app/components/ui/ShortcutHelpOverlay";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
@@ -165,9 +162,7 @@ const navLinkCls = (active: boolean) =>
 
 const subLinkCls = (active: boolean) =>
   `flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-bold transition-all duration-150 ${
-    active
-      ? "text-blue-400 bg-blue-500/10"
-      : "text-muted-2 hover:text-app-2 hover:bg-white/[0.04]"
+    active ? "text-blue-400 bg-blue-500/10" : "text-muted-2 hover:text-app-2 hover:bg-white/[0.04]"
   }`;
 
 // ─── Sidebar nav (shared by desktop + mobile drawer) ─────────────────────────
@@ -317,47 +312,10 @@ function SidebarNav({
           </Link>
         </li>
 
+        {/* ══ OPERATIONS ══ (shop-floor status — daily use, isliye Customer se pehle) */}
         <li className="text-[9px] font-black uppercase text-app tracking-widest px-3 pt-5 pb-1.5 select-none">
-          Customer
+          Operations
         </li>
-        <SubMenu
-          collapsed={collapsed}
-          onExpand={onExpand}
-          title="Customer Report"
-          icon={<Users size={15} />}
-          matchPaths={["/reports/top-customers", "/reports/delivered", "/reports/due-reminders"]}
-        >
-          <li>
-            <Link
-              href="/reports/top-customers"
-              className={subLinkCls(pathname === "/reports/top-customers")}
-              onClick={onNavClick}
-            >
-              <Users size={12} />
-              Top Customers
-            </Link>
-          </li>
-          <li>
-            <Link
-              href="/reports/delivered"
-              className={subLinkCls(pathname === "/reports/delivered")}
-              onClick={onNavClick}
-            >
-              <Truck size={12} />
-              Delivered Report
-            </Link>
-          </li>
-          <li>
-            <Link
-              href="/reports/due-reminders"
-              className={subLinkCls(pathname === "/reports/due-reminders")}
-              onClick={onNavClick}
-            >
-              <CalendarClock size={12} className="text-red-400" />
-              Due Reminders
-            </Link>
-          </li>
-        </SubMenu>
         <SubMenu
           collapsed={collapsed}
           onExpand={onExpand}
@@ -408,6 +366,48 @@ function SidebarNav({
             >
               <ClipboardList size={12} />
               Daily Done Report
+            </Link>
+          </li>
+        </SubMenu>
+
+        <li className="text-[9px] font-black uppercase text-app tracking-widest px-3 pt-5 pb-1.5 select-none">
+          Customer
+        </li>
+        <SubMenu
+          collapsed={collapsed}
+          onExpand={onExpand}
+          title="Customer Report"
+          icon={<Users size={15} />}
+          matchPaths={["/reports/top-customers", "/reports/delivered", "/reports/due-reminders"]}
+        >
+          <li>
+            <Link
+              href="/reports/top-customers"
+              className={subLinkCls(pathname === "/reports/top-customers")}
+              onClick={onNavClick}
+            >
+              <Users size={12} />
+              Top Customers
+            </Link>
+          </li>
+          <li>
+            <Link
+              href="/reports/delivered"
+              className={subLinkCls(pathname === "/reports/delivered")}
+              onClick={onNavClick}
+            >
+              <Truck size={12} />
+              Delivered Report
+            </Link>
+          </li>
+          <li>
+            <Link
+              href="/reports/due-reminders"
+              className={subLinkCls(pathname === "/reports/due-reminders")}
+              onClick={onNavClick}
+            >
+              <CalendarClock size={12} className="text-red-400" />
+              Due Reminders
             </Link>
           </li>
         </SubMenu>
@@ -679,7 +679,13 @@ function SidebarNav({
                 <li className="text-[9px] font-black uppercase text-app tracking-widest px-3 pt-5 pb-1.5 select-none">
                   People
                 </li>
-                <SubMenu title="People" icon={<UsersRound size={15} />} matchPaths={["/services", "/reports/outside-work"]} collapsed={collapsed} onExpand={onExpand}>
+                <SubMenu
+                  title="People"
+                  icon={<UsersRound size={15} />}
+                  matchPaths={["/services", "/reports/outside-work"]}
+                  collapsed={collapsed}
+                  onExpand={onExpand}
+                >
                   <li>
                     <Link
                       href="/mechanics"
@@ -885,26 +891,6 @@ function SidebarNav({
                       Custom Service
                     </Link>
                   </li>
-                  <li>
-                    <Link
-                      href="/reports/parts-pending"
-                      className={subLinkCls(pathname === "/reports/parts-pending")}
-                      onClick={onNavClick}
-                    >
-                      <Boxes size={12} />
-                      Waiting for Parts
-                    </Link>
-                  </li>
-                  <li>
-                    <Link
-                      href="/reports/supplier-dues"
-                      className={subLinkCls(pathname === "/reports/supplier-dues")}
-                      onClick={onNavClick}
-                    >
-                      <Landmark size={12} />
-                      Supplier Dues
-                    </Link>
-                  </li>
 
                   <li className="text-[8px] font-black uppercase text-muted-2 tracking-widest px-3 pt-3 pb-0.5 select-none">
                     Audit
@@ -932,7 +918,7 @@ function SidebarNav({
               onExpand={onExpand}
               title="System"
               icon={<Settings2 size={15} />}
-              matchPaths={["/users", "/settings", "/backup", "/back-office/db-tools", "/images"]}
+              matchPaths={["/users", "/settings", "/backup", "/images"]}
             >
               <li>
                 <Link
@@ -1003,7 +989,7 @@ function SidebarNav({
                 onExpand={onExpand}
                 title="Developer"
                 icon={<Code2 size={15} />}
-                matchPaths={["/developer", "/sync", "/images", "/seller", "/back-office/db-tools"]}
+                matchPaths={["/developer", "/sync", "/seller", "/back-office/db-tools"]}
               >
                 {sellerEnabled && (
                   <li>
@@ -1037,16 +1023,6 @@ function SidebarNav({
                       >
                         <RefreshCw size={12} className="text-emerald-400" />
                         MariaDB Sync
-                      </Link>
-                    </li>
-                    <li>
-                      <Link
-                        href="/images"
-                        className={subLinkCls(pathname === "/images")}
-                        onClick={onNavClick}
-                      >
-                        <Images size={12} className="text-amber-400" />
-                        Images
                       </Link>
                     </li>
                     <li>
@@ -1419,8 +1395,8 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
           <h1 className="text-lg font-black text-white mb-2">Module Not Available</h1>
           <p className="text-sm text-muted mb-6">
             Ye module aapke plan mein included nahi hai. Seller se contact karein ya{" "}
-            <span className="font-bold text-app-2">Settings &rarr; License</span> mein plan
-            upgrade karein.
+            <span className="font-bold text-app-2">Settings &rarr; License</span> mein plan upgrade
+            karein.
           </p>
           <button
             onClick={() => router.push("/dashboard")}
@@ -1443,7 +1419,7 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
   return (
     <>
       <PWAHead />
-            <Toaster theme="dark" position="top-right" richColors closeButton />
+      <Toaster theme="dark" position="top-right" richColors closeButton />
       <NativePrintPreview />
       <SwipeNavigation
         onBack={goInAppBack}
@@ -1483,7 +1459,6 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
                     width={40}
                     height={40}
                     className="w-full h-full object-contain rounded-xl"
-                    
                   />
                 ) : (
                   <Sparkles size={20} className="text-white" />
@@ -1568,7 +1543,6 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
                       width={36}
                       height={36}
                       className="w-full h-full object-contain rounded-xl"
-                      
                     />
                   ) : (
                     <Sparkles size={18} className="text-white" />
