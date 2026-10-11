@@ -1,20 +1,36 @@
 # TODO / Work Log
 
 Har kaam ke liye: plan + todo banate hain, jo complete ho jata hai use mark karte hain.
+
 - `[ ]` = pending / `[x]` = complete
 - Commits: `docs/COMMITS.md` (agar bana ho) — warna neeche "Deployed" section.
+
+---
+
+## Recent work log (2026-10)
+
+- [x] `8718f5e` fix(direct-sales): submit row wrap — narrow screen par buttons frame se bahar kat the the
+- [x] `e32e06f` test(attendance): §9 test clock-independent (19:15-24:00 IST window)
+- [x] `01f38d8` feat(bulk-edit): jobs bulk-edit page par row checkboxes — ticked rows Target Client
+      follow, select-all + counter + pre-save confirm. **USER ACTION:** live save device par test karna
+      baaki (sirf UI verify hua)
+- [x] Zoom + crop 3 rounds + PNG fix — "Image Crop / Edit on Upload" section dekho (neeche)
+- [x] `51ab527`/`7f0aaa5` fix(crop): PNG alpha (sourceMime) — transparent logo crop me black-box nahi
+- Pending user: crop ka baaki device matrix (parts, settings, pre-existing 6, phone edge handles)
 
 ---
 
 ## Project: Staff Messenger v2 (1-on-1 chat)
 
 ### Plan
+
 Web-only staff messenger enhancements — auto-deployed via Vercel + Supabase.
 Base messenger already live (`30aae41`). Ye round un requested features add karta hai.
 
 ### Todos
 
 #### 1. Base messenger (prev round) — DONE
+
 - [x] Staff messenger page + realtime presence (`30aae41`)
 - [x] TeamOnline sidebar widget + Users-page presence dots/badges (`30aae41`)
 - [x] Message push route (`30aae41`)
@@ -24,6 +40,7 @@ Base messenger already live (`30aae41`). Ye round un requested features add kart
 - [x] Fix offline/new user chat not opening (`b9b0496`)
 
 #### 2. Messenger v2 features — DONE (code deployed, migration applied)
+
 - [x] 3-state ticks (sent / delivered / seen) via `delivered_at` + `read_at`
 - [x] Typing indicator (realtime broadcast)
 - [x] Media share with client-side compress to ~50–100KB (`src/lib/media.ts`)
@@ -36,6 +53,7 @@ Base messenger already live (`30aae41`). Ye round un requested features add kart
 - [x] User applied migration in Supabase SQL Editor (columns confirmed)
 
 ### Pending verification (manual QA)
+
 - [x] Test 3-state ticks live
 - [x] Test typing indicator between two users
 - [x] Test media share + compression on mobile
@@ -43,6 +61,7 @@ Base messenger already live (`30aae41`). Ye round un requested features add kart
 - [x] Test unread sidebar badge counts/reset
 
 #### 3. Post-v2 bug fixes + polish — DONE
+
 - [x] Fix history not loading (inverted `deleted_at` filter returned only soft-deleted) — commit `6ca81dc`
 - [x] Show user avatar in messenger (list / header / new-chat) — commit `22b2cec`
 - [x] Hide global floating mobile back button on `/messages` (overlapped paperclip) — commit `44db4b3`
@@ -52,11 +71,13 @@ Base messenger already live (`30aae41`). Ye round un requested features add kart
 - [x] Delete-message confirmation (2-step "Confirm?") — commit `9f2d2dc`
 
 ### Pending verification (manual QA — v3)
+
 - [x] Confirm message delete now needs 2 clicks (no accidental delete)
 - [x] Confirm deleting a media message removes image from `/images` manager (no orphan)
 - [x] Confirm `/images` shows Messages Media bucket
 
 #### 4. Delete permissions + message supervision tool — DONE
+
 - [x] Delete rights: staff sirf apna send-kiya hua delete kare; admin/developer sab (UI + `/api/media/delete` + RLS)
 - [x] RLS `msg_messages_select`: admin/developer sab messages dekh sakte hain (supervise ke liye) — commit (pending)
 - [x] `fetchPairMessages` helper (kisi bhi do users ki chat fetch)
@@ -73,6 +94,7 @@ Base messenger already live (`30aae41`). Ye round un requested features add kart
 > Created: 2026-09-17
 
 ### Phase A — Bug fix + Supplier Payment Ledger (HIGH) — COMPLETE (commit `34bb8e0`)
+
 - [x] Fix PO status bug — supplier detail page status map numeric vs text mismatch (`suppliers/[id]/page.tsx` + `status-colors.ts`)
 - [x] **`supplier_payments` table** — amount, payment_mode (cash/upi/bank/cheque/adjustment), reference, payment_date, notes, created_by
 - [x] **Payment entry modal** on supplier detail page — add payment, show total paid / outstanding
@@ -84,7 +106,9 @@ Base messenger already live (`30aae41`). Ye round un requested features add kart
 - [x] **Typecheck + eslint + tests pass** (migration `20260912_supplier_payments.sql` applied)
 
 ### Phase B — Required Parts → PO + GST Fields (MEDIUM) — COMPLETE (commits `45cb463`, `b168495`)
+
 > P1 note: planned `purchase_order_items.job_id` ki jagah `purchase_orders.transaction_id` (header-level) used — grouping per-job, supplier modal me choose hota hai.
+
 - [x] `purchase_orders.transaction_id` — job trace (P1)
 - [x] `job_required_parts.purchase_order_id` nullable FK — link part to its PO
 - [x] Parts-pending report: group → "Create PO" button (`/reports/parts-pending`)
@@ -94,16 +118,19 @@ Base messenger already live (`30aae41`). Ye round un requested features add kart
 - [x] Full schema + typecheck + lint + tests (migrations `20260913_required_parts_po_bridge.sql` + `20260913_suppliers_gst_bank.sql` applied)
 
 ### Phase C — Reports + Expense Link (MEDIUM) — complete (P4 done)
+
 - [x] `/reports/supplier-purchases` — date range, KPIs, per-supplier product breakdown (commit `1a0ad01`)
 - [x] Add `supplier_id` FK to `expense_list` (nullable) — **P4** (migration `20260919_expense_supplier_link.sql`, folded into full schema)
 - [x] Payment entry (Phase A) optionally auto-creates expense entry — **P4** (toggle in Add Payment modal → "Spare Parts Purchase" ledger entry; `supplier_payment_id` FK for dedup/traceability)
 - [x] Old payments ko backfill karne ke liye payment modal me "Expense entry banao" button — **P4** (dedup via `supplier_payment_id`)
 
 ### Phase D — Active Product-Supplier Link (LOW) — complete (P5 done)
+
 - [x] Supplier detail: "Recommended Orders" section — low-stock products linked via `spare_supplier`
 - [x] Quick-add: one-click PO from suggested items (`po_draft` + `po_draft_supplier` → prefilled Create PO modal)
 
 ### Completed (this session + earlier suppliers rounds)
+
 - [x] Supplier visiting card upload + lightbox zoom
 - [x] Multiple contacts (label + phone + is_primary) + WhatsApp buttons
 - [x] Search across all phones
@@ -148,9 +175,11 @@ Base messenger already live (`30aae41`). Ye round un requested features add kart
 ## Project: Image Crop / Edit on Upload
 
 > Full plan + expert advice: `docs/plans/image_crop_edit_plan.md`
+> **Abki latest status doc:** `docs/plans/crop_editor_best_practices_plan.md` — **DONE (2026-10-11)**
 
 ### Phase 1 — Core crop + pilot (Visiting card + Product photo) — COMPLETE (commit `00185f0`)
-- [x] Add `react-easy-crop` dependency
+
+- [x] Add `react-easy-crop` dependency (ab **hataya** — niche 2026-10 dekho)
 - [x] `src/lib/imageCropper.ts` — cropImage(dataUrl, crop, rotation) → File/Blob (canvas)
 - [x] `src/components/ImageCropperModal.tsx` — dark full-screen editor (move, zoom, rotate 90°, aspect toggle, "Use Original" skip button)
 - [x] `src/lib/useImageUpload.ts` — orchestrator hook: pick → crop → compress → CompressedImage
@@ -159,15 +188,35 @@ Base messenger already live (`30aae41`). Ye round un requested features add kart
 - [x] Typecheck + eslint + tests
 
 ### Phase 2 — Rollout (avatars 1:1) — COMPLETE (commit `4f8fbc7`)
+
 - [x] Profile avatar
 - [x] User avatar (users/[id]/edit)
 - [x] Client photo
 - [x] Mechanic photo
-- [x] Job repair photos (batch — per-photo edit button; logo/cover/signature EXCLUDED)
+- [x] Job repair photos (batch — per-photo edit button)
 
-### DROPPED (expert advice)
+### DROPPED (expert advice, 2026-09-12)
+
 - ~ Phase 3 contrast/brightness/redo — no business value, don't build
-- ~ Crop on Settings logo/cover/signature — keep original always (transparency)
+- ~ ~~Crop on Settings logo/cover~~ — **SUPERSEDED 2026-10-09**: settings logo/cover
+  crop ab live hain (`accd46d`); transparency concern ab solved (2026-10-11 PNG
+  alpha fix `7f0aaa5` — `sourceMime` output mime source se)
+
+### 2026-10 rounds — COMPLETE
+
+- [x] **Zoom viewer** (`d58fa52`): Lightbox/ZoomableImage rewrite — wheel/pinch/pan,
+      1–6x, gallery arrows; sab image displays par wired
+- [x] **Upload crop + edit-existing ✂** (`accd46d`): jobs item photos (multi-file),
+      required-parts row+form, settings logo/cover; Lightbox `onEdit` close-first flow
+- [x] **8-handle migration** (`b8a9829`): react-easy-crop (crop resize hi nahi tha)
+      → `react-image-crop@11.1.2` — 4 corner + 4 edge handles, presets row, Reset,
+      Esc=Cancel, size label; contract frozen; touch par edge handles ka library bug
+      `globals.css` §7 se fixed
+- [x] **PNG alpha fix** (`7f0aaa5`): `sourceMime()` — transparent PNG (settings logo)
+      ab crop ke baad bhi alpha preserve; 4 unit tests
+- ✅ **Coverage**: add-time crop = 9/9 upload points; edit-existing ✂ = jobs/parts/
+  settings (products/suppliers/avatars intentionally skipped — form re-pick crop
+  karta hai; real feedback aaye tab add karenge)
 
 ---
 
@@ -178,6 +227,7 @@ Base messenger already live (`30aae41`). Ye round un requested features add kart
 > persons+phones ki zarurat nahi (client khud ek person hai).
 
 ### Implemented — COMPLETE (committed `f2064c9`, released `v1.21.0`)
+
 - [x] Migration `supabase/migrations/20260921_client_contacts.sql` — table: id, client_id (FK→`client_list` CASCADE), name (rishta), label (Mobile/Office/WhatsApp/Shop/Other), phone, is_primary, date_created/updated. Unique(client_id, lower(trim(phone))), **partial unique index single-primary per client**. RLS staff-gate + grants + touch trigger. Folded into idempotent full schema.
 - [x] `src/lib/clientContacts.ts` — `ClientContact`/`ClientContactInput` types, `CONTACT_LABELS`, `normalizeContacts` (dedup + one-primary self-heal), `fetchClientContacts`, `fetchClientContactsBulk`, `syncClientContacts` (diff-by-phone: update/insert/delete), `telLink`/`smsLink`/`waChatLink`
 - [x] Client form (`clients/new` + `clients/[id]/edit` ManageClientPage): old single "WhatsApp / Contact" input replaced by **Contact Numbers editor** — star=primary, name+label per number, add/remove rows; primary phone auto-writes `client_list.contact` (legacy back-compat); save syncs via `syncClientContacts`
@@ -186,6 +236,7 @@ Base messenger already live (`30aae41`). Ye round un requested features add kart
 - [x] Types: `Client.contacts?: ClientContactLite[]` (`clientListHelpers.ts` + `server-clients.ts`); migration nahi laga to graceful degrade (contacts → undefined)
 
 ### USER ACTION — apply migration
+
 - [x] `20260921_client_contacts.sql` Supabase SQL Editor me run karo — **VERIFIED live (2026-09-15)**: `client_contacts` REST probe confirmed table present (idempotent; full schema me folded hai)
 
 ---
@@ -196,6 +247,7 @@ Base messenger already live (`30aae41`). Ye round un requested features add kart
 > already live. Phase 3 = reusable component lists (bom_checker_plan.md §5 Phase 3).
 
 ### Implemented — COMPLETE (Phase 3, committed 2026-09-16)
+
 - [x] Migration `supabase/migrations/20260922_bom_templates.sql` — table (id, name, description, items jsonb, created_by), FK `created_by → profiles.id ON DELETE SET NULL`, name/creator indexes, RLS `rlslock_bom_templates_staff` (is_frontend_staff), touch trigger, grants + sequence grants. Folded into idempotent full schema.
 - [x] `src/app/api/bom-templates/route.ts` — GET list (with items) + POST create; `requireStaffWithRole()` cookie+RLS, no service role; server-side items validation
 - [x] `src/app/api/bom-templates/[id]/route.ts` — GET single + PUT (name/desc/items partial) + DELETE
@@ -204,7 +256,8 @@ Base messenger already live (`30aae41`). Ye round un requested features add kart
 - [x] Verified: tsc clean, eslint clean, vitest 103/103 green
 
 ### USER ACTION — apply migration
-- [ ] `20260922_bom_templates.sql` Supabase SQL Editor me run karo (idempotent; full schema me folded hai)
+
+- [x] `20260922_bom_templates.sql` Supabase SQL Editor me run karo (idempotent; full schema me folded hai) — **VERIFIED live 2026-10-11**: REST probe `bom_templates` HTTP 200 (table EXISTS)
 
 ---
 
@@ -216,30 +269,36 @@ Base messenger already live (`30aae41`). Ye round un requested features add kart
 > Total ≈ 12–16 h dev + migration apply/QA.
 
 ### Phase 1 — Foundations (spike + deps)
+
 - [ ] Spike: `supabase.auth.admin.createSession` available? pinned supabase-js me (fallback §8 plan) — decision D8 confirm
 - [ ] `npm i @simplewebauthn/server @simplewebauthn/browser`
 - [ ] `src/lib/admin.ts` — `getServerSupabaseAdmin()` (service role, server-only)
 - [ ] `src/lib/passkeys.ts` — rpName/rpID config, challenge cookie helpers (httpOnly, signed, 5 min, one-time)
 
 ### Phase 2 — Enrollment
+
 - [ ] Migration `supabase/migrations/YYYYMMDD_passkey_login.sql` (user_passkeys + RLS + grants + trigger) + full-schema fold-in
 - [ ] `POST /api/passkey/register-begin` (auth + password re-auth + challenge)
 - [ ] `POST /api/passkey/register-finish` (verify + INSERT service-role, dup reject)
 - [ ] Device mgmt `src/app/api/passkey/devices/route.ts` — list/rename/delete + admin revoke-all
 
 ### Phase 3 — Login flow
+
 - [ ] `POST /api/auth/login` mode=`passkey-begin` + mode=`passkey-verify` (sign_count + admin.createSession + throttle)
 
 ### Phase 4 — UI
+
 - [ ] Login page: "Fingerprint se login karein" button + email reuse + error states
 - [ ] Settings → "Devices (Passkey Login)": enroll, list, rename, remove, admin revoke-all
 
 ### Phase 5 — Tests + QA
+
 - [ ] Unit: throttle path, challenge cookie one-time/expiry, sign_count reject
 - [ ] Manual matrix: Windows Hello / Android fingerprint / iOS Face ID / regression / lost-device / RLS probe
 - [ ] tsc + eslint + vitest + build green
 
 ### Phase 6 — Deploy gate (post-season)
+
 - [ ] HTTPS + stable rpID note (domain change = passkeys invalid); migration apply (user); release tag + CHANGELOG
 
 ---
@@ -251,23 +310,27 @@ Base messenger already live (`30aae41`). Ye round un requested features add kart
 > accounting-dashboard(28). Phase A pure frontend + season-safe.
 
 ### Phase A — Season-safe quick wins
+
 - [ ] W1: `(public)/components/qr-share.tsx` dynamic import fix (public layout se qrcode nikaldo)
 - [ ] W2: Boot parallelize + `loading.tsx`/Suspense — LicenseGate/useAppBoot race, sidebar lazy
 - [ ] W4: sidebar `router.prefetch()` hover/touch par (Link prefetch verify)
 - [ ] W5: public pages static cache headers (Vercel)
 
 ### Phase B — Season-safe data batching
+
 - [ ] W3a: dashboard `.from()` clusters parallel (`Promise.all`) + dedupe
 - [ ] W3b: jobs page batching
 - [ ] W3c: reports/accounting-dashboard batching
 - [ ] Har page: tsc + eslint + vitest + visual QA green
 
 ### Phase C — Post-season (G3)
+
 - [ ] W6: RootClient split + icons per-page + shared chunk review + Sentry tuning
 - [ ] W7: RSC migration hot pages (dashboard/clients/inventory/jobs — streaming)
 - [ ] W8: React Query / SWR data layer
 
 ### Phase D — Measure-repeat
+
 - [ ] `npm run analyze:output` baseline diff + production URL Lighthouse before/after
 
 ---
@@ -280,11 +343,13 @@ Base messenger already live (`30aae41`). Ye round un requested features add kart
 > koi write nahi.** Implementation season-safe (backup = SELECT only).
 
 ### Phase 1 — Schema import ✅ (2026-09-17)
+
 - [x] Admin client reuse: `src/lib/admin-supabase.ts` `getAdminSupabase()` already existed
 - [x] `src/app/api/backup/schema/route.ts` (GET, requireAdmin) — OpenAPI → table/col/pk map (+generated merge)
 - [x] Unit test `src/lib/backupSchema.test.ts` 7 tests ✅ + live E2E probe (51/51 tables, PKs exact)
 
 ### Phase 2 — Backup page ✅ (2026-09-17)
+
 - [x] TABLE list dynamic (golden 51 ordered list + live-schema auto-append)
 - [x] TABLE_COLUMNS → runtime cols; transaction_products single-PK (id) mode; composite → runtime PK
 - [x] Backup Verify: fetched vs exact count per table; mismatch → `_meta.warnings` + HARD red toast
@@ -293,22 +358,26 @@ Base messenger already live (`30aae41`). Ye round un requested features add kart
   - ✅ USER-CONFIRMED dry-run PASSED: 10,223 rows / 51 tables (v3 file); composite-PK false-positive bug fix included
 
 ### Phase 3 — Restore safety ✅ (2026-09-17)
+
 - [x] Dynamic column strip (column-loss kill); `onConflict` explicit (single + composite)
 - [x] Restore-after count verify → HARD fail report + toast on mismatch
 - [x] resetSequences list + 17 naye tables; clear-step `not(pk[0],"is",null)` universal delete-all
 
 ### Phase 4 — CLI scripts ✅ (2026-09-17)
+
 - [x] `supabase-restore.mjs --dry-run`: ab kabhi SQL execute nahi (file analysis + read-only `SELECT 1`); JSON guard (dry=parse, real=error+guidance)
 - [x] `force-restore.cjs`: arg/glob filename + LIVE schema columns/PK + `onConflict` + generated strip + confirm (`--yes`)
 - [x] `supabase-dump.mjs` auth/storage exclusion doc note
 
 ### Phase 5 — Verify (no live writes) 🔶 user-verified
+
 - [x] schema API probe (live OpenAPI E2E: transaction_products/spare_supplier/user_presence/client_payments/messages/bom_templates) ✅
 - [x] Live "Download Backup" ✅ **USER-CONFIRMED 2026-09-17**: `vtech_backup_2026-09-17T07-02-58.json` — 51/51 tables, counts exact (file==DB rows), net change 0, 0 warnings
 - [x] v3 Diff panel (file vs DB) green — same run ✅
 - [x] tsc + eslint + vitest + build green (2026-09-17) ✅ (1 pre-existing exhaustive-deps warning)
 
 ### Phase 6 — Free-tier backup strategy ✅ DONE (2026-09-17)
+
 - [x] RESOLVED (2026-09-17): Free tier par koi platform automatic backup / PITR nahi (Pro/Team/Enterprise hi; PITR ~$100/mo). Decision: hamara apna scheduled JSON backup = free-tier ka daily backup.
   - `scripts/supabase-json-backup.mjs` (NEW): service-role, 51 tables count-verified, page-compatible v3.0 JSON → `backups/` (gitignored). Live-tested: 10,232 rows / 51 tables, net_amount skip verified.
   - `/backup` page par chhota UI (2026-09-17): "Server Backup (Scheduled)" card — "Abhi Run Karo" button + recent local backups + **cloud copies** list. API: `GET/POST /api/backup/scheduled` (requireAdmin), logic shared `src/lib/scheduledBackup.ts`. Live-tested via lib: 51/51, 10,232 rows, cloud upload ok.
@@ -324,6 +393,7 @@ Base messenger already live (`30aae41`). Ye round un requested features add kart
 ## Project: UI/UX Architecture Revamp — Sprint 1
 
 ### Plan
+
 Master plan: `docs/plans/ui_ux_architecture_complete_plan.md` (Parts 0–F, 4 sprints).
 Hard constraint: free/OSS only. 🛡️ Protected routes: `jobs/old` + `jobs/[id]/old` KEEP FOREVER
 (toast upgrade OK; never delete/redirect-remove) — see plan §PROTECTED ROUTES.
@@ -332,6 +402,7 @@ User directive: **no commit/push** until told.
 ### Todos — Sprint 1 (2026-09-23)
 
 #### 1. Single toast system + kill alert() ✅
+
 - [x] `src/lib/toast.ts` (sonner wrapper; error=∞, success=3s, warn=5s, info=4s)
 - [x] `src/lib/requireAdmin.ts` — pure `requireAdmin(userRole, action)`; deleted `useAdminGuard.ts`
 - [x] Migrate ~97 `alert()` → toast (print-route server templates `print-bill`/`print-purchase-order` intentional, kept)
@@ -340,17 +411,21 @@ User directive: **no commit/push** until told.
 - [x] Verify: `npx tsc --noEmit` OK · `npx eslint` 0 errors (2 pre-existing warnings: backup exhaustive-deps, users unused disable)
 
 #### 3. `ui/` kit ✅
+
 - [x] `src/components/ui/StatusBadge.tsx`, `EmptyState.tsx`, `ConfirmDialog.tsx`, `index.ts` barrel (re-exports legacy PageHeader)
 
 #### 4. Mobile input fundamentals ✅
+
 - [x] `globals.css` Sprint 1 block (~L3178): 16px iOS font floor (<1023px), safe-area utilities, `.h-dvh-safe`, keyboard-open FAB hide, coarse-pointer active opacity
 
 #### 5. Shared lib helpers ✅ (naming evolved from plan)
+
 - [x] `src/lib/status-colors.ts` — `STATUS_LABELS`, `STATUS_EXPLANATIONS`, `BADGE_COLORS`, `STATUS_BADGE_COLOR`, `DEL_STATUS`, `getLabel`/`getBadge`/`getStatusStyle` (+ legacy `JOB_STATUS`)
 - [x] `src/lib/whatsapp.ts` — canonical `waLink` (double-91 safe); local dupes removed (suppliers pages)
 - [x] `requireAdmin` migrated in: 7 admin pages (lenders/suppliers/services/client-loans/inventory/locations/products) + MechanicsBody + ClientsBody + `jobs/[id]/view` + attendance/MonthlyReport
 
 #### 2. Semantic tokens migration + `!important` delete ✅ (2026-09-23)
+
 - [x] Foundation: `globals.css` `@theme inline` me semantic color tokens (`--color-app-*` + short aliases → `bg-panel`, `text-muted` jaise Tailwind utilities) + helper classes `.card`/`.muted`/`.text-app`/`.bg-app`/`.bg-panel`
 - [x] Codemod Phase 1a: top patterns hardcoded hex (`bg-[#0d1117]`, `bg-[#161b27]`, `border-[#21293d]`, etc.) + `text-slate-*`/`border-slate-*`/`bg-slate-*` → semantic token classes across **165 pages** (9,288 replacements)
 - [x] Delete dark/light `!important` override blocks (~380 lines removed). Remaining 299 `!important` = glass utilities + mobile CSS + select options (intentional, non-theme)
@@ -358,6 +433,7 @@ User directive: **no commit/push** until told.
 - [x] Verify: `npx tsc --noEmit` OK · ESLint 0 errors · committed `bd6d899`
 
 ### Sprint 2 (Week 2)
+
 - [x] #9 Keyboard shortcuts: g-prefix + `?` help + skip-to-content — `src/hooks/useKeyboardShortcuts.ts`, `ShortcutHelpOverlay.tsx`, committed `eaa898e`
 - [x] #10 Image compression on ALL uploads — `compressImage` already integrated in 8 call sites (imageCompression.ts + media.ts); no new work needed
 - [x] #7 Mobile bottom tab bar — committed `960c797`
@@ -367,5 +443,6 @@ User directive: **no commit/push** until told.
 ---
 
 ## Open Questions / Notes
+
 - Comments Hinglish me; no emojis in UI.
 - Sanitized: migration must be re-run if any part fails midway (idempotent file).
