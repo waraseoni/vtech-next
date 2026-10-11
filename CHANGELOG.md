@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.54.2](https://github.com/waraseoni/vtech-next/compare/v1.54.1...v1.54.2) (2026-10-11)
+
+### Bug Fixes
+
+* **sidebar:** regroup Operations before Customer, drop duplicate nav links ([d622fc3](https://github.com/waraseoni/vtech-next/commit/d622fc3e9e02c00f4d01da2138f495cdf6ced3cc))
+
 ## [1.54.1](https://github.com/waraseoni/vtech-next/compare/v1.54.0...v1.54.1) (2026-10-11)
 
 ### Bug Fixes
