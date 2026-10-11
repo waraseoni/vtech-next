@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.55.0](https://github.com/waraseoni/vtech-next/compare/v1.54.2...v1.55.0) (2026-10-11)
+
+### Features
+
+* **public:** theme-aware public site — dark lock hataya + light-mode shim gaps ([5a9957d](https://github.com/waraseoni/vtech-next/commit/5a9957d0dd9b59daec586b48d88e5a708b9af286))
+
 ## [1.54.2](https://github.com/waraseoni/vtech-next/compare/v1.54.1...v1.54.2) (2026-10-11)
 
 ### Bug Fixes
