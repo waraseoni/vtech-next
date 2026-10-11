@@ -321,12 +321,7 @@ function SidebarNav({
           onExpand={onExpand}
           title="Jobs in Shop"
           icon={<Wrench size={15} />}
-          matchPaths={[
-            "/reports/pending-jobs",
-            "/reports/daily-done",
-            "/reports/parts-pending",
-            "/reports/supplier-dues",
-          ]}
+          matchPaths={["/reports/pending-jobs", "/reports/daily-done", "/reports/parts-pending"]}
         >
           <li>
             <Link
@@ -346,16 +341,6 @@ function SidebarNav({
             >
               <Boxes size={12} className="text-amber-400" />
               Waiting for Parts
-            </Link>
-          </li>
-          <li>
-            <Link
-              href="/reports/supplier-dues"
-              className={subLinkCls(pathname === "/reports/supplier-dues")}
-              onClick={onNavClick}
-            >
-              <Landmark size={12} className="text-emerald-400" />
-              Supplier Dues
             </Link>
           </li>
           <li>
@@ -426,6 +411,7 @@ function SidebarNav({
               matchPaths={[
                 "/products",
                 "/suppliers",
+                "/reports/supplier-dues",
                 "/reports/requirement-list",
                 "/reports/oversold",
               ]}
@@ -480,6 +466,18 @@ function SidebarNav({
                   >
                     <FileText size={12} className="text-teal-400" />
                     Purchase Orders
+                  </Link>
+                </li>
+              )}
+              {isAdmin && (
+                <li>
+                  <Link
+                    href="/reports/supplier-dues"
+                    className={subLinkCls(pathname === "/reports/supplier-dues")}
+                    onClick={onNavClick}
+                  >
+                    <Landmark size={12} className="text-emerald-400" />
+                    Supplier Dues
                   </Link>
                 </li>
               )}
