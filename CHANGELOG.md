@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.54.1](https://github.com/waraseoni/vtech-next/compare/v1.54.0...v1.54.1) (2026-10-11)
+
+### Bug Fixes
+
+* **crop:** source mime se output type — transparent PNG me alpha preserve ([7f0aaa5](https://github.com/waraseoni/vtech-next/commit/7f0aaa59893c5260331105cf00c6dc5f30350cd8))
+
 ## [1.54.0](https://github.com/waraseoni/vtech-next/compare/v1.53.0...v1.54.0) (2026-10-10)
 
 ### Features
