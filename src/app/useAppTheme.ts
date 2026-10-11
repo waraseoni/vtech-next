@@ -4,14 +4,17 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 
 /**
- * useAppTheme — 3-way theme (system / dark / light) + public-page dark lock.
- * G1 gate-split (2026-09-15): theme logic useAppBoot se bahar nikal ke apne
- * hook me. localStorage "vtech_theme" = "system" | "dark" | "light";
+ * useAppTheme — 3-way theme (system / dark / light). Public site bhi
+ * theme-aware hai — visitor ka saved pref (default dark) public routes par
+ * apply hota hai. G1 gate-split (2026-09-15): theme logic useAppBoot se bahar
+ * nikal ke apne hook me. localStorage "vtech_theme" = "system" | "dark" | "light";
  * `resolveTheme(pref)` system ko OS (prefers-color-scheme) se resolve karta
  * hai; data-theme hamesha "dark"/"light" hi hota hai. CSS (dark: variant,
  * light overrides) isi binary attribute par depend karta hai.
  */
-const PUBLIC_THEME_DARK = [
+// Public routes — dark brand body-bg (#070714) sirf in par dark theme me
+// rakhi jaati hai; baaki paani-ka-color (#0d1117/#f8f9fc) sab jagah.
+const PUBLIC_ROUTES = [
   "/",
   "/login",
   "/setup",
@@ -34,14 +37,12 @@ export function useAppTheme() {
     try {
       const system = systemDark.current;
       const effective: "dark" | "light" = pref === "system" ? (system ? "dark" : "light") : pref;
-      // public page hamesha dark-only hota hai (hardcoded design)
-      const t = isPublicRef.current ? "dark" : effective;
+      // public site bhi visitor pref follow karti hai (theme-aware);
+      // dark brand bg (#070714) sirf public routes + dark theme par.
+      const t = effective;
       document.documentElement.setAttribute("data-theme", t);
-      document.body.style.backgroundColor = isPublicRef.current
-        ? "#070714"
-        : t === "dark"
-          ? "#0d1117"
-          : "#f8f9fc";
+      document.body.style.backgroundColor =
+        isPublicRef.current && t === "dark" ? "#070714" : t === "dark" ? "#0d1117" : "#f8f9fc";
       document.body.style.color = t === "dark" ? "#e2e8f0" : "#0f172a";
       setTheme(t);
       return t;
@@ -112,9 +113,7 @@ export function useAppTheme() {
 
   // Pathname change: public-page flag update + re-apply
   useEffect(() => {
-    const pub = PUBLIC_THEME_DARK.some(
-      (p) => pathname === p || pathname.startsWith(p + "/")
-    );
+    const pub = PUBLIC_ROUTES.some((p) => pathname === p || pathname.startsWith(p + "/"));
     isPublicRef.current = pub;
     try {
       const saved =
@@ -129,8 +128,7 @@ export function useAppTheme() {
   useEffect(() => {
     const h = (e: StorageEvent) => {
       if (e.key !== "vtech_theme") return;
-      const saved =
-        (e.newValue as "system" | "dark" | "light" | null) || "dark";
+      const saved = (e.newValue as "system" | "dark" | "light" | null) || "dark";
       setThemePrefState(saved);
       applyTheme(saved);
     };

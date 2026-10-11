@@ -486,7 +486,7 @@ export default function LoginPage() {
         </p>
         <p className="text-center text-app text-[10px] mt-1 font-medium">
           <span
-            className="px-1.5 py-0.5 rounded border border-slate-800 bg-slate-900/40"
+            className="px-1.5 py-0.5 rounded border border-white/10 bg-white/[0.06]"
             title={APP_VERSION_FULL}
           >
             ver {APP_VERSION_LABEL}

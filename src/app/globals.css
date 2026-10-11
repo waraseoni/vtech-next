@@ -1075,7 +1075,19 @@ html[data-theme="light"] {
     background-color: rgba(15, 23, 42, 0.2) !important;
   }
   .bg-white\/\[0\.25\] {
-    background-color: rgba(15, 23, 42, 0.25) !important;
+    background-color: rgba(15, 23, 42, 0.15) !important;
+  }
+  /* white-tint gradient surfaces (public site cards) -> dark tints */
+  .from-white\/\[0\.05\] {
+    background-image: linear-gradient(
+      to bottom,
+      rgba(15, 23, 42, 0.05),
+      rgba(15, 23, 42, 0.02)
+    ) !important;
+  }
+  /* dark inset boxes (job-status example, code chips) -> light tints */
+  .bg-black\/30 {
+    background-color: rgba(15, 23, 42, 0.05) !important;
   }
 
   /* ---- hover white-tint -> dark tint ---- */
@@ -1116,6 +1128,9 @@ html[data-theme="light"] {
   }
   .border-white\/\[0\.2\] {
     border-color: #cbd5e1 !important;
+  }
+  .border-white\/12 {
+    border-color: #e2e8f0 !important;
   }
 
   /* ---- keep white text on solid color / gradient / dark surfaces ---- */
@@ -1729,7 +1744,9 @@ html[data-theme="light"] {
       [class~="from-stone-900"],
       [class~="to-stone-900"]
     )
-    * {
+    /* bg-white surfaces (CTA phone buttons) white-text se protect — warna
+       white box par white text = invisible (light mode public site bug) */
+    *:not([class~="bg-white"]) {
     color: #ffffff !important;
   }
 
@@ -2694,6 +2711,9 @@ html[data-theme="light"] .bg-\[\#0a0a18\] {
 }
 html[data-theme="light"] .bg-\[\#0b0b1a\] {
   background-color: #f1f5f9 !important;
+}
+html[data-theme="light"] .bg-\[\#0b0b1a\]\/95 {
+  background-color: rgba(241, 245, 249, 0.95) !important;
 }
 html[data-theme="light"] .bg-\[\#0c101a\] {
   background-color: #eef2f7 !important;
