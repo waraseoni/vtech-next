@@ -51,6 +51,20 @@ export async function cropImage(
   });
 }
 
+// Source URL ka output mime decide karta hai. Transparent PNG ko JPEG me crop
+// karne par alpha ud jata hai (black bg) — settings logo seedha save hota hai
+// (compressImage nahi) isliye wahan dikkat dikhti hai. SVG cropper me aata hi
+// nahi (caller skip karta hai). Unknown/failure = jpeg (purana behavior).
+export async function sourceMime(src: string): Promise<string> {
+  try {
+    const res = await fetch(src);
+    const type = res.headers.get("content-type") ?? "";
+    return type === "image/png" ? "image/png" : "image/jpeg";
+  } catch {
+    return "image/jpeg";
+  }
+}
+
 export async function urlToBlob(src: string): Promise<Blob> {
   const res = await fetch(src);
   return await res.blob();

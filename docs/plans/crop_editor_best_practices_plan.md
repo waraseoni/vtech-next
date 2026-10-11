@@ -50,10 +50,12 @@
 - `react-easy-crop` uninstall kiya (dependency 1 kam).
 
 **Deferred (Phase 2 — alag story):** EXIF explicit normalize (browsers
-auto-apply `image-orientation: from-image`, parity with old flow), PNG alpha
-output (aaj bhi JPEG export — pre-existing behavior, logo bhi isi se jaata
-tha), >2048px decode cap. **§9-Q4 device acceptance = user ka phone test
-Phase 3 matrix par (abhi pending).**
+auto-apply `image-orientation: from-image`, parity with old flow), >2048px
+decode cap. **PNG alpha output DONE (2026-10-11)** — `sourceMime()` crop/rotate
+output ka mime source se decide karta hai (transparent PNG → black-bg JPEG bug,
+settings logo me dikhne wala — ab nahi; unit tests `imageCropper.test.ts`).
+**§9-Q4 device acceptance = user ka phone test Phase 3 matrix par (abhi
+pending).**
 
 ---
 

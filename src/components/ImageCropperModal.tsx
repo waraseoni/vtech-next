@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type CSSProperties, type SyntheticEvent } 
 import ReactCrop, { centerCrop, makeAspectCrop, type PercentCrop } from "react-image-crop";
 import "react-image-crop/dist/ReactCrop.css";
 import { X, RotateCcw, RotateCw, RefreshCcw, Scissors, Check } from "lucide-react";
-import { cropImage } from "@/lib/imageCropper";
+import { cropImage, sourceMime } from "@/lib/imageCropper";
 
 type ImageCropperModalProps = {
   open: boolean;
@@ -30,8 +30,9 @@ const RATIOS: { label: string; value: number | null }[] = [
 
 // Display ke liye 90°-step rotation. react-easy-crop rotation virtuously
 // dikhata tha; ReactCrop ko rotate karne ke liye src hi naya banao (canvas),
-// phir wahi src cropImage ko jayega (rotation param nahi bachega).
-async function rotateSrc(src: string, deg: 90 | -90): Promise<string> {
+// phir wahi src cropImage ko jayega (rotation param nahi bachega). Mime
+// source se pass hota hai — beech me JPEG karne se PNG ka alpha ud jata.
+async function rotateSrc(src: string, deg: 90 | -90, mime: string): Promise<string> {
   const img = new Image();
   img.src = src;
   await img.decode();
@@ -43,9 +44,7 @@ async function rotateSrc(src: string, deg: 90 | -90): Promise<string> {
   ctx.translate(canvas.width / 2, canvas.height / 2);
   ctx.rotate((deg * Math.PI) / 180);
   ctx.drawImage(img, -img.naturalWidth / 2, -img.naturalHeight / 2);
-  const blob = await new Promise<Blob | null>((resolve) =>
-    canvas.toBlob(resolve, "image/jpeg", 0.98)
-  );
+  const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, mime, 0.98));
   if (!blob) throw new Error("Rotate fail");
   return URL.createObjectURL(blob);
 }
@@ -141,7 +140,8 @@ function CropSession({ src, title, aspect, maxDim = 1200, onCancel, onConfirm }:
     setRotating(true);
     setErr("");
     try {
-      const next = await rotateSrc(displaySrc, deg);
+      const mime = await sourceMime(displaySrc);
+      const next = await rotateSrc(displaySrc, deg, mime);
       if (genUrlRef.current) URL.revokeObjectURL(genUrlRef.current);
       genUrlRef.current = next;
       // Naya src load hote hi default crop onImageLoad me set hoga.
@@ -180,7 +180,13 @@ function CropSession({ src, title, aspect, maxDim = 1200, onCancel, onConfirm }:
       const sy = Math.min(Math.round((crop.y / 100) * h), h - 1);
       const sw = Math.max(1, Math.min(Math.round((crop.width / 100) * w), w - sx));
       const sh = Math.max(1, Math.min(Math.round((crop.height / 100) * h), h - sy));
-      const blob = await cropImage(displaySrc, { x: sx, y: sy, width: sw, height: sh }, maxDim);
+      const mime = await sourceMime(displaySrc);
+      const blob = await cropImage(
+        displaySrc,
+        { x: sx, y: sy, width: sw, height: sh },
+        maxDim,
+        mime
+      );
       onConfirm(blob);
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Crop fail");
