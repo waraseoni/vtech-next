@@ -8,6 +8,7 @@ import ZoomableImage from "@/components/ZoomableImage";
 import {
   Loader2,
   Calculator,
+  Clock,
   History,
   Calendar,
   ChevronLeft,
@@ -747,6 +748,15 @@ export default function SalaryPageInner({
               </span>
             </button>
           </div>
+
+          <Link
+            href={`/mechanics/salary/hours?month=${month}`}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 bg-app hover:bg-panel-2 border border-app rounded-xl text-muted hover:text-white transition-all text-xs font-bold uppercase tracking-wider flex-shrink-0"
+            title="Working-hours view (read-only comparison)"
+          >
+            <Clock size={13} />
+            <span className="hidden sm:inline">Hours</span>
+          </Link>
 
           <button
             onClick={() => loadData()}
