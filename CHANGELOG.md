@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.56.0](https://github.com/waraseoni/vtech-next/compare/v1.55.0...v1.56.0) (2026-10-13)
+
+### Features
+
+* **salary:** hours-mode read-only view — per-minute rate + day-wise earned (no-DB) ([93301ef](https://github.com/waraseoni/vtech-next/commit/93301ef712a6f0d55c5b3794c78bd135dc2c3364))
+
 ## [1.55.0](https://github.com/waraseoni/vtech-next/compare/v1.54.2...v1.55.0) (2026-10-11)
 
 ### Features
