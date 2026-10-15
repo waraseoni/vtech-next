@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.57.5](https://github.com/waraseoni/vtech-next/compare/v1.57.4...v1.57.5) (2026-10-15)
+
+### Performance Improvements
+
+* **dashboard:** RSC first-paint — server data layer + client body split (Phase 4 P1) ([be0b722](https://github.com/waraseoni/vtech-next/commit/be0b722f1b34e4133c4410316a532e0b778d5171))
+
 ## [1.57.4](https://github.com/waraseoni/vtech-next/compare/v1.57.3...v1.57.4) (2026-10-15)
 
 ### Performance Improvements
