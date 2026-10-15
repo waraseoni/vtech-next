@@ -35,6 +35,7 @@ import {
   PencilLine,
   IndianRupee,
   RefreshCw,
+  Search,
   MessageSquare,
   Mail,
   CheckSquare,
@@ -365,6 +366,8 @@ export default function ViewClientProfile() {
   );
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+  const [hideDelivered, setHideDelivered] = useState(false);
+  const [jobSearch, setJobSearch] = useState("");
   const [editingPayment, setEditingPayment] = useState<Payment | null>(null);
   const [editForm, setEditForm] = useState({
     amount: "",
@@ -644,6 +647,37 @@ export default function ViewClientProfile() {
   const filteredPayments = payments.filter((p) => !p.loan_id && inRange(p.payment_date));
   const filteredLoanPay = payments.filter((p) => !!p.loan_id && inRange(p.payment_date));
 
+  const jobSearchTerm = jobSearch.trim().toLowerCase();
+  const visibleJobs = filteredJobs.filter((j) => {
+    if (hideDelivered && j.status === 5) return false;
+    if (!jobSearchTerm) return true;
+    return [
+      j.job_id,
+      j.uniq_id,
+      j.code,
+      String(j.id),
+      j.item,
+      j.fault,
+      j.remark,
+      String(j.status),
+      STATUS_MAP[j.status]?.label,
+    ]
+      .filter(Boolean)
+      .some((v) => String(v).toLowerCase().includes(jobSearchTerm));
+  });
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && localStorage.getItem("client_view_hide_delivered") === "1") {
+      setHideDelivered(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("client_view_hide_delivered", hideDelivered ? "1" : "0");
+    }
+  }, [hideDelivered]);
+
   useEffect(() => {
     const ids = jobs.map((j) => j.id);
     if (ids.length === 0) {
@@ -672,10 +706,10 @@ export default function ViewClientProfile() {
   };
 
   const toggleSelectAll = () => {
-    if (selectedIds.size === filteredJobs.length && filteredJobs.length > 0) {
+    if (selectedIds.size === visibleJobs.length && visibleJobs.length > 0) {
       setSelectedIds(new Set());
     } else {
-      setSelectedIds(new Set(filteredJobs.map((j) => j.id)));
+      setSelectedIds(new Set(visibleJobs.map((j) => j.id)));
     }
   };
 
@@ -1018,7 +1052,7 @@ export default function ViewClientProfile() {
       key: "repairs",
       label: "Repair History",
       icon: <Wrench size={14} />,
-      count: filteredJobs.length,
+      count: visibleJobs.length,
     },
     {
       key: "direct",
@@ -1646,6 +1680,39 @@ export default function ViewClientProfile() {
           {/* ── REPAIRS TAB ── */}
           {activeTab === "repairs" && (
             <>
+              <div className="p-3 border-b border-app flex flex-wrap items-center gap-3 theme-panel-2">
+                <div className="relative flex-1 min-w-[220px]">
+                  <Search
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-2"
+                    size={15}
+                  />
+                  <input
+                    type="text"
+                    value={jobSearch}
+                    onChange={(e) => setJobSearch(e.target.value)}
+                    placeholder="Search job ID, status, item, fault, code..."
+                    className="w-full pl-9 pr-9 py-2 rounded-xl text-sm font-medium text-app-2 border border-app bg-panel-2 placeholder-slate-600 focus:outline-none focus:border-blue-500"
+                  />
+                  {jobSearch && (
+                    <button
+                      onClick={() => setJobSearch("")}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-2 hover:text-muted"
+                      title="Clear search"
+                    >
+                      <X size={14} />
+                    </button>
+                  )}
+                </div>
+                <label className="flex items-center gap-2 bg-panel-2 border border-app px-3 py-2 rounded-xl cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={hideDelivered}
+                    onChange={(e) => setHideDelivered(e.target.checked)}
+                    className="w-3.5 h-3.5 accent-blue-500"
+                  />
+                  <span className="text-xs font-bold text-muted">Hide Delivered</span>
+                </label>
+              </div>
               {/* Desktop table */}
               <div className="hidden md:block overflow-x-auto">
                 <table className="w-full text-sm">
@@ -1657,7 +1724,7 @@ export default function ViewClientProfile() {
                           className="text-blue-400 hover:text-blue-300 transition-colors"
                           title="Select all"
                         >
-                          {selectedIds.size === filteredJobs.length && filteredJobs.length > 0 ? (
+                          {selectedIds.size === visibleJobs.length && visibleJobs.length > 0 ? (
                             <CheckSquare size={15} />
                           ) : (
                             <Square size={15} />
@@ -1680,7 +1747,7 @@ export default function ViewClientProfile() {
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredJobs.map((job) => {
+                    {visibleJobs.map((job) => {
                       const st = STATUS_MAP[job.status] ?? {
                         label: "Unknown",
                         cls: "bg-muted/20 text-muted border-muted/20",
@@ -1766,7 +1833,7 @@ export default function ViewClientProfile() {
                         </tr>
                       );
                     })}
-                    {filteredJobs.length === 0 && (
+                    {visibleJobs.length === 0 && (
                       <tr>
                         <td colSpan={8} className="p-10 text-center text-muted-2 text-sm italic">
                           No repairs found
@@ -1778,10 +1845,10 @@ export default function ViewClientProfile() {
               </div>
               {/* Mobile cards */}
               <div className="md:hidden divide-y divide-[#21293d]">
-                {filteredJobs.length === 0 && (
+                {visibleJobs.length === 0 && (
                   <p className="p-8 text-center text-muted-2 text-sm italic">No repairs found</p>
                 )}
-                {filteredJobs.map((job) => {
+                {visibleJobs.map((job) => {
                   const st = STATUS_MAP[job.status] ?? {
                     label: "Unknown",
                     cls: "bg-muted/20 text-muted border-muted/20",
