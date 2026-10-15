@@ -1,6 +1,6 @@
 {
   "name": "v-tech-software",
-  "version": "1.57.5",
+  "version": "1.57.6",
   "private": true,
   "scripts": {
     "dev": "next dev -H 0.0.0.0",

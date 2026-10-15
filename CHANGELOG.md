@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.57.6](https://github.com/waraseoni/vtech-next/compare/v1.57.5...v1.57.6) (2026-10-15)
+
+### Performance Improvements
+
+* **jobs:** RSC first-paint seed — shared query layer + server-jobs + client body split ([c3993d8](https://github.com/waraseoni/vtech-next/commit/c3993d870df2fb61ad861339c847fe531888a067))
+
 ## [1.57.5](https://github.com/waraseoni/vtech-next/compare/v1.57.4...v1.57.5) (2026-10-15)
 
 ### Performance Improvements
