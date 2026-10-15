@@ -4,6 +4,7 @@
 // Server RPC: supabase/migrations/20260903_inventory_single_stock_rpc.sql
 
 import { supabase } from "@/lib/supabase";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 export interface StockRow {
   product_id: number;
@@ -21,10 +22,16 @@ export interface StockRow {
 /**
  * Fetch per-product stock summary for the given product ids (or all if empty).
  * Returns a Map keyed by product_id. Results are the authoritative derived stock.
+ *
+ * `client` optional hai: server pages (RSC) apna cookie+RLS client pass karte
+ * hain; default browser client (writeGuard proxy) — call-sites unchanged.
  */
-export const fetchStockByProducts = async (ids: number[] = []): Promise<Map<number, StockRow>> => {
+export const fetchStockByProducts = async (
+  ids: number[] = [],
+  client: SupabaseClient = supabase
+): Promise<Map<number, StockRow>> => {
   const args = ids.length ? { p_product_ids: ids } : {};
-  const { data, error } = await supabase.rpc("get_inventory_stock", args);
+  const { data, error } = await client.rpc("get_inventory_stock", args);
   if (error) throw error;
   const raw: Record<string, unknown>[] = data || [];
   const rows: StockRow[] = raw.map((r) => {

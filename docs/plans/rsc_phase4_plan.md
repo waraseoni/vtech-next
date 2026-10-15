@@ -1,12 +1,12 @@
 # Phase 4 — RSC Data Waterfall Removal (perf_db_fetch_audit)
 
-> **Status: PLAN (2026-10-15) — approval pending.** Implementation tab, jab user
-> approve kare. Plan-first rule (bade refactor bina plan ke nahi).
+> **Status: IN PROGRESS — P1 IMPLEMENTED (2026-10-16, user verify pending).**
+> P2 (jobs) next.
 >
 > **Goal:** authenticated first-paint me hi data (post-hydration waterfall khatam).
-> **Proven:** G3 pilot `clients` — LCP 10.13s→5.2–5.9s (SSR wins, perf_baseline).
+> **Proven:** G3 pilot `clients` — LCP 10.13s→5.2-5.9s (SSR wins, perf_baseline).
 > **Audit line:** "Dashboard/jobs/clients initial data RSC me ya ek RPC per page
-> se; stream." — clients done, **baaki: dashboard + jobs**.
+> se; stream." — clients + dashboard done, **baaki: jobs**.
 
 ---
 
@@ -45,41 +45,37 @@ export const dynamic = "force-dynamic"
 ---
 
 ## P1 — Dashboard (1968 ln) ⭐ highest impact (login ke baad pehla page)
+### ✅ IMPLEMENTED (2026-10-16) — `perf(dashboard)` commit
 
-### P1a — `src/lib/server-dashboard.ts`
+**Ship kiya:**
+- `src/lib/dashboard-shared.ts` (NEW) — shared types + STATUS_META (zero
+  runtime deps; dono taraf single source)
+- `src/lib/server-dashboard.ts` (NEW) — `fetchDashboardInitialData()`: 5
+  batches `Promise.all` me (profile + stats+status + revenue 12m + widgets
+  [recents+low-stock+places] + waiting summary); RPC fast-paths + purane
+  legacy fallbacks AS-IS; batch-failure par `logger.warn` + sane default
+  (page kabhi blank nahi hota)
+- `page.tsx` → 25-line server component (requireStaffWithRole → redirect
+  /login → fetch → `<DashboardBody initial/>`), `force-dynamic`
+- `DashboardBody.tsx` (NEW, 1537 ln) — client body; mount-fetch effects
+  (main + waiting) HATE; due-reminders + financial (interactive) client par
+  hi rehte hain; auth-guard/QR/install intact
+- `fetchStockByProducts`/`fetchWaitingSummary` — optional `client` param
+  (default browser = call-sites unchanged)
 
-`fetchDashboardInitialData(opts)` — sirf **first-paint batch** (aaj ka
-dashboard `page.tsx:315-560` wala pehla useEffect), Promise.all me:
+**Deviations (documented, behavior-safe):**
+- `product_locations` ka place-lookup ab server par DIRECT query
+  (`is_frontend_staff()` RLS — migration 20260912 verified); /api hop nahi
+- stock-RPC fail → warn + low-stock khaali, recents BACHTE hain (pehle poora
+  widget batch hi mar jata tha)
 
-- profile + role
-- quick stats (status counts + amounts — `head:true` counts + bounded sums)
-- recent jobs (limit ~10) + recent payments (limit ~10)
-- low-stock items + waiting-parts summary
-- status/revenue seed data (pehle month wali default range ke liye)
-
-**Client rehta hai (props/fetch nahi):**
-- date-range financial widget (`page.tsx:693+` useEffect — user change pe chalta
-  hai; server initial default range la sakta hai, OPTIONAL stretch)
-- due-reminders full-scan block (`page.tsx:648+` — heavy, baad me; pehle paint
-  me ye blocker nahi)
-- install-prompt/QR/menu/theme states, charts (`dynamic()` recharts — pehle se
-  deferred ✓), interactive modals
-
-### P1b — Split
-
-1. `page.tsx` → server component: auth + `fetchDashboardInitialData()` + render
-   `<DashboardBody initial={...} />`
-2. Existing JSX/useState/useEffect **as-is** move hoga `components/DashboardBody.tsx`
-   me — mount-effect jo pehla fetch karta tha wo **props present hone par skip**
-   (double-fetch warning — ye hi P1 ka main bug-risk point hai)
-3. Stats/recent lists ka `useState(initial)` seed — render turant, spinner nahi
-
-### P1 verification
-
-- [ ] Numbers: dashboard pe aaj ke values se match (stats, recent, low-stock)
-- [ ] Date-range widget change → naye numbers (client path intact)
+### P1 verification (user — deploy par)
+- [ ] Numbers: stats, revenue chart, recent jobs/payments, low stock (places
+      samet), waiting-parts card — pehle jaise
+- [ ] Due reminders + admin financial widget → hydration ke baad bharte hain
+- [ ] Date-range change → naye financial numbers
 - [ ] Mobile tab bar + install prompt + QR intact
-- [ ] `dynamic` charts wahi jaise the
+- [ ] Logged-out → /login redirect (dev smoke: 307 ✓)
 
 ## P2 — Jobs list (2992 ln)
 

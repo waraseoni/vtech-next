@@ -1,0 +1,1522 @@
+"use client";
+
+import React, { useState, useEffect, useCallback } from "react";
+import { supabase, getCachedUser } from "@/lib/supabase";
+import Link from "next/link";
+import Image from "next/image";
+import dynamic from "next/dynamic";
+
+const DashboardCharts = dynamic(() => import("./DashboardCharts"), {
+  ssr: false,
+  loading: () => (
+    <div className="h-[250px] flex items-center justify-center text-muted text-xs font-bold">
+      Load charts…
+    </div>
+  ),
+});
+
+const AIAlertsWidget = dynamic(() => import("@/app/components/AIAlertsWidget"), {
+  ssr: false,
+  loading: () => (
+    <div className="h-[120px] flex items-center justify-center text-muted text-xs font-bold">
+      Loading alerts…
+    </div>
+  ),
+});
+import {
+  Wrench,
+  Clock,
+  CheckCircle,
+  IndianRupee,
+  TrendingUp,
+  TrendingDown,
+  Users,
+  ArrowRight,
+  AlertCircle,
+  Zap,
+  Loader2,
+  DollarSign,
+  CreditCard,
+  Filter,
+  RotateCcw,
+  Package,
+  Activity,
+  ChevronRight,
+  CalendarClock,
+  MessageCircle,
+  QrCode,
+  X,
+  UserPlus,
+  ShoppingBag,
+  Layers,
+  Hourglass,
+} from "lucide-react";
+import { pageAll } from "@/lib/fetch-all";
+import { buildDueMaps, balanceFromMaps } from "@/lib/client-due";
+import LicenseInfoCard from "@/app/components/LicenseInfoCard";
+import { logger } from "@/lib/logger";
+import {
+  STATUS_META,
+  type DashboardInitialData,
+  type RecentJob,
+  type Stat,
+} from "@/lib/dashboard-shared";
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+// Profile/Stat/Recent*/LowStock/Revenue/Status + STATUS_META shared hain
+// src/lib/dashboard-shared.ts me (server data layer ke saath single source).
+type Financial = {
+  totalSales: number;
+  partsCost: number;
+  grossProfit: number;
+  discounts: number;
+  salary: number;
+  loanPaid: number;
+  expenses: number;
+  totalOutflow: number;
+  netProfit: number;
+};
+
+type DiscountRow = { discount: number };
+type AttendanceRow = { mechanic_id: string | null; status: number };
+type MechRow = { id: string; daily_salary: number };
+type LoanRow = { amount_paid: number };
+type ExpenseRow = { amount: number };
+type PartsProductRow = { qty: number; price: number; products: { cost_price?: number }[] };
+interface BeforeInstallPromptEvent extends Event {
+  prompt(): Promise<void>;
+  userChoice: Promise<{ outcome: "accepted" | "dismissed"; platform: string }>;
+}
+
+import { todayIST, formatIST, startOfMonthIST, endOfMonthIST, parseISTDate } from "@/lib/dateUtils";
+// ─── Timezone-safe helpers ────────────────────────────────────────────────────
+// BUG FIX 4: fmtDate — new Date('YYYY-MM-DD') parses as UTC midnight.
+// In IST, UTC midnight = 5:30 AM → date shifts back 1 day in display.
+// Fix: parse manually as local date.
+const fmtDate = (d: string) =>
+  formatIST(d, {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+
+// isoDate replaced by toISTDatePart from dateUtils
+const n = (v: unknown) => {
+  const x = Number(v);
+  return isNaN(x) ? 0 : x;
+};
+const inr = (v: number, digits = 0) =>
+  "₹" + v.toLocaleString("en-IN", { minimumFractionDigits: digits, maximumFractionDigits: digits });
+
+// ══════════════════════════════════════════════════════════════════════════════
+// Phase 4 P1 (docs/plans/rsc_phase4_plan.md): ye CLIENT body hai. First-paint
+// data (profile/stats/revenue/recents/low-stock/waiting) server page props ke
+// roop me deta hai — mount par koi heavy fetch nahi (waterfall khatam).
+export default function DashboardBody({ initial }: { initial: DashboardInitialData }) {
+  const [theme, setTheme] = useState<"dark" | "light">("dark");
+  useEffect(() => {
+    const check = () =>
+      setTheme((document.documentElement.getAttribute("data-theme") as "dark" | "light") || "dark");
+    check();
+    const obs = new MutationObserver(check);
+    obs.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+    return () => obs.disconnect();
+  }, []);
+  const isDark = theme === "dark";
+
+  const [authChecked, setAuthChecked] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
+  const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [isInstalled, setIsInstalled] = useState(false);
+  const [qrOpen, setQrOpen] = useState(false);
+  const [qrDataUrl, setQrDataUrl] = useState("");
+  const [qrUrl, setQrUrl] = useState("");
+  const [jobMenuOpen, setJobMenuOpen] = useState(false);
+
+  useEffect(() => {
+    if (
+      window.matchMedia("(display-mode: standalone)").matches ||
+      (window.navigator as unknown as { standalone?: boolean }).standalone
+    ) {
+      setIsInstalled(true);
+    }
+    const handler = (e: Event) => {
+      e.preventDefault();
+      setInstallPrompt(e as BeforeInstallPromptEvent);
+    };
+    window.addEventListener("beforeinstallprompt", handler);
+    return () => window.removeEventListener("beforeinstallprompt", handler);
+  }, []);
+
+  // QR code — scan to open the site on mobile.
+  // Domain/IP access → use that origin. localhost → swap in the machine's LAN IP
+  // (via /api/device-info) so a phone on the same WiFi can reach the dev server.
+  useEffect(() => {
+    if (!qrOpen) return;
+    let cancelled = false;
+    (async () => {
+      const { hostname, protocol, port } = window.location;
+      let siteUrl = window.location.origin;
+      if (hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1") {
+        try {
+          const res = await fetch("/api/device-info");
+          const { lanIp } = await res.json();
+          if (lanIp) siteUrl = `${protocol}//${lanIp}${port ? `:${port}` : ""}`;
+        } catch {}
+      }
+      if (cancelled) return;
+      setQrUrl(siteUrl);
+      const QRCode = await import("qrcode");
+      QRCode.toDataURL(siteUrl, {
+        width: 240,
+        margin: 2,
+        color: { dark: "#0d1117", light: "#ffffff" },
+      })
+        .then((url) => {
+          if (!cancelled) setQrDataUrl(url);
+        })
+        .catch(() => {
+          if (!cancelled) setQrDataUrl("");
+        });
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [qrOpen]);
+
+  // Server-provided first-paint data — immutable (in-mount fetch nahi hai,
+  // isliye setState ki zaroorat nahi; initial render me hi ye values aati hain).
+  const profile = initial.profile;
+  const stats = initial.stats;
+  const revenueData = initial.revenueData;
+  const statusData = initial.statusData;
+  const recentJobs = initial.recentJobs;
+  const recentPayments = initial.recentPayments;
+  const lowStockItems = initial.lowStockItems;
+  const waitingSummary = initial.waitingSummary;
+
+  const [financial, setFinancial] = useState<Financial>({
+    totalSales: 0,
+    partsCost: 0,
+    grossProfit: 0,
+    discounts: 0,
+    salary: 0,
+    loanPaid: 0,
+    expenses: 0,
+    totalOutflow: 0,
+    netProfit: 0,
+  });
+  const [dueStats, setDueStats] = useState<{
+    overdue: number;
+    today: number;
+    upcoming: number;
+    amount: number;
+  }>({ overdue: 0, today: 0, upcoming: 0, amount: 0 });
+  const [finLoading, setFinLoading] = useState(false);
+
+  // ── AUTH CHECK ──────────────────────────────────────────────────────────
+  useEffect(() => {
+    getCachedUser()
+      .then(({ data: { user } }) => {
+        setIsLoggedIn(!!user);
+        setAuthChecked(true);
+      })
+      .catch(() => {
+        setIsLoggedIn(false);
+        setAuthChecked(true);
+      });
+  }, []);
+
+  // BUG FIX 1 applied: use toLocalStr instead of .toISOString().split('T')[0]
+  const [from, setFrom] = useState(() => startOfMonthIST());
+  const [to, setTo] = useState(() => endOfMonthIST());
+
+  // ── DUE REMINDERS WIDGET ────────────────────────────────────────────────
+  useEffect(() => {
+    (async () => {
+      try {
+        const [
+          { data: clients },
+          { data: repairs },
+          { data: sales },
+          { data: loans },
+          { data: payments },
+        ] = await Promise.all([
+          supabase
+            .from("client_list")
+            .select("id, opening_balance, payment_due_date")
+            .eq("delete_flag", 0),
+          pageAll(supabase.from("transaction_list").select("client_name, amount").eq("status", 5)),
+          pageAll(supabase.from("direct_sales").select("client_id, total_amount")),
+          pageAll(
+            supabase.from("client_loans").select("id, client_id, total_payable").eq("status", 1)
+          ),
+          pageAll(supabase.from("client_payments").select("client_id, amount, discount, loan_id")),
+        ]);
+        const m = buildDueMaps({ repairs, directSales: sales, payments, loans });
+        const today = parseISTDate(todayIST()).getTime();
+        let overdue = 0,
+          todayC = 0,
+          upcoming = 0,
+          amount = 0;
+        (clients || []).forEach((c) => {
+          const bal = balanceFromMaps(m, c.id, n(c.opening_balance));
+          if (bal <= 0.01) return;
+          amount += bal;
+          if (!c.payment_due_date) return;
+          const diff = Math.round((parseISTDate(c.payment_due_date).getTime() - today) / 86400000);
+          if (diff < 0) overdue++;
+          else if (diff === 0) todayC++;
+          else if (diff <= 7) upcoming++;
+        });
+        setDueStats({ overdue, today: todayC, upcoming, amount });
+      } catch (e) {
+        logger.error("Due stats fetch error:", e);
+      }
+    })();
+  }, []);
+
+  // ── FINANCIAL FETCH ──────────────────────────────────────────────────────
+  const fetchFinancial = useCallback(async () => {
+    if (!profile || profile.role !== "admin") return;
+    setFinLoading(true);
+    try {
+      const f0 = `${from}T00:00:00+05:30`;
+      const t0 = `${to}T23:59:59+05:30`;
+
+      // Try RPC first (fast path) — agar RPC exist nahi karta to fallback
+      const { data: rpcData, error: rpcErr } = await supabase.rpc("get_financial_summary", {
+        p_from: from,
+        p_to: to,
+      });
+
+      if (!rpcErr && rpcData && typeof rpcData === "object" && "totalSales" in rpcData) {
+        const fd = rpcData as Record<string, number>;
+        setFinancial({
+          totalSales: fd.totalSales || 0,
+          partsCost: fd.partsCost || 0,
+          grossProfit: fd.grossProfit || 0,
+          discounts: fd.discounts || 0,
+          salary: fd.salary || 0,
+          loanPaid: fd.loanPaid || 0,
+          expenses: fd.expenses || 0,
+          totalOutflow: fd.totalOutflow || 0,
+          netProfit: fd.netProfit || 0,
+        });
+        return;
+      }
+
+      // ── Fallback: client-side aggregation (jab RPC migrate nahi hua) ──
+      const [
+        { data: tD },
+        { data: dD },
+        { data: txIds },
+        { data: dIds },
+        { data: discD },
+        { data: attD },
+        { data: loanD },
+        { data: expD },
+      ] = await Promise.all([
+        pageAll(
+          supabase
+            .from("transaction_list")
+            .select("amount")
+            .eq("status", 5)
+            .eq("del_status", 0)
+            .gte("date_completed", f0)
+            .lte("date_completed", t0)
+        ),
+        pageAll(
+          supabase
+            .from("direct_sales")
+            .select("total_amount")
+            .gte("date_created", f0)
+            .lte("date_created", t0)
+        ),
+        pageAll(
+          supabase
+            .from("transaction_list")
+            .select("id")
+            .eq("status", 5)
+            .eq("del_status", 0)
+            .gte("date_completed", f0)
+            .lte("date_completed", t0)
+        ),
+        pageAll(
+          supabase.from("direct_sales").select("id").gte("date_created", f0).lte("date_created", t0)
+        ),
+        pageAll(
+          supabase
+            .from("client_payments")
+            .select("discount")
+            .gte("payment_date", from)
+            .lte("payment_date", to)
+        ),
+        pageAll(
+          supabase
+            .from("attendance_list")
+            .select("status, mechanic_id")
+            .gte("curr_date", from)
+            .lte("curr_date", to)
+            .in("status", [1, 3])
+        ),
+        pageAll(
+          supabase
+            .from("loan_payments")
+            .select("amount_paid")
+            .gte("payment_date", from)
+            .lte("payment_date", to)
+        ),
+        pageAll(
+          supabase
+            .from("expense_list")
+            .select("amount")
+            .gte("date_created", f0)
+            .lte("date_created", t0)
+        ),
+      ]);
+
+      const repairInc = (tD ?? []).reduce((s: number, t) => s + n(t.amount), 0);
+      const directInc = (dD ?? []).reduce((s: number, d) => s + n(d.total_amount), 0);
+      const totalSales = repairInc + directInc;
+
+      // PERF (lightning B1): teeno chains independent the — pehle serial
+      // (partsTrans → partsDirect → mechs = 3 RTT), ab ek saath fire.
+      const txList = (txIds ?? []).map((t: { id: number }) => t.id);
+      const dList = (dIds ?? []).map((d: { id: number }) => d.id);
+      const mIds = attD?.length
+        ? [...new Set(attD.map((a: AttendanceRow) => a.mechanic_id).filter(Boolean))]
+        : [];
+      const [{ data: tp }, { data: di }, { data: mechs }] = await Promise.all([
+        txList.length
+          ? supabase
+              .from("transaction_products")
+              .select("qty, price, product_id, products(cost_price)")
+              .in("transaction_id", txList)
+          : Promise.resolve({ data: null }),
+        dList.length
+          ? supabase
+              .from("direct_sale_items")
+              .select("qty, price, product_id, products(cost_price)")
+              .in("sale_id", dList)
+          : Promise.resolve({ data: null }),
+        mIds.length
+          ? supabase.from("mechanic_list").select("id, daily_salary").in("id", mIds)
+          : Promise.resolve({ data: null }),
+      ]);
+      const partsTrans = (tp ?? []).reduce((s: number, r: PartsProductRow) => {
+        const cp = r.products?.[0]?.cost_price;
+        return s + n(r.qty) * (cp != null && cp > 0 ? cp : n(r.price) * 0.9);
+      }, 0);
+      const partsDirect = (di ?? []).reduce((s: number, r: PartsProductRow) => {
+        const cp = r.products?.[0]?.cost_price;
+        return s + n(r.qty) * (cp != null && cp > 0 ? cp : n(r.price) * 0.9);
+      }, 0);
+
+      const partsCost = partsTrans + partsDirect;
+      const grossProfit = totalSales - partsCost;
+      const discounts = (discD ?? []).reduce((s: number, p: DiscountRow) => s + n(p.discount), 0);
+
+      let salary = 0;
+      if (attD?.length) {
+        const sMap = Object.fromEntries(
+          (mechs ?? []).map((m: MechRow) => [m.id, n(m.daily_salary)])
+        );
+        salary = attD.reduce((s: number, a: AttendanceRow) => {
+          if (!a.mechanic_id) return s;
+          const d = sMap[a.mechanic_id] ?? 0;
+          return s + (a.status === 1 ? d : a.status === 3 ? d / 2 : 0);
+        }, 0);
+      }
+
+      const loanPaid = (loanD ?? []).reduce((s: number, l: LoanRow) => s + n(l.amount_paid), 0);
+      const expenses = (expD ?? []).reduce((s: number, e: ExpenseRow) => s + n(e.amount), 0);
+      const totalOutflow = discounts + salary + loanPaid + expenses;
+      const netProfit = grossProfit - totalOutflow;
+
+      setFinancial({
+        totalSales,
+        partsCost,
+        grossProfit,
+        discounts,
+        salary,
+        loanPaid,
+        expenses,
+        totalOutflow,
+        netProfit,
+      });
+    } catch (e) {
+      logger.error("Financial fetch error:", JSON.stringify(e));
+    } finally {
+      setFinLoading(false);
+    }
+  }, [from, to, profile]);
+
+  useEffect(() => {
+    fetchFinancial();
+  }, [fetchFinancial]);
+
+  // BUG FIX 1 applied in resetDates too
+  const resetDates = () => {
+    setFrom(startOfMonthIST());
+    setTo(endOfMonthIST());
+  };
+
+  // Logged out — RootClient already redirects to /login. Guard here too
+  // in case the dashboard is ever opened directly while signed out.
+  if (authChecked && !isLoggedIn) {
+    return (
+      <div className="min-h-screen theme-body flex items-center justify-center">
+        <Loader2 size={24} className="animate-spin text-muted-2" />
+      </div>
+    );
+  }
+
+  const displayName = profile?.full_name ?? "User";
+  const isAdmin = profile?.role === "admin";
+  const totalJobs = statusData.reduce((s, d) => s + d.value, 0);
+  const profitPct =
+    financial.totalSales > 0
+      ? ((financial.netProfit / financial.totalSales) * 100).toFixed(1)
+      : "0";
+
+  // ═══════════════════════════════════════════════════════════════════════
+  return (
+    <div className="min-h-screen theme-body space-y-4 font-sans">
+      {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━ HERO HEADER */}
+      <header className="relative overflow-hidden rounded-3xl border theme-border glass">
+        {/* Dot grid */}
+        <div
+          className="absolute inset-0 opacity-[0.025]"
+          style={{
+            backgroundImage: "radial-gradient(circle,#fff 1px,transparent 1px)",
+            backgroundSize: "24px 24px",
+          }}
+        />
+        {/* Glows */}
+        <div className="absolute -top-20 -right-20 w-80 h-80 bg-blue-600/8 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-10 left-1/4 w-56 h-56 bg-indigo-600/6 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="relative px-5 py-5 md:py-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div className="relative flex-shrink-0">
+              <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-700 rounded-2xl flex items-center justify-center shadow-xl shadow-blue-600/30">
+                <Wrench className="text-app dark:text-white" size={24} />
+              </div>
+              <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-emerald-400 rounded-full border-2 border-white dark:border-app animate-pulse" />
+            </div>
+            <div>
+              <h1 className="text-2xl md:text-3xl font-black tracking-tighter text-app dark:text-white leading-none">
+                V-TECH <span className="text-blue-400">COMMAND</span>
+              </h1>
+              <p className="text-muted-2 text-[10px] font-black mt-1.5 tracking-[0.2em] uppercase">
+                Swaagat hai, {displayName} ji!
+              </p>
+            </div>
+          </div>
+          <div className="self-start sm:self-center flex flex-wrap items-center gap-1.5 sm:gap-2">
+            <button
+              onClick={() => setQrOpen(true)}
+              title="Phone pe site kholo"
+              className="flex items-center gap-2 theme-panel-2 border theme-border hover:border-blue-500/50 text-app-2 hover:text-app dark:hover:text-white px-3 sm:px-4 py-2 sm:py-2.5 rounded-2xl font-bold text-xs transition-all active:scale-95"
+            >
+              <QrCode size={15} strokeWidth={2.5} /> <span className="hidden sm:inline">QR</span>
+            </button>
+            {installPrompt && !isInstalled && (
+              <button
+                onClick={async () => {
+                  installPrompt.prompt();
+                  const { outcome } = await installPrompt.userChoice;
+                  if (outcome === "accepted") setIsInstalled(true);
+                  setInstallPrompt(null);
+                }}
+                className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-app dark:text-white px-3 sm:px-4 py-2 sm:py-2.5 rounded-2xl font-bold text-xs shadow-lg shadow-emerald-600/25 transition-all"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  className="w-4 h-4"
+                >
+                  <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" />
+                </svg>
+                <span className="hidden sm:inline">Install</span>
+              </button>
+            )}
+            <button
+              onClick={() => setJobMenuOpen(true)}
+              className="flex items-center gap-1.5 sm:gap-2 bg-blue-600 hover:bg-blue-500 active:scale-95 text-white px-3 sm:px-4 py-2 sm:py-2.5 rounded-2xl font-bold text-xs shadow-lg shadow-blue-600/25 transition-all"
+            >
+              <Zap size={14} strokeWidth={2.5} /> Job
+            </button>
+            <Link
+              href="/clients/new"
+              title="Naya client banao"
+              className="flex items-center gap-1.5 sm:gap-2 bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white px-3 sm:px-4 py-2 sm:py-2.5 rounded-2xl font-bold text-xs shadow-lg shadow-emerald-600/25 transition-all no-underline"
+            >
+              <UserPlus size={14} strokeWidth={2.5} /> Client
+            </Link>
+            <Link
+              href="/direct-sales/new"
+              title="Naya direct sale banao"
+              className="flex items-center gap-1.5 sm:gap-2 bg-violet-600 hover:bg-violet-500 active:scale-95 text-white px-3 sm:px-4 py-2 sm:py-2.5 rounded-2xl font-bold text-xs shadow-lg shadow-violet-600/25 transition-all no-underline"
+            >
+              <ShoppingBag size={14} strokeWidth={2.5} /> Sale
+            </Link>
+          </div>
+        </div>
+      </header>
+
+      {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━ LICENSE */}
+      <LicenseInfoCard />
+
+      {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━ AI ALERTS */}
+      <AIAlertsWidget />
+
+      {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━ FILTER */}
+      <section className="glass rounded-2xl border theme-border p-4">
+        <div className="flex flex-wrap items-end gap-2.5">
+          {[
+            { label: "From", val: from, fn: setFrom },
+            { label: "To", val: to, fn: setTo },
+          ].map(({ label, val, fn }) => (
+            <div key={label} className="flex flex-col gap-1.5">
+              <label className="text-[9px] font-black text-muted-2 uppercase tracking-[0.2em]">
+                {label}
+              </label>
+              <input
+                type="date"
+                value={val}
+                onChange={(e) => fn(e.target.value)}
+                className="bg-panel-2 dark:bg-panel-2 border border-app-2 dark:border-app text-app dark:text-white rounded-xl px-3 py-2 text-sm outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 transition-all"
+                style={{ colorScheme: isDark ? "dark" : "light" }}
+              />
+            </div>
+          ))}
+          <button
+            onClick={fetchFinancial}
+            disabled={finLoading}
+            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-app dark:text-white px-4 py-2 rounded-xl font-bold text-sm transition h-[38px] shadow-lg shadow-blue-600/20"
+          >
+            {finLoading ? <Loader2 size={14} className="animate-spin" /> : <Filter size={14} />}{" "}
+            Apply
+          </button>
+          <button
+            onClick={resetDates}
+            className="flex items-center gap-2 bg-panel-2 dark:bg-panel-2 border border-app-2 dark:border-app hover:border-muted text-muted hover:text-app dark:hover:text-white px-4 py-2 rounded-xl font-bold text-sm transition h-[38px]"
+          >
+            <RotateCcw size={14} /> Reset
+          </button>
+        </div>
+      </section>
+
+      {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━ STAT CARDS */}
+      <section className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <StatCard
+          label="Total Jobs"
+          value={stats.totalJobs}
+          icon={<Wrench size={18} />}
+          color="slate"
+          href="/jobs"
+        />
+        <StatCard
+          label="Total Clients"
+          value={stats.totalClients}
+          icon={<Users size={18} />}
+          color="blue"
+          href="/clients"
+        />
+        <StatCard
+          label="Pending"
+          value={stats.pendingJobs}
+          icon={<Clock size={18} />}
+          color="amber"
+          href="/jobs?status=0"
+        />
+        <StatCard
+          label="In Progress"
+          value={stats.inProgressJobs}
+          icon={<Activity size={18} />}
+          color="cyan"
+          href="/jobs?status=1"
+        />
+        <StatCard
+          label="Finished"
+          value={stats.finishedJobs}
+          icon={<CheckCircle size={18} />}
+          color="emerald"
+          href="/jobs?status=2"
+        />
+        <StatCard
+          label="Delivered"
+          value={stats.deliveredJobs}
+          icon={<ArrowRight size={18} />}
+          color="violet"
+          href="/jobs?status=5"
+        />
+        <StatCard
+          label="Waiting Parts"
+          value={waitingSummary.waitingJobs}
+          icon={<Hourglass size={18} />}
+          color="amber"
+          href="/reports/parts-pending"
+        />
+        <StatCard
+          label="Mechanics"
+          value={stats.totalMechanics}
+          icon={<Users size={18} />}
+          color="pink"
+          href="/mechanics"
+        />
+        <StatCard
+          label="Low Stock"
+          value={stats.lowStock}
+          icon={<AlertCircle size={18} />}
+          color="red"
+          href="/inventory"
+        />
+        <StatCard
+          label="Today Revenue"
+          value={inr(stats.todayRevenue, 2)}
+          icon={<IndianRupee size={18} strokeWidth={2.5} />}
+          color="indigo"
+        />
+      </section>
+
+      {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━ TODAY'S BOARD (Sprint 3 #11) */}
+      <TodayBoardStrip stats={stats} recentJobs={recentJobs} />
+
+      {waitingSummary.waitingJobs > 0 && (
+        <Link href="/reports/parts-pending" className="no-underline block mt-3">
+          <div
+            className={`rounded-2xl border px-4 py-3 flex items-center justify-between gap-3 hover:brightness-110 transition-all duration-200 cursor-pointer ${
+              waitingSummary.oldestDays >= 7
+                ? "border-red-500/40 bg-red-500/10"
+                : "border-amber-500/40 bg-amber-500/10"
+            }`}
+          >
+            <div className="flex items-center gap-3 min-w-0">
+              <div
+                className={`p-2 rounded-xl flex-shrink-0 ${
+                  waitingSummary.oldestDays >= 7 ? "text-red-400" : "text-amber-400"
+                }`}
+              >
+                <Hourglass size={18} />
+              </div>
+              <div className="min-w-0">
+                <p className="text-[10px] font-black uppercase tracking-[0.15em] text-muted-2 dark:text-muted">
+                  Waiting for Parts · {waitingSummary.waitingJobs} jobs
+                </p>
+                <p className="text-sm font-bold text-app dark:text-app-2 mt-0.5 truncate">
+                  {waitingSummary.waitingParts} spares ({waitingSummary.waitingCount} waiting ·{" "}
+                  {waitingSummary.orderedCount} ordered) · oldest: {waitingSummary.oldestDays}d
+                  {waitingSummary.oldestJobId ? ` (Job ${waitingSummary.oldestJobId})` : ""}
+                </p>
+              </div>
+            </div>
+            <ChevronRight size={15} className="text-muted flex-shrink-0" />
+          </div>
+        </Link>
+      )}
+
+      {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━ CHARTS */}
+      <DashboardCharts
+        revenueData={revenueData}
+        statusData={statusData}
+        totalJobs={totalJobs}
+        isDark={isDark}
+      />
+
+      {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━ FINANCIAL (admin only) */}
+      {isAdmin && (
+        <section className="glass rounded-3xl border theme-border p-5 md:p-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
+            <div>
+              <h3 className="text-sm font-black text-app dark:text-white">Financial Summary</h3>
+              {/* BUG FIX 4 applied: fmtDate now parses local, not UTC */}
+              <p className="text-muted-2 text-[10px] mt-0.5 font-bold uppercase tracking-wider">
+                {fmtDate(from)} — {fmtDate(to)}
+              </p>
+            </div>
+            {!finLoading && (
+              <span
+                className={`inline-flex items-center gap-1.5 text-xs font-black px-4 py-1.5 rounded-2xl border ${
+                  financial.netProfit >= 0
+                    ? "text-emerald-400 bg-emerald-500/10 border-emerald-500/25"
+                    : "text-red-400 bg-red-500/10 border-red-500/25"
+                }`}
+              >
+                {financial.netProfit >= 0 ? <TrendingUp size={13} /> : <TrendingDown size={13} />}
+                {profitPct}% {financial.netProfit >= 0 ? "Profit Margin" : "Loss"}
+              </span>
+            )}
+          </div>
+
+          {finLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="animate-spin text-blue-400" size={28} />
+            </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                <FinCard
+                  icon={<DollarSign size={18} />}
+                  label="Total Sales"
+                  value={financial.totalSales}
+                  color="blue"
+                />
+                <FinCard
+                  icon={<Wrench size={18} />}
+                  label="Parts Cost"
+                  value={financial.partsCost}
+                  color="amber"
+                  isExpense
+                />
+                <FinCard
+                  icon={<Activity size={18} />}
+                  label="Gross Profit"
+                  value={financial.grossProfit}
+                  color="cyan"
+                />
+                <FinCard
+                  icon={<AlertCircle size={18} />}
+                  label="Discounts"
+                  value={financial.discounts}
+                  color="red"
+                  isExpense
+                />
+                <FinCard
+                  icon={<Users size={18} />}
+                  label="Staff Salary"
+                  value={financial.salary}
+                  color="slate"
+                  isExpense
+                />
+                <FinCard
+                  icon={<CreditCard size={18} />}
+                  label="Loan Repaid"
+                  value={financial.loanPaid}
+                  color="violet"
+                  isExpense
+                />
+                <FinCard
+                  icon={<IndianRupee size={18} />}
+                  label="Other Expenses"
+                  value={financial.expenses}
+                  color="rose"
+                  isExpense
+                />
+                {/* Net profit card */}
+                <div
+                  className={`rounded-2xl border p-4 flex items-center gap-3 ${
+                    financial.netProfit >= 0
+                      ? "bg-emerald-500/8 border-emerald-500/20"
+                      : "bg-red-500/8 border-red-500/20"
+                  }`}
+                >
+                  <div
+                    className={`p-2.5 rounded-xl flex-shrink-0 ${financial.netProfit >= 0 ? "bg-emerald-500/15" : "bg-red-500/15"}`}
+                  >
+                    {financial.netProfit >= 0 ? (
+                      <TrendingUp size={18} className="text-emerald-400" />
+                    ) : (
+                      <TrendingDown size={18} className="text-red-400" />
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-[9px] font-black text-muted-2 uppercase tracking-widest">
+                      Net Profit / Loss
+                    </p>
+                    <p
+                      className={`text-xl font-black ${financial.netProfit >= 0 ? "text-emerald-400" : "text-red-400"}`}
+                    >
+                      {inr(Math.abs(financial.netProfit), 2)}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Progress bar */}
+              <div className="mt-4 glass-2 rounded-2xl p-4 border theme-border">
+                <div className="flex justify-between text-[10px] text-muted-2 font-bold mb-2">
+                  <span>Revenue vs Outflow</span>
+                  <span>Total Sales {inr(financial.totalSales)}</span>
+                </div>
+                <div className="h-2 bg-panel-2 dark:bg-panel-2 rounded-full overflow-hidden">
+                  <div
+                    className={`h-full rounded-full transition-all duration-700 ${
+                      financial.netProfit >= 0
+                        ? "bg-gradient-to-r from-blue-500 to-emerald-500"
+                        : "bg-gradient-to-r from-red-600 to-orange-500"
+                    }`}
+                    style={{
+                      width:
+                        financial.totalSales > 0
+                          ? `${Math.min(100, Math.max(0, (financial.grossProfit / financial.totalSales) * 100))}%`
+                          : "0%",
+                    }}
+                  />
+                </div>
+                <div className="flex justify-between mt-2 text-[10px] font-black">
+                  <span className="text-red-400">Outflow {inr(financial.totalOutflow)}</span>
+                  <span className={financial.netProfit >= 0 ? "text-emerald-400" : "text-red-400"}>
+                    Net {inr(financial.netProfit)}
+                  </span>
+                </div>
+              </div>
+
+              {/* Calculation Note */}
+              <div className="mt-3 bg-panel-2 dark:bg-slate-900/50 border border-app-2 dark:border-slate-800 rounded-xl p-3">
+                <p className="text-[9px] font-black text-muted uppercase tracking-wider mb-2">
+                  Calculation Summary
+                </p>
+                <div className="space-y-1 text-[10px] text-muted font-mono">
+                  <div>
+                    <span className="text-emerald-400">Total Sales</span> = Repair Jobs Income +
+                    Direct Sales Income
+                  </div>
+                  <div>
+                    <span className="text-cyan-400">Gross Profit</span> = Total Sales − Parts Cost
+                    (actual cost_price se, fallback 90%)
+                  </div>
+                  <div>
+                    <span className="text-red-400">Total Outflow</span> = Discounts + Staff Salary +
+                    Loan Repaid + Other Expenses
+                  </div>
+                  <div>
+                    <span className="text-blue-400">Net Profit</span> = Gross Profit − Total Outflow
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+        </section>
+      )}
+
+      {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━ RECENT ACTIVITY */}
+      <section className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Recent Jobs */}
+        <div className="glass rounded-3xl border theme-border overflow-hidden">
+          <div className="flex items-center justify-between px-5 py-3.5 border-b border-app-2 dark:border-app">
+            <div>
+              <h3 className="text-sm font-black text-app dark:text-white">Recent Jobs</h3>
+              <p className="text-muted-2 text-[10px] font-bold uppercase tracking-wider">
+                Latest 5 transactions
+              </p>
+            </div>
+            <Link
+              href="/jobs"
+              className="flex items-center gap-1 text-blue-400 hover:text-blue-300 text-xs font-black transition no-underline uppercase tracking-wider"
+            >
+              View All <ChevronRight size={12} />
+            </Link>
+          </div>
+          <div className="divide-y divide-app-2 dark:divide-[#1a2234]">
+            {recentJobs.length === 0 ? (
+              <EmptyRow icon={<Wrench size={26} />} label="Koi job nahi mili" />
+            ) : (
+              recentJobs.map((job) => {
+                const sc = STATUS_META[job.status] ?? { color: "#94a3b8", label: "Unknown" };
+                return (
+                  <div
+                    key={job.id}
+                    className="flex items-center gap-3 px-5 py-3.5 hover:bg-panel-2 dark:hover:bg-white/[0.02] transition"
+                  >
+                    <span
+                      className="w-2 h-2 rounded-full flex-shrink-0"
+                      style={{ backgroundColor: sc.color }}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-baseline gap-2">
+                        <Link
+                          href={`/jobs/${job.id}/view`}
+                          className="text-blue-400 hover:text-blue-300 font-black text-sm no-underline"
+                        >
+                          {job.job_id ?? "N/A"}
+                        </Link>
+                        <span className="text-muted text-xs truncate">{job.client_name}</span>
+                      </div>
+                      <p className="text-muted-2 text-xs truncate mt-0.5">{job.item}</p>
+                    </div>
+                    <div className="text-right flex-shrink-0 ml-2">
+                      <p className="text-app dark:text-white font-black text-sm">
+                        {inr(job.amount)}
+                      </p>
+                      <span
+                        className="text-[9px] font-black px-2 py-0.5 rounded-full"
+                        style={{ backgroundColor: sc.color + "25", color: sc.color }}
+                      >
+                        {sc.label}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+
+        {/* Recent Payments */}
+        <div className="glass rounded-3xl border theme-border overflow-hidden">
+          <div className="flex items-center justify-between px-5 py-3.5 border-b border-app-2 dark:border-app">
+            <div>
+              <h3 className="text-sm font-black text-app dark:text-white">Recent Payments</h3>
+              <p className="text-muted-2 text-[10px] font-bold uppercase tracking-wider">
+                Latest client payments
+              </p>
+            </div>
+            <Link
+              href="/payments"
+              className="flex items-center gap-1 text-blue-400 hover:text-blue-300 text-xs font-black transition no-underline uppercase tracking-wider"
+            >
+              View All <ChevronRight size={12} />
+            </Link>
+          </div>
+          <div className="divide-y divide-app-2 dark:divide-[#1a2234]">
+            {recentPayments.length === 0 ? (
+              <EmptyRow icon={<CreditCard size={26} />} label="Koi payment nahi mili" />
+            ) : (
+              recentPayments.map((pay) => (
+                <div
+                  key={pay.id}
+                  className="flex items-center gap-3 px-5 py-3.5 hover:bg-panel-2 dark:hover:bg-white/[0.02] transition"
+                >
+                  <div className="w-9 h-9 rounded-xl bg-emerald-500/8 border border-emerald-500/15 flex items-center justify-center flex-shrink-0">
+                    <IndianRupee size={13} className="text-emerald-400" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-app dark:text-white text-sm font-bold truncate">
+                      {pay.client_name}
+                    </p>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <span className="bg-panel-2 dark:bg-panel-2 text-muted text-[9px] font-black px-2 py-0.5 rounded-lg uppercase tracking-wider">
+                        {pay.payment_mode}
+                      </span>
+                      <span className="text-muted-2 text-[10px] font-bold">
+                        {/* BUG FIX 4 applied to payment date too */}
+                        {formatIST(pay.payment_date, { day: "2-digit", month: "short" })}
+                      </span>
+                    </div>
+                  </div>
+                  <p className="text-emerald-400 font-black text-base flex-shrink-0">
+                    {inr(pay.amount)}
+                  </p>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      </section>
+
+      {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━ LOW STOCK */}
+      <section className="glass rounded-3xl border theme-border overflow-hidden">
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-app-2 dark:border-app">
+          <div>
+            <h3 className="text-sm font-black text-app dark:text-white flex items-center gap-2">
+              <AlertCircle size={13} className="text-red-400" /> Low Stock Alert
+            </h3>
+            <p className="text-muted-2 text-[10px] font-bold uppercase tracking-wider">
+              Items below their alert level
+            </p>
+          </div>
+          <Link
+            href="/inventory"
+            className="flex items-center gap-1 text-blue-400 hover:text-blue-300 text-xs font-black transition no-underline uppercase tracking-wider"
+          >
+            Manage <ChevronRight size={12} />
+          </Link>
+        </div>
+        {lowStockItems.length === 0 ? (
+          <div className="py-10 text-center">
+            <Package className="mx-auto mb-2 text-emerald-500/30" size={28} />
+            <p className="text-emerald-500/50 text-sm font-bold">Sab stock theek hai ✓</p>
+          </div>
+        ) : (
+          <div className="p-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3">
+            {lowStockItems.map((item, i) => {
+              const ratio = item.alert > 0 ? item.quantity / item.alert : 1;
+              const u =
+                item.quantity <= 0
+                  ? { bg: "bg-red-500/8", border: "border-red-500/20", text: "text-red-400" }
+                  : ratio <= 0.4
+                    ? {
+                        bg: "bg-orange-500/8",
+                        border: "border-orange-500/20",
+                        text: "text-orange-400",
+                      }
+                    : {
+                        bg: "bg-amber-500/8",
+                        border: "border-amber-500/15",
+                        text: "text-amber-400",
+                      };
+              return (
+                <div
+                  key={i}
+                  className={`${u.bg} border ${u.border} rounded-2xl p-3.5 flex items-center gap-3 hover:brightness-110 transition`}
+                >
+                  <div
+                    className={`w-10 h-10 rounded-xl border ${u.border} flex items-center justify-center flex-shrink-0 font-black text-sm ${u.text}`}
+                  >
+                    {item.quantity}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-app dark:text-white text-sm font-bold truncate">
+                      {item.name}
+                    </p>
+                    <p className="text-muted-2 text-xs truncate">
+                      {item.place} · alert {item.alert}
+                    </p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </section>
+
+      {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━ DUE REMINDERS */}
+      <section className="glass rounded-3xl border theme-border overflow-hidden">
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-app-2 dark:border-app">
+          <div>
+            <h3 className="text-sm font-black text-app dark:text-white flex items-center gap-2">
+              <CalendarClock size={13} className="text-red-400" /> Payment Due Reminders
+            </h3>
+            <p className="text-muted-2 text-[10px] font-bold uppercase tracking-wider">
+              Promised due dates · Overdue &amp; upcoming
+            </p>
+          </div>
+          <Link
+            href="/reports/due-reminders"
+            className="flex items-center gap-1 text-red-400 hover:text-red-300 text-xs font-black transition no-underline uppercase tracking-wider"
+          >
+            Open Report <ChevronRight size={12} />
+          </Link>
+        </div>
+        <div className="p-4 grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="bg-red-500/8 border border-red-500/20 rounded-2xl p-4">
+            <p className="text-[10px] font-black uppercase tracking-wider text-red-400 flex items-center gap-1.5">
+              <AlertCircle size={12} /> Overdue
+            </p>
+            <p className="text-2xl font-black text-app dark:text-white mt-1">{dueStats.overdue}</p>
+          </div>
+          <div className="bg-orange-500/8 border border-orange-500/20 rounded-2xl p-4">
+            <p className="text-[10px] font-black uppercase tracking-wider text-orange-400 flex items-center gap-1.5">
+              <Clock size={12} /> Due Today
+            </p>
+            <p className="text-2xl font-black text-app dark:text-white mt-1">{dueStats.today}</p>
+          </div>
+          <div className="bg-cyan-500/8 border border-cyan-500/20 rounded-2xl p-4">
+            <p className="text-[10px] font-black uppercase tracking-wider text-cyan-400 flex items-center gap-1.5">
+              <CalendarClock size={12} /> Upcoming 7d
+            </p>
+            <p className="text-2xl font-black text-app dark:text-white mt-1">{dueStats.upcoming}</p>
+          </div>
+          <div className="bg-violet-500/8 border border-violet-500/20 rounded-2xl p-4">
+            <p className="text-[10px] font-black uppercase tracking-wider text-violet-400 flex items-center gap-1.5">
+              <IndianRupee size={12} /> Total Due
+            </p>
+            <p className="text-2xl font-black text-app dark:text-white mt-1">
+              {inr(dueStats.amount)}
+            </p>
+          </div>
+        </div>
+        {dueStats.overdue > 0 && (
+          <div className="px-5 pb-4">
+            <Link
+              href="/reports/due-reminders?status=overdue"
+              className="flex items-center justify-between gap-2 bg-red-500/10 border border-red-500/25 rounded-xl px-4 py-3 text-red-300 hover:bg-red-500/20 transition-all no-underline"
+            >
+              <span className="text-xs font-bold flex items-center gap-2">
+                <MessageCircle size={13} /> {dueStats.overdue} client
+                {dueStats.overdue > 1 ? "s" : ""} ko WhatsApp reminder bhejein
+              </span>
+              <ChevronRight size={14} />
+            </Link>
+          </div>
+        )}
+      </section>
+
+      {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━ QR MODAL */}
+      {qrOpen && (
+        <div
+          className="fixed inset-0 bg-black/60 z-[70] flex items-center justify-center p-4"
+          onClick={() => setQrOpen(false)}
+        >
+          <div
+            className="glass border theme-border rounded-2xl w-full max-w-xs shadow-2xl p-5 text-center"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-bold text-app dark:text-white text-sm flex items-center gap-2">
+                <QrCode size={15} className="text-blue-400" /> Site QR
+              </h3>
+              <button
+                onClick={() => setQrOpen(false)}
+                className="p-1.5 rounded-lg text-muted hover:text-app dark:hover:text-white hover:bg-panel-2 dark:hover:bg-white/10 transition"
+              >
+                <X size={16} />
+              </button>
+            </div>
+            {qrDataUrl ? (
+              <Image
+                src={qrDataUrl}
+                alt="Site QR Code"
+                className="mx-auto rounded-xl bg-white p-2"
+                width={220}
+                height={220}
+              />
+            ) : (
+              <div className="h-[220px] flex items-center justify-center">
+                <Loader2 className="animate-spin text-muted-2" />
+              </div>
+            )}
+            <p className="text-muted text-xs font-bold mt-3">
+              Mobile camera se scan karke site kholo
+            </p>
+            <p className="text-muted-2 text-[10px] mt-1 break-all font-bold">{qrUrl || "…"}</p>
+          </div>
+        </div>
+      )}
+
+      {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━ JOB TYPE MODAL */}
+      {jobMenuOpen && (
+        <div
+          className="fixed inset-0 bg-black/60 z-[70] flex items-center justify-center p-4"
+          onClick={() => setJobMenuOpen(false)}
+        >
+          <div
+            className="theme-panel rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="px-5 py-4 border-b theme-border">
+              <h3 className="font-black text-app dark:text-white text-sm flex items-center gap-2">
+                <Zap size={15} className="text-blue-400" /> Job Type Chuno
+              </h3>
+              <p className="text-muted text-[10px] mt-0.5 font-bold uppercase tracking-wider">
+                Kaunsa job banana hai?
+              </p>
+            </div>
+            <div className="p-4 space-y-3">
+              <Link
+                href="/jobs/new"
+                onClick={() => setJobMenuOpen(false)}
+                className="flex items-center gap-4 p-4 rounded-xl border-2 border-blue-200 dark:border-blue-500/30 bg-blue-50 dark:bg-blue-500/5 hover:bg-blue-100 dark:hover:bg-blue-500/15 hover:border-blue-400 dark:hover:border-blue-500/50 transition group no-underline"
+              >
+                <div className="w-12 h-12 rounded-xl bg-blue-600 flex items-center justify-center shadow-lg shadow-blue-600/25 group-hover:scale-105 transition">
+                  <Zap size={22} className="text-white" />
+                </div>
+                <div>
+                  <p className="text-blue-600 dark:text-blue-400 font-black text-base">New Job</p>
+                  <p className="text-muted dark:text-muted text-xs font-bold">
+                    Single repair job — client, item, services
+                  </p>
+                </div>
+                <ChevronRight
+                  size={18}
+                  className="ml-auto text-blue-400 group-hover:translate-x-1 transition-transform"
+                />
+              </Link>
+              <Link
+                href="/jobs/bulk"
+                onClick={() => setJobMenuOpen(false)}
+                className="flex items-center gap-4 p-4 rounded-xl border-2 border-emerald-200 dark:border-emerald-500/30 bg-emerald-50 dark:bg-emerald-500/5 hover:bg-emerald-100 dark:hover:bg-emerald-500/15 hover:border-emerald-400 dark:hover:border-emerald-500/50 transition group no-underline"
+              >
+                <div className="w-12 h-12 rounded-xl bg-emerald-600 flex items-center justify-center shadow-lg shadow-emerald-600/25 group-hover:scale-105 transition">
+                  <Layers size={22} className="text-white" />
+                </div>
+                <div>
+                  <p className="text-emerald-600 dark:text-emerald-400 font-black text-base">
+                    Bulk Job
+                  </p>
+                  <p className="text-muted dark:text-muted text-xs font-bold">
+                    Sheet entry — ek saath kai jobs add karo
+                  </p>
+                </div>
+                <ChevronRight
+                  size={18}
+                  className="ml-auto text-emerald-400 group-hover:translate-x-1 transition-transform"
+                />
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <p className="text-center text-muted dark:text-app text-xs font-bold pb-2">
+        V-TECH Management System &mdash; {new Date().getFullYear()}
+      </p>
+    </div>
+  );
+}
+
+// ─── Helper UI Components ─────────────────────────────────────────────────────
+function EmptyRow({ icon, label }: { icon: React.ReactNode; label: string }) {
+  return (
+    <div className="py-10 flex flex-col items-center justify-center gap-2 text-app">
+      <div className="opacity-20">{icon}</div>
+      <p className="text-xs font-bold">{label}</p>
+    </div>
+  );
+}
+
+const STAT_C: Record<string, { border: string; icon: string; bg: string; value: string }> = {
+  blue: {
+    border: "border-blue-500/30",
+    icon: "text-blue-400    bg-blue-500/15",
+    bg: "bg-blue-500/10",
+    value: "text-blue-400",
+  },
+  amber: {
+    border: "border-amber-500/30",
+    icon: "text-amber-400   bg-amber-500/15",
+    bg: "bg-amber-500/10",
+    value: "text-amber-400",
+  },
+  cyan: {
+    border: "border-cyan-500/30",
+    icon: "text-cyan-400    bg-cyan-500/15",
+    bg: "bg-cyan-500/10",
+    value: "text-cyan-400",
+  },
+  emerald: {
+    border: "border-emerald-500/30",
+    icon: "text-emerald-400 bg-emerald-500/15",
+    bg: "bg-emerald-500/10",
+    value: "text-emerald-400",
+  },
+  violet: {
+    border: "border-violet-500/30",
+    icon: "text-violet-400  bg-violet-500/15",
+    bg: "bg-violet-500/10",
+    value: "text-violet-400",
+  },
+  pink: {
+    border: "border-pink-500/30",
+    icon: "text-pink-400    bg-pink-500/15",
+    bg: "bg-pink-500/10",
+    value: "text-pink-400",
+  },
+  red: {
+    border: "border-red-500/30",
+    icon: "text-red-400     bg-red-500/15",
+    bg: "bg-red-500/10",
+    value: "text-red-400",
+  },
+  indigo: {
+    border: "border-indigo-500/30",
+    icon: "text-indigo-400  bg-indigo-500/15",
+    bg: "bg-indigo-500/10",
+    value: "text-indigo-400",
+  },
+  slate: {
+    border: "border-muted/30",
+    icon: "text-muted    bg-muted/15",
+    bg: "bg-muted/10",
+    value: "text-muted-2 dark:text-app-2",
+  },
+};
+
+// ─── Sprint 3 #11: Today's Board kanban strip ────────────────────────────────
+// Purely presentational — reuses already-fetched `stats` + `recentJobs`
+// (zero new RPCs). 4 status columns, each deep-links to /jobs?status=N
+// exactly like the hero StatCards above it.
+const BOARD_COLS: {
+  status: number;
+  label: string;
+  color: string;
+  icon: React.ReactNode;
+  href: string;
+  statKey: keyof Stat;
+}[] = [
+  {
+    status: 0,
+    label: "Pending",
+    color: "amber",
+    icon: <Clock size={14} />,
+    href: "/jobs?status=0",
+    statKey: "pendingJobs",
+  },
+  {
+    status: 1,
+    label: "Repairing",
+    color: "cyan",
+    icon: <Activity size={14} />,
+    href: "/jobs?status=1",
+    statKey: "inProgressJobs",
+  },
+  {
+    status: 2,
+    label: "Ready",
+    color: "emerald",
+    icon: <CheckCircle size={14} />,
+    href: "/jobs?status=2",
+    statKey: "finishedJobs",
+  },
+  {
+    status: 5,
+    label: "Delivered",
+    color: "violet",
+    icon: <ArrowRight size={14} />,
+    href: "/jobs?status=5",
+    statKey: "deliveredJobs",
+  },
+];
+
+function TodayBoardStrip({ stats, recentJobs }: { stats: Stat; recentJobs: RecentJob[] }) {
+  const active = BOARD_COLS.reduce((s, c) => s + n(stats[c.statKey]), 0);
+  if (active === 0) return null;
+  return (
+    <section className="glass rounded-3xl border theme-border overflow-hidden">
+      <div className="flex items-center justify-between px-5 py-3.5 border-b border-app-2 dark:border-app">
+        <div>
+          <h3 className="text-sm font-black text-app dark:text-white flex items-center gap-2">
+            <Layers size={13} className="text-cyan-400" /> Today&apos;s Board
+          </h3>
+          <p className="text-muted-2 text-[10px] font-bold uppercase tracking-wider">
+            Aaj ka kaam · {active} active jobs
+          </p>
+        </div>
+        <Link
+          href="/jobs"
+          className="flex items-center gap-1 text-blue-400 hover:text-blue-300 text-xs font-black transition no-underline uppercase tracking-wider"
+        >
+          All Jobs <ChevronRight size={12} />
+        </Link>
+      </div>
+      <div className="p-4 flex gap-3 overflow-x-auto">
+        {BOARD_COLS.map((col) => {
+          const c = STAT_C[col.color] ?? STAT_C.blue;
+          const count = n(stats[col.statKey]);
+          const chips = recentJobs.filter((j) => j.status === col.status).slice(0, 3);
+          const rest = Math.max(0, count - chips.length);
+          return (
+            <Link
+              key={col.status}
+              href={col.href}
+              className={`${c.bg} rounded-2xl border ${c.border} p-3.5 min-w-[210px] flex-1 hover:brightness-110 transition-all duration-200 no-underline block`}
+            >
+              <div className="flex items-center justify-between">
+                <span
+                  className={`flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider ${c.value}`}
+                >
+                  {col.icon} {col.label}
+                </span>
+                <span className={`text-xl font-black ${c.value} leading-none`}>{count}</span>
+              </div>
+              {chips.length > 0 ? (
+                <div className="mt-2.5 space-y-1.5">
+                  {chips.map((j) => (
+                    <div key={j.id} className="flex items-baseline justify-between gap-2 min-w-0">
+                      <span className="text-app dark:text-white text-xs font-bold truncate">
+                        {j.job_id ?? "N/A"}
+                        <span className="text-muted-2 font-semibold"> · {j.client_name}</span>
+                      </span>
+                      <span className="text-muted text-[11px] font-bold flex-shrink-0">
+                        {inr(j.amount)}
+                      </span>
+                    </div>
+                  ))}
+                  {rest > 0 && (
+                    <p className={`text-[10px] font-black ${c.value}`}>+{rest} more →</p>
+                  )}
+                </div>
+              ) : (
+                <p className="mt-2.5 text-[11px] font-bold text-muted-2">
+                  {count > 0 ? `${count} jobs →` : "Clear ✓"}
+                </p>
+              )}
+            </Link>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+function StatCard({
+  label,
+  value,
+  icon,
+  color,
+  href,
+}: {
+  label: string;
+  value: string | number;
+  icon: React.ReactNode;
+  color: string;
+  href?: string;
+}) {
+  const c = STAT_C[color] ?? STAT_C.blue;
+  const inner = (
+    <div
+      className={`${c.bg} rounded-2xl border ${c.border} p-4 flex items-center gap-3 hover:brightness-110 transition-all duration-200 group cursor-pointer`}
+    >
+      <div className={`p-2.5 rounded-xl ${c.icon} flex-shrink-0`}>{icon}</div>
+      <div className="min-w-0 flex-1">
+        <p className="text-[9px] font-black text-muted uppercase tracking-[0.15em] truncate">
+          {label}
+        </p>
+        <p className={`text-xl font-black ${c.value} tracking-tight leading-none mt-0.5`}>
+          {value}
+        </p>
+      </div>
+      {href && (
+        <ChevronRight
+          size={13}
+          className="text-muted-2 group-hover:text-muted flex-shrink-0 transition"
+        />
+      )}
+    </div>
+  );
+  return href ? (
+    <Link href={href} className="no-underline block">
+      {inner}
+    </Link>
+  ) : (
+    inner
+  );
+}
+
+const FIN_C: Record<string, { bg: string; icon: string }> = {
+  blue: { bg: "bg-blue-500/10", icon: "text-blue-400" },
+  amber: { bg: "bg-amber-500/10", icon: "text-amber-400" },
+  cyan: { bg: "bg-cyan-500/10", icon: "text-cyan-400" },
+  red: { bg: "bg-red-500/10", icon: "text-red-400" },
+  slate: { bg: "bg-panel-2 dark:bg-slate-700/30", icon: "text-muted dark:text-muted" },
+  violet: { bg: "bg-violet-500/10", icon: "text-violet-400" },
+  rose: { bg: "bg-rose-500/10", icon: "text-rose-400" },
+};
+
+function FinCard({
+  icon,
+  label,
+  value,
+  color,
+  isExpense,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: number;
+  color: string;
+  isExpense?: boolean;
+}) {
+  const c = FIN_C[color] ?? FIN_C.blue;
+  return (
+    <div className="glass-2 rounded-2xl border theme-border p-4 flex items-center gap-3">
+      <div className={`p-2.5 rounded-xl ${c.bg} flex-shrink-0`}>
+        <div className={c.icon}>{icon}</div>
+      </div>
+      <div className="min-w-0">
+        <p className="text-[9px] font-black text-muted-2 uppercase tracking-[0.12em] truncate">
+          {label}
+        </p>
+        <p
+          className={`text-lg font-black truncate ${isExpense ? "text-red-400" : "text-app dark:text-white"}`}
+        >
+          {inr(value, 0)}
+        </p>
+      </div>
+    </div>
+  );
+}

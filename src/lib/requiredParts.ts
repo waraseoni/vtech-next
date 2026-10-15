@@ -1,4 +1,5 @@
 import { supabase } from "./supabase";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { logActivity } from "./activity";
 
 // ============================================================================
@@ -205,7 +206,10 @@ export interface WaitingSummary {
   oldestJobId: string | null;
 }
 
-export async function fetchWaitingSummary(): Promise<WaitingSummary> {
+/** `client` optional: RSC pages apna cookie+RLS client pass karti hain; default browser. */
+export async function fetchWaitingSummary(
+  client: SupabaseClient = supabase
+): Promise<WaitingSummary> {
   const empty: WaitingSummary = {
     waitingJobs: 0,
     waitingParts: 0,
@@ -214,7 +218,7 @@ export async function fetchWaitingSummary(): Promise<WaitingSummary> {
     oldestDays: 0,
     oldestJobId: null,
   };
-  const { data: parts, error: perr } = await supabase
+  const { data: parts, error: perr } = await client
     .from("job_required_parts")
     .select("transaction_id, status, date_created")
     .in("status", ORDER);
@@ -227,7 +231,7 @@ export async function fetchWaitingSummary(): Promise<WaitingSummary> {
   if (rows.length === 0) return empty;
 
   const txnIds = [...new Set(rows.map((p) => p.transaction_id))];
-  const { data: jobs } = await supabase
+  const { data: jobs } = await client
     .from("transaction_list")
     .select("id, job_id")
     .in("id", txnIds)
