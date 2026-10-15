@@ -438,7 +438,7 @@ User directive: **no commit/push** until told.
 - [x] #10 Image compression on ALL uploads — `compressImage` already integrated in 8 call sites (imageCompression.ts + media.ts); no new work needed
 - [x] #7 Mobile bottom tab bar — committed `960c797`
 - [x] #8 Lightbox kill — removed ImageLightbox from 39 files, committed `e95c2b7`
-- [ ] #8 remaining: old redirects (skip protected), ledger/salary merge
+- [x] #8 remaining: old redirects (skip protected), ledger/salary merge — **DONE (2026-10-15 verify+cleanup)**: redirects audit pehle se complete (ui_ux plan #8: sirf 2 canonical redirects — `jobs/[id]`, `direct-sales/[id]` — live old links, keep; protected routes par kabhi redirect nahi). Salary merge bhi pehle ho chuka tha (`98df65d`) par **unreachable dead files reh gaye the**: `next.config.ts` `redirects()` (`/salary` + `/salary/:path*`) pehle fire hone se `src/app/salary/page.tsx` (19-ln redirect stub) + `src/app/salary/[id]/ledger/page.tsx` (426-ln purana client page) kabhi render nahi hote the — **delete kar diye** (zero imports, self-links hi the). `.gitignore` stale rules bhi hata diye (salary/backup copy patterns + duplicate `out/`). `/salary/:path*` → `/mechanics/:path*` redirect intact — purane bookmarks/`?month`/`?from&to` seedha canonical pages par.
 
 ---
 

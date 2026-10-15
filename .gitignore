@@ -14,7 +14,6 @@ node_modules/
 # 2. Build & Production Outputs
 .next/
 /out/
-out/
 build/
 dist/
 .cache/
@@ -99,10 +98,6 @@ structure.txt
 
 # 14. Stray Copy Files
 *- Copy.*
-
-# 15. Backup page copies in src
-src/app/backup/page_100%*
-src/app/salary/*page - Copy.tsx*
 
 # 16. DB backups & sync scratch files (do not commit)
 vtech_backup_*.json
