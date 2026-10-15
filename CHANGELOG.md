@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.57.1](https://github.com/waraseoni/vtech-next/compare/v1.57.0...v1.57.1) (2026-10-15)
+
+### Bug Fixes
+
+* **reports/delivered:** date range selector overflow on mobile ([eda1007](https://github.com/waraseoni/vtech-next/commit/eda10074525ea59c03697db073622264ab29f9f5))
+
 ## [1.57.0](https://github.com/waraseoni/vtech-next/compare/v1.56.0...v1.57.0) (2026-10-15)
 
 ### Features
