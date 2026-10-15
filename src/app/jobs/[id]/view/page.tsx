@@ -676,11 +676,11 @@ export default function JobDetailsPage() {
           : Promise.resolve({ data: null }),
         supabase
           .from("transaction_products")
-          .select("transaction_id, product_id, product_name, qty, price, hsn")
+          .select("transaction_id, product_id, product_name, qty, price")
           .eq("transaction_id", numId),
         supabase
           .from("transaction_services")
-          .select("transaction_id, service_id, service_name, price, hsn")
+          .select("transaction_id, service_id, service_name, price")
           .eq("transaction_id", numId),
         supabase
           .from("transaction_images")
@@ -692,6 +692,10 @@ export default function JobDetailsPage() {
       if (clientRes.data) setClient(clientRes.data as Client);
       if (mechRes.data) setMechanic(mechRes.data as Mechanic);
       setImages((imgRes.data || []) as TransactionImage[]);
+      if (prodRes.error || svcRes.error || imgRes.error) {
+        // Column-projection typo yahan chup-chup empty lists nahi dega (regression 29457)
+        logger.warn("txn line-items fetch:", prodRes.error || svcRes.error || imgRes.error);
+      }
 
       const prods = (prodRes.data || []) as TransactionProduct[];
       const prodIds = [...new Set(prods.map((p) => p.product_id).filter(Boolean))];
