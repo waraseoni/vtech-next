@@ -540,34 +540,34 @@ export default function DeliveredReportClient({ fromDate, toDate, clientId }: Pr
         <form onSubmit={handleFilter} className="space-y-2.5">
           <div className="flex flex-col md:flex-row items-stretch md:items-center gap-2">
             {/* Date Range */}
-            <div className="flex items-center justify-between sm:justify-start gap-1 bg-app p-1 rounded-xl border border-app">
+            <div className="flex items-center gap-1 bg-app p-1 rounded-xl border border-app min-w-0">
               <button
                 type="button"
                 onClick={() => goToDay("prev")}
-                className="w-7 h-7 flex items-center justify-center rounded-lg text-muted hover:text-white hover:bg-white/5 transition-all"
+                className="w-7 h-7 flex items-center justify-center rounded-lg text-muted hover:text-white hover:bg-white/5 transition-all flex-shrink-0"
               >
                 <ChevronLeft size={15} />
               </button>
-              <div className="flex items-center gap-1 px-1">
+              <div className="flex items-center gap-1 px-1 flex-1 min-w-0">
                 <Calendar size={12} className="text-blue-400 flex-shrink-0" />
                 <input
                   type="date"
                   value={from}
                   onChange={(e) => setFrom(e.target.value)}
-                  className="bg-transparent text-[11px] font-bold text-white outline-none cursor-pointer [color-scheme:dark]"
+                  className="bg-transparent text-[11px] font-bold text-white outline-none cursor-pointer [color-scheme:dark] min-w-0 flex-1"
                 />
-                <span className="text-muted-2 text-[10px] mx-0.5">to</span>
+                <span className="text-muted-2 text-[10px] mx-0.5 flex-shrink-0">to</span>
                 <input
                   type="date"
                   value={to}
                   onChange={(e) => setTo(e.target.value)}
-                  className="bg-transparent text-[11px] font-bold text-white outline-none cursor-pointer [color-scheme:dark]"
+                  className="bg-transparent text-[11px] font-bold text-white outline-none cursor-pointer [color-scheme:dark] min-w-0 flex-1"
                 />
               </div>
               <button
                 type="button"
                 onClick={() => goToDay("next")}
-                className="w-7 h-7 flex items-center justify-center rounded-lg text-muted hover:text-white hover:bg-white/5 transition-all"
+                className="w-7 h-7 flex items-center justify-center rounded-lg text-muted hover:text-white hover:bg-white/5 transition-all flex-shrink-0"
               >
                 <ChevronRight size={15} />
               </button>
