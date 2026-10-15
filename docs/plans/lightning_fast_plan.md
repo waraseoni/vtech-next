@@ -2,7 +2,12 @@
 
 > Status: **DONE (2026-09-25)** — A→B→C complete, GATE-A/B/C PASS, ek hi
 > commit `1e3ef94` (rule #2) + GATE-C authed-numbers correction `5743f91`.
-> Follow-up: monthly-profit day-grid TBT regression (GATE-C notes — alag item).
+> Follow-up: monthly-profit TBT regression — **✅ FIXED (2026-10-15)**: asli
+> culprit tha-data-proportional sync CPU — `istMonth` har row pe naya
+> `Intl.DateTimeFormat` bana raha tha (12 months × N rows O(12N) filters) +
+> openModal me per-row `.find` O(R×C). Fix: hoisted formatter + single-pass
+> month bucketing + Maps (`reports/monthly-profit/page.tsx`). Audit ka "day-grid"
+> label galat tha — page me kabhi day-grid nahi tha, table sirf 12 rows hai.
 > (Header 2026-10-11 ko EXECUTING se update kiya — code tabhi commit ho chuka tha.)
 > Goal: pehla-paint + data-path + bundle floor — numbers se prove.
 > Baselines: `perf_baseline.md` (Lighthouse 28 Aug) + `frontend_performance_plan.md`

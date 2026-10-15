@@ -40,12 +40,12 @@ type MonthlyData = {
 
 type DbRow = ReturnType<typeof JSON.parse>;
 
-const istMonth = (iso: string) =>
-  new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Asia/Kolkata",
-    year: "numeric",
-    month: "2-digit",
-  }).format(new Date(iso));
+const IST_MONTH_FMT = new Intl.DateTimeFormat("en-CA", {
+  timeZone: "Asia/Kolkata",
+  year: "numeric",
+  month: "2-digit",
+});
+const istMonth = (iso: string) => IST_MONTH_FMT.format(new Date(iso));
 
 export default function MonthlyProfitReport() {
   const [year, setYear] = useState(new Date().getFullYear());
@@ -134,55 +134,73 @@ export default function MonthlyProfitReport() {
           end: new Date(year, 11, 31),
         });
 
+        // Single-pass month bucketing — pehle 12 months × N rows filters the
+        // (O(12N), har row pe Intl.DateTimeFormat) tha; data growth se yahi
+        // TBT 980→7270ms regression tha (GATE-C). Ab O(N), zero Intl in loop.
+        type Buckets = {
+          jobs: DbRow[];
+          sales: DbRow[];
+          pays: DbRow[];
+          exps: DbRow[];
+          emis: DbRow[];
+          atts: DbRow[];
+        };
+        const buckets: Buckets[] = Array.from({ length: 12 }, () => ({
+          jobs: [],
+          sales: [],
+          pays: [],
+          exps: [],
+          emis: [],
+          atts: [],
+        }));
+        const bucketByDate = (rows: DbRow[] | null, dateField: string, key: keyof Buckets) => {
+          for (const row of rows || []) {
+            const m = Number(String(row[dateField]).slice(5, 7)) - 1;
+            if (m >= 0 && m < 12) buckets[m][key].push(row);
+          }
+        };
+        // transactions: IST month (date_completed); baaki: raw ISO prefix
+        // (startsWith semantics preserved — same-year data query se guaranteed)
+        for (const t of transactions || []) {
+          const m = Number(istMonth(t.date_completed).slice(5, 7)) - 1;
+          if (m >= 0 && m < 12) buckets[m].jobs.push(t);
+        }
+        bucketByDate(directSales, "date_created", "sales");
+        bucketByDate(clientPayments, "created_at", "pays");
+        bucketByDate(expenses, "date_created", "exps");
+        bucketByDate(loanPayments, "payment_date", "emis");
+        bucketByDate(attendance, "curr_date", "atts");
+        const mechanicsById = new Map((mechanics || []).map((me) => [me.id, me]));
+
         const monthlyRecords: MonthlyData[] = months.map((mDate, idx) => {
           const mNum = idx + 1;
-          const mStr = format(mDate, "MM");
           const mName = format(mDate, "MMMM");
-          const prefix = `${year}-${mStr}`;
+          const b = buckets[idx];
 
-          // 1. Repair jobs billed + commission (by date_completed, status=5)
-          const mJobs = (transactions || []).filter((t) => istMonth(t.date_completed) === prefix);
-          const repair = mJobs.reduce((s, t) => s + (parseFloat(t.amount) || 0), 0);
-          const commission = mJobs.reduce(
+          const repair = b.jobs.reduce((s, t) => s + (parseFloat(t.amount) || 0), 0);
+          const commission = b.jobs.reduce(
             (s, t) => s + (parseFloat(t.mechanic_commission_amount) || 0),
             0
           );
 
-          // 2. Direct sales split (walk-in vs registered client)
-          const mSales = (directSales || []).filter((d) =>
-            String(d.date_created).startsWith(prefix)
-          );
-          const walkin = mSales
-            .filter((d) => !d.client_id || d.client_id === 0 || d.client_id === "")
-            .reduce((s, d) => s + (parseFloat(d.total_amount) || 0), 0);
-          const clientSales = mSales
-            .filter((d) => d.client_id && d.client_id !== 0 && d.client_id !== "")
-            .reduce((s, d) => s + (parseFloat(d.total_amount) || 0), 0);
+          let walkin = 0;
+          let clientSales = 0;
+          for (const d of b.sales) {
+            const amt = parseFloat(d.total_amount) || 0;
+            if (!d.client_id || d.client_id === 0 || d.client_id === "") walkin += amt;
+            else clientSales += amt;
+          }
 
-          // 3. Discounts
-          const discounts = (clientPayments || [])
-            .filter((p) => String(p.created_at).startsWith(prefix))
-            .reduce((s, p) => s + (parseFloat(p.discount) || 0), 0);
+          const discounts = b.pays.reduce((s, p) => s + (parseFloat(p.discount) || 0), 0);
+          const mExpenses = b.exps.reduce((s, e) => s + (parseFloat(e.amount) || 0), 0);
+          const emi = b.emis.reduce((s, lp) => s + (parseFloat(lp.amount_paid) || 0), 0);
 
-          // 4. Expenses
-          const mExpenses = (expenses || [])
-            .filter((e) => String(e.date_created).startsWith(prefix))
-            .reduce((s, e) => s + (parseFloat(e.amount) || 0), 0);
-
-          // 5. EMI
-          const emi = (loanPayments || [])
-            .filter((lp) => String(lp.payment_date).startsWith(prefix))
-            .reduce((s, lp) => s + (parseFloat(lp.amount_paid) || 0), 0);
-
-          // 6. Salaries (attendance x current daily rate)
-          const mAtt = (attendance || []).filter((a) => String(a.curr_date).startsWith(prefix));
           let salaries = 0;
-          mAtt.forEach((att) => {
-            const mech = (mechanics || []).find((me) => me.id === att.mechanic_id);
-            const rate = mech?.daily_salary || 0;
+          for (const att of b.atts) {
+            const rate = mechanicsById.get(att.mechanic_id)?.daily_salary || 0;
             if (att.status === 1) salaries += rate;
             else if (att.status === 3) salaries += rate / 2;
-          });
+          }
 
           const revenue = repair + walkin + clientSales;
           const totalExp = commission + mExpenses + salaries + emi + discounts;
@@ -262,39 +280,36 @@ export default function MonthlyProfitReport() {
     let detailData: DbRow[] = [];
     let title = "";
 
+    // O(1) lookups — per-row .find O(R×C) tha (click pe thousands rows freeze)
+    const clientsById = new Map((rawData.clients || []).map((c) => [c.id, c]));
+    const mechanicsById = new Map((rawData.mechanics || []).map((m) => [m.id, m]));
+    const lendersById = new Map((rawData.lenders || []).map((l) => [l.id, l]));
+    const clientNameOf = (id: unknown, fallback: string) => {
+      const c = clientsById.get(id as number);
+      return c
+        ? `${c.firstname} ${c.middlename || ""} ${c.lastname || ""}`.replace(/\s+/g, " ").trim()
+        : fallback;
+    };
+
     if (type === "repair_jobs") {
       title = `Repair Jobs (Delivered) - ${monthName} ${year}`;
       detailData = (rawData.transactions || [])
-        .map((t) => {
-          const client = (rawData.clients || []).find((c) => c.id === t.client_name);
-          return {
-            ...t,
-            client_name: client
-              ? `${client.firstname} ${client.middlename || ""} ${client.lastname || ""}`
-                  .replace(/\s+/g, " ")
-                  .trim()
-              : "Walk-in",
-          };
-        })
-        .filter((t) => istMonth(t.date_completed) === prefix);
+        .filter((t) => istMonth(t.date_completed) === prefix)
+        .map((t) => ({
+          ...t,
+          client_name: clientNameOf(t.client_name, "Walk-in"),
+        }));
     } else if (type === "commission") {
       title = `Mechanic Commission - ${monthName} ${year}`;
       detailData = (rawData.transactions || [])
-        .map((t) => {
-          const client = (rawData.clients || []).find((c) => c.id === t.client_name);
-          return {
-            ...t,
-            client_name: client
-              ? `${client.firstname} ${client.middlename || ""} ${client.lastname || ""}`
-                  .replace(/\s+/g, " ")
-                  .trim()
-              : "Walk-in",
-          };
-        })
         .filter(
           (t) =>
             istMonth(t.date_completed) === prefix && parseFloat(t.mechanic_commission_amount) > 0
-        );
+        )
+        .map((t) => ({
+          ...t,
+          client_name: clientNameOf(t.client_name, "Walk-in"),
+        }));
     } else if (type === "walkin_sales") {
       title = `Walk-in Direct Sales - ${monthName} ${year}`;
       detailData = (rawData.directSales || []).filter(
@@ -305,24 +320,17 @@ export default function MonthlyProfitReport() {
     } else if (type === "client_sales") {
       title = `Client Direct Sales - ${monthName} ${year}`;
       detailData = (rawData.directSales || [])
-        .map((d) => {
-          const client = (rawData.clients || []).find((c) => c.id === d.client_id);
-          return {
-            ...d,
-            client_name: client
-              ? `${client.firstname} ${client.middlename || ""} ${client.lastname || ""}`
-                  .replace(/\s+/g, " ")
-                  .trim()
-              : "Unknown Client",
-          };
-        })
         .filter(
           (d) =>
             String(d.date_created).startsWith(prefix) &&
             d.client_id &&
             d.client_id !== 0 &&
             d.client_id !== ""
-        );
+        )
+        .map((d) => ({
+          ...d,
+          client_name: clientNameOf(d.client_id, "Unknown Client"),
+        }));
     } else if (type === "expenses") {
       title = `Shop Expenses - ${monthName} ${year}`;
       detailData = (rawData.expenses || []).filter((e) =>
@@ -334,7 +342,7 @@ export default function MonthlyProfitReport() {
       const mechMap: Record<number, { name: string; full: number; half: number; rate: number }> =
         {};
       mAtt.forEach((att) => {
-        const mech = (rawData.mechanics || []).find((me) => me.id === att.mechanic_id);
+        const mech = mechanicsById.get(att.mechanic_id);
         if (!mech) return;
         if (!mechMap[mech.id]) {
           mechMap[mech.id] = {
@@ -353,26 +361,19 @@ export default function MonthlyProfitReport() {
     } else if (type === "emi") {
       title = `Loan EMI Payments - ${monthName} ${year}`;
       detailData = (rawData.loanPayments || [])
-        .map((lp) => {
-          const lender = (rawData.lenders || []).find((l) => l.id === lp.lender_id);
-          return { ...lp, lender_name: lender ? lender.fullname : "Unknown Lender" };
-        })
-        .filter((lp) => String(lp.payment_date).startsWith(prefix));
+        .filter((lp) => String(lp.payment_date).startsWith(prefix))
+        .map((lp) => ({
+          ...lp,
+          lender_name: lendersById.get(lp.lender_id)?.fullname || "Unknown Lender",
+        }));
     } else if (type === "discounts") {
       title = `Customer Discounts - ${monthName} ${year}`;
       detailData = (rawData.clientPayments || [])
-        .map((cp) => {
-          const client = (rawData.clients || []).find((c) => c.id === cp.client_id);
-          return {
-            ...cp,
-            client_name: client
-              ? `${client.firstname} ${client.middlename || ""} ${client.lastname || ""}`
-                  .replace(/\s+/g, " ")
-                  .trim()
-              : "Unknown Client",
-          };
-        })
-        .filter((cp) => String(cp.created_at).startsWith(prefix) && parseFloat(cp.discount) > 0);
+        .filter((cp) => String(cp.created_at).startsWith(prefix) && parseFloat(cp.discount) > 0)
+        .map((cp) => ({
+          ...cp,
+          client_name: clientNameOf(cp.client_id, "Unknown Client"),
+        }));
     }
 
     setModalConfig({ title, type, data: detailData });
@@ -756,9 +757,7 @@ export default function MonthlyProfitReport() {
                                 </span>
                               </td>
                               <td className="px-4 py-3 text-muted">{row.remarks || "-"}</td>
-                              <td className="px-4 py-3 text-muted">
-                                {row.payment_mode || "Cash"}
-                              </td>
+                              <td className="px-4 py-3 text-muted">{row.payment_mode || "Cash"}</td>
                               <td className="px-4 py-3 text-right text-rose-400 font-bold">
                                 {inr(parseFloat(row.amount))}
                               </td>
@@ -775,9 +774,7 @@ export default function MonthlyProfitReport() {
                               <td className="px-4 py-3 text-center text-indigo-400 font-bold">
                                 {totalDays}
                               </td>
-                              <td className="px-4 py-3 text-right text-muted">
-                                {inr(row.rate)}
-                              </td>
+                              <td className="px-4 py-3 text-right text-muted">{inr(row.rate)}</td>
                               <td className="px-4 py-3 text-right text-rose-400 font-bold">
                                 {inr(salary)}
                               </td>
@@ -889,9 +886,7 @@ function StatCard({
       >
         {icon}
       </div>
-      <p className="text-[10px] font-black text-muted uppercase tracking-widest mb-1">
-        {label}
-      </p>
+      <p className="text-[10px] font-black text-muted uppercase tracking-widest mb-1">{label}</p>
       <h3
         className={`text-lg font-black tracking-tight ${isProfit ? (value >= 0 ? "text-emerald-400" : "text-rose-400") : "text-white"}`}
       >
