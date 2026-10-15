@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.57.2](https://github.com/waraseoni/vtech-next/compare/v1.57.1...v1.57.2) (2026-10-15)
+
+### Performance Improvements
+
+* **proxy:** auth-tax fix — early-returns pehle + getClaims fast path (+12 contract tests) ([a7efe97](https://github.com/waraseoni/vtech-next/commit/a7efe9708408e965cd9ce1b45de2c062dcdbe741))
+
 ## [1.57.1](https://github.com/waraseoni/vtech-next/compare/v1.57.0...v1.57.1) (2026-10-15)
 
 ### Bug Fixes
