@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## [1.57.3](https://github.com/waraseoni/vtech-next/compare/v1.57.2...v1.57.3) (2026-10-15)
+
+### Bug Fixes
+
+* **jobs/view:** txn line-item projection me nonexistent hsn column hataya — Postgrest 400 se products/services khali ho rahe the ([82cf2e6](https://github.com/waraseoni/vtech-next/commit/82cf2e619e8b4f7c690356ca6443c123a4d61a66))
+
+### Performance Improvements
+
+* **db:** Phase 5 query hygiene — Promise.all + column projection on audit hotspots ([e734e13](https://github.com/waraseoni/vtech-next/commit/e734e13be362f6f156d3797ed3122ce98eb2f6ef))
+
 ## [1.57.2](https://github.com/waraseoni/vtech-next/compare/v1.57.1...v1.57.2) (2026-10-15)
 
 ### Performance Improvements
