@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.57.0](https://github.com/waraseoni/vtech-next/compare/v1.56.0...v1.57.0) (2026-10-15)
+
+### Features
+
+* **clients:** job search + hide-delivered in client view repair history ([845d1c0](https://github.com/waraseoni/vtech-next/commit/845d1c09d2b2a9fa72e20323baf4997042ccb069))
+
 ## [1.56.0](https://github.com/waraseoni/vtech-next/compare/v1.55.0...v1.56.0) (2026-10-13)
 
 ### Features
