@@ -205,9 +205,26 @@ Minor abhi (data chhota), par future-proofing ke liye.
 
 ### Phase 5 — Query hygiene (low risk)
 
-- Sequential awaits → `Promise.all` (`clients/[id]/page.tsx:188-224`).
-- `select("*")` → column projection (72×).
-- `purchase-orders/page.tsx:133` par `.limit()`/`.range()`.
+**✅ IMPLEMENTED (2026-10-15):**
+
+1. `clients/[id]/page.tsx` — 6 sequential awaits (role, client, repairs,
+   payments, loans, sales) → **one `Promise.all`** round (role depends only on
+   `getCachedUser()`; client missing → `/clients` redirect behavior preserved).
+2. `jobs/[id]/view/page.tsx` — role + `system_info` + job row ek `Promise.all`
+   (pehle 3 sequential); product_list + service_list name/HSN lookups ek
+   `Promise.all` (pehle sequential).
+3. Column projection (audit-named `select("*")` spots only):
+   - `clients/[id]`: client_list / transaction_list / client_payments /
+     client_loans / direct_sales — sirf page-used columns.
+   - `jobs/[id]/view`: transaction_list (JobDetail fields), transaction_products,
+     transaction_services, transaction_images.
+   - `purchase-orders/page.tsx:133`: purchase_orders ke 11 list columns.
+   - `purchase-orders` par artificial `.limit()` **nahi** laga — page poora PO
+     register hai (client-side search/status filter); cap karne se history
+     chhup jati. Pagination ek product decision hai, hygiene nahi.
+4. Gates: prettier (touched; clients/jobs write kiye, PO ka pre-existing
+   unformatted churn avoid karke sirf hunk apply) · tsc ✓ · vitest 360/360 ·
+   `next build` ✓. Rollback: 3 page files revert.
 
 ### Phase 6 — DB indexes ⚠ DB WRITE → peak-season freeze ke baad
 

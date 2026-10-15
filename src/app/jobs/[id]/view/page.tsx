@@ -589,29 +589,32 @@ export default function JobDetailsPage() {
       const {
         data: { user },
       } = await getCachedUser();
-      if (user) {
-        const { data: p } = await supabase
-          .from("profiles")
-          .select("role")
-          .eq("id", user.id)
-          .single();
-        setUserRole(p?.role || "staff");
-      }
 
-      // Firm info + WhatsApp templates (system_info key-value)
-      const { data: sys } = await supabase.from("system_info").select("meta_field, meta_value");
+      // Role + firm info + job row — independent, one round (perf Phase 5)
+      const [profRes, sysRes, jobRes] = await Promise.all([
+        user
+          ? supabase.from("profiles").select("role").eq("id", user.id).single()
+          : Promise.resolve({ data: null }),
+        supabase.from("system_info").select("meta_field, meta_value"),
+        supabase
+          .from("transaction_list")
+          .select(
+            "id, job_id, code, client_name, item, fault, remark, uniq_id, amount, mechanic_amount, mechanic_commission_amount, mechanic_id, user_id, del_status, status, location_id, date_created, date_updated, date_completed"
+          )
+          .eq("id", numId)
+          .eq("del_status", 0)
+          .single(),
+      ]);
+
+      if (user) setUserRole((profRes.data as { role?: string } | null)?.role || "staff");
+
       const info: Record<string, string> = {};
-      (sys || []).forEach((r) => {
+      (sysRes.data || []).forEach((r) => {
         info[r.meta_field] = r.meta_value;
       });
       setFirmInfo(info);
 
-      const { data: jobData, error: jobErr } = await supabase
-        .from("transaction_list")
-        .select("*")
-        .eq("id", numId)
-        .eq("del_status", 0)
-        .single();
+      const { data: jobData, error: jobErr } = jobRes;
 
       if (jobErr || !jobData) {
         router.push("/jobs");
@@ -671,11 +674,17 @@ export default function JobDetailsPage() {
               .eq("id", jobData.mechanic_id)
               .single()
           : Promise.resolve({ data: null }),
-        supabase.from("transaction_products").select("*").eq("transaction_id", numId),
-        supabase.from("transaction_services").select("*").eq("transaction_id", numId),
+        supabase
+          .from("transaction_products")
+          .select("transaction_id, product_id, product_name, qty, price, hsn")
+          .eq("transaction_id", numId),
+        supabase
+          .from("transaction_services")
+          .select("transaction_id, service_id, service_name, price, hsn")
+          .eq("transaction_id", numId),
         supabase
           .from("transaction_images")
-          .select("*")
+          .select("id, transaction_id, image_path, date_created")
           .eq("transaction_id", numId)
           .order("date_created", { ascending: false }),
       ]);
@@ -686,10 +695,18 @@ export default function JobDetailsPage() {
 
       const prods = (prodRes.data || []) as TransactionProduct[];
       const prodIds = [...new Set(prods.map((p) => p.product_id).filter(Boolean))];
-      const { data: plRows } =
+      const svcs = (svcRes.data || []) as TransactionService[];
+      const svcIds = [...new Set(svcs.map((s) => s.service_id).filter(Boolean))];
+      // Name/HSN lookups independent of each other — one round (perf Phase 5)
+      const [plRes, slRes] = await Promise.all([
         prodIds.length > 0
-          ? await supabase.from("product_list").select("id, name, hsn").in("id", prodIds)
-          : { data: null };
+          ? supabase.from("product_list").select("id, name, hsn").in("id", prodIds)
+          : Promise.resolve({ data: null }),
+        svcIds.length > 0
+          ? supabase.from("service_list").select("id, name, hsn").in("id", svcIds)
+          : Promise.resolve({ data: null }),
+      ]);
+      const plRows = plRes.data;
       const pm = Object.fromEntries((plRows || []).map((p) => [p.id, p.name]));
       const phsn = Object.fromEntries((plRows || []).map((p) => [p.id, p.hsn]));
       setProducts(
@@ -700,12 +717,7 @@ export default function JobDetailsPage() {
         }))
       );
 
-      const svcs = (svcRes.data || []) as TransactionService[];
-      const svcIds = [...new Set(svcs.map((s) => s.service_id).filter(Boolean))];
-      const { data: slRows } =
-        svcIds.length > 0
-          ? await supabase.from("service_list").select("id, name, hsn").in("id", svcIds)
-          : { data: null };
+      const slRows = slRes.data;
       const sm = Object.fromEntries((slRows || []).map((s) => [s.id, s.name]));
       const shsn = Object.fromEntries((slRows || []).map((s) => [s.id, s.hsn]));
       setServices(

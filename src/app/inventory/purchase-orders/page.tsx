@@ -130,7 +130,12 @@ export default function PurchaseOrdersPage() {
     else setRefreshing(true);
     try {
       const [poRes, supRes, personRes, sysRes] = await Promise.all([
-        supabase.from("purchase_orders").select("*").order("date_created", { ascending: false }),
+        supabase
+          .from("purchase_orders")
+          .select(
+            "id, po_code, supplier_id, contact_person_id, transaction_id, status, expected_date, notes, total_amount, received_date, date_created"
+          )
+          .order("date_created", { ascending: false }),
         supabase.from("suppliers").select("id, name, contact").eq("delete_flag", 0),
         supabase
           .from("supplier_contact_persons")

@@ -169,62 +169,57 @@ export default function ViewClientPage({ params }: { params: Promise<{ id: strin
     }
     setLoading(true);
     try {
-      // User role
       const {
         data: { user },
       } = await getCachedUser();
-      if (user) {
-        const { data: p } = await supabase
-          .from("profiles")
-          .select("role")
-          .eq("id", user.id)
-          .single();
-        setUserRole(p?.role || "staff");
-      }
 
-      // Client
-      const { data: c, error: cErr } = await supabase
-        .from("client_list")
-        .select("*")
-        .eq("id", clientId)
-        .single();
-      if (cErr || !c) {
+      // All 6 queries in one round — client/repairs/payments/loans/sales are
+      // independent of the role lookup (perf Phase 5: was 6 sequential awaits).
+      const [profRes, clientRes, repairsRes, paymentsRes, loansRes, salesRes] = await Promise.all([
+        user
+          ? supabase.from("profiles").select("role").eq("id", user.id).single()
+          : Promise.resolve({ data: null }),
+        supabase
+          .from("client_list")
+          .select("id, firstname, middlename, lastname, contact, email, address, opening_balance")
+          .eq("id", clientId)
+          .single(),
+        supabase
+          .from("transaction_list")
+          .select("id, job_id, code, item, amount, status, date_created")
+          .eq("client_name", String(clientId))
+          .order("date_created", { ascending: false }),
+        supabase
+          .from("client_payments")
+          .select("id, amount, discount, payment_date, payment_mode, job_id, loan_id")
+          .eq("client_id", clientId)
+          .order("payment_date", { ascending: false }),
+        supabase
+          .from("client_loans")
+          .select(
+            "id, principal_amount, interest_rate, total_payable, emi_amount, loan_date, status"
+          )
+          .eq("client_id", clientId)
+          .order("created_at", { ascending: false }),
+        supabase
+          .from("direct_sales")
+          .select("id, sale_code, total_amount, payment_mode, date_created")
+          .eq("client_id", clientId)
+          .order("date_created", { ascending: false }),
+      ]);
+
+      if (user) setUserRole((profRes.data as { role?: string } | null)?.role || "staff");
+
+      const c = clientRes.data;
+      if (clientRes.error || !c) {
         router.push("/clients");
         return;
       }
       setClient(c as Client);
-
-      // Repairs
-      const { data: r } = await supabase
-        .from("transaction_list")
-        .select("*")
-        .eq("client_name", String(clientId))
-        .order("date_created", { ascending: false });
-      setRepairs((r || []) as Repair[]);
-
-      // Payments (all)
-      const { data: p } = await supabase
-        .from("client_payments")
-        .select("*")
-        .eq("client_id", clientId)
-        .order("payment_date", { ascending: false });
-      setPayments((p || []) as Payment[]);
-
-      // Loans
-      const { data: l } = await supabase
-        .from("client_loans")
-        .select("*")
-        .eq("client_id", clientId)
-        .order("created_at", { ascending: false });
-      setLoans((l || []) as Loan[]);
-
-      // Direct Sales
-      const { data: ds } = await supabase
-        .from("direct_sales")
-        .select("*")
-        .eq("client_id", clientId)
-        .order("date_created", { ascending: false });
-      setDirectSales((ds || []) as DirectSale[]);
+      setRepairs((repairsRes.data || []) as Repair[]);
+      setPayments((paymentsRes.data || []) as Payment[]);
+      setLoans((loansRes.data || []) as Loan[]);
+      setDirectSales((salesRes.data || []) as DirectSale[]);
     } catch (err) {
       console.error("fetchData:", err);
     } finally {
@@ -862,9 +857,7 @@ export default function ViewClientPage({ params }: { params: Promise<{ id: strin
                           <td className="px-3 py-2.5 text-muted text-xs">
                             {fmtDate(p.payment_date)}
                           </td>
-                          <td className="px-3 py-2.5 text-app-2 text-xs">
-                            {p.job_id || "Direct"}
-                          </td>
+                          <td className="px-3 py-2.5 text-app-2 text-xs">{p.job_id || "Direct"}</td>
                           <td className="px-3 py-2.5">
                             {p.loan_id ? (
                               <span className="px-2 py-0.5 bg-purple-500/15 border border-purple-500/30 text-purple-400 rounded text-[10px] font-bold">
@@ -928,15 +921,11 @@ export default function ViewClientPage({ params }: { params: Promise<{ id: strin
                     ) : (
                       loans.map((l) => (
                         <tr key={l.id} className="hover:bg-white/[0.02]">
-                          <td className="px-3 py-2.5 text-muted text-xs">
-                            {fmtDate(l.loan_date)}
-                          </td>
+                          <td className="px-3 py-2.5 text-muted text-xs">{fmtDate(l.loan_date)}</td>
                           <td className="px-3 py-2.5 text-right text-app-2">
                             {inr(toNum(l.principal_amount))}
                           </td>
-                          <td className="px-3 py-2.5 text-right text-muted">
-                            {l.interest_rate}%
-                          </td>
+                          <td className="px-3 py-2.5 text-right text-muted">{l.interest_rate}%</td>
                           <td className="px-3 py-2.5 text-right font-bold text-white">
                             {inr(toNum(l.total_payable))}
                           </td>
