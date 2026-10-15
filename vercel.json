@@ -1,3 +1,9 @@
 {
-  "ignoreCommand": "git rev-parse -q --verify HEAD~1 >/dev/null && git diff --quiet HEAD~1 HEAD -- src public next.config.* package*.json vercel.json"
+  "ignoreCommand": "git rev-parse -q --verify HEAD~1 >/dev/null && git diff --quiet HEAD~1 HEAD -- src public next.config.* package*.json vercel.json",
+  "crons": [
+    {
+      "path": "/api/system-info",
+      "schedule": "30 4 * * *"
+    }
+  ]
 }

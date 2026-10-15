@@ -186,9 +186,14 @@ Minor abhi (data chhota), par future-proofing ke liye.
 
 ### Phase 2 — Kill Supabase cold start (global, low effort)
 
-- Option A: paid tier (no pause). Option B: Vercel cron keep-alive ping (read-only
-  health check) business hours me.
-- **Impact:** multi-second first-load spikes khatam.
+**✅ IMPLEMENTED (2026-10-15, free-tier decision):** Vercel Hobby cron
+`vercel.json` → daily `30 4 * * *` UTC (≈10:00 IST) par public
+`/api/system-info` route ping — wahi route pehle se ek tiny Supabase query
+karta hai (service-role, whitelisted public fields, zero naya code/surface).
+Effect: (a) Supabase free-tier 7-day auto-pause prevention, (b) shop ke din
+ki shuruwat me DB warm. Limitation (free tier accepted): raat/weekend ke idle
+baad halka cold-start possible; proper no-pause ke liye paid tier zaroori.
+Rollback: `vercel.json` se `crons` hata do.
 
 ### Phase 3 — Client data cache (all pages, medium-high effort, high UX impact)
 
