@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## [1.57.4](https://github.com/waraseoni/vtech-next/compare/v1.57.3...v1.57.4) (2026-10-15)
+
+### Performance Improvements
+
+* **reports/monthly-profit:** TBT regression fix — hoisted Intl formatter + single-pass month bucketing + Maps (O(12N) Intl-constructs the CPU killer tha) ([97cfb1e](https://github.com/waraseoni/vtech-next/commit/97cfb1e33fe16adb1aa48de894b5b2b62b75ac92))
+* **supabase:** free-tier keep-alive — daily Vercel Hobby cron pings /api/system-info (auto-pause prevention + morning warm pool) ([4113931](https://github.com/waraseoni/vtech-next/commit/4113931bd757a63227758960e307a240129c2565))
+
 ## [1.57.3](https://github.com/waraseoni/vtech-next/compare/v1.57.2...v1.57.3) (2026-10-15)
 
 ### Bug Fixes
