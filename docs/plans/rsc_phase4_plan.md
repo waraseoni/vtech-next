@@ -1,25 +1,26 @@
 # Phase 4 — RSC Data Waterfall Removal (perf_db_fetch_audit)
 
-> **Status: IN PROGRESS — P1 IMPLEMENTED (2026-10-16, user verify pending).**
-> P2 (jobs) next.
+> **Status: IN PROGRESS — P1 + P2 IMPLEMENTED (2026-10-16, user verify pending).**
+> P3 (cash-flow + due-reminders) optional, later.
 >
 > **Goal:** authenticated first-paint me hi data (post-hydration waterfall khatam).
 > **Proven:** G3 pilot `clients` — LCP 10.13s→5.2-5.9s (SSR wins, perf_baseline).
 > **Audit line:** "Dashboard/jobs/clients initial data RSC me ya ek RPC per page
-> se; stream." — clients + dashboard done, **baaki: jobs**.
+> se; stream." — clients + dashboard + jobs done, **baaki: cash-flow (optional)**.
 
 ---
 
 ## Current state (researched 2026-10-15)
 
-| Page | Lines | Status | First-paint data path (aaj) |
-| ---- | ----- | ------ | --------------------------- |
-| `clients` | 20 | ✅ **RSC pilot done** | server page → `fetchClientsPageData()` → props → `ClientsBody` |
-| `(dashboard)/dashboard` | 1968 | ❌ `"use client"` | hydration → useEffect → 5-6 Promise.all batches → setState |
-| `jobs` | 2992 | ❌ `"use client"` | hydration → useEffect → supabase queries → setState |
-| `reports/cash-flow` | 744 | ❌ `"use client"` | (Phase 4 scope se BAHAR — baad ka batch) |
+| Page                    | Lines | Status                | First-paint data path (aaj)                                    |
+| ----------------------- | ----- | --------------------- | -------------------------------------------------------------- |
+| `clients`               | 20    | ✅ **RSC pilot done** | server page → `fetchClientsPageData()` → props → `ClientsBody` |
+| `(dashboard)/dashboard` | 1968  | ❌ `"use client"`     | hydration → useEffect → 5-6 Promise.all batches → setState     |
+| `jobs`                  | 2992  | ❌ `"use client"`     | hydration → useEffect → supabase queries → setState            |
+| `reports/cash-flow`     | 744   | ❌ `"use client"`     | (Phase 4 scope se BAHAR — baad ka batch)                       |
 
 **Established infra (dobara banana nahi):**
+
 - `requireStaffWithRole()` — server auth (`src/lib/api-auth.ts`)
 - `getServerSupabase()` — cookie+RLS server client; **service-role NEVER page reads me**
 - `src/lib/server-{clients,expenses,mechanics,payments,salary,hours-salary}.ts` — server fetch-lib family
@@ -45,9 +46,11 @@ export const dynamic = "force-dynamic"
 ---
 
 ## P1 — Dashboard (1968 ln) ⭐ highest impact (login ke baad pehla page)
+
 ### ✅ IMPLEMENTED (2026-10-16) — `perf(dashboard)` commit
 
 **Ship kiya:**
+
 - `src/lib/dashboard-shared.ts` (NEW) — shared types + STATUS_META (zero
   runtime deps; dono taraf single source)
 - `src/lib/server-dashboard.ts` (NEW) — `fetchDashboardInitialData()`: 5
@@ -64,12 +67,14 @@ export const dynamic = "force-dynamic"
   (default browser = call-sites unchanged)
 
 **Deviations (documented, behavior-safe):**
+
 - `product_locations` ka place-lookup ab server par DIRECT query
   (`is_frontend_staff()` RLS — migration 20260912 verified); /api hop nahi
 - stock-RPC fail → warn + low-stock khaali, recents BACHTE hain (pehle poora
   widget batch hi mar jata tha)
 
 ### P1 verification (user — deploy par)
+
 - [ ] Numbers: stats, revenue chart, recent jobs/payments, low stock (places
       samet), waiting-parts card — pehle jaise
 - [ ] Due reminders + admin financial widget → hydration ke baad bharte hain
@@ -79,30 +84,63 @@ export const dynamic = "force-dynamic"
 
 ## P2 — Jobs list (2992 ln)
 
-### P2a — `src/lib/server-jobs.ts`
+### ✅ IMPLEMENTED (2026-10-16) — `perf(jobs)` commit
 
-`fetchJobsInitialData(searchParams)` — URL filters (`status`, `search`, `date*`,
-`spot` — `useSearchParams` ke equivalent server `searchParams`):
+**Ship kiya:**
 
-- jobs rows ka first page (existing limit/pagination respect)
-- quick-stats counts (Total/Pending/Completed — `head:true`)
-- client-name map batch (`.in` on visible ids)
-- firm info (agar page use karta hai)
+- `src/app/jobs/jobListQueries.ts` (NEW) — shared query layer (neutral, zero
+  client/server deps): `Transaction`/`JobListStats`/`JobSpot`/`JobListFilters`
+  types; `queryStatusChangeLogs` (dual-era reader), `searchClientsForTerm`
+  (`.ilike`), `computeJobStats` (head:true counts + totalAmt), `queryJobPage`
+  (paginated list w/ filter logic 100% AS-IS), `enrichJobRows` (client-name
+  map + status-change-log enrichment), `queryJobSpots` (locations kind='job'
+  - live `fetchOpenPartCounts` counts), `seedMatchesFilters` (server/client
+    filter-snapshot check — localStorage hide_delivered mismatch path).
+- `src/app/jobs/useJobList.ts` (refactored, 515→~300 ln) — saari DB-query
+  logic jobListQueries me delegate; UI state (filters, pagination, debounce,
+  URL-sync, localStorage hide_delivered) wahin; seed-aware:
+  - `initial?: JobsListSeed | null` prop (default `undefined` = no-seed path,
+    zero behavior change for other callers)
+  - `seedMatchesFilters` mount-par localStorage-check → seed match ho to
+    mount-fetches skip (`useRef` skip-flags), mismatch ho to drop + client
+    fetch (aaj jaisa)
+  - `searchClientsForTerm` browser-client bound wrapper: per-term module-level
+    in-flight dedupe (Map) — fetchStats+fetchPage same term par duplicate
+    client-search nahi
+- `src/lib/server-jobs.ts` (NEW) — `fetchJobsPageData(sp, userRole)`:
+  `getServerSupabase()` (cookie+RLS, service-role NEVER); URL params padhta
+  hai (`search`/`date_from`/`date_to`/`hide_delivered`/`spot`); `hide_delivered`
+  ka localStorage fallback SERVER ko nahi dikhta (client `seedMatchesFilters`
+  mount-par check karta hai); per-request closure dedupe for client-search
+  (cross-user map RLS leak = banned); batch-failure par `logger.warn` + return
+  `null` (seed absent = client fetch chalega — graceful)
+- `src/app/jobs/page.tsx` → 25-line server component (requireStaffWithRole →
+  redirect /login → `await searchParams` → `fetchJobsPageData(sp, userRole)` →
+  `<JobsBody initial={null | JobsPageSeed}/>`, `force-dynamic`)
+- `src/app/jobs/JobsBody.tsx` (NEW, ~2960 ln) — copy of old page.tsx +
+  edits: `JobsPageSeed` prop, `useJobList(initial)`, sysInfo/mechNames/
+  userRole effects HATE (server props se seed), Suspense boundary intact
 
-### P2b — Split
+**Design decisions (documented):**
 
-1. `page.tsx` → server: auth + `fetchJobsInitialData(sp)` → `<JobsBody initial={...}/>`
-2. Existing filter/search/pagination useEffect **mount-fetch skip** karega jab
-   `initial` present ho; user interaction wahi purane client queries chalayengi
-   (filter logic ka rewrite NAHI — initial = server, interaction = client)
-3. `useSearchParams` wale Suspense boundary ka pattern maintain
+- `hide_delivered` localStorage lazily hides delivered — server URL se padta
+  hai, client seed-match check par decide karta hai. Mismatch par client fetch
+  chalta hai (aaj ka behavior, no regression).
+- `status` filter always `""` at mount (URL-sync nahi hota — seed snapshot bhi
+  same).
+- Shared query extraction chosen over duplication (drift risk elimination —
+  hsn-lesson spirit).
 
-### P2 verification
+### P2 verification (user — deploy par)
 
-- [ ] `/jobs?status=1&search=...` URL se load → sahi rows + counts pehle se
-- [ ] Filter change → client refetch (double-fetch nahi — network tab me ek hi)
-- [ ] Pagination, bulk-select, print/export intact
-- [ ] Mobile quick-stats bar
+- [ ] `/jobs` load → first paint pehle se rows + stats + spots (no "Loading..." after hydration)
+- [ ] `?search=...&date_from=...` URL se load → filtered rows
+- [ ] Filter/search/pagination change → client refetch (double-fetch nahi — network tab me ek hi)
+- [ ] localStorage hide_delivered: reload par last choice yaad; server URL-hide_delivered mismatch → graceful fallback (no blank list)
+- [ ] Quick-stats bar (Total/Pending/InProgress/Completed/totalAmt) sahi
+- [ ] Bulk-select, print/export, mobile quick-stats bar intact
+- [ ] Bulk move, spot edit, WA send, mobile FAB — sab waise ka waise
+- [ ] Logged-out → /login redirect (dev smoke: 307 ✓)
 
 ---
 
@@ -119,16 +157,17 @@ Rollback = page revert (server-lib naya file, safe).
 
 ## Risks
 
-| Risk | Mitigation |
-| ---- | ---------- |
-| Double-fetch on mount (client effect + server) | props-guard on mount effect; network tab se verify |
-| Hydration mismatch (server/client numbers) | same `inr()`/formatters, koi Date.now wala render nahi (pilot me already rule) |
-| Cookie auth server par | `requireStaffWithRole()` — pilot-tested |
-| Dashboard 1968-line move me slip | pure move, logic edit BANNED; tsc+visual verify |
-| SW/HTML caching stale data | `force-dynamic` + SW me HTML/RSC caching pehle se intentionally nahi (A4) |
+| Risk                                                           | Mitigation                                                                                       |
+| -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| Double-fetch on mount (client effect + server)                 | `useRef` skip-flags + seed-validity check; network tab se verify                                 |
+| localStorage hide_delivered mismatch (server URL se padta hai) | client mount-par `seedMatchesFilters` check → mismatch ho to seed drop + client fetch (graceful) |
+| Hydration mismatch (server/client numbers)                     | same `inr()`/formatters, koi Date.now wala render nahi (pilot me already rule)                   |
+| Cookie auth server par                                         | `requireStaffWithRole()` — pilot-tested                                                          |
+| Dashboard 1968-line move me slip                               | pure move, logic edit BANNED; tsc+visual verify                                                  |
+| SW/HTML caching stale data                                     | `force-dynamic` + SW me HTML/RSC caching pehle se intentionally nahi (A4)                        |
 
 ## Effort
 
-- P1: ek session (plan approved) — sabse bada chunk
-- P2: ek session
+- P1: ek session — sabse bada chunk ✅ done
+- P2: ek session ✅ done
 - Optional P3 (later): cash-flow + due-reminders server move
