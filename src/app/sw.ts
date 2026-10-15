@@ -20,6 +20,9 @@ declare const self: ServiceWorkerGlobalScope;
 //   - Har navigation/RSC request par `src/proxy.ts` `supabase.auth.getUser()`
 //     chalta hai (network round-trip). Jab response >~3s leta hai, NetworkFirst
 //     stale cache se PURANE build ka HTML/RSC serve kar deta hai.
+//     (UPDATE 2026-10-15: proxy auth-tax fix — early-returns pehle +
+//     `getClaims()` local verify fast path. Ab ye RTT sirf expired-token
+//     fallback par — NetworkOnly config phir bhi sahi hai, safety ke liye.)
 //   - Purana HTML/RSC naye build ke chunk URLs nahi jaanta → chunk 404 →
 //     hydration/Router fail → "V-TECH Secure Boot" loader hamesha ke liye atak
 //     jata hai. Ctrl+F5 SW bypass karta hai → fresh HTML+chunks → load hota hai.
@@ -65,7 +68,11 @@ const CUSTOM_CACHE: RuntimeCaching[] = [
     handler: new CacheFirst({
       cacheName: "next-static-js-assets",
       plugins: [
-        new ExpirationPlugin({ maxEntries: 128, maxAgeSeconds: 1440 * 60, maxAgeFrom: "last-used" }),
+        new ExpirationPlugin({
+          maxEntries: 128,
+          maxAgeSeconds: 1440 * 60,
+          maxAgeFrom: "last-used",
+        }),
       ],
     }),
   },
