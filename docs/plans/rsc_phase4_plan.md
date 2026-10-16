@@ -1,6 +1,8 @@
 # Phase 4 — RSC Data Waterfall Removal (perf_db_fetch_audit)
 
-> **Status: IN PROGRESS — P1 + P2 IMPLEMENTED (2026-10-16, user verify pending).**
+> **Status: IN PROGRESS — P1 + P2 IMPLEMENTED (2026-10-16, user verify pending);
+> P2 perf follow-up (parallel auth+data, seed openPartCounts, hide_delivered
+> cookie, StrictMode-safe seed gate, lazy modals) 2026-10-17.**
 > P3 (cash-flow + due-reminders) optional, later.
 >
 > **Goal:** authenticated first-paint me hi data (post-hydration waterfall khatam).
@@ -141,6 +143,52 @@ export const dynamic = "force-dynamic"
 - [ ] Bulk-select, print/export, mobile quick-stats bar intact
 - [ ] Bulk move, spot edit, WA send, mobile FAB — sab waise ka waise
 - [ ] Logged-out → /login redirect (dev smoke: 307 ✓)
+
+### P2 perf follow-up (2026-10-17) — `/jobs` load-time fixes
+
+Reason: `/jobs` abhi bhi dev + Vercel dono par slow lag raha tha. Diagnosis:
+Vercel function region already correct (bom1 ↔ Supabase MUM — `x-vercel-id`);
+DB warm ~220 ms (bottleneck nahi). Do asli costs: (1) client bundle/hydration
+(baseline `/jobs` ~1055 KB, TBT 2668 ms — sabse zyada), (2) server render
+waterfall (auth `getUser()` RTT ke BAAD data) + chhupi double-fetch.
+
+Ship kiya:
+
+- **Parallel auth + data** (`page.tsx`): pehle `requireStaffWithRole()` (getUser
+  RTT + profiles) ke baad hi `fetchJobsPageData` chalta tha (sequential ~250 ms
+  waste). Ab `Promise.all([requireStaffWithRole(), fetchJobsPageData(sp, …)])`.
+  Isliye `userRole` server-jobs se hataya — page auth se attach karta hai
+  (`JobsPageData = Omit<JobsPageSeed,"userRole">`).
+- **Seed `openPartCounts`**: `fetchOpenPartCounts(txnIds, client?)` (optional
+  cookie+RLS client, jaise `fetchWaitingSummary`); `JobsListSeed.openPartCounts`;
+  server list ke saath counts bhi bhejta hai. Badge mount-par ek extra client RTT
+  hata; client effect seed page par skip (`useJobList`).
+- **`hide_delivered` cookie** (`jobs_hide_delivered`): client localStorage mirror
+  + server ise padhta hai → localStorage-only case me bhi seed match, double-fetch
+  kam. URL param ab bhi authoritative.
+- **StrictMode-safe seed gate** (`useJobList`): purane "ek baar" skip-refs dev
+  StrictMode (effect double-invoke) me pehli run me consume ho kar DOOSRI run me
+  phir fetch kar dete the (dev-only double-fetch). Ab IDEMPOTENT check — current
+  fetch-inputs seed snapshot se match ho to skip; `seedConsumed` ek hi baar
+  false→true.
+- **Lazy modals** (`JobsBody`): `WaPreviewModal`, `JobSpotPicker`,
+  `JobPreviewPanel` ab `next/dynamic({ ssr:false })` — initial JS/hydration se
+  bahar (sirf interaction par load).
+- **`useJobList.test.tsx`** (NEW, 5 tests): seed-gate behaviour lock — valid seed
+  par zero mount-fetch, **StrictMode double-invoke** par bhi zero fetch (purana
+  skip-ref pattern yahin toot jata tha — regression guard), hide_delivered cookie
+  mismatch → seed drop + fetch, filter-change → refetch, cookie init + mirror.
+
+Bundle data (post-change, build manifest): `/jobs` first-load JS ≈ 1150 KB
+uncompressed; polyfill (110 KB) `noModule` hai → modern browsers skip. `/jobs`
+specific code minority hai — baaki shared floor (React/Next ~430 KB + supabase-js
+cluster ~250 KB + lucide + sonner + capacitor). Koi accidental heavy-lib leak
+nahi (recharts/qrcode/firebase/groq jobs bundle me nahi).
+
+Gates: tsc ✓ · eslint (touched) ✓ · prettier ✓ (no unrelated churn) ·
+vitest **365/365** ✓ · next build ✓ (`/jobs` ƒ Dynamic) · smoke 307→/login ✓.
+Remaining (next lever): `JobsBody` mega-component split / desktop-table-XOR-mobile-cards
+conditional render (hydration TBT); `requireStaffWithRole` getClaims fast-path.
 
 ---
 

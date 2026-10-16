@@ -20,6 +20,7 @@ import {
   queryStatusChangeLogs,
   searchClientsForTerm,
   seedMatchesFilters,
+  type JobListFilterInputs,
   type JobListStats,
   type JobSpot,
   type JobsListSeed,
@@ -44,6 +45,9 @@ export const fetchStatusChangeLogs = (
 // closure banao (cross-user cache = RLS leak).
 const searchClientsInflight = new Map<string, Promise<string>>();
 
+/** Server seed ki first page size (server-jobs.ts PAGE_SIZE se match). */
+const PAGE_SIZE_SEED = 25;
+
 export function useJobList(initial?: JobsListSeed | null) {
   const searchParams = useSearchParams();
 
@@ -57,12 +61,20 @@ export function useJobList(initial?: JobsListSeed | null) {
   const [localSearch, setLocalSearch] = useState(() => searchParams.get("search") || "");
   const [dateFrom, setDateFrom] = useState(urlDateFrom);
   const [dateTo, setDateTo] = useState(urlDateTo);
-  // Lazy init: URL param > localStorage last choice. Synchronous init zaroori hai
-  // taaki PEHLA fetch hi filtered ho (restore-effect race se delivered leak nahi hoga).
+  // Lazy init: URL param > cookie > localStorage. Synchronous init zaroori hai
+  // taaki PEHLA fetch hi filtered ho (restore-effect race se delivered leak nahi
+  // hoga). Cookie server bhi padhta hai (RSC seed match ke liye) — isliye
+  // localStorage se pehle cookie dekhte hain (dono mirror rehte hain).
   const [hideDelivered, setHideDelivered] = useState<boolean>(() => {
     const p = searchParams.get("hide_delivered");
     if (p !== null) return p === "1";
     if (typeof window !== "undefined") {
+      try {
+        const m = document.cookie.match(/(?:^|;\s*)jobs_hide_delivered=([01])/);
+        if (m) return m[1] === "1";
+      } catch {
+        /* ignore */
+      }
       try {
         return localStorage.getItem("jobs_hide_delivered") === "1";
       } catch {
@@ -102,7 +114,9 @@ export function useJobList(initial?: JobsListSeed | null) {
 
   // Data (seed se initialize — pehla render hi final data)
   const [transactions, setTransactions] = useState<Transaction[]>(seed?.transactions ?? []);
-  const [openPartCounts, setOpenPartCounts] = useState<Map<number, number>>(new Map());
+  const [openPartCounts, setOpenPartCounts] = useState<Map<number, number>>(
+    () => new Map(seed?.openPartCounts ?? [])
+  );
   const [totalRows, setTotalRows] = useState(seed?.totalRows ?? 0);
   const [stats, setStats] = useState<JobListStats>(
     seed?.stats ?? { total: 0, pending: 0, progress: 0, completed: 0, totalAmt: 0 }
@@ -110,11 +124,30 @@ export function useJobList(initial?: JobsListSeed | null) {
   const [jobSpots, setJobSpots] = useState<JobSpot[]>(seed?.jobSpots ?? []);
   const [loading, setLoading] = useState(seed === null);
   const [hasLoaded, setHasLoaded] = useState(seed !== null);
-  // Mount par in effects ko EK baar skip karna hai (seed consume) — refs
-  // first-render value lete hain, baad me seed change ka asar nahi.
-  const skipStatsFetch = useRef(seed !== null);
-  const skipPageFetch = useRef(seed !== null);
-  const skipSpotsFetch = useRef(seed !== null);
+
+  // ── Seed-aware mount-skip (StrictMode-safe) ──────────────────────────────
+  // Pehle "ek baar" skip-refs the — par dev StrictMode effect do baar chalata
+  // hai, to ref pehli run me consume ho kar DOOSRI run me phir fetch kar deta
+  // tha (dev-only double-fetch). Ab decide IDEMPOTENTLY: jitni der current
+  // fetch-inputs seed ke snapshot se match karte hain, server data
+  // authoritative hai (skip). Koi bhi filter/page change → mismatch → fetch.
+  // `seedConsumed` sirf ek baar false→true hota hai jab pehli client fetch
+  // chale, taaki mutation/imperative refetch ke baad seed dobara "fresh" na lage.
+  const seedInputs = useRef<JobListFilterInputs | null>(seed ? seed.filterInputs : null).current;
+  const seedConsumed = useRef(false);
+
+  const fetchInputs = (): JobListFilterInputs => ({
+    search: debouncedSearch,
+    dateFrom,
+    dateTo,
+    hideDelivered,
+    status: statusFilter,
+    spot: spotFilter,
+  });
+  const seedCoversFetch = (): boolean =>
+    seedInputs !== null && seedMatchesFilters(seedInputs, fetchInputs());
+  const seedCoversPage = (): boolean =>
+    seedCoversFetch() && pageIndex === 0 && pageSize === PAGE_SIZE_SEED;
 
   // Pagination
   const [pageSize, setPageSize] = useState(25);
@@ -126,11 +159,19 @@ export function useJobList(initial?: JobsListSeed | null) {
     return () => clearTimeout(t);
   }, [localSearch]);
 
-  // ── Hide Delivered yaad rakhna (localStorage) — refresh par last choice rahe ──
+  // ── Hide Delivered yaad rakhna (localStorage + cookie) — refresh par last choice ──
   // Restore lazy-init me hota hai (upar); yahan sirf har change persist karo.
+  // Cookie mirror zaroori hai: server isse padhta hai taaki RSC seed mount-filters
+  // se match kare (warna seed drop + double-fetch).
   useEffect(() => {
+    const v = hideDelivered ? "1" : "0";
     try {
-      localStorage.setItem("jobs_hide_delivered", hideDelivered ? "1" : "0");
+      localStorage.setItem("jobs_hide_delivered", v);
+    } catch {
+      /* ignore */
+    }
+    try {
+      document.cookie = `jobs_hide_delivered=${v}; path=/; max-age=31536000; samesite=lax`;
     } catch {
       /* ignore */
     }
@@ -141,11 +182,12 @@ export function useJobList(initial?: JobsListSeed | null) {
     setJobSpots(await queryJobSpots(supabase));
   }, []);
   useEffect(() => {
-    if (skipSpotsFetch.current) {
-      skipSpotsFetch.current = false;
-      return;
-    }
+    // Job spots filter-independent hain — seed inhe laata hai, to mount par
+    // fetch skip (mismatch par hi chalao). Imperative refresh (spot change ke
+    // baad) directly loadJobSpots() call karta hai.
+    if (seedInputs !== null) return;
     loadJobSpots();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loadJobSpots]);
 
   // URL se aaya spot id agar DB me exist nahi karta (deleted spot ka purana QR/link)
@@ -252,18 +294,16 @@ export function useJobList(initial?: JobsListSeed | null) {
   ]);
 
   useEffect(() => {
-    if (skipStatsFetch.current) {
-      skipStatsFetch.current = false;
-      return;
-    }
+    if (!seedConsumed.current && seedCoversFetch()) return; // seed stats authoritative
+    seedConsumed.current = true;
     fetchStats();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fetchStats]);
   useEffect(() => {
-    if (skipPageFetch.current) {
-      skipPageFetch.current = false;
-      return;
-    }
+    if (!seedConsumed.current && seedCoversPage()) return; // seed page authoritative
+    seedConsumed.current = true;
     fetchPage();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fetchPage]);
 
   // BUG FIX 3: Reset pageIndex on actual filter/search change
@@ -277,6 +317,7 @@ export function useJobList(initial?: JobsListSeed | null) {
   const totalPages = Math.ceil(totalRows / pageSize);
 
   useEffect(() => {
+    if (!seedConsumed.current && seedCoversPage()) return; // seed openPartCounts already
     const ids = paginatedTransactions.map((t) => t.id);
     if (ids.length === 0) {
       setOpenPartCounts(new Map());

@@ -81,6 +81,8 @@ export interface JobsListSeed {
   totalRows: number;
   stats: JobListStats;
   jobSpots: JobSpot[];
+  /** Open (status 0/1) required-part count per txn — Map ka serializable form. */
+  openPartCounts: [number, number][];
 }
 
 /** Page-level extras (JobsBody) — list seed ke saath. */
@@ -89,6 +91,12 @@ export interface JobsPageSeed extends JobsListSeed {
   mechNames: Record<number, string>;
   userRole: string;
 }
+
+/**
+ * Server se aane wala first-paint data — userRole page-level auth se attach hota
+ * hai (isliye yahan se exclude) taaki auth + data fetch PARALLEL chalein.
+ */
+export type JobsPageData = Omit<JobsPageSeed, "userRole">;
 
 /**
  * Server seed tabhi valid hai jab CLIENT ke mount-time filters usse match

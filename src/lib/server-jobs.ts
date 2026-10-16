@@ -5,8 +5,9 @@ import {
   queryJobPage,
   queryJobSpots,
   searchClientsForTerm,
-  type JobsPageSeed,
+  type JobsPageData,
 } from "@/app/jobs/jobListQueries";
+import { fetchOpenPartCounts } from "@/lib/requiredParts";
 import { logger } from "@/lib/logger";
 
 /**
@@ -16,9 +17,10 @@ import { logger } from "@/lib/logger";
  * hook useJobList bhi wahi use karta hai) — drift impossible. G3 gate rule:
  * service-role NEVER for page reads — cookie+RLS server client.
  *
- * `hide_delivered` ka localStorage fallback SERVER ko nahi dikhta (URL se hi
- * padha jata hai) — client mount par filter-snapshot match karta hai, mismatch
- * par seed drop karke apna fetch chalta hai (aaj ka behaviour, no regression).
+ * `hide_delivered`: URL param pehle, warna `jobs_hide_delivered` cookie (client
+ * usi cookie ko mirror karta hai) — isse seed mount-par match karta hai aur
+ * double-fetch nahi hota. `userRole` yahan se NAHI aata (page auth se attach
+ * karta hai) taaki auth + data fetch PARALLEL chal sakein.
  */
 
 type Sb = Awaited<ReturnType<typeof getServerSupabase>>;
@@ -33,16 +35,18 @@ const first = (v: string | string[] | undefined): string =>
 
 export async function fetchJobsPageData(
   sp: JobsSearchParams,
-  opts: { userRole: string }
-): Promise<JobsPageSeed | null> {
+  opts: { hideDelivered?: boolean } = {}
+): Promise<JobsPageData | null> {
   const supabase: Sb = await getServerSupabase();
 
   const rawSpot = first(sp.spot);
+  const rawHide = first(sp.hide_delivered);
   const filterInputs = {
     search: first(sp.search),
     dateFrom: first(sp.date_from),
     dateTo: first(sp.date_to),
-    hideDelivered: first(sp.hide_delivered) === "1",
+    // URL param authoritative; param na ho to cookie-derived value (client mirror).
+    hideDelivered: rawHide ? rawHide === "1" : (opts.hideDelivered ?? false),
     // Client ka statusFilter mount par hamesha "" hai (URL-sync nahi hota) —
     // snapshot bhi wahi.
     status: "" as const,
@@ -73,7 +77,19 @@ export async function fetchJobsPageData(
         computeJobStats(supabase, filters, resolveClients),
       ]);
       const transactions = await enrichJobRows(supabase, rows);
-      return { transactions, totalRows: count, stats };
+      // Open-part badges — pehle client mount par ek extra RTT thi; ab server
+      // par (list ke saath) — badge first-paint me hi sahi.
+      let openPartCounts: [number, number][] = [];
+      try {
+        const counts = await fetchOpenPartCounts(
+          transactions.map((t) => t.id),
+          supabase
+        );
+        openPartCounts = [...counts.entries()];
+      } catch (e) {
+        logger.warn("Jobs openPartCounts fetch failed:", e);
+      }
+      return { transactions, totalRows: count, stats, openPartCounts };
     } catch (e) {
       logger.warn("Jobs initial list fetch failed — body client-fetch karega:", e);
       return null;
@@ -136,9 +152,9 @@ export async function fetchJobsPageData(
     transactions: list.transactions,
     totalRows: list.totalRows,
     stats: list.stats,
+    openPartCounts: list.openPartCounts,
     jobSpots,
     sysInfo,
     mechNames,
-    userRole: opts.userRole,
   };
 }

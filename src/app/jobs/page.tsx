@@ -1,5 +1,6 @@
 import { requireStaffWithRole } from "@/lib/api-auth";
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 import { fetchJobsPageData, type JobsSearchParams } from "@/lib/server-jobs";
 import JobsBody from "./JobsBody";
 
@@ -9,6 +10,10 @@ import JobsBody from "./JobsBody";
 // (cookie+RLS server client — service-role NEVER), phir JobsBody (client)
 // interactive UI ko props ke roop me leta hai. Query semantics shared hai
 // jobListQueries.ts (client + server dono wahi use karte hain — drift nahi).
+//
+// PERF: auth aur data fetch PARALLEL chalte hain (Promise.all) — pehle
+// getUser() RTT ke BAAD hi data fetch shuru hota tha (sequential waterfall).
+// `hide_delivered` cookie client ke mirror se aata hai (seed match ke liye).
 export const dynamic = "force-dynamic";
 
 export default async function JobsPage({
@@ -16,11 +21,16 @@ export default async function JobsPage({
 }: {
   searchParams: Promise<JobsSearchParams>;
 }) {
-  const session = await requireStaffWithRole();
+  const sp = await searchParams;
+  const cookieStore = await cookies();
+  const hideDelivered = cookieStore.get("jobs_hide_delivered")?.value === "1";
+
+  const [session, data] = await Promise.all([
+    requireStaffWithRole(),
+    fetchJobsPageData(sp, { hideDelivered }),
+  ]);
   if (!session) redirect("/login");
 
-  const sp = await searchParams;
-  const initial = await fetchJobsPageData(sp, { userRole: session.role });
-
+  const initial = data ? { ...data, userRole: session.role } : null;
   return <JobsBody initial={initial} />;
 }

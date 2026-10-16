@@ -67,11 +67,18 @@ import {
   Briefcase,
   ScanEye,
 } from "lucide-react";
+import dynamic from "next/dynamic";
 import PageLoader from "@/components/PageLoader";
-import WaPreviewModal from "@/components/WaPreviewModal";
-import { JobPreviewPanel } from "./JobPreviewPanel";
-import JobSpotPicker from "@/components/JobSpotPicker";
 import WaitingPartsBadge from "@/components/WaitingPartsBadge";
+
+// PERF: on-demand modals/panel ko initial bundle se bahar rakho (hydration/TBT
+// kam) — ye sirf interaction par mount hote hain, pehla paint inke JS ka intezaar
+// nahi karta. `ssr: false` kyunki ye client-only overlays hain.
+const WaPreviewModal = dynamic(() => import("@/components/WaPreviewModal"), { ssr: false });
+const JobSpotPicker = dynamic(() => import("@/components/JobSpotPicker"), { ssr: false });
+const JobPreviewPanel = dynamic(() => import("./JobPreviewPanel").then((m) => m.JobPreviewPanel), {
+  ssr: false,
+});
 import { substituteTemplate, firmVars, resolveTemplate } from "@/lib/whatsapp";
 import { logActivity } from "@/lib/activity";
 import { getNextJobId, bumpJobCounter } from "@/lib/jobIdCounter";

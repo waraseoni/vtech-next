@@ -178,12 +178,19 @@ export async function removeRequiredPart(id: number, txnId: number) {
   );
 }
 
-/** Open (waiting/ordered) required-part count per job — ek query me rows fetch karke count. */
-export async function fetchOpenPartCounts(txnIds: number[]): Promise<Map<number, number>> {
+/**
+ * Open (waiting/ordered) required-part count per job — ek query me rows fetch
+ * karke count. `client` optional: RSC pages apna cookie+RLS server client pass
+ * karti hain (browser default) — jaise fetchWaitingSummary.
+ */
+export async function fetchOpenPartCounts(
+  txnIds: number[],
+  client: SupabaseClient = supabase
+): Promise<Map<number, number>> {
   const map = new Map<number, number>();
   const uniq = [...new Set(txnIds.filter((v) => typeof v === "number" && Number.isFinite(v)))];
   if (uniq.length === 0) return map;
-  const { data, error } = await supabase
+  const { data, error } = await client
     .from("job_required_parts")
     .select("transaction_id")
     .in("status", ORDER)
