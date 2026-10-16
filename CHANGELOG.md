@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## [1.57.7](https://github.com/waraseoni/vtech-next/compare/v1.57.6...v1.57.7) (2026-10-16)
+
+### Performance Improvements
+
+* **auth:** staff auth getClaims() fast-path — local JWKS verify, getUser() fallback ([72f1174](https://github.com/waraseoni/vtech-next/commit/72f11748b394f71247b4b5c3e314fac6424f47d0))
+* **jobs:** parallel auth+data, seed openPartCounts, hide_delivered cookie, StrictMode-safe seed gate, lazy modals ([050218b](https://github.com/waraseoni/vtech-next/commit/050218bcbacc430d35753b019c5bc7f54823e4d8))
+
 ## [1.57.6](https://github.com/waraseoni/vtech-next/compare/v1.57.5...v1.57.6) (2026-10-15)
 
 ### Performance Improvements
