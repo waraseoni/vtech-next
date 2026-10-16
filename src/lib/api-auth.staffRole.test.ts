@@ -13,12 +13,29 @@ const stub: {
   user: { id: string } | null;
   profile: { role: string } | null;
   throwOnProfile: boolean;
-} = { user: { id: "u1" }, profile: { role: "staff" }, throwOnProfile: false };
+  claims: { sub?: string; email?: string; user_metadata?: Record<string, unknown> } | null;
+  throwOnClaims: boolean;
+  getUserCalls: number;
+} = {
+  user: { id: "u1" },
+  profile: { role: "staff" },
+  throwOnProfile: false,
+  claims: null,
+  throwOnClaims: false,
+  getUserCalls: 0,
+};
 
 vi.mock("@supabase/ssr", () => ({
   createServerClient: () => ({
     auth: {
-      getUser: async () => ({ data: { user: stub.user }, error: null }),
+      getClaims: async () => {
+        if (stub.throwOnClaims) throw new Error("jwks unavailable");
+        return { data: { claims: stub.claims }, error: null };
+      },
+      getUser: async () => {
+        stub.getUserCalls += 1;
+        return { data: { user: stub.user }, error: null };
+      },
     },
     from: () => ({
       select: () => ({
@@ -41,6 +58,9 @@ beforeEach(() => {
   stub.user = { id: "u1" };
   stub.profile = { role: "staff" };
   stub.throwOnProfile = false;
+  stub.claims = null;
+  stub.throwOnClaims = false;
+  stub.getUserCalls = 0;
 });
 
 describe("requireStaff — fail-closed on missing profile (ledger-zeros regression)", () => {
@@ -85,5 +105,35 @@ describe("requireStaff — valid roles pass (behaviour unchanged)", () => {
   it("role empty string → deny (valid role nahi hai)", async () => {
     stub.profile = { role: "" };
     expect(await requireStaffWithRole()).toBeNull();
+  });
+});
+
+// Perf: staff auth par `getUser()` (Auth-server RTT ~250 ms/request) hata diya —
+// local `getClaims()` (JWKS) se id milti hai, wahi se role query. Ye tests lock
+// karte hain ki valid claims par network call hota hi nahi, aur fallback intact hai.
+describe("requireStaff — getClaims fast path (Auth-server RTT skipped)", () => {
+  it("valid claims → getUser call hi nahi (zero network auth RTT)", async () => {
+    stub.claims = { sub: "u1", email: "a@b.c", user_metadata: { full_name: "A" } };
+    const r = await requireStaffWithReason();
+    expect(r).toEqual({
+      status: "ok",
+      user: { id: "u1", email: "a@b.c", user_metadata: { full_name: "A" } },
+      role: "staff",
+    });
+    expect(stub.getUserCalls).toBe(0);
+  });
+
+  it("claims me sub nahi → getUser fallback (expired/invalid token validate)", async () => {
+    stub.claims = { email: "a@b.c" };
+    const r = await requireStaffWithReason();
+    expect(r).toEqual({ status: "ok", user: { id: "u1" }, role: "staff" });
+    expect(stub.getUserCalls).toBe(1);
+  });
+
+  it("getClaims throw kare → getUser fallback (fail-safe, deny nahi)", async () => {
+    stub.throwOnClaims = true;
+    const r = await requireStaffWithReason();
+    expect(r).toEqual({ status: "ok", user: { id: "u1" }, role: "staff" });
+    expect(stub.getUserCalls).toBe(1);
   });
 });

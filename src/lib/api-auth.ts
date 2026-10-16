@@ -108,7 +108,11 @@ export async function enforceApiGeoGate(
     if (permit?.expires_at) return null; // active permit → allow
   }
 
-  return geoBlocked("GEO_WRITE_BLOCKED", `Aap office ke bahar hain${dist}. Bina permit ke koi bhi change nahi ho sakta — sirf dekh sakte hain.`, status);
+  return geoBlocked(
+    "GEO_WRITE_BLOCKED",
+    `Aap office ke bahar hain${dist}. Bina permit ke koi bhi change nahi ho sakta — sirf dekh sakte hain.`,
+    status
+  );
 }
 
 /**
@@ -121,11 +125,7 @@ export async function enforceApiGeoGate(
 export async function requireStaffWriter(
   req: Request,
   opts: { geoExempt?: boolean } = {}
-): Promise<
-  | { user: NonNullable<Awaited<ReturnType<typeof requireUser>>>; role: string }
-  | NextResponse
-  | null
-> {
+): Promise<{ user: ServerUser; role: string } | NextResponse | null> {
   const session = await requireStaffWithRole();
   if (!session) return null;
   const gate = await enforceApiGeoGate(req, session.role, session.user.id, opts);
@@ -146,6 +146,57 @@ export async function requireUser() {
   }
 }
 
+/**
+ * Staff path ka minimal authenticated user (sirf id). Full Supabase `User`
+ * object ki zarurat nahi — isse hum local `getClaims()` (JWKS verify, zero
+ * network RTT) use kar sakte hain, `getUser()` (Auth server round-trip
+ * ~250 ms/request) har staff API call + server page par nahi. Proxy bhi yahi
+ * pattern use karta hai (`src/proxy.ts`).
+ */
+export type ServerUser = {
+  id: string;
+  email?: string | null;
+  user_metadata?: Record<string, unknown>;
+};
+
+/**
+ * Fast server auth: local `getClaims()` first, `getUser()` fallback (expired/
+ * invalid token → server validate + refresh; symmetric-key projects me
+ * getClaims khud network par chala jata hai, to koi regression nahi).
+ */
+async function resolveServerUser(
+  supabase: Awaited<ReturnType<typeof getServerSupabase>>
+): Promise<ServerUser | null> {
+  try {
+    const { data, error } = await supabase.auth.getClaims();
+    const c = data?.claims as
+      { sub?: string; email?: string; user_metadata?: Record<string, unknown> } | undefined;
+    if (!error && c?.sub) {
+      return {
+        id: String(c.sub),
+        ...(c.email ? { email: c.email } : {}),
+        ...(c.user_metadata ? { user_metadata: c.user_metadata } : {}),
+      };
+    }
+  } catch {
+    /* fall through to network validate */
+  }
+  try {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    return user
+      ? {
+          id: user.id,
+          ...(user.email ? { email: user.email } : {}),
+          ...(user.user_metadata ? { user_metadata: user.user_metadata } : {}),
+        }
+      : null;
+  } catch {
+    return null;
+  }
+}
+
 export async function requireStaff() {
   const session = await requireStaffWithRole();
   return session?.user ?? null;
@@ -153,7 +204,7 @@ export async function requireStaff() {
 
 /** Single round-trip auth + role — use on server pages that also need role. */
 export async function requireStaffWithRole(): Promise<{
-  user: NonNullable<Awaited<ReturnType<typeof requireUser>>>;
+  user: ServerUser;
   role: string;
 } | null> {
   const r = await requireStaffWithReason();
@@ -178,14 +229,11 @@ export type StaffAuthStatus = "no-session" | "no-profile" | "forbidden";
  * loud-403 me badalta hai.
  */
 export async function requireStaffWithReason(): Promise<
-  | { status: "ok"; user: NonNullable<Awaited<ReturnType<typeof requireUser>>>; role: string }
-  | { status: StaffAuthStatus }
+  { status: "ok"; user: ServerUser; role: string } | { status: StaffAuthStatus }
 > {
   const supabase = await getServerSupabase();
   try {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const user = await resolveServerUser(supabase);
     if (!user) return { status: "no-session" };
     const { data: profile } = await supabase
       .from("profiles")

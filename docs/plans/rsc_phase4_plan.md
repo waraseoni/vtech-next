@@ -2,7 +2,8 @@
 
 > **Status: IN PROGRESS — P1 + P2 IMPLEMENTED (2026-10-16, user verify pending);
 > P2 perf follow-up (parallel auth+data, seed openPartCounts, hide_delivered
-> cookie, StrictMode-safe seed gate, lazy modals) 2026-10-17.**
+> cookie, StrictMode-safe seed gate, lazy modals) + staff-auth `getClaims()`
+> fast-path 2026-10-17.**
 > P3 (cash-flow + due-reminders) optional, later.
 >
 > **Goal:** authenticated first-paint me hi data (post-hydration waterfall khatam).
@@ -164,8 +165,8 @@ Ship kiya:
   server list ke saath counts bhi bhejta hai. Badge mount-par ek extra client RTT
   hata; client effect seed page par skip (`useJobList`).
 - **`hide_delivered` cookie** (`jobs_hide_delivered`): client localStorage mirror
-  + server ise padhta hai → localStorage-only case me bhi seed match, double-fetch
-  kam. URL param ab bhi authoritative.
+  - server ise padhta hai → localStorage-only case me bhi seed match, double-fetch
+    kam. URL param ab bhi authoritative.
 - **StrictMode-safe seed gate** (`useJobList`): purane "ek baar" skip-refs dev
   StrictMode (effect double-invoke) me pehli run me consume ho kar DOOSRI run me
   phir fetch kar dete the (dev-only double-fetch). Ab IDEMPOTENT check — current
@@ -186,9 +187,24 @@ cluster ~250 KB + lucide + sonner + capacitor). Koi accidental heavy-lib leak
 nahi (recharts/qrcode/firebase/groq jobs bundle me nahi).
 
 Gates: tsc ✓ · eslint (touched) ✓ · prettier ✓ (no unrelated churn) ·
-vitest **365/365** ✓ · next build ✓ (`/jobs` ƒ Dynamic) · smoke 307→/login ✓.
-Remaining (next lever): `JobsBody` mega-component split / desktop-table-XOR-mobile-cards
-conditional render (hydration TBT); `requireStaffWithRole` getClaims fast-path.
+vitest **368/368** ✓ · next build ✓ (`/jobs` ƒ Dynamic) · smoke 307→/login ✓.
+
+### Auth fast-path — `getClaims()` (2026-10-17, app-wide)
+
+`requireStaffWithReason`/`requireStaffWithRole`/`requireStaff`/`requireStaffWriter`
+ab `getUser()` (Auth-server RTT ~250 ms/request) ke bajaye local `getClaims()`
+(JWKS verify, zero network) use karte hain, `getUser()` par fallback (expired/
+invalid claims → server validate + refresh). Sirf staff path — `requireUser`/
+`requireClient`/`requireAdmin` untouched (unhe full `User`/`user_metadata`
+chahiye). `ServerUser` type (`{id, email?, user_metadata?}`) claims se fill hota
+hai; dashboard `full_name`/`email` wahi se. Lock: `api-auth.staffRole.test.ts`
+me 3 tests — valid claims par `getUser` call hi nahi; sub missing / getClaims
+throw → fallback. Benefit: **har staff API call + server page** se ~250 ms kam
+(free tier me bhi).
+
+Remaining (next lever): `JobsBody` mega-component split /
+desktop-table-XOR-mobile-cards conditional render (hydration TBT) — sirf tab jab
+real TBT measurement bataye ki abhi bhi high.
 
 ---
 
