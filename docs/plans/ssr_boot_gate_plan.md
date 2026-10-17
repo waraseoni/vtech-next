@@ -125,3 +125,47 @@ mount hote hain (pehle har mobile load par, drawer band hone par bhi). Mobile DO
 (`profiles`+`user_presence`) tab tak nahi chalti jab tak drawer na khule.
 Container (`<aside>`) mounted rehta hai → slide animation intact (`aiOpenedOnce`
 pattern). Commit `a001ebc`.
+
+## Implementation plan (staged) — dedicated sprint
+
+Best practice: staged, flag-guarded, revertible. Har stage apne PR me; har stage
+ke baad gates (tsc/eslint/prettier/vitest/build) + multi-route smoke (public +
+protected) + Lighthouse mobile@4x (least of 3). Ek stage break kare to usi PR me
+revert — aage nahi badhna.
+
+### Stage 0 — Guard rails
+
+- Perf budget (fail CI/manual): `/jobs` mobile@4x **TBT < 900ms**, **LCP < 4.2s**
+  (aaj baseline: TBT ~766ms, LCP ~3.8s).
+- SSR-content assertion: authenticated GET ke HTML me page-specific markup
+  (e.g. `job_id` / table rows) — abhi 0; Stage 1 ke baad >0.
+- Feature flag `NEXT_PUBLIC_SSR_CONTENT` (default **off**) — instant rollback bina
+  code change.
+
+### Stage 1 — Content SSR, splash as overlay (content-only)
+
+- `RootClient` ke `!authReady` branch: splash ko `fixed inset-0 z-[100]` overlay
+  banao, aur `children` ko `<ViewOnlyProvider role={undefined}><main class="flex-1
+  p-3 sm:p-5 theme-body">` wrapper me render karo (authed branch jaisa structure).
+- Fayda: content SSR HTML me → **FCP/LCP** better (paint boot-fetch se pehle).
+- Risk: splash→shell transition me `children` **remount** ho sakta hai → page body
+  dobara render → **TBT badh sakta hai** (isi liye flag + TBT measure). Agar TBT
+  bade to Stage 1 reject.
+- Chhoti baatein: SSR par `isMobile=null` + `profile=null` → shell nav khaali,
+  desktop margin shift. Content-only stage me shell render nahi hota, isliye mvmt
+  Stage 2 tak.
+
+### Stage 2 — Shell ko SSR-safe banao
+
+- Sidebar/header/theme/density ko server par bhi render karo (server session se
+  role) — `useAppBoot` ka auth server + client dono se hydrate ho.
+- Layout shift + hydration mismatch risk: `suppressHydrationWarning` + server role;
+  `matchMedia`-based `isMobile` ko CSS-only responsive par shift karo.
+
+### Stage 3 — Boot gate ko post-hydration enhancement banao
+
+- Splash sirf tab jab tak session validate na ho; watchdog/license/idle/presence
+  client-side enhancement rahe. Saare protected routes ka full app-wide verification.
+
+> **Ek saath sab nahi.** Har stage independent + flag-guarded. Agar Stage 1 bhi TBT
+> na de, to Option A par ruk jao (RSC seed already data-waterfall hata chuka hai).
