@@ -1,6 +1,6 @@
 # SSR Boot-Gate — feasibility plan (authenticated pages client-rendered)
 
-> **Status: INVESTIGATION ONLY (18 Oct 2026) — koi code change nahi.**
+> **Status: Option A IMPLEMENTED (18 Oct 2026) — see "Option A — result" below.**
 > Yeh discovery Fix #1 (`/jobs` mobile device-branch) verify karte waqt mili:
 > `/jobs` (aur baaki authenticated pages) ka **content SSR HTML me nahi** aata.
 
@@ -95,3 +95,24 @@ Yani gate "jaldi SSR" ke bajaye **fail-safe boot** ke liye hai.
   expect A: unchanged (0), B: >0.
 - Lighthouse mobile @4× A/B (TBT, Style & Layout) — `perf_baseline.md` method.
 - Gates: tsc · eslint (touched) · vitest · `next build` · dev smoke.
+
+## Option A — result (18 Oct 2026)
+
+Implemented (`4a30c0d`): `/jobs` mobile card list **progressive mount** —
+`CARD_CHUNK = 6`, scroll par `IntersectionObserver` sentinel chunk-by-chunk
+badhata hai (max = page size). `content-visibility`/`contain` try kiya tha par
+**koi measurable win nahi** (nodes DOM me rehte hain) → revert.
+
+Mobile@4× (prod `next start`, CDP `Performance.getMetrics`): DOM 2798 → ~985
+(initial, cards=6), Style-recalc ~4100 → ~1500ms, TaskDuration ~5510 → ~2800ms.
+Lighthouse mobile @4×: **perf 56 → 68, TBT 2413 → 766ms (−68%), Style & Layout
+4729 → 1793ms (−62%)**; LCP/FCP ~flat.
+
+Verified (CDP): scroll par cards 6→12→18→24→25, card-pager intact. Implementation
+note: observer **callback-ref** se attach karo — plain `useEffect` sentinel ka node
+skeleton→cards transition par replace hone se detached ho jata hai aur phir kabhi
+fire nahi karta.
+
+Bache hue (optional) levers: per-card markup/icon count aur app CSS rule count
+(356KB / 4266 rules). **Option B** (RootClient SSR-friendly) abhi bhi alag,
+dedicated, feature-freeze-ke-baad sprint me — tab jab field data kahe.

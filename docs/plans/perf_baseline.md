@@ -255,3 +255,36 @@ Fix #1 ka effect isi par: mobile UA ko server se `initialIsMobile=true` milta ha
 hydration par seedha mobile tree banta hai, desktop tree ka layout skip → mobile
 TBT −21%, Style & Layout −25%. Aage ka SSR-content lever: `ssr_boot_gate_plan.md`.
 
+
+### Session 6 addendum 3 — Option A: /jobs mobile progressive card mount (18 Oct 2026)
+
+`ssr_boot_gate_plan.md` ka **Option A** (client render cost cut) ship (`4a30c0d`).
+Approach: mobile card list **progressive mount** — pehle sirf `CARD_CHUNK = 6`
+cards DOM me, scroll par `IntersectionObserver` sentinel (rootMargin 600px) se
+agla chunk (max = page size 25). `content-visibility:auto` + `contain-intrinsic-size`
+try kiya tha par **koi measurable farq nahi** (nodes DOM me rehte hain) → revert.
+
+CDP deterministic (`Emulation.setCPUThrottlingRate=4`, `Performance.getMetrics`),
+mobile@4×, prod `next start`:
+
+| Metric | Before (Fix #1) | After (lazy mount) |
+|---|---|---|
+| DOM elements (initial) | 2798 | ~985 (cards=6) |
+| Style recalc (RecalcStyle) | ~4100ms | ~1500ms |
+| TaskDuration total | ~5510ms | ~2800ms |
+
+Lighthouse mobile @4× (least of 2 runs, same machine):
+
+| State | perf | TBT | Style & Layout | LCP |
+|---|---|---|---|---|
+| Fix #1 (`bb9f71c`) | 56 | 2413ms | 4729ms | 3938ms |
+| lazy mount (`4a30c0d`) | 68 | 766ms | 1793ms | 3794ms |
+
+> **Verdict: bada, consistent win** — TBT **−68%**, Style & Layout **−62%**,
+> perf 56 → 68; LCP/FCP lagbhag unchanged (FCP ~1380ms). Root cause confirm:
+> mobile cost **style-recalc/DOM** tha, JS nahi (Fix #1 ke baad bhi recalc ~4s).
+> Scroll par cards chunk-by-chunk mount hote hain (6→12→18→24→25), pager intact;
+> CDP se verified. Bug jo mila: plain `useEffect` observer sentinel node ke
+> skeleton→cards transition par **detached** ho jata tha → callback-ref se fix.
+> Baaki levers (optional): per-card markup/icon count, CSS rule count
+> (356KB/4266 rules); Option B (RootClient SSR) alag sprint.
