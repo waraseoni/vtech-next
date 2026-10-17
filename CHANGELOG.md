@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.57.9](https://github.com/waraseoni/vtech-next/compare/v1.57.8...v1.57.9) (2026-10-17)
+
+### Performance Improvements
+
+* **jobs:** progressive mobile card mount via IntersectionObserver ([4a30c0d](https://github.com/waraseoni/vtech-next/commit/4a30c0d7aad787409a7a30ade525f7a5fe994e56))
+
 ## [1.57.8](https://github.com/waraseoni/vtech-next/compare/v1.57.7...v1.57.8) (2026-10-17)
 
 ### Performance Improvements
