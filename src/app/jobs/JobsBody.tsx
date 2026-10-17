@@ -211,7 +211,13 @@ const fmtTime = (d: string) => formatIST(d, { hour: "2-digit", minute: "2-digit"
 // Phase 4 P2 (docs/plans/rsc_phase4_plan.md): ye CLIENT body hai. First-paint
 // list/stats/spots/sysInfo/mechNames/userRole server page props se aate hain;
 // interaction (filter/search/pagination/mutations) wahi purani client queries.
-function JobsListContent({ initial }: { initial: JobsPageSeed | null }) {
+function JobsListContent({
+  initial,
+  initialIsMobile,
+}: {
+  initial: JobsPageSeed | null;
+  initialIsMobile: boolean;
+}) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -256,7 +262,11 @@ function JobsListContent({ initial }: { initial: JobsPageSeed | null }) {
   const { viewOnly } = useViewOnly();
 
   const userRole = initial?.userRole ?? null;
-  const [isMobile, setIsMobile] = useState(false);
+  // Server device hint se initial state — matchMedia effect (neeche) mount ke
+  // baad asli viewport par correct karta hai. Isse mobile pe SSR/first-render hi
+  // MOBILE tree ka hota hai (pehle desktop render ho kar flip hota tha → double
+  // layout). See docs/plans/perf_baseline.md Session 6 addendum.
+  const [isMobile, setIsMobile] = useState(initialIsMobile);
   const sysInfo = initial?.sysInfo ?? {};
 
   // (sysInfo ab server props se — mount effect hate, Phase 4 P2)
@@ -2952,7 +2962,13 @@ function JobsListContent({ initial }: { initial: JobsPageSeed | null }) {
 
 // ─── Page Wrapper ─────────────────────────────────────────────────────────────
 // Ab CLIENT body hai — server page (./page.tsx) props deta hai (Phase 4 P2).
-export default function JobsBody({ initial }: { initial: JobsPageSeed | null }) {
+export default function JobsBody({
+  initial,
+  initialIsMobile,
+}: {
+  initial: JobsPageSeed | null;
+  initialIsMobile: boolean;
+}) {
   return (
     <Suspense
       fallback={
@@ -2962,7 +2978,7 @@ export default function JobsBody({ initial }: { initial: JobsPageSeed | null }) 
         </div>
       }
     >
-      <JobsListContent initial={initial} />
+      <JobsListContent initial={initial} initialIsMobile={initialIsMobile} />
     </Suspense>
   );
 }
