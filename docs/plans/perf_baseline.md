@@ -4,6 +4,19 @@
 `server_migration_gate_plan.md`, condition G2). Yar baad me koi perf work kare to
 ise re-run karke compare karo.*
 
+> **⚠️ Correction (18 Oct 2026) — "SSR HTML" framing galat tha.** App ke saare
+> authenticated pages **client-side** render hote hain: `src/app/layout.tsx:123`
+> sab kuch `<RootClient>{children}</RootClient>` (client component) me wrap karta
+> hai aur `RootClient.tsx:1321` `!authReady` par **"V-TECH Secure Boot" splash**
+> return karta hai. SSR HTML me sirf splash + RSC **flight payload** aata hai — page
+> ka rendered DOM **server par kabhi nahi** banta. Isliye Sessions 2-5 me jahan
+> "data ships in the initial SSR HTML" / "SSR data reaches first paint" likha hai,
+> use aise padho: **data RSC payload me seed hota hai → client fetch waterfall
+> khatam** (HTML DOM me content nahi). Verified `/jobs` + `/mechanics` + `/clients`:
+> SSR HTML me seed data (payload) hai, content markup nahi. Feasibility + options:
+> `ssr_boot_gate_plan.md`.
+
+
 ## How to re-capture
 ```bash
 # Turbopack-native analyzer (this project uses Turbopack; @next/bundle-analyzer is webpack-only and NOT used)
@@ -156,3 +169,89 @@ RSC payload — no RLS errors). No pre-migration baseline existed for /payments.
 > All four bounded fetch-once pages now have SSR data in first paint. Remaining
 > bounded candidates: /salary (complex month-scoped aggregation), /advance
 > (date/mechanic filter-driven), /inquiries (if list-shaped).
+
+## Session 6 (17 Oct 2026) — /jobs RSC split + perf follow-up (A/B, same machine)
+
+`/jobs` Phase 4 P2 RSC split (`c3993d8`) + follow-up (`050218b`: parallel
+auth+data, server-seeded `openPartCounts`, `hide_delivered` cookie,
+StrictMode-safe seed gate, lazy modals) + staff-auth `getClaims()` fast-path
+(`72f1174`). Prod `next start` on localhost, authenticated (`preeti@vtech.com`),
+Lighthouse attached to a `--headless=new` Chrome via `--remote-debugging-port`,
+same method as Sessions 1-5 but with `--disable-storage-reset` (warna Lighthouse
+auth cookies clear kar deta). Login: server-side `POST /api/auth/login` se
+cookies nikale, CDP `Network.setCookie` se Chrome me inject (in-page fetch client
+write-gate se geo-block ho jata hai — headless me geolocation denied).
+Least-contended of 3 runs per state:
+
+| State | perf | FCP | LCP | TTI | TBT |
+|-------|------|-----|-----|-----|-----|
+| Session 1 baseline (pre-RSC) | 41 | 1.12s | 10.23s | 10.25s | 2668ms |
+| `c3993d8` (RSC split, pre-follow-up) | 55 | 1.38s | 3.86s | 6.06s | 3441ms |
+| `72f1174` (RSC + follow-up + getClaims) | 54 | 1.38s | 3.89s | 5.61s | 3148ms |
+
+> **Verdict:** RSC migration se bada win — **LCP 10.23s → ~3.9s (-62%)**, **TTI
+> 10.25s → ~5.6-6.1s (-42%)**, perf 41 → ~54-56. Trade-off: **TBT 2668 → ~3.1-3.5s
+> (+~25%)** — SSR HTML/hydration cost (wahi /clients pattern: FCP/TBT up, LCP/TTI
+> down). **Perf follow-up (parallel auth+data, seed, cookie, lazy modals,
+> getClaims) ka Lighthouse par measurable effect NAHI** — before 3441ms vs after
+> 3148ms TBT (noise me; LCP/TTI/FCP bilkul same). Unka value = kam network
+> round-trips + StrictMode double-fetch fix (robustness), hydration TBT par nahi.
+> **TBT ab main bottleneck hai aur hydration-bound hai** → next lever client
+> JS/hydration kam karna (`JobsBody` desktop-XOR-mobile conditional render, aur
+> granular lazy-loading). Machine noisy (Firefox + multiple Chrome khule the),
+> isliye numbers comparison ke liye, field data nahi.
+
+### Session 6 addendum — root cause: desktop fine, mobile flip hi cost hai (17 Oct 2026)
+
+`mainthread-work-breakdown` ne bataya cost **Style & Layout** hai (r2: 6222ms),
+Script Evaluation nahi (1353ms) → ye **layout/DOM** problem hai, JS hydration
+nahi. DOM sirf 2731 elements par mobile list **~13,000px tall** (26 card), 5
+layout shifts (CLS 0.084), 2 bade long-tasks (1078 + 1651ms).
+
+**Desktop vs mobile (same build), aur 4× CPU isolate:**
+
+| Profile | FCP | LCP | TBT | StyleLayout | longTasks |
+|---------|-----|-----|-----|-------------|-----------|
+| Desktop (1× CPU) | 0.36s | 0.96s | **245ms** | 723ms | 1 |
+| Desktop (4× CPU) | 0.35s | 1.3s | 1334ms | 3042ms | 13-15 |
+| Mobile (4× CPU, flip) | 1.37s | 3.9s | **3028-3575ms** | 6293-6844ms | 17-19 |
+| Mobile (4× CPU, flip OFF*) | 1.37s | 3.9s | **2047-2268ms** | 4045-4245ms | 13-15 |
+
+\* flip OFF = temporary experiment: `useState(false)` → `useState(true)` (SSR
+mobile tree, no post-hydration flip). Revert kar diya.
+
+> **Desktop `/jobs` already fast hai (TBT 245ms, perf 89).** Problem
+> **mobile-specific** hai. Sabse bada single cause: `isMobile` `useState(false)`
+> start hota hai, phir mount par `matchMedia(max-width:1023px)` effect flip karta
+> hai (`JobsBody.tsx:259`/`:456`/`:1765`) → **mobile pe SSR/hydration DESKTOP tree
+> ka hota hai, phir MOBILE tree ko poora dobara render+layout** (double layout).
+> Flip hataane par mobile TBT **−40% (3.4s → 2.1s)**, StyleLayout 6.5s → 4.1s.
+> Residual mobile cost (~2s) = app shell + tall card list (narrow viewport, zyada
+> text-wrap). **Fix (validated):** server-side device signal (client hint
+> `Sec-CH-UA-Mobile`/UA) se server component `initialIsMobile` prop de →
+> `isMobile` first render se match → flip khatam. Secondary: card list layout cost
+> (`content-visibility:auto`/`contain`), smaller mobile page size.
+
+### Session 6 addendum 2 — /jobs content SSR HTML me nahi hai (RootClient boot-gate) (18 Oct 2026)
+
+Fix #1 (server device branch) ship ke baad SSR HTML verify kiya (prod `next start`,
+authenticated GET, HTML save karke exact string count). Sab looked-at pages par same
+result: `<body>` me sirf **boot splash** + RSC flight script — page ka DOM client
+par banta hai; SSR HTML me sirf **seed data payload** aata hai, content markup nahi.
+
+| Check | /jobs (mobile UA) | /mechanics | /clients |
+|---|---|---|---|
+| content markup (`<table`/`<tr`, page heading) | 0 | 0 | 0 |
+| seed data payload (`transactions` / `mechanics` / `date_added`) | ✓ | ✓ | ✓ |
+| `<body>` SSR output | "V-TECH Secure Boot" splash | same | same |
+
+Root cause: `src/app/layout.tsx:123` `{children}` ko `<RootClient>` (client
+component) me wrap karta hai; `RootClient.tsx:1321` `!authReady` (SSR me always
+false) par splash return karta hai → children server par render hi nahi hote.
+Isliye `useSearchParams` de-opt is app me **irrelevant** hai (content waise bhi SSR
+nahi hota).
+
+Fix #1 ka effect isi par: mobile UA ko server se `initialIsMobile=true` milta hai →
+hydration par seedha mobile tree banta hai, desktop tree ka layout skip → mobile
+TBT −21%, Style & Layout −25%. Aage ka SSR-content lever: `ssr_boot_gate_plan.md`.
+

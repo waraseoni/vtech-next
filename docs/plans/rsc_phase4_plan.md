@@ -8,6 +8,11 @@
 >
 > **Goal:** authenticated first-paint me hi data (post-hydration waterfall khatam).
 > **Proven:** G3 pilot `clients` — LCP 10.13s→5.2-5.9s (SSR wins, perf_baseline).
+> **⚠️ Correction (18 Oct 2026):** ye win **RSC flight payload me data seed**
+> hone se hai (client fetch waterfall khatam) — **SSR HTML DOM me content nahi** aata,
+> kyunki `RootClient` boot-gate (`!authReady` → "V-TECH Secure Boot" splash) saare
+> authenticated pages ko client-render karta hai. Feasibility + options:
+> `ssr_boot_gate_plan.md`.
 > **Audit line:** "Dashboard/jobs/clients initial data RSC me ya ek RPC per page
 > se; stream." — clients + dashboard + jobs done, **baaki: cash-flow (optional)**.
 
@@ -205,6 +210,12 @@ throw → fallback. Benefit: **har staff API call + server page** se ~250 ms kam
 Remaining (next lever): `JobsBody` mega-component split /
 desktop-table-XOR-mobile-cards conditional render (hydration TBT) — sirf tab jab
 real TBT measurement bataye ki abhi bhi high.
+>
+> **Update (18 Oct 2026):** TBT measurement ho gayi — mobile TBT **layout-bound**
+> hai (desktop TBT 245ms, mobile ~3s; render flip akela ~40%). **Device-branch fix
+> ship ho gaya** (mobile TBT −21%, Style & Layout −25%). Ab next lever: (a) list
+> virtualization + `contain`/`content-visibility` (client render cost), (b)
+> SSR-content — bada/risky, plan: `ssr_boot_gate_plan.md`.
 
 ---
 
