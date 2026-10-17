@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.57.8](https://github.com/waraseoni/vtech-next/compare/v1.57.7...v1.57.8) (2026-10-17)
+
+### Performance Improvements
+
+* **jobs:** server device hint (initialIsMobile) - remove mobile render flip ([bb9f71c](https://github.com/waraseoni/vtech-next/commit/bb9f71c4a824b3b88d0150851f1249b3d9b4a30c))
+
 ## [1.57.7](https://github.com/waraseoni/vtech-next/compare/v1.57.6...v1.57.7) (2026-10-16)
 
 ### Performance Improvements
