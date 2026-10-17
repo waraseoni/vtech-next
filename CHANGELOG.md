@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.57.10](https://github.com/waraseoni/vtech-next/compare/v1.57.9...v1.57.10) (2026-10-17)
+
+### Performance Improvements
+
+* **shell:** lazy-mount mobile drawer nav ([a001ebc](https://github.com/waraseoni/vtech-next/commit/a001ebcc191d4733ff8a429f77f9815613564cb3))
+
 ## [1.57.9](https://github.com/waraseoni/vtech-next/compare/v1.57.8...v1.57.9) (2026-10-17)
 
 ### Performance Improvements
