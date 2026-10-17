@@ -90,6 +90,11 @@ import { requireAdmin } from "@/lib/requireAdmin";
 import { CanWrite } from "@/lib/viewOnly";
 import { useViewOnly } from "@/lib/viewOnly";
 
+// PERF: mobile card list progressive mount — ek baar me itne hi cards DOM me
+// (25 rich cards ≈ 2,374 elements ≈ 85% DOM; mobile style-recalc/TBT bada hissa).
+// Scroll par sentinel agla chunk mount karta hai. See ssr_boot_gate_plan.md.
+const CARD_CHUNK = 6;
+
 // ─── WhatsApp status template keys (PHP: pending=0, repairing=1, ready=2, delivered=3/5, cancelled=4) ─
 const STATUS_WA_KEY: Record<number, string> = {
   0: "whatsapp_status_pending",
@@ -283,6 +288,36 @@ function JobsListContent({
   // Delivered-but-spotted jobs ka one-click cleanup
   const [spotCleaning, setSpotCleaning] = useState(false);
   const [showFilterModal, setShowFilterModal] = useState(false);
+
+  // ── Mobile card list: progressive mount (perf) ───────────────────────────
+  // Sirf viewport ke aas-paas wale cards DOM me; scroll par sentinel se agla
+  // chunk. (content-visibility se farq nahi pada — nodes DOM me rehte the.)
+  const [visibleCards, setVisibleCards] = useState(CARD_CHUNK);
+
+  // Page/filter change par progressive mount reset
+  useEffect(() => {
+    setVisibleCards(CARD_CHUNK);
+  }, [pageIndex, debouncedSearch, dateFrom, dateTo, statusFilter, spotFilter, hideDelivered]);
+
+  // Sentinel ref: node mount/badle par observer attach. Callback-ref isliye ki
+  // skeleton->cards transition me sentinel node badal jata tha — plain useEffect
+  // tab detached node par atak jata tha (kabhi fire nahi hota).
+  const loadMoreRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      if (!node) return;
+      const io = new IntersectionObserver(
+        (entries) => {
+          if (entries.some((e) => e.isIntersecting)) {
+            setVisibleCards((n) => Math.min(n + CARD_CHUNK, paginatedTransactions.length));
+          }
+        },
+        { rootMargin: "600px 0px" }
+      );
+      io.observe(node);
+      return () => io.disconnect();
+    },
+    [paginatedTransactions.length]
+  );
 
   // Dropdown
   const [openDropdownId, setOpenDropdownId] = useState<number | null>(null);
@@ -2271,7 +2306,7 @@ function JobsListContent({
               <p className="text-xs text-muted-2 mt-1">Adjust filters or search</p>
             </div>
           ) : (
-            paginatedTransactions.map((txn) => {
+            paginatedTransactions.slice(0, visibleCards).map((txn) => {
               const clientName = getClientName(txn);
               const balance = getClientBalance(txn);
               const phone = txn.client_contact?.replace(/\D/g, "") || "";
@@ -2568,6 +2603,9 @@ function JobsListContent({
                 </div>
               );
             })
+          )}
+          {visibleCards < paginatedTransactions.length && (
+            <div ref={loadMoreRef} className="h-4" aria-hidden="true" />
           )}
           {/* ── Card view pagination (table wala shared pager) ── */}
           {!(loading && hasLoaded) && paginatedTransactions.length > 0 && (
