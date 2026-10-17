@@ -288,3 +288,31 @@ Lighthouse mobile @4× (least of 2 runs, same machine):
 > skeleton→cards transition par **detached** ho jata tha → callback-ref se fix.
 > Baaki levers (optional): per-card markup/icon count, CSS rule count
 > (356KB/4266 rules); Option B (RootClient SSR) alag sprint.
+
+### Session 6 addendum 4 — mobile drawer nav lazy-mount (18 Oct 2026)
+
+`RootClient` ka mobile drawer (`isMobile && !isAiPage`) har mobile page load par
+poora `SidebarNav` (~92 elements) + `TeamOnline` DOM me mount karta tha — drawer
+band hone par bhi (sirf `-translate-x-full` se off-screen). Ab ye heavy content
+sirf **pehli baar drawer khulne par** mount hota hai; `<aside>` container mounted
+rehta hai taaki slide animation intact rahe (same pattern as `aiOpenedOnce`).
+
+Effect (CDP, mobile@4×):
+
+| Metric | Before | After |
+|---|---|---|
+| Mobile DOM (initial) | 985 | 878 (-107, -11%) |
+| Drawer (band) subtree | 133 | 32 |
+| Drawer (khula) subtree | 133 | 133 (unchanged) |
+| DB queries / mobile load | +2 (`profiles`, `user_presence`) | 0 jab tak drawer na khule |
+
+CDP se verified: drawer button click → nav wapas mount (32 → 133 elements), nav
++ TeamOnline theek. `subscribePresence` sirf receive karta hai (apna presence
+`initPresence` broadcast karta hai), isliye defer safe.
+
+> **Note:** is change ka Lighthouse A/B us waqt **inconclusive** tha — machine
+> memory-constrained (free RAM ~1.6GB) thi, aur LCP ~3790ms → ~6030ms chala gaya
+> jabki main-thread work same raha (Style & Layout 1771 → 1691ms, ScriptEval
+> barabar). Yani LCP swing boot-time Supabase latency ka tha, is change ka nahi.
+> Commit DOM/query reduction ke deterministic evidence par hai, Lighthouse delta
+> par nahi.

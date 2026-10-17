@@ -116,3 +116,12 @@ fire nahi karta.
 Bache hue (optional) levers: per-card markup/icon count aur app CSS rule count
 (356KB / 4266 rules). **Option B** (RootClient SSR-friendly) abhi bhi alag,
 dedicated, feature-freeze-ke-baad sprint me — tab jab field data kahe.
+
+### Option A — extra: mobile drawer nav lazy mount (18 Oct 2026)
+
+`RootClient` mobile drawer ka `SidebarNav` + `TeamOnline` sirf **pehli open** par
+mount hote hain (pehle har mobile load par, drawer band hone par bhi). Mobile DOM
+985 → 878; drawer band 133 → 32 elements; saath me 2 DB queries/load
+(`profiles`+`user_presence`) tab tak nahi chalti jab tak drawer na khule.
+Container (`<aside>`) mounted rehta hai → slide animation intact (`aiOpenedOnce`
+pattern). Commit `a001ebc`.
