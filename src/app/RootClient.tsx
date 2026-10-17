@@ -1055,6 +1055,12 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
   // first open par set hota hai — pehle load par koi /ai fetch nahi hota.
   const [aiOpenedOnce, setAiOpenedOnce] = useState(false);
 
+  // Mobile drawer ka heavy nav bhi sirf pehli open ke baad mount karo (perf):
+  // har mobile page load par ~90 nav elements DOM me bina zaroorat pade the.
+  // Container (aside) mounted rehta hai taaki slide animation intact rahe —
+  // same pattern as aiOpenedOnce.
+  const [drawerOpenedOnce, setDrawerOpenedOnce] = useState(false);
+
   // G1 gate-split: saara auth/boot state + effects ab useAppBoot() hook me hai.
   // Ye component sirf shell render karta hai — behavior bilkul unchanged.
   const {
@@ -1085,6 +1091,11 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
     refreshLicense,
     handleLogout,
   } = useAppBoot();
+
+  // Mobile drawer heavy nav lazy mount trigger
+  useEffect(() => {
+    if (drawerOpen) setDrawerOpenedOnce(true);
+  }, [drawerOpen]);
 
   // Keyboard shortcuts (g-prefix + ? help + Escape)
   const { helpOpen, setHelpOpen } = useKeyboardShortcuts(SHORTCUT_ROUTES);
@@ -1563,20 +1574,26 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
               </button>
             </div>
 
-            {/* Same full nav as desktop */}
-            <SidebarNav
-              pathname={pathname}
-              isAdmin={isAdmin}
-              isClient={isClient}
-              canSeeInventory={canSeeInventory}
-              onNavClick={() => setDrawerOpen(false)}
-              sellerEnabled={license?.sellerEnabled}
-              devEnabled={license?.devEnabled}
-              enabledModules={navEnabledModules}
-              unreadCount={unreadCount}
-            />
+            {/* Same full nav as desktop — heavy (~90 elements); sirf drawer
+                pehli baar khulne par mount ho (perf: har mobile page load par
+                DOM me padne se bachne ke liye). */}
+            {drawerOpenedOnce && (
+              <>
+                <SidebarNav
+                  pathname={pathname}
+                  isAdmin={isAdmin}
+                  isClient={isClient}
+                  canSeeInventory={canSeeInventory}
+                  onNavClick={() => setDrawerOpen(false)}
+                  sellerEnabled={license?.sellerEnabled}
+                  devEnabled={license?.devEnabled}
+                  enabledModules={navEnabledModules}
+                  unreadCount={unreadCount}
+                />
 
-            {!isClient && <TeamOnline />}
+                {!isClient && <TeamOnline />}
+              </>
+            )}
 
             {/* Version footer */}
             <div className="flex items-center justify-between px-3 py-2 border-t border-app-2">
