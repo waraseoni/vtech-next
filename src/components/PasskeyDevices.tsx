@@ -5,7 +5,8 @@ import { Fingerprint, Loader2, Plus, Trash2, Pen, Check, X } from "lucide-react"
 import { toast } from "@/lib/toast";
 
 // Devices (Passkey / Fingerprint Login) — docs/plans/passkey_biometric_login_plan.md §5.2
-// Settings page me mount hota hai. Enrollment = password re-auth + WebAuthn create.
+// /profile page me mount hota hai (sab staff khud enroll kar sakte hain; /settings admin-only hai).
+// Enrollment = password re-auth + WebAuthn create.
 type Device = {
   id: number;
   device_name: string;

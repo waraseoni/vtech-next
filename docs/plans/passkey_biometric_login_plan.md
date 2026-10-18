@@ -106,7 +106,7 @@ create index user_passkeys_credential_idx on user_passkeys(credential_id);
 
 ### 5.2 Enrollment
 
-1. Logged-in staff → Settings → "Devices / Fingerprint Login" → "Naya device add".
+1. Logged-in staff → **/profile** ("My Profile") → "Devices (Fingerprint Login)" → "Naya device add". (`/settings` admin-only hai, isliye staff-facing enrollment `/profile` par shift kiya.)
 2. Password re-auth (`mode=password` verify ya `/api/passkey/preflight`) → then
    `POST /api/passkey/register-begin` (challenge cookie) → `navigator.credentials.create()` →
    `register-finish` (verify + INSERT service-role; duplicate credential_id → reject).
@@ -184,8 +184,7 @@ create index user_passkeys_credential_idx on user_passkeys(credential_id);
 
 ### Phase 4 — UI ~3–4 h
 - [x] Login page: "Fingerprint se login karein" button (staff section ke under) + **email optional** (usernameless) + error/loading states + "support nahi" fallback.
-- [ ] Settings → "Devices (Passkey Login)": enroll button, device list (name/last_used), rename,
-      remove, admin revoke-all.
+- [x] /profile → "Devices (Fingerprint Login)": enroll button, device list (name/last_used), rename, remove. (`src/components/PasskeyDevices.tsx`)
 - [ ] Hindi messages: consistent with existing auth error style.
 
 ### Phase 5 — Tests + QA ~3–4 h

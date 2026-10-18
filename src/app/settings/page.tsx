@@ -32,10 +32,8 @@ import {
   Bell,
   Camera,
   Timer,
-  Fingerprint,
 } from "lucide-react";
 import NotificationSettings from "@/components/NotificationSettings";
-import PasskeyDevices from "@/components/PasskeyDevices";
 import PageLoader from "@/components/PageLoader";
 import { toast } from "@/lib/toast";
 import { useImageUpload } from "@/lib/useImageUpload";
@@ -1660,17 +1658,6 @@ export default function SettingsPage() {
               </h3>
             </div>
             <NotificationSettings />
-          </div>
-
-          {/* Devices (Passkey / Fingerprint Login) */}
-          <div className={fieldsets}>
-            <div className={`${fHdr} from-cyan-600/20 to-transparent`}>
-              <Fingerprint size={14} className="text-cyan-400" />
-              <h3 className="text-xs font-black uppercase tracking-wider text-muted">
-                Devices (Passkey Login)
-              </h3>
-            </div>
-            <PasskeyDevices />
           </div>
 
           {/* License Activation */}

@@ -17,12 +17,14 @@ import {
   Camera,
   Trash2,
   ImageIcon,
+  Fingerprint,
 } from "lucide-react";
 import { compressImage } from "@/lib/imageCompression";
 import { openCamera } from "@/lib/nativeCamera";
 import { useImageUpload } from "@/lib/useImageUpload";
 import SearchableSelect from "@/components/SearchableSelect";
 import PageLoader from "@/components/PageLoader";
+import PasskeyDevices from "@/components/PasskeyDevices";
 import { toast } from "@/lib/toast";
 
 const inputCls =
@@ -550,6 +552,17 @@ export default function ProfilePage() {
               )}
             </button>
           </form>
+        </div>
+
+        {/* ── Devices (Passkey / Fingerprint Login) ── */}
+        <div className="bg-panel border border-app rounded-2xl overflow-hidden">
+          <div className="flex items-center gap-2.5 px-5 py-3.5 bg-gradient-to-r from-cyan-600/20 to-transparent border-b border-app">
+            <Fingerprint size={14} className="text-cyan-400" />
+            <h3 className="text-xs font-black uppercase tracking-wider text-muted">
+              Devices (Fingerprint Login)
+            </h3>
+          </div>
+          <PasskeyDevices />
         </div>
       </div>
       {cropperEl}
