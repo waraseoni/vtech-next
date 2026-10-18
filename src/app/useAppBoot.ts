@@ -19,6 +19,8 @@ import type { LicenseStatus } from "@/lib/license";
 import { logger } from "@/lib/logger";
 import { initPresence, cleanupPresence } from "@/lib/presence";
 
+// License status ka minimum refresh interval (force ke alawa).
+const LICENSE_REFRESH_MIN_MS = 60_000;
 
 /**
  * useAppBoot — RootClient (app shell) ka saara auth/boot state + effects.
@@ -31,7 +33,7 @@ import { initPresence, cleanupPresence } from "@/lib/presence";
  *
  * 2026-09-15 G1: `loading` → `authReady` reframe. Splash gate ab positive
  * semantics (`!authReady` = boot ho raha hai) — behavior unchanged, sirf
- * naam/meaning alag. Boot-guard 6s auto-reload bhi reverse ho gaya: jab tak
+ * naam/meaning alag. Boot-guard 12s auto-reload bhi reverse ho gaya: jab tak
  * auth ready nahi, watchdog active.
  */
 export function useAppBoot() {
@@ -66,6 +68,7 @@ export function useAppBoot() {
   const lastActiveRef = useRef(Date.now());
   const showIdleWarningRef = useRef(false);
   const initialLicenseFetch = useRef(true);
+  const licenseFetchedAt = useRef(0);
   // Auto-logoff config — system_info se override hote hain (Settings > Auto Logoff).
   // Defaults session-policy.ts ke hain. `idleMsRef.current === 0` = Never (off).
   const idleMsRef = useRef<number>(IDLE_MS);
@@ -104,6 +107,16 @@ export function useAppBoot() {
   }, [profile?.role]);
 
   const refreshLicense = useCallback(async (force = false) => {
+    // THROTTLE — ye callback [profile, pathname] effect se HAR navigation par
+    // chalta hai, aur /api/license/status ek poora server round-trip hai
+    // (requireUser → auth RTT + 3 system_info reads + kabhi kabhi cross-project
+    // check_license RPC). Rapid navigation par ye Vercel Hobby ki limited
+    // concurrency me doosre data-fetch ko QUEUE kar deta tha → search result
+    // click ke baad page khulta hi nahi. Force (pehli load / activation) hamesha
+    // chale; baaki max ek baar per minute.
+    const now = Date.now();
+    if (!force && now - licenseFetchedAt.current < LICENSE_REFRESH_MIN_MS) return;
+    licenseFetchedAt.current = now;
     try {
       const url = force ? "/api/license/status?force=true" : "/api/license/status";
       const res = await fetch(url, { cache: "no-store" });
@@ -348,7 +361,12 @@ export function useAppBoot() {
         /* ignore */
       }
       window.location.reload();
-    }, 6000);
+      // 6s → 12s (2026-10-18): getSession() ka token-refresh network round-trip
+      // thandi Supabase / slow network par 6s cross kar sakta tha → boot abhi ho
+      // raha tha par watchdog force-reload kar deta tha. 12s observed cold-start
+      // (7.9s, perf audit §3) se upar hai, aur genuine stuck-loader ko bhi
+      // abhi bhi 12s me recover karta hai.
+    }, 12000);
     return () => clearTimeout(t);
   }, [authReady]);
 

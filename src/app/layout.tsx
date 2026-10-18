@@ -46,9 +46,15 @@ export const viewport: Viewport = {
 // nahi hota → useEffect-based watchdogs (jo hydration ke baad attach hote hain)
 // kabhi chal nahi sakte. Ye INLINE script HTML me chalti hai — hydration se
 // PEHLE — isliye script/link failures catch kar ke auto-reload karti hai aur
-// 8s boot watchdog chala hai. App hydrate hote hi __VTECH_BOOTED__=true set
-// karta hai; agar 8s me set nahi hua → app mount hi nahi hua → reload.
+// 15s boot watchdog chala hai. App hydrate hote hi __VTECH_BOOTED__=true set
+// karta hai; agar 15s me set nahi hua → app mount hi nahi hua → reload.
 // 30s cooldown tight infinite loop rokta hai.
+//
+// 2026-10-18: 8s → 15s. Poora RootClient (1900+ LOC) ke hydration + bade route
+// chunks thande device/network par 8s se upar le lete the → false-positive
+// auto-reload jo "page khula hi nahi / baar baar refresh" jaisa lagta tha.
+// Ye script sirf genuine script/link FAILURE ya app-mount-never par chalni
+// chahiye, slow-but-working load par nahi.
 //
 // IMPORTANT: Ye script SERVER LAYOUT me hai (server component). Agar ise client
 // component (RootClient) me rakha to React hydration par `<script>` element
@@ -68,7 +74,7 @@ const BOOT_GUARD = `(function(){
     if(!t||!t.tagName)return;
     if(t.tagName==="SCRIPT"||(t.tagName==="LINK"&&/stylesheet|modulepreload/i.test(t.rel||"")))go();
   },true);
-  window.setTimeout(function(){if(!window.__VTECH_BOOTED__)go();},8000);
+  window.setTimeout(function(){if(!window.__VTECH_BOOTED__)go();},15000);
 })();`;
 
 // ─── Theme Boot (pre-paint) ──────────────────────────────────────────────────
@@ -98,9 +104,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       {/* Body colors hardcoded NAHI — globals.css ka body{background:var(--background)}
           rule attribute ke hisaab se turant sahi color deta hai (pehle yahan
           bg-app text-app-2 hardcoded tha jo light theme se ladta tha). */}
-      <body
-        className={`h-full m-0 font-sans antialiased overflow-x-hidden`}
-      >
+      <body className={`h-full m-0 font-sans antialiased overflow-x-hidden`}>
         {/* Supabase (auth + realtime + REST) ka TCP/TLS connection pehle se
             warm — boot ke pehle network round-trip ka latency kam hota hai.
             React 19 in <link> tags ko hoist kar ke <head> me chala deta hai. */}
