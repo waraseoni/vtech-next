@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.60.0](https://github.com/waraseoni/vtech-next/compare/v1.59.0...v1.60.0) (2026-10-18)
+
+### Features
+
+* **passkey:** move device enrollment to /profile (staff-accessible) ([ff4caa7](https://github.com/waraseoni/vtech-next/commit/ff4caa78f75b874c32664699d870a694e94ee27c))
+
 ## [1.59.0](https://github.com/waraseoni/vtech-next/compare/v1.58.0...v1.59.0) (2026-10-18)
 
 ### Features
