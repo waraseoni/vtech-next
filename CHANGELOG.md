@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.63.0](https://github.com/waraseoni/vtech-next/compare/v1.62.1...v1.63.0) (2026-10-18)
+
+### Features
+
+* **client-cache:** TanStack Query foundation + cached job/sale detail views ([6de6d68](https://github.com/waraseoni/vtech-next/commit/6de6d68ca7b8bdb3f72654e0f2cf16bb9d93a86a))
+
 ## [1.62.1](https://github.com/waraseoni/vtech-next/compare/v1.62.0...v1.62.1) (2026-10-18)
 
 ### Performance Improvements
