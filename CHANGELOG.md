@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.57.11](https://github.com/waraseoni/vtech-next/compare/v1.57.10...v1.57.11) (2026-10-18)
+
+### Performance Improvements
+
+* **assets:** cache public static assets (max-age 1d, SWR) ([1b0d1e5](https://github.com/waraseoni/vtech-next/commit/1b0d1e59d5a140d87dec5cd10bc7502f8bd0115f))
+
 ## [1.57.10](https://github.com/waraseoni/vtech-next/compare/v1.57.9...v1.57.10) (2026-10-17)
 
 ### Performance Improvements
