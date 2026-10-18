@@ -18,12 +18,48 @@ import {
   UserRound,
   Fingerprint,
 } from "lucide-react";
-import { startAuthentication, browserSupportsWebAuthn } from "@simplewebauthn/browser";
+import {
+  startAuthentication,
+  browserSupportsWebAuthn,
+  browserSupportsWebAuthnAutofill,
+  type AuthenticationResponseJSON,
+} from "@simplewebauthn/browser";
 import { SITE } from "../site";
 import { APP_VERSION_LABEL, APP_VERSION_FULL } from "@/lib/app-version";
 import PullToRefresh from "@/components/PullToRefresh";
 
 type Tab = "staff" | "client";
+
+// ── Passkey fetch helpers (server: /api/auth/login) ────────────────────────
+// begin: challenge options laata hai. Email khaali → usernameless (discoverable).
+async function beginPasskey(email: string) {
+  const res = await fetch("/api/auth/login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ mode: "passkey-begin", email }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || "Passkey login shuru nahi ho paaya");
+  return data.options;
+}
+
+// verify: assertion bhejta hai, session set hota hai, phir full reload.
+async function verifyAssertion(email: string, assertion: AuthenticationResponseJSON) {
+  const res = await fetch("/api/auth/login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ mode: "passkey-verify", email, response: assertion }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || "Passkey verify fail hua");
+  if (email) {
+    localStorage.setItem("vtech_email", email);
+    localStorage.setItem("vtech_remember", "true");
+  }
+  // Intentional full reload: login ke baad RootClient session state fresh init hoti hai
+  // eslint-disable-next-line @next/next/no-location-assign-relative-destination
+  window.location.href = "/dashboard";
+}
 
 function TabButton({
   t,
@@ -65,6 +101,7 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [passkeyLoading, setPasskeyLoading] = useState(false);
   const [passkeyReady, setPasskeyReady] = useState(false);
+  const [condNonce, setCondNonce] = useState(0);
 
   // Client OTP state
   const [clientEmail, setClientEmail] = useState("");
@@ -141,47 +178,16 @@ export default function LoginPage() {
     window.location.href = "/dashboard";
   };
 
-  // ── Passkey login handler (biometric) ──────────────────────────────────
-  // Email optional — khaali chhodo to browser device ka passkey picker dikhata hai
-  // (usernameless / discoverable credential).
+  // ─── Passkey login handler (explicit button)
+  // Email optional — khaali chhodo to browser device ka passkey picker dikhata hai.
   const handlePasskeyLogin = async () => {
     setError("");
     const em = email.trim().toLowerCase();
     setPasskeyLoading(true);
     try {
-      const begin = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mode: "passkey-begin", email: em }),
-      });
-      const beginData = await begin.json();
-      if (!begin.ok) {
-        setError(beginData.error || "Passkey login shuru nahi ho paaya");
-        setPasskeyLoading(false);
-        return;
-      }
-
-      const assertion = await startAuthentication({ optionsJSON: beginData.options });
-
-      const verify = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mode: "passkey-verify", email: em, response: assertion }),
-      });
-      const verifyData = await verify.json();
-      if (!verify.ok) {
-        setError(verifyData.error || "Passkey verify fail hua");
-        setPasskeyLoading(false);
-        return;
-      }
-
-      if (em) {
-        localStorage.setItem("vtech_email", em);
-        localStorage.setItem("vtech_remember", "true");
-      }
-      // Intentional full reload: passkey login ke baad session state fresh init
-      // eslint-disable-next-line @next/next/no-location-assign-relative-destination
-      window.location.href = "/dashboard";
+      const options = await beginPasskey(em);
+      const assertion = await startAuthentication({ optionsJSON: options });
+      await verifyAssertion(em, assertion);
     } catch (e) {
       const cancelled = e instanceof Error && e.name === "NotAllowedError";
       setError(
@@ -192,6 +198,43 @@ export default function LoginPage() {
       setPasskeyLoading(false);
     }
   };
+
+  // ─── Conditional UI (browser autofill) ──
+  // Email field ke upar browser passkey option dikhata hai; user sirf finger
+  // rakh de to hi login ho jata hai. Challenge TTL 5 min — isliye har 4 min
+  // naya challenge lete hain (nonce bump → effect re-run → abort + restart).
+  useEffect(() => {
+    if (!passkeyReady || tab !== "staff") return;
+    let cancelled = false;
+    (async () => {
+      try {
+        if (!(await browserSupportsWebAuthnAutofill())) return;
+        const options = await beginPasskey("");
+        if (cancelled) return;
+        const assertion = await startAuthentication({
+          optionsJSON: options,
+          useBrowserAutofill: true,
+        });
+        if (cancelled) return;
+        await verifyAssertion("", assertion);
+      } catch (err) {
+        // Conditional flow silent: abort (button/tab-switch) par error mat dikhao.
+        const name = err instanceof Error ? err.name : "";
+        if (cancelled || name === "AbortError" || name === "NotAllowedError") return;
+        console.error("passkey conditional:", err);
+      }
+    })();
+    const timer = window.setTimeout(
+      () => {
+        if (!cancelled) setCondNonce((n) => n + 1);
+      },
+      4 * 60 * 1000
+    );
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [passkeyReady, tab, condNonce]);
 
   // ── Client OTP: send code ──────────────────────────────────────────────
   const handleSendOtp = async (e: React.FormEvent) => {
@@ -356,6 +399,8 @@ export default function LoginPage() {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       required
+                      // "webauthn" autocomplete = conditional UI (passkey autofill) ke liye zaroori
+                      autoComplete="username webauthn"
                       className="w-full pl-10 pr-4 py-3 bg-panel-2 border border-app rounded-xl text-sm text-white font-medium placeholder:text-app outline-none focus:border-blue-500/60 focus:ring-1 focus:ring-blue-500/20 transition-all"
                     />
                   </div>
@@ -461,7 +506,7 @@ export default function LoginPage() {
 
                 {passkeyReady && (
                   <p className="text-center text-[10px] text-muted-2">
-                    Email khaali chhod bhi sakte ho — seedha fingerprint lagao.
+                    Email field par passkey dikhne par tap karein, ya neeche button se login karein.
                   </p>
                 )}
               </form>

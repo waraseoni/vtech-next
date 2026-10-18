@@ -289,7 +289,7 @@ Base messenger already live (`30aae41`). Ye round un requested features add kart
 
 ### Phase 4 — UI
 
-- [x] Login page: "Fingerprint se login karein" button (staff tab, **email optional** + error states)
+- [x] Login page: "Fingerprint se login karein" button + **conditional UI (autofill)** — email field par passkey dikhne par finger se seedha login (staff tab, email optional, error states)
 - [x] /profile → "Devices (Fingerprint Login)" (`src/components/PasskeyDevices.tsx` — sab staff self-enroll kar sakte hain): enroll, list, rename, remove
 
 ### Phase 5 — Tests + QA
