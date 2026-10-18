@@ -311,22 +311,22 @@ Base messenger already live (`30aae41`). Ye round un requested features add kart
 
 ### Phase A — Season-safe quick wins
 
-- [ ] W1: `(public)/components/qr-share.tsx` dynamic import fix (public layout se qrcode nikaldo)
-- [ ] W2: Boot parallelize + `loading.tsx`/Suspense — LicenseGate/useAppBoot race, sidebar lazy
-- [ ] W4: sidebar `router.prefetch()` hover/touch par (Link prefetch verify)
-- [ ] W5: public pages static cache headers (Vercel)
+- [x] W1: `(public)/components/qr-share.tsx` dynamic import fix (public layout se qrcode nikaldo)
+- [x] W2: Boot parallelize + `loading.tsx`/Suspense — LicenseGate/useAppBoot race, sidebar lazy
+- [x] W4: sidebar `router.prefetch()` hover/touch par (Link prefetch verify)
+- [x] W5: public pages static cache headers — `next.config.ts` `headers()` (static assets max-age 1d + SWR; HTML/API untouched, 2026-10-18)
 
 ### Phase B — Season-safe data batching
 
-- [ ] W3a: dashboard `.from()` clusters parallel (`Promise.all`) + dedupe
-- [ ] W3b: jobs page batching
+- [x] W3a: dashboard `.from()` clusters parallel (`Promise.all`) + dedupe
+- [x] W3b: jobs page batching — done (Phase 4 P2, `050218b`)
 - [ ] W3c: reports/accounting-dashboard batching
 - [ ] Har page: tsc + eslint + vitest + visual QA green
 
 ### Phase C — Post-season (G3)
 
 - [ ] W6: RootClient split + icons per-page + shared chunk review + Sentry tuning
-- [ ] W7: RSC migration hot pages (dashboard/clients/inventory/jobs — streaming)
+- [ ] W7: RSC migration hot pages — PARTIAL: clients/dashboard/jobs DONE (Phase 4 RSC); inventory + cash-flow pending
 - [ ] W8: React Query / SWR data layer
 
 ### Phase D — Measure-repeat

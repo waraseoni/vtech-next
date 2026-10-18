@@ -62,16 +62,16 @@ per-route chunk weight sum from prerendered route HTML. Env: `.env.local`.
 
 ## 3. Workstreams (priority × effort · season flags)
 
-| # | Workstream | Effort | Impact | Season-safe |
-|---|---|---|---|---|
-| W1 | **Public layout qrcode fix** — QrShareModal dynamic import (button-triggered) | ~30–60 min | Kam–med (har public route ka bytes kam) | ✅ |
-| W2 | **Boot parallelize + instant paint** — `loading.tsx`/Suspense per (dashboard) waale sections; LicenseGate + useAppBoot ko render-blocking se race; sidebar/nav lazy | ~3–4 h | High (pehla paint + FCP) | ✅ |
-| W3 | **Hot-page fetch batching** — dashboard/asbb, jobs, accounting-dashboard ke `.from()` clusters ko parallel `Promise.all` + dedupe selected lists (profile/products preload memory cache) | ~1–2 din | High (dashboard jobs ka wait khatam) | ✅ |
-| W4 | **Route prefetch** — sidebar me `router.prefetch()` hover/touch par (Link default prefetch verify) | ~30–60 min | Medium (nav feel) | ✅ |
-| W5 | **Public pages static cache headers** (Vercel) | ~1–2 h | Low–med | ✅ |
-| W6 | **Bundle floor attack (big)** — 1) RootClient split: nav/sidebar in route groups me, 2) icons per-page, 3) supabase/helpers shared chunk review, 4) Sentry tuning | ~2–3 din | Sabse bada (har route −200–400KB) | ❌ post-season |
-| W7 | **RSC migration hot pages** (dashboard/clients/inventory/jobs → server-fetch + streaming + Suspense) | ~2–4 din/page-set | High–very high | ❌ post-season |
-| W8 | **React Query / SWR data layer** (cache, dedup, background refresh) | ~1–2 din | High (repeat-nav fast) | ❌ post-season |
+| # | Workstream | Effort | Impact | Season-safe | Status (18 Oct 2026) |
+|---|---|---|---|---|---|
+| W1 | **Public layout qrcode fix** — QrShareModal dynamic import (button-triggered) | ~30–60 min | Kam–med (har public route ka bytes kam) | ✅ DONE (qr dynamic import) |
+| W2 | **Boot parallelize + instant paint** — `loading.tsx`/Suspense per (dashboard) waale sections; LicenseGate + useAppBoot ko render-blocking se race; sidebar/nav lazy | ~3–4 h | High (pehla paint + FCP) | ✅ DONE (13 loading.tsx) |
+| W3 | **Hot-page fetch batching** — dashboard/asbb, jobs, accounting-dashboard ke `.from()` clusters ko parallel `Promise.all` + dedupe selected lists (profile/products preload memory cache) | ~1–2 din | High (dashboard jobs ka wait khatam) | ✅ 🟡 dashboard+jobs done, W3c accounting pending |
+| W4 | **Route prefetch** — sidebar me `router.prefetch()` hover/touch par (Link default prefetch verify) | ~30–60 min | Medium (nav feel) | ✅ DONE (RootClient prefetch) |
+| W5 | **Public pages static cache headers** (Vercel) | ~1–2 h | Low–med | ✅ DONE 2026-10-18 (headers()) |
+| W6 | **Bundle floor attack (big)** — 1) RootClient split: nav/sidebar in route groups me, 2) icons per-page, 3) supabase/helpers shared chunk review, 4) Sentry tuning | ~2–3 din | Sabse bada (har route −200–400KB) | ❌ post-season ⬜ pending (post-season) |
+| W7 | **RSC migration hot pages** (dashboard/clients/inventory/jobs → server-fetch + streaming + Suspense) | ~2–4 din/page-set | High–very high | ❌ post-season 🟡 clients/dashboard/jobs done; inventory/cash-flow pending |
+| W8 | **React Query / SWR data layer** (cache, dedup, background refresh) | ~1–2 din | High (repeat-nav fast) | ❌ post-season ⬜ pending (post-season) |
 
 ## 4. Recommended execution order
 
@@ -92,7 +92,7 @@ per-route chunk weight sum from prerendered route HTML. Env: `.env.local`.
 
 ## 6. TODO (linked in docs/TODO.md)
 
-- Phase A (season-safe quick wins): W1, W2, W4, W5.
-- Phase B (season-safe data): W3 dashboard → jobs → accounting-dashboard.
-- Phase C (post-season): W6 bundle floor → W7 RSC → W8 query layer.
-- Phase D: re-measure + production URL Lighthouse baseline before/after.
+- Phase A (season-safe quick wins): W1 ✅ · W2 ✅ · W4 ✅ · W5 ✅ (2026-10-18).
+- Phase B (season-safe data): W3 dashboard ✅ → jobs ✅ → accounting-dashboard ⬜ (W3c pending).
+- Phase C (post-season): W6 bundle floor ⬜ → W7 RSC 🟡 (clients/dashboard/jobs done) → W8 query layer ⬜.
+- Phase D: re-measure — deterministic guard ab `npm run perf:check` (2026-10-18); Lighthouse is machine par unreliable.
