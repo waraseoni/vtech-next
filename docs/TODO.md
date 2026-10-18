@@ -265,37 +265,38 @@ Base messenger already live (`30aae41`). Ye round un requested features add kart
 
 > Design locked — `docs/plans/passkey_biometric_login_plan.md`. PIN REJECTED (weak).
 > Password = hamesha primary; passkey = optional fast-login (Windows Hello / Touch ID / Face ID /
-> Android fingerprint). Client portal untouched. **Implement post-season** (G3 freeze active).
+> Android fingerprint). Client portal untouched. **Status: Option B (custom WebAuthn) implemented** — native Supabase
+> passkeys blocked (`passkey_disabled`, no dashboard toggle). Manual device QA + migration apply pending.
 > Total ≈ 12–16 h dev + migration apply/QA.
 
 ### Phase 1 — Foundations (spike + deps)
 
-- [ ] Spike: `supabase.auth.admin.createSession` available? pinned supabase-js me (fallback §8 plan) — decision D8 confirm
-- [ ] `npm i @simplewebauthn/server @simplewebauthn/browser`
-- [ ] `src/lib/admin.ts` — `getServerSupabaseAdmin()` (service role, server-only)
-- [ ] `src/lib/passkeys.ts` — rpName/rpID config, challenge cookie helpers (httpOnly, signed, 5 min, one-time)
+- [x] Spike: `supabase.auth.admin.createSession` available? — **NO** in supabase-js 2.112.4; Supabase native passkey backend `passkey_disabled` → **Option B (custom) chosen**, D8 = memory-path fallback
+- [x] `npm i @simplewebauthn/server @simplewebauthn/browser` (^14.0.3 / ^14.0.0)
+- [x] `src/lib/admin-supabase.ts` — `getAdminSupabase()` (already existed; reused)
+- [x] `src/lib/passkeys.ts` — RP config, signed httpOnly challenge cookie (5 min, one-time), base64url, `isCounterAcceptable`
 
 ### Phase 2 — Enrollment
 
-- [ ] Migration `supabase/migrations/YYYYMMDD_passkey_login.sql` (user_passkeys + RLS + grants + trigger) + full-schema fold-in
-- [ ] `POST /api/passkey/register-begin` (auth + password re-auth + challenge)
-- [ ] `POST /api/passkey/register-finish` (verify + INSERT service-role, dup reject)
-- [ ] Device mgmt `src/app/api/passkey/devices/route.ts` — list/rename/delete + admin revoke-all
+- [x] Migration `supabase/migrations/20261018_passkey_login.sql` (user_passkeys + RLS + grants + trigger) — **apply pending (user)**
+- [x] `POST /api/passkey/register-begin` (auth + password re-auth + challenge)
+- [x] `POST /api/passkey/register-finish` (verify + INSERT service-role, dup reject → 409)
+- [x] Device mgmt `src/app/api/passkey/devices/route.ts` — list/rename/delete + admin revoke-all
 
 ### Phase 3 — Login flow
 
-- [ ] `POST /api/auth/login` mode=`passkey-begin` + mode=`passkey-verify` (sign_count + admin.createSession + throttle)
+- [x] `POST /api/auth/login` mode=`passkey-begin` + `passkey-verify` (sign_count guard + throttle + `mintSession()` via generateLink→verifyOtp)
 
 ### Phase 4 — UI
 
-- [ ] Login page: "Fingerprint se login karein" button + email reuse + error states
-- [ ] Settings → "Devices (Passkey Login)": enroll, list, rename, remove, admin revoke-all
+- [x] Login page: "Fingerprint se login karein" button (staff tab, platform-authenticator detect + error states)
+- [x] Settings → "Devices (Passkey Login)" (`src/components/PasskeyDevices.tsx`): enroll, list, rename, remove
 
 ### Phase 5 — Tests + QA
 
-- [ ] Unit: throttle path, challenge cookie one-time/expiry, sign_count reject
-- [ ] Manual matrix: Windows Hello / Android fingerprint / iOS Face ID / regression / lost-device / RLS probe
-- [ ] tsc + eslint + vitest + build green
+- [x] Unit: `src/lib/passkeys.test.ts` (13 tests — challenge sign/expiry/tamper, base64url, `isCounterAcceptable`, `resolveRp`)
+- [ ] Manual matrix: Windows Hello / Android fingerprint / iOS Face ID / regression / lost-device / RLS probe — **PENDING device QA**
+- [ ] tsc + eslint + vitest + build green — **PENDING final gate run**
 
 ### Phase 6 — Deploy gate (post-season)
 
