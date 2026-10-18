@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.62.0](https://github.com/waraseoni/vtech-next/compare/v1.61.0...v1.62.0) (2026-10-18)
+
+### Features
+
+* **passkey:** conditional UI status + diagnostics ([57c692d](https://github.com/waraseoni/vtech-next/commit/57c692dd15af245c613380f4d45012f3c22466c9))
+
 ## [1.61.0](https://github.com/waraseoni/vtech-next/compare/v1.60.0...v1.61.0) (2026-10-18)
 
 ### Features
