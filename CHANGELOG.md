@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## [1.62.1](https://github.com/waraseoni/vtech-next/compare/v1.62.0...v1.62.1) (2026-10-18)
+
+### Performance Improvements
+
+* **boot:** throttle license status per nav + relax reload watchdogs ([119eef6](https://github.com/waraseoni/vtech-next/commit/119eef685d3b2543c75003dd8c13245ae7a7a7e9))
+* **db:** Phase 6 index migration - 17 indexes + pg_trgm ([376e153](https://github.com/waraseoni/vtech-next/commit/376e1532d30368f14041899c7866cd619311e292))
+* **saves:** drop artificial 1s post-save navigation delay ([d498176](https://github.com/waraseoni/vtech-next/commit/d498176a6c3af8f9d9aab93444214f6854b86caf))
+* **saves:** parallelise job save chain, bound activity-log write ([74157e4](https://github.com/waraseoni/vtech-next/commit/74157e4516dd883c16b29be94298f9bc402664d3))
+* **search:** prefetch result route on hover/focus ([200508b](https://github.com/waraseoni/vtech-next/commit/200508be67ba2af9a84d05fc9aa365480b4437e6))
+
 ## [1.62.0](https://github.com/waraseoni/vtech-next/compare/v1.61.0...v1.62.0) (2026-10-18)
 
 ### Features
