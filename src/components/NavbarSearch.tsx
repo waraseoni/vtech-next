@@ -37,6 +37,7 @@ export function NavbarSearch() {
     handleChange,
     handleSelect,
     clearSearch,
+    prefetch,
   } = useNavbarSearch();
 
   return (
@@ -100,6 +101,8 @@ export function NavbarSearch() {
                   <li key={i}>
                     <button
                       onClick={() => handleSelect(r.href)}
+                      onPointerEnter={() => prefetch(r.href)}
+                      onFocus={() => prefetch(r.href)}
                       className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-white/[0.04] transition-colors text-left"
                     >
                       <div className="w-7 h-7 rounded-lg bg-panel-2 flex items-center justify-center flex-shrink-0">

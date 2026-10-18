@@ -271,6 +271,19 @@ export function useNavbarSearch() {
     setOpen(false);
   };
 
+  // Result hover/focus par route prefetch. Search results `<button>` hain (Link
+  // nahi) — isliye App Router ka built-in link-prefetch apply nahi hota tha:
+  // click par chunk download + RSC render shuru hota, aur thandi Supabase par
+  // 3-5 sequential query waves = "result page khula hi nahi". Hover par ek
+  // prefetch (sirf hovered result ka — 175 results ka mass prefetch nahi)
+  // navigation ko warm kar deta hai.
+  const prefetch = useCallback(
+    (href: string) => {
+      router.prefetch(href);
+    },
+    [router]
+  );
+
   return {
     query,
     results,
@@ -281,5 +294,6 @@ export function useNavbarSearch() {
     handleChange,
     handleSelect,
     clearSearch,
+    prefetch,
   };
 }
