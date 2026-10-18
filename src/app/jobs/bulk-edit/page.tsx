@@ -286,7 +286,7 @@ export default function BulkEditPage() {
         updated++;
       }
       toast.success(`${updated} transactions update ho gaye! ✅`);
-      setTimeout(() => router.replace("/jobs"), 1200);
+      router.replace("/jobs");
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Save failed!";
       toast.error(msg);

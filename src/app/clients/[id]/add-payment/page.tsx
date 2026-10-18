@@ -211,7 +211,7 @@ export default function AddPaymentPage({ params }: { params: Promise<{ id: strin
       toast.success("Payment save ho gayi! ✅");
       // BUG FIX 11: don't push + refresh (causes warning on unmounted component)
       // Use replace — navigates cleanly without stacking history
-      setTimeout(() => router.replace(`/clients/${clientId}/view`), 1000);
+      router.replace(`/clients/${clientId}/view`);
     } catch (err) {
       console.error("insert error:", err instanceof Error ? err.message : JSON.stringify(err));
       toast.error(err instanceof Error ? err.message : "Payment save mein galti!");

@@ -152,7 +152,7 @@ export default function GiveLoanPage({ params }: { params: Promise<{ id: string 
       ]);
       if (error) throw error;
       toast.success("Loan save ho gaya! ✅");
-      setTimeout(() => router.replace(`/clients/${clientId}/view`), 1000);
+      router.replace(`/clients/${clientId}/view`);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Loan save mein galti!");
     } finally {

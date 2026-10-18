@@ -171,7 +171,7 @@ export default function AddDirectSalePage({ params }: { params: Promise<{ id: st
 
       toast.success("Sale save ho gayi! ✅");
       // BUG FIX: router.replace instead of push+refresh (avoids unmount warning)
-      setTimeout(() => router.replace(`/clients/${clientId}/view`), 1000);
+      router.replace(`/clients/${clientId}/view`);
     } catch (err) {
       console.error("sale error:", err instanceof Error ? err.message : JSON.stringify(err));
       toast.error(err instanceof Error ? err.message : "Sale save karne mein galti!");

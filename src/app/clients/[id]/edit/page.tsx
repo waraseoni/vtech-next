@@ -254,7 +254,7 @@ export default function ManageClientPage() {
         if (error) throw error;
         await syncClientContacts(clientId, contacts);
         toast.success("Client + contacts update ho gaye! ✅");
-        setTimeout(() => router.replace("/clients"), 1000);
+        router.replace("/clients");
       } else {
         // BUG FIX — DUPLICATE KEY (client_list_pkey):
         // Root cause: MySQL had AUTO_INCREMENT=271 but Supabase sequence was NOT reset
@@ -299,7 +299,7 @@ export default function ManageClientPage() {
         }
         await syncClientContacts(newId, contacts);
         toast.success("New client + contacts add ho gaye! ✅");
-        setTimeout(() => router.replace("/clients"), 1000);
+        router.replace("/clients");
       }
     } catch (err) {
       console.error("save error:", err instanceof Error ? err.message : JSON.stringify(err));

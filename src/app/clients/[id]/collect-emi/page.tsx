@@ -158,7 +158,7 @@ export default function CollectEMIPage({ params }: { params: Promise<{ id: strin
       const { error } = await supabase.from("client_payments").insert([paymentData]);
       if (error) throw error;
       toast.success("EMI jama ho gayi! ✅");
-      setTimeout(() => router.replace(`/clients/${clientId}/view`), 1000);
+      router.replace(`/clients/${clientId}/view`);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Payment save mein galti!");
     } finally {

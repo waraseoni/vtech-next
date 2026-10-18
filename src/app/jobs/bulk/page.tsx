@@ -310,7 +310,7 @@ export default function BulkJobPage() {
       await bumpJobCounter(nextJobId + validRows.length - 1);
 
       toast.success(`${savedCount} jobs saved successfully!`);
-      setTimeout(() => router.replace("/jobs"), 1000);
+      router.replace("/jobs");
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Save failed!";
       toast.error(msg);

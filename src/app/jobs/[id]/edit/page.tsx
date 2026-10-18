@@ -637,10 +637,7 @@ export default function ManageJobPage({ params }: { params: Promise<{ id?: strin
 
       if (isEdit) {
         // Edit me status kabhi touch mat karo — existing status waisa hi rahe
-        const { error } = await supabase
-          .from("transaction_list")
-          .update(payload)
-          .eq("id", jobId);
+        const { error } = await supabase.from("transaction_list").update(payload).eq("id", jobId);
         if (error) throw error;
 
         // Delete existing services & products, re-insert
@@ -711,7 +708,7 @@ export default function ManageJobPage({ params }: { params: Promise<{ id?: strin
       }
 
       toast.success(isEdit ? "Job update ho gaya! ✅" : "Naya job create ho gaya! ✅");
-      setTimeout(() => router.replace(`/jobs/${txnId}/view`), 1000);
+      router.replace(`/jobs/${txnId}/view`);
     } catch (e) {
       logger.error("save error:", e instanceof Error ? e.message : JSON.stringify(e));
       toast.error(e instanceof Error ? e.message : "Save karne mein galti!");
