@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { useQuery } from "@tanstack/react-query";
 import AdminPage from "@/app/components/AdminPage";
 import { supabase, getCachedUser } from "@/lib/supabase";
 import { requireAdmin } from "@/lib/requireAdmin";
@@ -30,13 +31,10 @@ type Service = {
 const inr = (n: number) => "₹" + (n || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 });
 
 export default function ServicesPage() {
-  const [loading, setLoading] = useState(true);
-  const [rows, setRows] = useState<Service[]>([]);
   const [search, setSearch] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState<Service | null>(null);
   const [saving, setSaving] = useState(false);
-  const [err, setErr] = useState("");
   const [userRole, setUserRole] = useState("staff");
 
   const [form, setForm] = useState({ name: "", description: "", price: "", hsn: "" });
@@ -55,20 +53,28 @@ export default function ServicesPage() {
   }, []);
 
   const fetchData = useCallback(async () => {
-    setLoading(true);
     const { data, error } = await supabase
       .from("service_list")
       .select("id, name, description, price, hsn, status, delete_flag")
       .eq("delete_flag", 0)
       .order("name");
-    if (error) setErr(error.message);
-    setRows((data || []) as Service[]);
-    setLoading(false);
+    if (error) throw error;
+    return (data || []) as Service[];
   }, []);
 
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+  // Har mount par naya fetch nahi — 30s tak cache-hit; save/delete/toggle ke
+  // baad refetchServices().
+  const {
+    data: rows = [],
+    error: queryErr,
+    isPending: loading,
+    refetch: refetchServices,
+  } = useQuery({
+    queryKey: ["services"],
+    queryFn: fetchData,
+    staleTime: 30_000,
+  });
+  const err = queryErr instanceof Error ? queryErr.message : queryErr ? "Load failed" : "";
 
   const filtered = rows.filter(
     (s) =>
@@ -123,7 +129,7 @@ export default function ServicesPage() {
         if (error) throw error;
       }
       setShowModal(false);
-      fetchData();
+      refetchServices();
     } catch (err) {
       setFormErr(err instanceof Error ? err.message : String(err));
     } finally {
@@ -135,7 +141,7 @@ export default function ServicesPage() {
     if (!requireAdmin(userRole, "delete")) return;
     if (!confirm(`"${name}" ko delete karna hai?`)) return;
     await supabase.from("service_list").update({ delete_flag: 1 }).eq("id", id);
-    fetchData();
+    refetchServices();
   };
 
   const toggleStatus = async (s: Service) => {
@@ -144,7 +150,7 @@ export default function ServicesPage() {
       .from("service_list")
       .update({ status: s.status === 1 ? 0 : 1 })
       .eq("id", s.id);
-    fetchData();
+    refetchServices();
   };
 
   return (
@@ -154,10 +160,7 @@ export default function ServicesPage() {
         <div className="px-5 py-3.5 border-b border-app flex items-center justify-between flex-wrap gap-3">
           <div className="flex items-center gap-3">
             <div className="relative">
-              <Search
-                size={14}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-2"
-              />
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-2" />
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}

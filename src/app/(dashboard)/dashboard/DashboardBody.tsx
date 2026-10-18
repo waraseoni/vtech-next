@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
+import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { supabase, getCachedUser } from "@/lib/supabase";
 import Link from "next/link";
 import Image from "next/image";
@@ -112,6 +113,18 @@ const inr = (v: number, digits = 0) =>
 // Phase 4 P1 (docs/plans/rsc_phase4_plan.md): ye CLIENT body hai. First-paint
 // data (profile/stats/revenue/recents/low-stock/waiting) server page props ke
 // roop me deta hai — mount par koi heavy fetch nahi (waterfall khatam).
+const EMPTY_FINANCIAL: Financial = {
+  totalSales: 0,
+  partsCost: 0,
+  grossProfit: 0,
+  discounts: 0,
+  salary: 0,
+  loanPaid: 0,
+  expenses: 0,
+  totalOutflow: 0,
+  netProfit: 0,
+};
+
 export default function DashboardBody({ initial }: { initial: DashboardInitialData }) {
   const [theme, setTheme] = useState<"dark" | "light">("dark");
   useEffect(() => {
@@ -195,25 +208,6 @@ export default function DashboardBody({ initial }: { initial: DashboardInitialDa
   const lowStockItems = initial.lowStockItems;
   const waitingSummary = initial.waitingSummary;
 
-  const [financial, setFinancial] = useState<Financial>({
-    totalSales: 0,
-    partsCost: 0,
-    grossProfit: 0,
-    discounts: 0,
-    salary: 0,
-    loanPaid: 0,
-    expenses: 0,
-    totalOutflow: 0,
-    netProfit: 0,
-  });
-  const [dueStats, setDueStats] = useState<{
-    overdue: number;
-    today: number;
-    upcoming: number;
-    amount: number;
-  }>({ overdue: 0, today: 0, upcoming: 0, amount: 0 });
-  const [finLoading, setFinLoading] = useState(false);
-
   // ── AUTH CHECK ──────────────────────────────────────────────────────────
   useEffect(() => {
     getCachedUser()
@@ -232,54 +226,52 @@ export default function DashboardBody({ initial }: { initial: DashboardInitialDa
   const [to, setTo] = useState(() => endOfMonthIST());
 
   // ── DUE REMINDERS WIDGET ────────────────────────────────────────────────
-  useEffect(() => {
-    (async () => {
-      try {
-        const [
-          { data: clients },
-          { data: repairs },
-          { data: sales },
-          { data: loans },
-          { data: payments },
-        ] = await Promise.all([
-          supabase
-            .from("client_list")
-            .select("id, opening_balance, payment_due_date")
-            .eq("delete_flag", 0),
-          pageAll(supabase.from("transaction_list").select("client_name, amount").eq("status", 5)),
-          pageAll(supabase.from("direct_sales").select("client_id, total_amount")),
-          pageAll(
-            supabase.from("client_loans").select("id, client_id, total_payable").eq("status", 1)
-          ),
-          pageAll(supabase.from("client_payments").select("client_id, amount, discount, loan_id")),
-        ]);
-        const m = buildDueMaps({ repairs, directSales: sales, payments, loans });
-        const today = parseISTDate(todayIST()).getTime();
-        let overdue = 0,
-          todayC = 0,
-          upcoming = 0,
-          amount = 0;
-        (clients || []).forEach((c) => {
-          const bal = balanceFromMaps(m, c.id, n(c.opening_balance));
-          if (bal <= 0.01) return;
-          amount += bal;
-          if (!c.payment_due_date) return;
-          const diff = Math.round((parseISTDate(c.payment_due_date).getTime() - today) / 86400000);
-          if (diff < 0) overdue++;
-          else if (diff === 0) todayC++;
-          else if (diff <= 7) upcoming++;
-        });
-        setDueStats({ overdue, today: todayC, upcoming, amount });
-      } catch (e) {
-        logger.error("Due stats fetch error:", e);
-      }
-    })();
+  const fetchDueStats = useCallback(async () => {
+    try {
+      const [
+        { data: clients },
+        { data: repairs },
+        { data: sales },
+        { data: loans },
+        { data: payments },
+      ] = await Promise.all([
+        supabase
+          .from("client_list")
+          .select("id, opening_balance, payment_due_date")
+          .eq("delete_flag", 0),
+        pageAll(supabase.from("transaction_list").select("client_name, amount").eq("status", 5)),
+        pageAll(supabase.from("direct_sales").select("client_id, total_amount")),
+        pageAll(
+          supabase.from("client_loans").select("id, client_id, total_payable").eq("status", 1)
+        ),
+        pageAll(supabase.from("client_payments").select("client_id, amount, discount, loan_id")),
+      ]);
+      const m = buildDueMaps({ repairs, directSales: sales, payments, loans });
+      const today = parseISTDate(todayIST()).getTime();
+      let overdue = 0,
+        todayC = 0,
+        upcoming = 0,
+        amount = 0;
+      (clients || []).forEach((c) => {
+        const bal = balanceFromMaps(m, c.id, n(c.opening_balance));
+        if (bal <= 0.01) return;
+        amount += bal;
+        if (!c.payment_due_date) return;
+        const diff = Math.round((parseISTDate(c.payment_due_date).getTime() - today) / 86400000);
+        if (diff < 0) overdue++;
+        else if (diff === 0) todayC++;
+        else if (diff <= 7) upcoming++;
+      });
+      return { overdue, today: todayC, upcoming, amount };
+    } catch (e) {
+      logger.error("Due stats fetch error:", e);
+      return { overdue: 0, today: 0, upcoming: 0, amount: 0 };
+    }
   }, []);
 
   // ── FINANCIAL FETCH ──────────────────────────────────────────────────────
   const fetchFinancial = useCallback(async () => {
-    if (!profile || profile.role !== "admin") return;
-    setFinLoading(true);
+    if (!profile || profile.role !== "admin") return EMPTY_FINANCIAL;
     try {
       const f0 = `${from}T00:00:00+05:30`;
       const t0 = `${to}T23:59:59+05:30`;
@@ -292,7 +284,7 @@ export default function DashboardBody({ initial }: { initial: DashboardInitialDa
 
       if (!rpcErr && rpcData && typeof rpcData === "object" && "totalSales" in rpcData) {
         const fd = rpcData as Record<string, number>;
-        setFinancial({
+        return {
           totalSales: fd.totalSales || 0,
           partsCost: fd.partsCost || 0,
           grossProfit: fd.grossProfit || 0,
@@ -302,8 +294,7 @@ export default function DashboardBody({ initial }: { initial: DashboardInitialDa
           expenses: fd.expenses || 0,
           totalOutflow: fd.totalOutflow || 0,
           netProfit: fd.netProfit || 0,
-        });
-        return;
+        };
       }
 
       // ── Fallback: client-side aggregation (jab RPC migrate nahi hua) ──
@@ -434,7 +425,7 @@ export default function DashboardBody({ initial }: { initial: DashboardInitialDa
       const totalOutflow = discounts + salary + loanPaid + expenses;
       const netProfit = grossProfit - totalOutflow;
 
-      setFinancial({
+      return {
         totalSales,
         partsCost,
         grossProfit,
@@ -444,17 +435,35 @@ export default function DashboardBody({ initial }: { initial: DashboardInitialDa
         expenses,
         totalOutflow,
         netProfit,
-      });
+      };
     } catch (e) {
       logger.error("Financial fetch error:", JSON.stringify(e));
-    } finally {
-      setFinLoading(false);
+      return EMPTY_FINANCIAL;
     }
   }, [from, to, profile]);
 
-  useEffect(() => {
-    fetchFinancial();
-  }, [fetchFinancial]);
+  // Financial summary: filters (from/to) ke saath query key — Apply/Reset ke
+  // baad refetch, aur 60s tak back-navigation par cache-hit. Placeholder se
+  // pura data naya aane tak dikhta rehta hai (loader-flash nahi).
+  const {
+    data: financialData,
+    isFetching: finLoading,
+    refetch: refetchFinancial,
+  } = useQuery({
+    queryKey: ["dashboard-financial", from, to, profile?.role ?? ""],
+    queryFn: fetchFinancial,
+    enabled: !!profile && profile.role === "admin",
+    placeholderData: keepPreviousData,
+    staleTime: 60_000,
+  });
+  const financial = financialData ?? EMPTY_FINANCIAL;
+
+  const { data: dueStatsData } = useQuery({
+    queryKey: ["dashboard-due-stats"],
+    queryFn: fetchDueStats,
+    staleTime: 60_000,
+  });
+  const dueStats = dueStatsData ?? { overdue: 0, today: 0, upcoming: 0, amount: 0 };
 
   // BUG FIX 1 applied in resetDates too
   const resetDates = () => {
@@ -595,7 +604,7 @@ export default function DashboardBody({ initial }: { initial: DashboardInitialDa
             </div>
           ))}
           <button
-            onClick={fetchFinancial}
+            onClick={() => refetchFinancial()}
             disabled={finLoading}
             className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-app dark:text-white px-4 py-2 rounded-xl font-bold text-sm transition h-[38px] shadow-lg shadow-blue-600/20"
           >
