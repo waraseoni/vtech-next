@@ -1,7 +1,10 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { supabase, getCachedUser } from "@/lib/supabase";
+import { supabase } from "@/lib/supabase";
+import { useQuery } from "@tanstack/react-query";
+import { useSystemInfo } from "@/lib/queries/system-info";
+import { jobViewOptions, type JobDetail, type TransactionImage } from "@/lib/queries/job-view";
 import { GeoPin } from "@/app/components/ViewOnlyBanner";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
@@ -140,28 +143,17 @@ function toDateInput(d: string | null): string {
   return `${p.year}-${p.month}-${p.day}`;
 }
 
-// ─── TYPES ───────────────────────────────────────────────────────────────────
-interface JobDetail {
-  id: number;
-  job_id: string;
-  code: string;
-  client_name: string;
-  item: string;
-  fault: string;
-  remark: string;
-  uniq_id: string;
-  amount: number;
-  mechanic_amount: number;
-  mechanic_commission_amount: number;
-  mechanic_id: number | null;
-  user_id: number;
-  del_status: number;
-  status: number;
-  location_id?: number | null;
-  date_created: string;
-  date_updated: string;
-  date_completed: string | null;
+// HH:MM (IST) - delivery pre-fill ke liye
+function fmtTimeHM(d: string | null): string {
+  return new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Asia/Kolkata",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).format(new Date(d ?? Date.now()));
 }
+
+// ─── TYPES ───────────────────────────────────────────────────────────────────
 interface ActivityEntry {
   id: number;
   user_id: number | string;
@@ -172,44 +164,6 @@ interface ActivityEntry {
   geo_lat?: number | null;
   geo_lng?: number | null;
   geo_distance_m?: number | null;
-}
-interface Client {
-  id: number;
-  firstname: string;
-  middlename: string;
-  lastname: string;
-  contact: string;
-  email: string;
-  address: string;
-}
-interface Mechanic {
-  id: number;
-  firstname: string;
-  middlename: string;
-  lastname: string;
-  designation: string;
-  contact: string;
-}
-interface TransactionProduct {
-  transaction_id: number;
-  product_id: number;
-  product_name: string | null;
-  qty: number;
-  price: number;
-  hsn: string | null;
-}
-interface TransactionService {
-  transaction_id: number;
-  service_id: number;
-  service_name: string | null;
-  price: number;
-  hsn: string | null;
-}
-interface TransactionImage {
-  id: number;
-  transaction_id: number;
-  image_path: string;
-  date_created: string;
 }
 
 // ─── STATUS CONFIG ────────────────────────────────────────────────────────────
@@ -326,19 +280,10 @@ export default function JobDetailsPage() {
   const jobId = params.id as string;
 
   const [job, setJob] = useState<JobDetail | null>(null);
-  const [client, setClient] = useState<Client | null>(null);
-  const [mechanic, setMechanic] = useState<Mechanic | null>(null);
-  const [products, setProducts] = useState<TransactionProduct[]>([]);
-  const [services, setServices] = useState<TransactionService[]>([]);
   const [images, setImages] = useState<TransactionImage[]>([]);
   const [activityLogs, setActivityLogs] = useState<ActivityEntry[]>([]);
   const [userNames, setUserNames] = useState<Record<string, string>>({});
-  const [userRole, setUserRole] = useState<string>("staff");
-  const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
-  const [firmInfo, setFirmInfo] = useState<Record<string, string>>({});
-  const [prevJob, setPrevJob] = useState<{ id: number; job_id: string } | null>(null);
-  const [nextJob, setNextJob] = useState<{ id: number; job_id: string } | null>(null);
   const [waitOpen, setWaitOpen] = useState(0);
 
   useEffect(() => {
@@ -576,172 +521,53 @@ export default function JobDetailsPage() {
     []
   );
 
-  // ── FETCH ──────────────────────────────────────────────────────────────────
-  const fetchData = useCallback(async () => {
-    setLoading(true);
-    try {
-      const numId = Number(jobId?.trim());
-      if (!jobId || isNaN(numId) || numId <= 0) {
-        router.push("/jobs");
-        return;
-      }
+  // ── DATA (React Query cache) ──────────────────────────────────────────────
+  const numId = Number(jobId?.trim());
+  const validId = Boolean(jobId) && Number.isFinite(numId) && numId > 0;
 
-      const {
-        data: { user },
-      } = await getCachedUser();
+  const {
+    data: snap,
+    isPending,
+    isError,
+    refetch,
+  } = useQuery({
+    ...jobViewOptions(numId),
+    enabled: validId,
+  });
 
-      // Role + firm info + job row — independent, one round (perf Phase 5)
-      const [profRes, sysRes, jobRes] = await Promise.all([
-        user
-          ? supabase.from("profiles").select("role").eq("id", user.id).single()
-          : Promise.resolve({ data: null }),
-        supabase.from("system_info").select("meta_field, meta_value"),
-        supabase
-          .from("transaction_list")
-          .select(
-            "id, job_id, code, client_name, item, fault, remark, uniq_id, amount, mechanic_amount, mechanic_commission_amount, mechanic_id, user_id, del_status, status, location_id, date_created, date_updated, date_completed"
-          )
-          .eq("id", numId)
-          .eq("del_status", 0)
-          .single(),
-      ]);
-
-      if (user) setUserRole((profRes.data as { role?: string } | null)?.role || "staff");
-
-      const info: Record<string, string> = {};
-      (sysRes.data || []).forEach((r) => {
-        info[r.meta_field] = r.meta_value;
-      });
-      setFirmInfo(info);
-
-      const { data: jobData, error: jobErr } = jobRes;
-
-      if (jobErr || !jobData) {
-        router.push("/jobs");
-        return;
-      }
-      setJob(jobData as JobDetail);
-      loadActivity(jobData as { id: number; job_id?: string; user_id?: number });
-      setNewStatus(jobData.status);
-      // Neighboring active jobs for Prev/Next navigation (order by id, newest first)
-      const [prevRes, nextRes] = await Promise.all([
-        supabase
-          .from("transaction_list")
-          .select("id, job_id")
-          .eq("del_status", 0)
-          .lt("id", numId)
-          .order("id", { ascending: false })
-          .limit(1),
-        supabase
-          .from("transaction_list")
-          .select("id, job_id")
-          .eq("del_status", 0)
-          .gt("id", numId)
-          .order("id", { ascending: true })
-          .limit(1),
-      ]);
-      setPrevJob((prevRes.data?.[0] as { id: number; job_id: string } | null) ?? null);
-      setNextJob((nextRes.data?.[0] as { id: number; job_id: string } | null) ?? null);
-      // Pre-fill delivery date
-      setDeliveryDate(toDateInput(jobData.date_completed));
-      setDeliveryTime(
-        jobData.date_completed
-          ? new Intl.DateTimeFormat("en-GB", {
-              timeZone: "Asia/Kolkata",
-              hour: "2-digit",
-              minute: "2-digit",
-              hour12: false,
-            }).format(new Date(jobData.date_completed))
-          : new Intl.DateTimeFormat("en-GB", {
-              timeZone: "Asia/Kolkata",
-              hour: "2-digit",
-              minute: "2-digit",
-              hour12: false,
-            }).format(new Date())
-      );
-
-      const clientId = Number(jobData.client_name);
-      const [clientRes, mechRes, prodRes, svcRes, imgRes] = await Promise.all([
-        supabase
-          .from("client_list")
-          .select("id, firstname, middlename, lastname, contact, email, address")
-          .eq("id", clientId)
-          .single(),
-        jobData.mechanic_id
-          ? supabase
-              .from("mechanic_list")
-              .select("id, firstname, middlename, lastname, designation, contact")
-              .eq("id", jobData.mechanic_id)
-              .single()
-          : Promise.resolve({ data: null }),
-        supabase
-          .from("transaction_products")
-          .select("transaction_id, product_id, product_name, qty, price")
-          .eq("transaction_id", numId),
-        supabase
-          .from("transaction_services")
-          .select("transaction_id, service_id, service_name, price")
-          .eq("transaction_id", numId),
-        supabase
-          .from("transaction_images")
-          .select("id, transaction_id, image_path, date_created")
-          .eq("transaction_id", numId)
-          .order("date_created", { ascending: false }),
-      ]);
-
-      if (clientRes.data) setClient(clientRes.data as Client);
-      if (mechRes.data) setMechanic(mechRes.data as Mechanic);
-      setImages((imgRes.data || []) as TransactionImage[]);
-      if (prodRes.error || svcRes.error || imgRes.error) {
-        // Column-projection typo yahan chup-chup empty lists nahi dega (regression 29457)
-        logger.warn("txn line-items fetch:", prodRes.error || svcRes.error || imgRes.error);
-      }
-
-      const prods = (prodRes.data || []) as TransactionProduct[];
-      const prodIds = [...new Set(prods.map((p) => p.product_id).filter(Boolean))];
-      const svcs = (svcRes.data || []) as TransactionService[];
-      const svcIds = [...new Set(svcs.map((s) => s.service_id).filter(Boolean))];
-      // Name/HSN lookups independent of each other — one round (perf Phase 5)
-      const [plRes, slRes] = await Promise.all([
-        prodIds.length > 0
-          ? supabase.from("product_list").select("id, name, hsn").in("id", prodIds)
-          : Promise.resolve({ data: null }),
-        svcIds.length > 0
-          ? supabase.from("service_list").select("id, name, hsn").in("id", svcIds)
-          : Promise.resolve({ data: null }),
-      ]);
-      const plRows = plRes.data;
-      const pm = Object.fromEntries((plRows || []).map((p) => [p.id, p.name]));
-      const phsn = Object.fromEntries((plRows || []).map((p) => [p.id, p.hsn]));
-      setProducts(
-        prods.map((p) => ({
-          ...p,
-          product_name: p.product_name || pm[p.product_id] || null,
-          hsn: phsn[p.product_id] || null,
-        }))
-      );
-
-      const slRows = slRes.data;
-      const sm = Object.fromEntries((slRows || []).map((s) => [s.id, s.name]));
-      const shsn = Object.fromEntries((slRows || []).map((s) => [s.id, s.hsn]));
-      setServices(
-        svcs.map((s) => ({
-          ...s,
-          service_name: s.service_name || sm[s.service_id] || null,
-          hsn: shsn[s.service_id] || null,
-        }))
-      );
-    } catch (err) {
-      logger.error("fetchData:", err);
-    } finally {
-      setLoading(false);
-    }
-  }, [jobId, router, loadActivity]);
+  const loading = isPending;
+  const userRole = snap?.userRole ?? "staff";
+  const firmInfo = useSystemInfo();
+  const prevJob = snap?.prevJob ?? null;
+  const nextJob = snap?.nextJob ?? null;
+  const client = snap?.client ?? null;
+  const mechanic = snap?.mechanic ?? null;
+  const products = snap?.products ?? [];
+  const services = snap?.services ?? [];
 
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    if (jobId && !validId) router.push("/jobs");
+  }, [jobId, validId, router]);
 
+  useEffect(() => {
+    if (isError) router.push("/jobs");
+  }, [isError, router]);
+
+  // Snapshot -> local state. job/images user ke action se patch hote hain
+  // isliye state me rakhe; baaki sab snapshot se derived hain.
+  useEffect(() => {
+    if (!snap) return;
+    setJob(snap.job);
+    setImages(snap.images);
+    setNewStatus(snap.job.status);
+    setDeliveryDate(toDateInput(snap.job.date_completed));
+    setDeliveryTime(fmtTimeHM(snap.job.date_completed));
+  }, [snap]);
+
+  // Job/ya status badla -> activity timeline refresh.
+  useEffect(() => {
+    if (job) loadActivity(job);
+  }, [job, loadActivity]);
   // ── WHATSAPP ───────────────────────────────────────────────────────────────
   const sendWA = () => {
     if (!job || !client) return;
@@ -803,7 +629,6 @@ export default function JobDetailsPage() {
         job.job_id,
         `Job #${job.job_id} | ${STATUS_MAP[job.status]?.label} → ${STATUS_MAP[newStatus]?.label} | ${job.item}`
       );
-      loadActivity(job);
       toast.success(`Status "${STATUS_MAP[newStatus]?.label}" update ho gaya!`);
       setShowStatusModal(false);
     }
@@ -873,7 +698,6 @@ export default function JobDetailsPage() {
         job.job_id,
         `Job #${job.job_id} | ₹${amt} (${payMode}, ${payType}) | Client: ${client.firstname} ${client.lastname}`
       );
-      loadActivity(job);
       toast.success("Payment save ho gayi!");
       setShowPayModal(false);
       setPayAmount("");
@@ -882,7 +706,7 @@ export default function JobDetailsPage() {
       setPayBillNo("");
       setPayType("Full");
       setPayDate(todayISTStr());
-      fetchData();
+      refetch();
     }
     setSavingPay(false);
   };

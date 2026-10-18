@@ -197,9 +197,34 @@ Rollback: `vercel.json` se `crons` hata do.
 
 ### Phase 3 — Client data cache (all pages, medium-high effort, high UX impact)
 
-- Root par @tanstack/react-query (ya SWR) add; list/data fetches ko cache +
-  stale-while-revalidate. Back/forward navigation instant.
-- **Impact:** refetch-on-every-mount khatam (abhi zero cache).
+**✅ FOUNDATION + HOT PAGES IMPLEMENTED (2026-10-18):**
+
+1. `@tanstack/react-query@5.104.4` + root `Providers` (`src/app/Providers.tsx`,
+   `RootClient` ke bahar — public pages + boot/license guards ke har branch
+   me). Defaults: `staleTime 30s` · `gcTime 5m` · `refetchOnWindowFocus
+   false` · `retry 1` (`src/lib/queryClient.ts`; SSR par alag instance,
+   browser me singleton).
+2. Shared query modules `src/lib/queries/{system-info,direct-sale,job-view}.ts`
+   — queryFn module level par (page se bahar) taaki search hover prefetch
+   kar sake.
+3. `useSystemInfo()` — firm info 5 min cached (pehle har detail mount par 1
+   extra `system_info` round-trip).
+4. Detail pages converted: `jobs/[id]/view` (**-232 LOC**) aur
+   `direct-sales/[id]/view` (**-134 LOC**). Pattern: `useQuery` + snapshot →
+   ek hydration effect; `userRole/firmInfo/prev/next/client/mechanic/`
+   `products/services` ab snapshot se derived (alag `useState` nahi);
+   save-par `fetchData()` → `refetch()`; invalid-id/not-found → redirect
+   effect.
+5. `SaleForm` save par `removeQueries(directSaleKey)` — edit ke baad purana
+   invoice cache se na dikhe.
+6. Search hover ab sirf RSC payload nahi **data bhi** prefetch karta hai
+   (`prefetchDetailData` in `src/hooks/useNavbarSearch.ts`) → click par
+   cache-hit + hover/click in-flight dedupe (ek hi network call).
+
+- **Impact:** refetch-on-every-mount khatam (pehle zero cache).
+- **Abhi bhi pending:** `clients/[id]/view` (2814 LOC) + baaki ~108 client
+  pages ka `useQuery` migration, aur save-par invalidation (list pages abhi
+  bhi remount par fresh fetch karte hain).
 
 ### Phase 4 — Remove post-hydration waterfall (key pages, medium-high effort)
 
@@ -303,10 +328,10 @@ Gates: prettier ✓ (touched) · eslint ✓ · tsc ✓ · vitest **388/388** ✓
 `next build` ✓. Commits: `3ac54ad` (style) · `c3bca29` · `370dffd` ·
 `2511ad4` · `54ecd4a` · migration commit ke saath.
 
-**Abhi bhi pending (bade wins, medium-high effort):** Phase 3 (client data
-cache / React Query — back-forward instant), Phase 4 (post-hydration
-waterfall → RSC), Phase 7 (bundle weight). Inke bina har navigation abhi bhi
-3-5 sequential query waves + `PageLoader` leta hai.
+**Abhi bhi pending (bade wins, medium-high effort):** Phase 3 ka rest
+(`clients/[id]/view` + ~108 client pages ka `useQuery` migration), Phase 4
+(post-hydration waterfall → RSC), Phase 7 (bundle weight). Inke bina har
+navigation abhi bhi 3-5 sequential query waves + `PageLoader` leta hai.
 
 ## Measurement plan
 

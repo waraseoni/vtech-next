@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { supabase, getCachedUser } from "@/lib/supabase";
 import { fetchStockByProducts } from "@/lib/inventoryStock";
 import {
@@ -21,6 +22,7 @@ import {
 } from "lucide-react";
 import { logActivity } from "@/lib/activity";
 import { safeBack } from "@/lib/utils";
+import { directSaleKey } from "@/lib/queries/direct-sale";
 import SearchableSelect from "@/components/SearchableSelect";
 import { toast } from "@/lib/toast";
 
@@ -101,6 +103,7 @@ function Field({
 // ══════════════════════════════════════════════════════════════════════════════
 export default function SaleForm({ mode, saleId }: SaleFormProps) {
   const router = useRouter();
+  const queryClient = useQueryClient();
 
   const [pageLoading, setPageLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -473,6 +476,8 @@ export default function SaleForm({ mode, saleId }: SaleFormProps) {
         );
       }
 
+      // Edit ke baad view page purani cache se na khule — copy drop karo.
+      queryClient.removeQueries({ queryKey: directSaleKey(resultId) });
       router.replace(`/direct-sales/${resultId}/view`);
     } catch (err) {
       setFormError("Save failed: " + (err instanceof Error ? err.message : "Unknown error"));

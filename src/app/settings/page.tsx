@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 import ZoomableImage from "@/components/ZoomableImage";
 import Link from "next/link";
 import { APP_VERSION_FULL } from "@/lib/app-version";
+import { useQueryClient } from "@tanstack/react-query";
+import { systemInfoKey } from "@/lib/queries/system-info";
 import {
   Settings2,
   Settings,
@@ -48,6 +50,7 @@ type SysInfo = Record<string, string>;
 
 export default function SettingsPage() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { openCropper, cropperEl } = useImageUpload();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -242,6 +245,12 @@ export default function SettingsPage() {
         .insert({ meta_field: field, meta_value: value });
       if (error) throw new Error(`${field} insert failed: ${error.message}`);
     }
+
+    // Firm info detail pages (jobs/direct-sale view) React Query cache se lete
+    // hain — save ke baad stale mark karo, warna 5 min tak purana naam dikhta hai.
+    // Har system_info write isi se guzarta hai (17 fields + logo/cover/AI/session)
+    // — isliye 7 save handlers me alag se invalidate ki zaroorat nahi.
+    queryClient.invalidateQueries({ queryKey: systemInfoKey });
   };
 
   // ── Save basic settings ───────────────────────────

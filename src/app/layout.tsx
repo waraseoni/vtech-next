@@ -1,6 +1,7 @@
 import "./globals.css";
 import Script from "next/script";
 import RootClient from "./RootClient";
+import Providers from "./Providers";
 import type { Metadata, Viewport } from "next";
 
 const SITE_NAME = process.env.NEXT_PUBLIC_SITE_NAME || "V-Technologies";
@@ -124,7 +125,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           strategy="beforeInteractive"
           dangerouslySetInnerHTML={{ __html: BOOT_GUARD }}
         />
-        <RootClient>{children}</RootClient>
+        <Providers>
+          <RootClient>{children}</RootClient>
+        </Providers>
       </body>
     </html>
   );

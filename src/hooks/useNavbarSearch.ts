@@ -6,6 +6,9 @@ import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
 import { locPath } from "@/lib/locations";
+import { getQueryClient } from "@/lib/queryClient";
+import { jobViewOptions } from "@/lib/queries/job-view";
+import { directSaleOptions } from "@/lib/queries/direct-sale";
 
 export type SearchResult = {
   id: number | string;
@@ -16,6 +19,26 @@ export type SearchResult = {
   href: string;
   icon: "client" | "job" | "product" | "mechanic" | "sale" | "location" | "spot";
 };
+
+// RSC payload prefetch akela kaafi nahi — detail pages client components hain,
+// unki Supabase queries React Query cache me jaati hain. Hover par data bhi
+// warm kar do: click par 4-stage waterfall cache-se chalega, aur in-flight
+// query dedupe hoti hai (hover + click = ek hi network call).
+function prefetchDetailData(href: string) {
+  const job = /^\/jobs\/(\d+)\/view$/.exec(href);
+  if (job) {
+    void getQueryClient()
+      .prefetchQuery(jobViewOptions(Number(job[1])))
+      .catch(() => {});
+    return;
+  }
+  const sale = /^\/direct-sales\/(\d+)\/view$/.exec(href);
+  if (sale) {
+    void getQueryClient()
+      .prefetchQuery(directSaleOptions(Number(sale[1])))
+      .catch(() => {});
+  }
+}
 
 export function useNavbarSearch() {
   const router = useRouter();
@@ -276,10 +299,12 @@ export function useNavbarSearch() {
   // click par chunk download + RSC render shuru hota, aur thandi Supabase par
   // 3-5 sequential query waves = "result page khula hi nahi". Hover par ek
   // prefetch (sirf hovered result ka — 175 results ka mass prefetch nahi)
-  // navigation ko warm kar deta hai.
+  // navigation ko warm kar deta hai. Client-component pages ka DATA alag se
+  // prefetchDetailData() me jaata hai — click par woh cache-hit ho jata hai.
   const prefetch = useCallback(
     (href: string) => {
       router.prefetch(href);
+      prefetchDetailData(href);
     },
     [router]
   );

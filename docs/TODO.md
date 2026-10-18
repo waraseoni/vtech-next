@@ -340,9 +340,28 @@ Base messenger already live (`30aae41`). Ye round un requested features add kart
   17 indexes + `pg_trgm` GIN (navbar search ke `ILIKE '%q%'` ke liye).
   **Abhi apply karna baki** — Supabase SQL Editor me ek baar chalao.
 
-> Abhi bhi pending = audit Phase 3 (client data cache) + Phase 4 (post-hydration
-> waterfall → RSC). Inke bina har navigation 3-5 sequential query waves +
-> `PageLoader` leta hai — wahi Phase C ka W7/W8 hai.
+### Phase A3 — Client data cache (audit Phase 3) ✅ foundation + hot pages (2026-10-18)
+
+- [x] **React Query foundation** — `@tanstack/react-query@5.104.4` + root
+  `Providers` (`src/app/Providers.tsx`, `RootClient` ke bahar — public pages
+  aur boot/license guards ke har branch me). Defaults: `staleTime 30s` ·
+  `gcTime 5m` · `refetchOnWindowFocus false` · `retry 1`
+- [x] **Shared query modules** — `src/lib/queries/{system-info,direct-sale,job-view}.ts`;
+  queryFn module level par taaki search hover prefetch kar sake
+- [x] **`useSystemInfo()`** — firm info 5 min cached (pehle har mount par 1 RT)
+- [x] **`jobs/[id]/view` (-232 LOC) + `direct-sales/[id]/view` (-134 LOC) → `useQuery`**
+  — back/forward par dobara network call nahi; save flows `refetch()` /
+  `removeQueries(directSaleKey)`
+- [x] **Search hover = data prefetch** (`prefetchDetailData` in
+  `useNavbarSearch`) — click par 4-stage waterfall cache-hit + hover/click
+  dedupe
+- [ ] **`clients/[id]/view` → `useQuery`** (2814 LOC — next biggest win)
+- [ ] Baaki ~108 client pages ka migration + save-par invalidation (list pages
+  abhi bhi remount par fresh fetch karte hain)
+
+> Abhi bhi pending = Phase A3 ka rest (client pages) + audit Phase 4
+> (post-hydration waterfall → RSC). Inke bina har navigation 3-5 sequential
+> query waves + `PageLoader` leta hai — wahi Phase C ka W7/W8 hai.
 
 ### Phase B — Season-safe data batching
 
