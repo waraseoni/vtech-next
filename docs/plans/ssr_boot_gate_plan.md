@@ -1,6 +1,7 @@
 # SSR Boot-Gate — feasibility plan (authenticated pages client-rendered)
 
 > **Status: Option A IMPLEMENTED (18 Oct 2026) — see "Option A — result" below.**
+> **Option B Stage 1 (content SSR): evaluated, net-negative → reverted — see result below.**
 > Yeh discovery Fix #1 (`/jobs` mobile device-branch) verify karte waqt mili:
 > `/jobs` (aur baaki authenticated pages) ka **content SSR HTML me nahi** aata.
 
@@ -169,3 +170,36 @@ revert — aage nahi badhna.
 
 > **Ek saath sab nahi.** Har stage independent + flag-guarded. Agar Stage 1 bhi TBT
 > na de, to Option A par ruk jao (RSC seed already data-waterfall hata chuka hai).
+
+## Option B Stage 1 — result: NOT WORTH SHIPPING (18 Oct 2026)
+
+`NEXT_PUBLIC_SSR_CONTENT=1` (allowlist `/jobs`) ke saath Stage 1 implement + build
+kiya — splash ko `fixed inset-0 z-[100]` opaque overlay banaya, `children` ko
+authed-branch jaisi `<main>` wrapper me SSR kiya. SSR HTML verify: mobile 6 cards
+(`border-l-4`), desktop 26 `<tr>` — content sach me HTML me aaya. Hydration clean
+(CDP: `/jobs` splash clear, 6 cards, 0 console/hydration errors; scroll 6→25
+intact; `/clients`,`/dashboard` unchanged since not on allowlist).
+
+**Par metric win ZERO — net-negative:**
+
+- **LCP ~6.1s dono par** (ON vs OFF) — opaque splash content ko dhakta hai, aur
+  Chrome **occluded content ko LCP candidate nahi maanta** → HTML me content hone
+  se koi LCP/FCP fayda nahi. Content tab dikhta hai jab `authReady` par splash hatta
+  hai.
+- **FCP ~1.67s dono par** (quiet machine) — FCP pehle se splash hai; content na hone
+  se farak nahi.
+- Payload bada: 774KB → 800KB (mobile HTML 242KB → 313KB), **aur** content phir bhi
+  client par render+hydrate hota hai (SSR client render kaam ghatta nahi, sirf parse
+  extra) → strictly zyada kaam.
+
+Lighthouse is machine par **bharosa-mand nahi** (usi OFF build ne perf 40/59/45,
+TBT 600–2518ms diya) — isliye conclusion **occlusion + payload** par, Lighthouse
+delta par nahi.
+
+**Faisla (best practice):** Stage 1 **revert** — bhale hi flag OFF tha, bina fayde
+ka code + bada payload rakhna theek nahi (tree clean). Asli fayda sirf Stage 2/3
+(gate lift / SSR-safe `ViewOnlyProvider`) se — woh bada, app-wide refactor hai, apne
+dedicated sprint me, field data kahe to.
+
+> Stage 1 lesson: SSR content **behind** a boot-splash cannot help — content aur LCP
+> dono `authReady` par depend karte hain. Pehle gate hatana/lift karna zaroori hai.
