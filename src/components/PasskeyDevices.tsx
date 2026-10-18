@@ -1,10 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import {
-  startRegistration,
-  browserSupportsWebAuthn,
-  platformAuthenticatorIsAvailable,
-} from "@simplewebauthn/browser";
+import { startRegistration, browserSupportsWebAuthn } from "@simplewebauthn/browser";
 import { Fingerprint, Loader2, Plus, Trash2, Pen, Check, X } from "lucide-react";
 import { toast } from "@/lib/toast";
 
@@ -60,15 +56,11 @@ export default function PasskeyDevices() {
 
   useEffect(() => {
     load();
-    (async () => {
-      try {
-        if (browserSupportsWebAuthn() && (await platformAuthenticatorIsAvailable())) {
-          setSupported(true);
-        }
-      } catch {
-        /* unsupported */
-      }
-    })();
+    // WebAuthn support secure-context me sync check hota hai. Platform biometric
+    // (fingerprint/Hello) alag device-specific baat hai — isliye button gate nahi
+    // karte; browser available authenticator (fingerprint / Hello / security key)
+    // khud offer karta hai.
+    setSupported(browserSupportsWebAuthn());
   }, []);
 
   const enroll = async () => {
@@ -223,7 +215,8 @@ export default function PasskeyDevices() {
 
       {!supported ? (
         <p className="text-[11px] text-muted-2">
-          Is browser/device par biometric (passkey) support nahi hai.
+          Is browser par passkey support nahi hai. HTTPS (ya localhost) par kholein aur latest
+          Chrome/Edge/Safari use karein.
         </p>
       ) : showEnroll ? (
         <div className="space-y-3 bg-panel-2 border border-app rounded-xl p-4">

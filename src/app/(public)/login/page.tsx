@@ -18,11 +18,7 @@ import {
   UserRound,
   Fingerprint,
 } from "lucide-react";
-import {
-  startAuthentication,
-  browserSupportsWebAuthn,
-  platformAuthenticatorIsAvailable,
-} from "@simplewebauthn/browser";
+import { startAuthentication, browserSupportsWebAuthn } from "@simplewebauthn/browser";
 import { SITE } from "../site";
 import { APP_VERSION_LABEL, APP_VERSION_FULL } from "@/lib/app-version";
 import PullToRefresh from "@/components/PullToRefresh";
@@ -89,19 +85,9 @@ export default function LoginPage() {
 
   // ── Passkey (biometric) support detect ─────────────────────────────────
   useEffect(() => {
-    let alive = true;
-    (async () => {
-      try {
-        if (browserSupportsWebAuthn() && (await platformAuthenticatorIsAvailable())) {
-          if (alive) setPasskeyReady(true);
-        }
-      } catch {
-        /* unsupported — button hidden rahega */
-      }
-    })();
-    return () => {
-      alive = false;
-    };
+    // WebAuthn secure-context me sync check; browser khud fingerprint / Hello /
+    // security key offer karta hai.
+    setPasskeyReady(browserSupportsWebAuthn());
   }, []);
 
   // ── Auto-logoff reason (revoked access / idle timeout) ────────────────
