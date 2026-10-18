@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.61.0](https://github.com/waraseoni/vtech-next/compare/v1.60.0...v1.61.0) (2026-10-18)
+
+### Features
+
+* **passkey:** conditional UI - autofill se bina button seedha finger login ([3b9ca72](https://github.com/waraseoni/vtech-next/commit/3b9ca725c93db0c8665199a4e9807369f3a988b2))
+
 ## [1.60.0](https://github.com/waraseoni/vtech-next/compare/v1.59.0...v1.60.0) (2026-10-18)
 
 ### Features
