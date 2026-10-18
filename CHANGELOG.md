@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.64.0](https://github.com/waraseoni/vtech-next/compare/v1.63.0...v1.64.0) (2026-10-18)
+
+### Features
+
+* **client-cache:** convert client detail view to TanStack Query ([ee5bd71](https://github.com/waraseoni/vtech-next/commit/ee5bd7146a4e5e3f75e9f0bc9e34537fdad355ee))
+
 ## [1.63.0](https://github.com/waraseoni/vtech-next/compare/v1.62.1...v1.63.0) (2026-10-18)
 
 ### Features
