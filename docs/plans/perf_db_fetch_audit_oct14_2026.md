@@ -233,9 +233,28 @@ Rollback: `vercel.json` se `crons` hata do.
 
 ### Phase 6 — DB indexes ⚠ DB WRITE → peak-season freeze ke baad
 
-- `transaction_list(status|date_created|client_name|date_updated)`,
-  `activity_logs(module,action,date_created)`, `activity_logs(meta_id)`.
-- Minor now (data chhota); future-proofing.
+**✅ IMPLEMENTED (2026-10-18 — user ne freeze approval di):**
+`supabase/migrations/20261018_perf_indexes.sql` — **17 indexes + `pg_trgm`**
+extension. Static-verified (migration ke har column ko schema files se check
+kiya) + 0 name collisions in 57 purani migrations. Sirf `CREATE EXTENSION`/
+`CREATE INDEX` — koi column/constraint/data nahi chhua.
+
+- **pg_trgm GIN (6)** — navbar search ke `ILIKE '%q%'` ke liye (leading
+  wildcard btree kabhi use nahi kar sakta): `client_list`
+  (firstname/middlename/lastname/contact/address), `transaction_list`
+  (item/fault/job_id/code/uniq_id), `product_list(name)`,
+  `mechanic_list(firstname,lastname)`, `direct_sales(sale_code,remarks)`,
+  `locations(zone/rack/bin/box/label/code)`. Bina iske har keystroke = seq scan.
+- **btree (11)** — pehle ZERO-index tables ke hot filters: `activity_logs`
+  (module,action,date_created) + (meta_id) · `direct_sales(client_id,date_created)` ·
+  `client_payments(client_id,payment_date)` · `client_loans(client_id,status)` ·
+  `transaction_list(client_name,date_created)`, `(del_status,date_created)`,
+  `(status,date_created)` · `transaction_services(transaction_id)` ·
+  `transaction_images(transaction_id)` · `transaction_products(product_id)`.
+- **Jaan-bujh kar chhoda**: `delete_flag`/`status` jaise 2-value flags aur
+  `mechanic_id` (sirf 4 mechanics) — selectivity hi nahi, abhi seq-scan sasta.
+  Data 10-20x ho tab `explain` dekh ke add karna.
+- Apply: Supabase SQL Editor me ek baar. Verify query file ke end me hai.
 
 ### Phase 7 — Bundle / JS weight (heavy pages)
 
@@ -246,6 +265,48 @@ Rollback: `vercel.json` se `crons` hata do.
 karte hain, low risk) → phir re-measure → Phase 3.
 
 ---
+
+### Phase 8 — Nav/save client-side quick wins ✅ IMPLEMENTED (2026-10-18)
+
+User report: *"universal search par click ke baad result page nahi khulta ·
+forms/jobs save/update par hang · kabhi kabhi sab badhiya chalta hai"*.
+Ye symptoms audit ke original Phases 1-7 me capture nahi the — neeche ke 6
+fixes sab low-risk hain:
+
+1. **`logActivity()` timeout** (`src/lib/activity.ts`) — **save hang ka root
+   cause**: har save ke baad 3 serial round-trip (`getCachedUser` → `profiles`
+   → `activity_logs` insert) **bina timeout ke**; network hang hua to caller ka
+   `await` indefinitely atak jata tha. Ab poori log-write 5s timeout ke under
+   race hoti hai (signature same → 100+ call sites untouched).
+2. **Job save chain parallel** (`src/app/jobs/new/page.tsx`) — services +
+   products insert + counter bump ab EK `Promise.all` (pehle 4 strictly serial)
+   aur `logActivity` fire-and-forget → save path se poora hata diya.
+3. **Artificial 1s nav delay hata** — 9 save flows me
+   `setTimeout(router.replace, 1000)` tha. Toaster `RootClient` me hai jo SPA
+   navigation ke baad bhi render hota rehta hai. Files: clients edit /
+   add-payment / collect-emi / give-loan / add-direct-sale, jobs edit /
+   bulk / bulk-edit + jobs/new.
+4. **Search result prefetch** (`NavbarSearch.tsx` + `useNavbarSearch.ts`) —
+   results `<button>` hain to App Router ka link-prefetch apply hi nahi hota
+   tha. Ab hover/focus par sirf hovered result prefetch (mass prefetch nahi).
+5. **`/api/license/status` throttle** (`useAppBoot.ts`) — ye har pathname
+   change par chalta tha (requireUser auth RTT + 3 `system_info` reads + kabhi
+   kabhi cross-project `check_license` RPC). Rapid navigation par Vercel Hobby
+   ki limited concurrency me doosre data-fetch ko QUEUE karta tha →
+   "page khulta hi nahi". Ab force (pehli load/activation) + max 1/min.
+6. **Reload watchdogs relaxed** — layout `__VTECH_BOOTED__` guard 8s → 15s,
+   `useAppBoot` boot guard 6s → 12s (observed cold start 7.9s se upar). Ye
+   false-positive auto-reload karte the jo *"page khula nahi / baar baar
+   refresh"* jaisa lagta tha.
+
+Gates: prettier ✓ (touched) · eslint ✓ · tsc ✓ · vitest **388/388** ✓ ·
+`next build` ✓. Commits: `3ac54ad` (style) · `c3bca29` · `370dffd` ·
+`2511ad4` · `54ecd4a` · migration commit ke saath.
+
+**Abhi bhi pending (bade wins, medium-high effort):** Phase 3 (client data
+cache / React Query — back-forward instant), Phase 4 (post-hydration
+waterfall → RSC), Phase 7 (bundle weight). Inke bina har navigation abhi bhi
+3-5 sequential query waves + `PageLoader` leta hai.
 
 ## Measurement plan
 

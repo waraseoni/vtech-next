@@ -317,6 +317,33 @@ Base messenger already live (`30aae41`). Ye round un requested features add kart
 - [x] W4: sidebar `router.prefetch()` hover/touch par (Link prefetch verify)
 - [x] W5: public pages static cache headers — `next.config.ts` `headers()` (static assets max-age 1d + SWR; HTML/API untouched, 2026-10-18)
 
+### Phase A2 — Nav/save hang + intermittent-slow quick wins ✅ (2026-10-18)
+
+> User report: *"universal search par click ke baad result page nahi khulta ·
+> forms/jobs save-update par hang · kabhi kabhi sab badhiya chalta hai"*.
+> Plan + full detail: `docs/plans/perf_db_fetch_audit_oct14_2026.md` Phase 6 + Phase 8.
+
+- [x] **`logActivity()` 5s timeout** (`src/lib/activity.ts`) — save hang ka
+  root cause: 3 serial RT (`getCachedUser` → `profiles` → insert) bina timeout
+- [x] **Job save chain parallel** (`jobs/new`) — services+products+bump ab ek
+  `Promise.all`; `logActivity` fire-and-forget (save path se poora hata)
+- [x] **Artificial 1s nav delay hata** — 9 save flows ka `setTimeout(router.replace, 1000)`
+  (clients edit/add-payment/collect-emi/give-loan/add-direct-sale, jobs edit/bulk/bulk-edit/new)
+- [x] **Search result prefetch** — hover/focus par sirf hovered result (`NavbarSearch` + `useNavbarSearch`)
+- [x] **`/api/license/status` throttle** — max 1/min per navigation (force always).
+  Ye har nav par auth RTT + 3 `system_info` reads + kabhi kabhi cross-project
+  `check_license` RPC karta tha → Vercel ki limited concurrency me doosre
+  data-fetch QUEUE hote the ("page khulta hi nahi" wala symptom).
+- [x] **Reload watchdogs relaxed** — layout `__VTECH_BOOTED__` 8s → 15s,
+  `useAppBoot` boot guard 6s → 12s (false-positive auto-reload ruk gaya)
+- [x] **DB indexes (audit Phase 6)** — `supabase/migrations/20261018_perf_indexes.sql`:
+  17 indexes + `pg_trgm` GIN (navbar search ke `ILIKE '%q%'` ke liye).
+  **Abhi apply karna baki** — Supabase SQL Editor me ek baar chalao.
+
+> Abhi bhi pending = audit Phase 3 (client data cache) + Phase 4 (post-hydration
+> waterfall → RSC). Inke bina har navigation 3-5 sequential query waves +
+> `PageLoader` leta hai — wahi Phase C ka W7/W8 hai.
+
 ### Phase B — Season-safe data batching
 
 - [x] W3a: dashboard `.from()` clusters parallel (`Promise.all`) + dedupe
