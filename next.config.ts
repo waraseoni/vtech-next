@@ -71,6 +71,20 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+  async headers() {
+    return [
+      {
+        source: "/:file((?:[^/]+\\.(?:png|jpg|jpeg|webp|svg|ico|gif|woff2?)))",
+        headers: [
+          { key: "Cache-Control", value: "public, max-age=86400, stale-while-revalidate=604800" },
+        ],
+      },
+      {
+        source: "/manifest.json",
+        headers: [{ key: "Cache-Control", value: "public, max-age=0, must-revalidate" }],
+      },
+    ];
+  },
 };
 
 export default withSentryConfig(withSerwist(nextConfig), {
