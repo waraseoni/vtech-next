@@ -102,6 +102,7 @@ export default function LoginPage() {
   const [passkeyLoading, setPasskeyLoading] = useState(false);
   const [passkeyReady, setPasskeyReady] = useState(false);
   const [condNonce, setCondNonce] = useState(0);
+  const [condActive, setCondActive] = useState(false);
 
   // Client OTP state
   const [clientEmail, setClientEmail] = useState("");
@@ -208,9 +209,16 @@ export default function LoginPage() {
     let cancelled = false;
     (async () => {
       try {
-        if (!(await browserSupportsWebAuthnAutofill())) return;
+        const supported = await browserSupportsWebAuthnAutofill();
+        if (cancelled) return;
+        if (!supported) {
+          if (import.meta.env.DEV)
+            console.info("[passkey] conditional UI unsupported — button fallback active");
+          return;
+        }
         const options = await beginPasskey("");
         if (cancelled) return;
+        setCondActive(true);
         const assertion = await startAuthentication({
           optionsJSON: options,
           useBrowserAutofill: true,
@@ -218,10 +226,12 @@ export default function LoginPage() {
         if (cancelled) return;
         await verifyAssertion("", assertion);
       } catch (err) {
-        // Conditional flow silent: abort (button/tab-switch) par error mat dikhao.
         const name = err instanceof Error ? err.name : "";
+        // Abort (button/tab-switch/nonce-refresh) = normal, ignore.
         if (cancelled || name === "AbortError" || name === "NotAllowedError") return;
-        console.error("passkey conditional:", err);
+        console.warn("[passkey] conditional error:", name, err);
+      } finally {
+        if (!cancelled) setCondActive(false);
       }
     })();
     const timer = window.setTimeout(
@@ -232,6 +242,7 @@ export default function LoginPage() {
     );
     return () => {
       cancelled = true;
+      setCondActive(false);
       window.clearTimeout(timer);
     };
   }, [passkeyReady, tab, condNonce]);
@@ -506,7 +517,9 @@ export default function LoginPage() {
 
                 {passkeyReady && (
                   <p className="text-center text-[10px] text-muted-2">
-                    Email field par passkey dikhne par tap karein, ya neeche button se login karein.
+                    {condActive
+                      ? "Email field tap karein — browser passkey dikhayega, phir finger rakhein."
+                      : "Email field par passkey dikhne par tap karein, ya neeche button se login karein."}
                   </p>
                 )}
               </form>
