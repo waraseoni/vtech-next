@@ -699,44 +699,62 @@ function ManageJobPageInner({ params }: { params: Promise<{ id?: string }> }) {
         txnId = data.id;
       }
 
-      // Insert services
+      // Services + products + (naye job par) counter bump — teeno independent
+      // hain, isliye EK Promise.all round-trip. Pehle ye 4 strictly serial
+      // round-trip the (services → products → counter read → counter upsert).
+      const pending: Promise<void>[] = [];
+
       if (serviceRows.length > 0) {
-        const { error } = await supabase.from("transaction_services").insert(
-          serviceRows.map((r) => ({
-            transaction_id: txnId,
-            service_id: r.service_id,
-            service_name: r.service_name,
-            price: r.price,
-          }))
+        pending.push(
+          (async () => {
+            const { error } = await supabase.from("transaction_services").insert(
+              serviceRows.map((r) => ({
+                transaction_id: txnId,
+                service_id: r.service_id,
+                service_name: r.service_name,
+                price: r.price,
+              }))
+            );
+            if (error) throw error;
+          })()
         );
-        if (error) throw error;
       }
 
-      // Insert products
       if (productRows.length > 0) {
-        const { error } = await supabase.from("transaction_products").insert(
-          productRows.map((r) => ({
-            transaction_id: txnId,
-            product_id: r.product_id,
-            product_name: r.product_name,
-            qty: r.qty,
-            price: r.price,
-          }))
+        pending.push(
+          (async () => {
+            const { error } = await supabase.from("transaction_products").insert(
+              productRows.map((r) => ({
+                transaction_id: txnId,
+                product_id: r.product_id,
+                product_name: r.product_name,
+                qty: r.qty,
+                price: r.price,
+              }))
+            );
+            if (error) throw error;
+          })()
         );
-        if (error) throw error;
       }
 
       // Increment job_id_counter after successful save (new job only)
       if (!isEdit) {
-        await bumpJobCounter(parseInt(finalJobCode));
-        await logActivity(
+        pending.push(bumpJobCounter(parseInt(finalJobCode)));
+      }
+      await Promise.all(pending);
+
+      // Activity log sirf AUDIT hai — save ko block nahi karna chahiye.
+      // Fire-and-forget: logActivity ke andar 5s timeout hai, aur yahan uske
+      // 3 serial round-trip save path se bilkul hata diye ("save hang" fix).
+      if (!isEdit) {
+        void logActivity(
           "Created New Job",
           "Jobs",
           txnId ?? undefined,
           `Job #${finalJobCode} for ${selectedClient.fullname} — Amount: ₹${grandTotal.toLocaleString("en-IN")}`
         );
       } else {
-        await logActivity(
+        void logActivity(
           "Updated Job Details",
           "Jobs",
           jobId,
@@ -745,7 +763,10 @@ function ManageJobPageInner({ params }: { params: Promise<{ id?: string }> }) {
       }
 
       toast.success(isEdit ? "Job update ho gaya! ✅" : "Naya job create ho gaya! ✅");
-      setTimeout(() => router.replace(`/jobs/${txnId}/view`), 1000);
+      // Artificial 1s delay hata di — Toaster RootClient me hai, jo client-side
+      // navigation ke baad bhi render hota rehta hai. Pehle har save par
+      // faltu 1s rukna padta tha.
+      router.replace(`/jobs/${txnId}/view`);
     } catch (e) {
       logger.error("save error:", e instanceof Error ? e.message : JSON.stringify(e));
       toast.error(e instanceof Error ? e.message : "Save karne mein galti!");
