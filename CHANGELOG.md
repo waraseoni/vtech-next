@@ -1,5 +1,18 @@
 # CHANGELOG
 
+## [1.58.0](https://github.com/waraseoni/vtech-next/compare/v1.57.11...v1.58.0) (2026-10-18)
+
+### Features
+
+* **passkey:** foundations - spike result, deps, challenge helpers (Option B) ([77949c3](https://github.com/waraseoni/vtech-next/commit/77949c31cbea754655ca61864e04d0b1e0fed232))
+* **passkey:** login button + settings device management UI ([008c910](https://github.com/waraseoni/vtech-next/commit/008c91041f68cbf51c285300218e0135c1faf518))
+* **passkey:** passkey-begin/verify login modes + no-email session mint ([5927e4e](https://github.com/waraseoni/vtech-next/commit/5927e4e32cc4ac31f236b88105dc33560919cf36))
+* **passkey:** user_passkeys migration + enrollment/device APIs ([63d218a](https://github.com/waraseoni/vtech-next/commit/63d218a034efd86dd19058adfd15ccc38eb0f685))
+
+### Bug Fixes
+
+* **passkey:** gate enroll/login button on WebAuthn support (not platform check) ([9719947](https://github.com/waraseoni/vtech-next/commit/9719947e5bb5a22d38a9ca01c995df033a81e8df))
+
 ## [1.57.11](https://github.com/waraseoni/vtech-next/compare/v1.57.10...v1.57.11) (2026-10-18)
 
 ### Performance Improvements
