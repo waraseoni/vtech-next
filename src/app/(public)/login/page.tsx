@@ -142,13 +142,11 @@ export default function LoginPage() {
   };
 
   // ── Passkey login handler (biometric) ──────────────────────────────────
+  // Email optional — khaali chhodo to browser device ka passkey picker dikhata hai
+  // (usernameless / discoverable credential).
   const handlePasskeyLogin = async () => {
     setError("");
     const em = email.trim().toLowerCase();
-    if (!em) {
-      setError("Pehle apna email daalein");
-      return;
-    }
     setPasskeyLoading(true);
     try {
       const begin = await fetch("/api/auth/login", {
@@ -177,8 +175,10 @@ export default function LoginPage() {
         return;
       }
 
-      localStorage.setItem("vtech_email", em);
-      localStorage.setItem("vtech_remember", "true");
+      if (em) {
+        localStorage.setItem("vtech_email", em);
+        localStorage.setItem("vtech_remember", "true");
+      }
       // Intentional full reload: passkey login ke baad session state fresh init
       // eslint-disable-next-line @next/next/no-location-assign-relative-destination
       window.location.href = "/dashboard";
@@ -456,6 +456,12 @@ export default function LoginPage() {
                 ) : (
                   <p className="text-center text-[11px] text-muted-2">
                     Is browser/device par biometric login support nahi hai.
+                  </p>
+                )}
+
+                {passkeyReady && (
+                  <p className="text-center text-[10px] text-muted-2">
+                    Email khaali chhod bhi sakte ho — seedha fingerprint lagao.
                   </p>
                 )}
               </form>

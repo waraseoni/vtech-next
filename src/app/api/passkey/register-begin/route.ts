@@ -60,7 +60,8 @@ export async function POST(req: NextRequest) {
         id: String(c.credential_id),
         transports: (Array.isArray(c.transports) ? c.transports : []) as string[],
       })),
-      authenticatorSelection: { residentKey: "preferred", userVerification: "preferred" },
+      // residentKey: "required" → discoverable credential (username-less login ke liye).
+      authenticatorSelection: { residentKey: "required", userVerification: "preferred" },
     });
   } catch {
     return NextResponse.json({ error: "Registration options banane me dikkat" }, { status: 500 });

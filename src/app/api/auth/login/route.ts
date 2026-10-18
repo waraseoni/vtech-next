@@ -169,15 +169,17 @@ async function handleVerifyOtp(request: Request, body: LoginBody, ip: string) {
 }
 
 // ── Passkey login: begin (challenge) ─────────────────────────────
-// docs/plans/passkey_biometric_login_plan.md §5.1. Email → user → stored
-// credentials → challenge (signed cookie). Koi email/OTP nahi.
+// docs/plans/passkey_biometric_login_plan.md §5.1.
+//   - email diya  → us user ke credentials (targeted).
+//   - email khaali → usernameless (discoverable credential): browser khud
+//     device ka passkey picker dikhata hai. Isliye email optional hai.
 async function handlePasskeyBegin(request: Request, body: LoginBody, ip: string) {
   const email = String(body?.email ?? "")
     .trim()
     .toLowerCase();
-  if (!email) return NextResponse.json({ error: "Email zaroori hai" }, { status: 400 });
+  const throttleKey = email || `ip:${ip}`;
 
-  const lock = await checkLockout(email, ip);
+  const lock = await checkLockout(throttleKey, ip);
   if (lock.locked) {
     return NextResponse.json(
       {
@@ -188,41 +190,48 @@ async function handlePasskeyBegin(request: Request, body: LoginBody, ip: string)
   }
 
   const admin = getAdminSupabase();
-  const { data: profile } = await admin
-    .from("profiles")
-    .select("id, role")
-    .ilike("email", email)
-    .maybeSingle();
-
-  const staffRole =
-    profile?.role === "admin" || profile?.role === "staff" || profile?.role === "developer";
-  if (!profile?.id || !staffRole) {
-    return NextResponse.json(
-      { error: "Is account ke liye koi passkey nahi mila" },
-      { status: 404 }
-    );
-  }
-
-  const { data: creds } = await admin
-    .from("user_passkeys")
-    .select("credential_id, transports")
-    .eq("user_id", profile.id);
-  if (!creds || creds.length === 0) {
-    return NextResponse.json(
-      { error: "Is account me koi passkey registered nahi hai" },
-      { status: 404 }
-    );
-  }
-
   const { rpID } = resolveRp(request);
+
+  // Targeted (email) flow → sirf us user ke credentials.
+  // Usernameless → allowCredentials khaali (discoverable flow).
+  let allowCredentials: { id: string; transports: string[] }[] = [];
+  if (email) {
+    const { data: profile } = await admin
+      .from("profiles")
+      .select("id, role")
+      .ilike("email", email)
+      .maybeSingle();
+
+    const staffRole =
+      profile?.role === "admin" || profile?.role === "staff" || profile?.role === "developer";
+    if (!profile?.id || !staffRole) {
+      return NextResponse.json(
+        { error: "Is account ke liye koi passkey nahi mila" },
+        { status: 404 }
+      );
+    }
+
+    const { data: creds } = await admin
+      .from("user_passkeys")
+      .select("credential_id, transports")
+      .eq("user_id", profile.id);
+    if (!creds || creds.length === 0) {
+      return NextResponse.json(
+        { error: "Is account me koi passkey registered nahi hai" },
+        { status: 404 }
+      );
+    }
+    allowCredentials = creds.map((c) => ({
+      id: String(c.credential_id),
+      transports: (Array.isArray(c.transports) ? c.transports : []) as string[],
+    }));
+  }
+
   let options;
   try {
     options = await generateAuthenticationOptions({
       rpID,
-      allowCredentials: creds.map((c) => ({
-        id: String(c.credential_id),
-        transports: (Array.isArray(c.transports) ? c.transports : []) as string[],
-      })),
+      allowCredentials,
       userVerification: "preferred",
     });
   } catch {
@@ -235,7 +244,6 @@ async function handlePasskeyBegin(request: Request, body: LoginBody, ip: string)
     sealChallenge({
       c: options.challenge,
       t: "auth",
-      u: profile.id,
       e: Date.now() + 5 * 60 * 1000,
     }),
     challengeCookieOptions()
@@ -248,12 +256,13 @@ async function handlePasskeyVerify(request: Request, body: LoginBody, ip: string
   const email = String(body?.email ?? "")
     .trim()
     .toLowerCase();
+  const throttleKey = email || `ip:${ip}`;
   const response = body?.response;
-  if (!email || !response?.id) {
+  if (!response?.id) {
     return NextResponse.json({ error: "Passkey response missing" }, { status: 400 });
   }
 
-  const lock = await checkLockout(email, ip);
+  const lock = await checkLockout(throttleKey, ip);
   if (lock.locked) {
     return NextResponse.json(
       {
@@ -264,7 +273,7 @@ async function handlePasskeyVerify(request: Request, body: LoginBody, ip: string
   }
 
   const fail = async (msg = "Passkey verify fail hua") => {
-    await recordFailure(email, ip);
+    await recordFailure(throttleKey, ip);
     return NextResponse.json({ error: msg }, { status: 401 });
   };
 
@@ -290,11 +299,12 @@ async function handlePasskeyVerify(request: Request, body: LoginBody, ip: string
     .eq("id", row.user_id)
     .maybeSingle();
   const staffRole = prof?.role === "admin" || prof?.role === "staff" || prof?.role === "developer";
-  const userEmail = String(prof?.email ?? email)
+  const userEmail = String(prof?.email ?? "")
     .trim()
     .toLowerCase();
-  if (!staffRole) return fail();
-  if (prof?.email && userEmail !== email) return fail();
+  if (!staffRole || !userEmail) return fail();
+  // Targeted (email) flow me diya gaya email credential-owner se match karna chahiye.
+  if (email && userEmail !== email) return fail();
 
   const { rpID, origin } = resolveRp(request);
   let verification;

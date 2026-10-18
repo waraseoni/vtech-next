@@ -51,9 +51,9 @@ PIN **rejected** (decision record §3). Client portal untouched.
 | D4 | Enrollment | **Self-service, password re-auth ke saath.** Har user apni device passkey register kare. Admin list/remove bhi kar sake. | Staff ki device management admin par dump mat karo. |
 | D5 | User verification | `userVerification: "preferred"` | Fingerprint nahi hua to device PIN/pass fallback (convenience). `required` = 100% biometric, par shared/weak devices par friction. Quick-login use-case me preferred theek. |
 | D6 | Attestation | `none` (privacy), authenticator = `platform` preferred + `cross-platform` allowed | AOP's device attestation ki zarurat nahi. |
-| D7 | DIscoverable | `residentKey: "preferred"`, `"mediation"` = explicit button (conditional UI baad me) | Simpler first; darwaza khula. |
+| D7 | **Discoverable** | `residentKey: "required"` → **usernameless login** (email optional; browser khud passkey picker dikhata hai). `"mediation"` = explicit button | Fingerprint bina email bhi chale. |
 | D8 | Session issue (passkey verify ke baad) | **`admin.generateLink({type:'recovery', email})` → `getServerSupabase().auth.verifyOtp({type:'recovery', token_hash})`** — service-role + server cookie client | **Naya (spike 18 Oct 2026):** `admin.createSession` available nahi tha. generateLink token response me deta hai (**email send nahi hoti**), server-side one-time consume → dummy-email/free-tier safe. `email_confirm:true` safety fallback (§8). |
-| D9 | Throttle | Passkey login bhi `checkLockout(email, ip)` + `recordFailure` se guzrega | Abusive attempts same hi door se rukenge. |
+| D9 | Throttle | Passkey login bhi `checkLockout` + `recordFailure`. Email diya → email key; usernameless → `ip:<ip>` key | Abusive attempts same hi door se rukenge. |
 | D10 | Clone protection | `sign_count` stored + monotonic check; mismatch → verify reject + log | Device clone / fingerprint replay guard. |
 
 ## 4. Data model (migration — apply post-season)
@@ -86,21 +86,23 @@ create index user_passkeys_credential_idx on user_passkeys(credential_id);
 
 ### 5.1 Passkey session establishment (the hard part)
 
-1. Browser par staff "Fingerprint se login karein" dabata hai.
+1. Browser par staff "Fingerprint se login karein" dabata hai (**email optional**).
 2. `POST /api/auth/login` mode=`passkey-begin` → server:
-   - `checkLockout(email, ip)` → lock? return 429.
-   - `generateRegistrationOptionsAuthn`... (login me) use `generateAuthenticationOptions` with
-     stored credentials for `user_id` (email se user dhundo — profiles/auth lookup).
+   - `checkLockout(throttleKey, ip)` → lock? return 429.
+   - `generateAuthenticationOptions`:
+     - email diya → us user ke credentials (allowCredentials).
+     - email khaali → **usernameless**: `allowCredentials: []` (discoverable credential; browser
+       khud device ka passkey picker dikhata hai).
    - Challenge ko **httpOnly signed cookie** me rakho (valid 5 min, one-time).
    - Return options (challenge, allowCredentials, rpId).
 3. Browser `navigator.credentials.get(options)` → assertion.
 4. `POST /api/auth/login` mode=`passkey-verify` → server:
    - Cookie se challenge nikalo (delete-after-use), `checkLockout` phir.
    - `verifyAuthenticationResponse` (`@simplewebauthn/server`) + `sign_count` monotonic check.
-   - Success → `supabase.auth.admin.createSession({ user_id })` via server admin client
-     (`getServerSupabaseAdmin()` — service role, `src/lib` me admin client) → sessions cookies set
-     (same as password login path) → `reset(email)`.
-   - Failure → `recordFailure`, 401.
+   - Credential `response.id` (credential_id) se DB row dhundo → `user_id` (email ki zarurat nahi).
+   - Success → session mint (`generateLink` recovery → `verifyOtp`) → cookies set
+     (same as password login path) → `reset(userEmail)`.
+   - Failure → `recordFailure(throttleKey)`, 401.
 
 ### 5.2 Enrollment
 
@@ -113,7 +115,7 @@ create index user_passkeys_credential_idx on user_passkeys(credential_id);
 
 ### 5.3 Throttle + recovery
 
-- Har passkey attempt `checkLockout(email, ip)` first; failures `recordFailure`.
+- Har passkey attempt `checkLockout(throttleKey, ip)` first; failures `recordFailure`. Email diya → email key; usernameless → `ip:<ip>` key.
 - Device lost → password login → remove stale passkey. Password disabled hi nahi hota kabhi.
 
 ## 6. Files (likely touched)
@@ -177,13 +179,11 @@ create index user_passkeys_credential_idx on user_passkeys(credential_id);
       DELETE?user_id= (admin revoke-all).
 
 ### Phase 3 — Login flow ~3 h
-- [ ] `POST /api/auth/login` mode=`passkey-begin` (user by email, allowedCredentials, challenge cookie).
-- [ ] `POST /api/auth/login` mode=`passkey-verify` (verify + sign_count + admin.createSession +
-      cookies + throttle).
+- [x] `POST /api/auth/login` mode=`passkey-begin` (email optional; allowedCredentials ya usernameless `[]`, challenge cookie).
+- [x] `POST /api/auth/login` mode=`passkey-verify` (verify + sign_count + session mint `generateLink`→`verifyOtp` + cookies + throttle).
 
 ### Phase 4 — UI ~3–4 h
-- [ ] Login page: "Fingerprint se login karein" button (password section ke under) + email input
-      reuse + error/loading states + "Device support nahi" fallback message.
+- [x] Login page: "Fingerprint se login karein" button (staff section ke under) + **email optional** (usernameless) + error/loading states + "support nahi" fallback.
 - [ ] Settings → "Devices (Passkey Login)": enroll button, device list (name/last_used), rename,
       remove, admin revoke-all.
 - [ ] Hindi messages: consistent with existing auth error style.

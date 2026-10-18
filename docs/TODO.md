@@ -285,11 +285,11 @@ Base messenger already live (`30aae41`). Ye round un requested features add kart
 
 ### Phase 3 — Login flow
 
-- [x] `POST /api/auth/login` mode=`passkey-begin` + `passkey-verify` (sign_count guard + throttle + `mintSession()` via generateLink→verifyOtp)
+- [x] `POST /api/auth/login` mode=`passkey-begin` + `passkey-verify` (email optional / **usernameless**; sign_count guard + throttle + `mintSession()` via generateLink→verifyOtp)
 
 ### Phase 4 — UI
 
-- [x] Login page: "Fingerprint se login karein" button (staff tab, platform-authenticator detect + error states)
+- [x] Login page: "Fingerprint se login karein" button (staff tab, **email optional** + error states)
 - [x] Settings → "Devices (Passkey Login)" (`src/components/PasskeyDevices.tsx`): enroll, list, rename, remove
 
 ### Phase 5 — Tests + QA
