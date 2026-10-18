@@ -222,9 +222,14 @@ Rollback: `vercel.json` se `crons` hata do.
    cache-hit + hover/click in-flight dedupe (ek hi network call).
 
 - **Impact:** refetch-on-every-mount khatam (pehle zero cache).
-- **Abhi bhi pending:** `clients/[id]/view` (2814 LOC) + baaki ~108 client
-  pages ka `useQuery` migration, aur save-par invalidation (list pages abhi
-  bhi remount par fresh fetch karte hain).
+7. **`clients/[id]/view` (2026-10-19, -165 LOC):** 8-query fan-out bhi ek
+   `useQuery` snapshot; local edits (photo / job status+spot / payment
+   edit-delete) ke baad `invalidateQueries(clientDetailKey)`. Teeno detail
+   pages ab cached — back/forward aur search-click par network call nahi.
+
+- **Abhi bhi pending:** baaki ~105 list/report pages ka `useQuery` migration,
+  aur unke save-flows ka invalidation (list pages abhi bhi remount par fresh
+  fetch karte hain).
 
 ### Phase 4 — Remove post-hydration waterfall (key pages, medium-high effort)
 
@@ -329,9 +334,9 @@ Gates: prettier ✓ (touched) · eslint ✓ · tsc ✓ · vitest **388/388** ✓
 `2511ad4` · `54ecd4a` · migration commit ke saath.
 
 **Abhi bhi pending (bade wins, medium-high effort):** Phase 3 ka rest
-(`clients/[id]/view` + ~108 client pages ka `useQuery` migration), Phase 4
-(post-hydration waterfall → RSC), Phase 7 (bundle weight). Inke bina har
-navigation abhi bhi 3-5 sequential query waves + `PageLoader` leta hai.
+(~105 list/report pages ka `useQuery` migration — detail pages teeno done),
+Phase 4 (post-hydration waterfall → RSC), Phase 7 (bundle weight). List
+pages abhi bhi 3-5 sequential query waves + `PageLoader` lete hain.
 
 ## Measurement plan
 

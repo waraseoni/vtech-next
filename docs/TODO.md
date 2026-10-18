@@ -338,7 +338,7 @@ Base messenger already live (`30aae41`). Ye round un requested features add kart
   `useAppBoot` boot guard 6s → 12s (false-positive auto-reload ruk gaya)
 - [x] **DB indexes (audit Phase 6)** — `supabase/migrations/20261018_perf_indexes.sql`:
   17 indexes + `pg_trgm` GIN (navbar search ke `ILIKE '%q%'` ke liye).
-  **Abhi apply karna baki** — Supabase SQL Editor me ek baar chalao.
+  ✅ applied (2026-10-19).
 
 ### Phase A3 — Client data cache (audit Phase 3) ✅ foundation + hot pages (2026-10-18)
 
@@ -355,13 +355,17 @@ Base messenger already live (`30aae41`). Ye round un requested features add kart
 - [x] **Search hover = data prefetch** (`prefetchDetailData` in
   `useNavbarSearch`) — click par 4-stage waterfall cache-hit + hover/click
   dedupe
-- [ ] **`clients/[id]/view` → `useQuery`** (2814 LOC — next biggest win)
-- [ ] Baaki ~108 client pages ka migration + save-par invalidation (list pages
-  abhi bhi remount par fresh fetch karte hain)
+- [x] **`clients/[id]/view` (-165 LOC) → `useQuery`** — 8-query fan-out ek hi
+  snapshot me; client photo / job status+spot / payment edit-delete jaisi local
+  edits ke baad `invalidateQueries` (warna 30s cache purana dikha deta)
+- [x] **Settings save → invalidate `["system-info"]`** — firm details turant fresh
+- [ ] Baaki ~105 list/report pages ka migration (detail pages teeno done)
+  + unke save-flows ka invalidation
 
-> Abhi bhi pending = Phase A3 ka rest (client pages) + audit Phase 4
-> (post-hydration waterfall → RSC). Inke bina har navigation 3-5 sequential
-> query waves + `PageLoader` leta hai — wahi Phase C ka W7/W8 hai.
+> Detail pages (clients / jobs / direct-sales) + system-info ab cached hain;
+> baaki hain list/report pages. Audit Phase 4 (post-hydration waterfall → RSC)
+> abhi bhi pending — list pages abhi bhi 3-5 sequential query waves +
+> `PageLoader` lete hain (Phase C ka W7/W8).
 
 ### Phase B — Season-safe data batching
 

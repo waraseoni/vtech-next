@@ -1,5 +1,14 @@
 "use client";
-import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useSystemInfo } from "@/lib/queries/system-info";
+import {
+  clientDetailKey,
+  clientDetailOptions,
+  type Client,
+  type Job,
+  type Payment,
+} from "@/lib/queries/client-detail";
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
 import ZoomableImage from "@/components/ZoomableImage";
@@ -62,98 +71,11 @@ import { compressImage } from "@/lib/imageCompression";
 import { openCamera } from "@/lib/nativeCamera";
 import { useImageUpload } from "@/lib/useImageUpload";
 import { JOB_STATUS } from "@/lib/status-colors";
-import { fetchClientContacts, telLink, smsLink, waChatLink } from "@/lib/clientContacts";
-import type { ClientContact } from "@/lib/clientContacts";
+import { telLink, smsLink, waChatLink } from "@/lib/clientContacts";
 import JobSpotPicker from "@/components/JobSpotPicker";
 import PageLoader from "@/components/PageLoader";
 import WaPreviewModal from "@/components/WaPreviewModal";
 import { toast } from "@/lib/toast";
-
-// ─────────────────────────────────────────────────────────────
-// TYPES
-// BUG FIX 14: removed image_path from Client type
-// ─────────────────────────────────────────────────────────────
-type Client = {
-  id: number;
-  firstname: string;
-  middlename?: string;
-  lastname: string;
-  contact: string;
-  email?: string;
-  address?: string;
-  opening_balance: number;
-  payment_due_date?: string | null;
-  payment_due_remarks?: string | null;
-  image_path?: string;
-  date_created: string;
-  fullName: string;
-};
-
-type PaymentReminder = {
-  id: number;
-  client_id: number;
-  amount_due: number;
-  channel: string;
-  status: string;
-  remarks: string;
-  reminder_date: string;
-};
-
-type Job = {
-  id: number;
-  job_id?: string;
-  code?: string;
-  item: string;
-  fault?: string;
-  remark?: string;
-  uniq_id?: string;
-  location_id?: number | null;
-  status: number;
-  amount?: number;
-  date_created: string;
-  date_completed?: string;
-  client_contact?: string;
-  client_name?: string;
-  date_updated?: string;
-};
-
-type DirectSale = {
-  id: number;
-  sale_code: string;
-  payment_mode: string;
-  remarks?: string;
-  total_amount: number;
-  date_created: string;
-};
-
-type Payment = {
-  id: number;
-  payment_date: string;
-  amount: number;
-  discount: number;
-  net_amount?: number;
-  payment_mode: string;
-  payment_type?: string;
-  remarks?: string;
-  job_id?: string | null;
-  bill_no?: string | null;
-  loan_id?: number | null;
-};
-
-type Loan = {
-  id: number;
-  client_id: number;
-  principal_amount: number;
-  interest_rate: number;
-  loan_period: number;
-  total_payable: number;
-  emi_amount: number;
-  remarks?: string;
-  loan_date: string;
-  status: number;
-  paid?: number;
-  balance?: number;
-};
 
 // ─────────────────────────────────────────────────────────────
 // HELPERS
@@ -329,8 +251,6 @@ export default function ViewClientProfile() {
   const clientId = parseInt(params.id as string);
 
   const [client, setClient] = useState<Client | null>(null);
-  const [contacts, setContacts] = useState<ClientContact[]>([]);
-  const [reminders, setReminders] = useState<PaymentReminder[]>([]);
   const [dueModal, setDueModal] = useState(false);
   const [fabOpen, setFabOpen] = useState(false);
   const fabRef = useRef<HTMLDivElement>(null);
@@ -356,11 +276,7 @@ export default function ViewClientProfile() {
   const [savingDue, setSavingDue] = useState(false);
   const [jobs, setJobs] = useState<Job[]>([]);
   const [openPartCounts, setOpenPartCounts] = useState<Map<number, number>>(new Map());
-  const [directSales, setDirectSales] = useState<DirectSale[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
-  const [loans, setLoans] = useState<Loan[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"repairs" | "direct" | "payments" | "loan_payments">(
     "repairs"
   );
@@ -390,7 +306,6 @@ export default function ViewClientProfile() {
   const [waGroups, setWaGroups] = useState<Array<{ phone: string; fullname: string; rows: Job[] }>>(
     []
   );
-  const [sysInfo, setSysInfo] = useState<Record<string, string>>({});
   // Bulk Move (jobs page jaisa) — selected jobs ka spot badlo
   const [bulkMoveOpen, setBulkMoveOpen] = useState(false);
   const [bulkMoveId, setBulkMoveId] = useState<number | null>(null);
@@ -442,6 +357,7 @@ export default function ViewClientProfile() {
       const json = await res.json();
       if (json.status !== "success") throw new Error(json.msg || "Upload failed");
       setClient((prev) => (prev ? { ...prev, image_path: json.url } : prev));
+      invalidateDetail();
       setPhotoSaving(false);
     } catch (err: unknown) {
       setPhotoErr(err instanceof Error ? err.message : "Upload failed");
@@ -461,6 +377,7 @@ export default function ViewClientProfile() {
       const json = await res.json();
       if (json.status !== "success") throw new Error(json.msg || "Delete failed");
       setClient((prev) => (prev ? { ...prev, image_path: undefined } : prev));
+      invalidateDetail();
       setPhotoSaving(false);
     } catch (err: unknown) {
       setPhotoErr(err instanceof Error ? err.message : "Delete failed");
@@ -472,9 +389,53 @@ export default function ViewClientProfile() {
   const [repairDone, setRepairDone] = useState(0);
   const [directBilled, setDirectBilled] = useState(0);
   const [servicePaid, setServicePaid] = useState(0);
-  const [loanGiven, setLoanGiven] = useState(0);
-  const [loanRepaid, setLoanRepaid] = useState(0);
-  const [monthlyEMI, setMonthlyEMI] = useState(0);
+  // ── DATA (React Query) ────────────────────────────────────────────────
+  // 8 queries ek hi round-trip me; 30s ke andar back/forward navigation par
+  // cache-hit (pehle har mount par poora fan-out chalta tha).
+  const validId = Number.isFinite(clientId) && clientId > 0;
+  const {
+    data: snap,
+    isPending,
+    error: queryError,
+  } = useQuery({
+    ...clientDetailOptions(clientId),
+    enabled: validId,
+  });
+  const queryClient = useQueryClient();
+  const sysInfo = useSystemInfo();
+
+  // Client photo / job status+spot / payment edit-delete yahan STATE me
+  // mutate hote hain — isliye woh useState me hydrate hote hain. Baaki sab
+  // seedha snapshot se derive (alag setState nahi).
+  const contacts = snap?.contacts ?? [];
+  const reminders = snap?.reminders ?? [];
+  // Effect ke deps me hai — har render par nayi [] array mat banao.
+  const directSales = useMemo(() => snap?.directSales ?? [], [snap]);
+  const loans = snap?.loans ?? [];
+  const loanGiven = snap?.loanGiven ?? 0;
+  const loanRepaid = snap?.loanRepaid ?? 0;
+  const monthlyEMI = snap?.monthlyEMI ?? 0;
+  const loading = isPending && validId;
+  const error = !validId
+    ? "Client not found"
+    : queryError instanceof Error
+      ? queryError.message
+      : queryError
+        ? "Failed to load"
+        : null;
+
+  // Local edit ke baad cache bhi fresh kar do — warna 30s ke andar wapas
+  // aane par purana data cache se hydrate ho jayega.
+  const invalidateDetail = () => {
+    void queryClient.invalidateQueries({ queryKey: clientDetailKey(clientId) });
+  };
+
+  useEffect(() => {
+    if (!snap) return;
+    setClient(snap.client);
+    setJobs(snap.jobs);
+    setPayments(snap.payments);
+  }, [snap]);
 
   const openingBal = client?.opening_balance ?? 0;
   const totalBilled = repairBilled + directBilled;
@@ -483,136 +444,6 @@ export default function ViewClientProfile() {
   const netBalance = openingBal + totalBilled + loanGiven - servicePaid - loanRepaid;
 
   // ── FETCH ──────────────────────────────────────────────────
-  const fetchData = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      // Sabhi data queries PARALLEL chalayi jaati hain (sequential await page ko slow karta hai).
-      // Loans ke per-loan payments ki N+1 queries bhi ek hi query me badal di gayi hain.
-      const [
-        { data: cd, error: ce },
-        { data: remd },
-        { data: jd },
-        { data: sd },
-        { data: pd },
-        { data: ld },
-        { data: lpAll },
-        ccRows,
-      ] = await Promise.all([
-        supabase
-          .from("client_list")
-          .select(
-            "id, firstname, middlename, lastname, contact, email, address, opening_balance, payment_due_date, payment_due_remarks, image_path, date_created"
-          )
-          .eq("id", clientId)
-          .eq("delete_flag", 0)
-          .single(),
-        supabase
-          .from("payment_reminders")
-          .select("id, client_id, amount_due, channel, status, remarks, reminder_date")
-          .eq("client_id", clientId)
-          .order("reminder_date", { ascending: false }),
-        supabase
-          .from("transaction_list")
-          .select(
-            "id, job_id, code, item, fault, remark, uniq_id, status, amount, date_created, date_completed"
-          )
-          .eq("client_name", String(clientId))
-          .order("job_id", { ascending: false }),
-        supabase
-          .from("direct_sales")
-          .select("id, sale_code, payment_mode, remarks, total_amount, date_created")
-          .eq("client_id", clientId)
-          .order("date_created", { ascending: false }),
-        supabase
-          .from("client_payments")
-          .select(
-            "id, payment_date, amount, discount, payment_mode, payment_type, remarks, job_id, bill_no, loan_id"
-          )
-          .eq("client_id", clientId)
-          .order("payment_date", { ascending: false }),
-        supabase
-          .from("client_loans")
-          .select("*")
-          .eq("client_id", clientId)
-          .order("loan_date", { ascending: false }),
-        supabase
-          .from("client_payments")
-          .select("loan_id, amount, discount")
-          .eq("client_id", clientId)
-          .not("loan_id", "is", null),
-        fetchClientContacts(clientId).catch(() => []),
-      ]);
-
-      // 1. Client
-      if (ce || !cd) throw ce || new Error("Client not found");
-      const fullName = [cd.firstname, cd.middlename, cd.lastname].filter(Boolean).join(" ").trim();
-      setClient({ ...cd, fullName });
-
-      // 1a. Multi-contacts
-      setContacts(ccRows || []);
-
-      // 1b. Payment reminders (WhatsApp log)
-      setReminders(remd || []);
-
-      // 2. Jobs
-      setJobs(jd || []);
-
-      // 3. Direct Sales
-      setDirectSales(sd || []);
-
-      // 4. Payments
-      setPayments(pd || []);
-
-      // Loans — paid amounts ek hi query me group kar ke nikaale gaye (N+1 fix)
-      const paymentMap = new Map<number, number>();
-      (lpAll || []).forEach((r: { loan_id: number; amount: number; discount: number }) => {
-        if (r.loan_id == null) return;
-        const key = Number(r.loan_id);
-        paymentMap.set(key, (paymentMap.get(key) || 0) + (r.amount + (r.discount || 0)));
-      });
-      const enrichedLoans: Loan[] = (ld || []).map((loan: Loan) => {
-        const paid = paymentMap.get(Number(loan.id)) || 0;
-        return { ...loan, paid, balance: loan.total_payable - paid };
-      });
-      setLoans(enrichedLoans);
-
-      // PHP view_client.php: sirf ACTIVE (status=1) loans balance me count hote hain;
-      // closed loans sirf history ke liye dikhte hain. EMI bhi remaining se capped hai.
-      const activeLoans = enrichedLoans.filter((l) => l.status === 1);
-      const totalLoanGiven = activeLoans.reduce((s, l) => s + (l.total_payable || 0), 0);
-      const totalLoanRepaid = activeLoans.reduce((s, l) => s + (l.paid || 0), 0);
-      const totalEMI = activeLoans.reduce((s, l) => {
-        const remaining = l.total_payable - (l.paid || 0);
-        return s + (remaining > 0 ? Math.min(l.emi_amount || 0, remaining) : 0);
-      }, 0);
-      setLoanGiven(totalLoanGiven);
-      setLoanRepaid(totalLoanRepaid);
-      setMonthlyEMI(totalEMI);
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Failed to load");
-    } finally {
-      setLoading(false);
-    }
-  }, [clientId]);
-
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
-
-  useEffect(() => {
-    (async () => {
-      const { data } = await supabase.from("system_info").select("meta_field, meta_value");
-      if (data) {
-        const info: Record<string, string> = {};
-        data.forEach((r) => {
-          info[r.meta_field] = r.meta_value;
-        });
-        setSysInfo(info);
-      }
-    })();
-  }, []);
 
   // Recalculate service financials
   useEffect(() => {
@@ -667,7 +498,10 @@ export default function ViewClientProfile() {
   });
 
   useEffect(() => {
-    if (typeof window !== "undefined" && localStorage.getItem("client_view_hide_delivered") === "1") {
+    if (
+      typeof window !== "undefined" &&
+      localStorage.getItem("client_view_hide_delivered") === "1"
+    ) {
       setHideDelivered(true);
     }
   }, []);
@@ -751,6 +585,7 @@ export default function ViewClientProfile() {
       setJobs((prev) =>
         prev.map((j) => (selectedIds.has(j.id) ? ({ ...j, ...updates } as Job) : j))
       );
+      invalidateDetail();
       setSelectedIds(new Set());
       setBulkDeliverDate("");
       setBulkStatus("");
@@ -799,6 +634,7 @@ export default function ViewClientProfile() {
             : j
         )
       );
+      invalidateDetail();
       for (const id of ids) {
         const job = jobs.find((j) => j.id === id);
         await logActivity(
@@ -839,6 +675,7 @@ export default function ViewClientProfile() {
           j.id === id ? ({ ...j, location_id: spotPickId, uniq_id: spotPickName } as Job) : j
         )
       );
+      invalidateDetail();
       await logActivity(
         "Moved Job Item",
         "Jobs",
@@ -938,6 +775,7 @@ export default function ViewClientProfile() {
       return;
     }
     setPayments((prev) => prev.filter((p) => p.id !== id));
+    invalidateDetail();
   };
 
   const openEdit = (p: Payment) => {
@@ -983,6 +821,7 @@ export default function ViewClientProfile() {
     }
     // Update local state (use editForm.payment_date for display consistency)
     setPayments((prev) => prev.map((p) => (p.id === editingPayment.id ? { ...p, ...updates } : p)));
+    invalidateDetail();
     setEditingPayment(null);
   };
 
@@ -1014,6 +853,7 @@ export default function ViewClientProfile() {
         payment_due_date: dueForm.due_date,
         payment_due_remarks: dueForm.due_remarks.trim() || null,
       });
+      invalidateDetail();
       setDueModal(false);
       await logActivity(
         "Set Promised Due Date",

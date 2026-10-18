@@ -9,6 +9,7 @@ import { locPath } from "@/lib/locations";
 import { getQueryClient } from "@/lib/queryClient";
 import { jobViewOptions } from "@/lib/queries/job-view";
 import { directSaleOptions } from "@/lib/queries/direct-sale";
+import { clientDetailOptions } from "@/lib/queries/client-detail";
 
 export type SearchResult = {
   id: number | string;
@@ -36,6 +37,13 @@ function prefetchDetailData(href: string) {
   if (sale) {
     void getQueryClient()
       .prefetchQuery(directSaleOptions(Number(sale[1])))
+      .catch(() => {});
+    return;
+  }
+  const client = /^\/clients\/(\d+)\/view$/.exec(href);
+  if (client) {
+    void getQueryClient()
+      .prefetchQuery(clientDetailOptions(Number(client[1])))
       .catch(() => {});
   }
 }
