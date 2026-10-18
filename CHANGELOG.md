@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.59.0](https://github.com/waraseoni/vtech-next/compare/v1.58.0...v1.59.0) (2026-10-18)
+
+### Features
+
+* **passkey:** usernameless login (email optional) + discoverable credentials ([6a6acf5](https://github.com/waraseoni/vtech-next/commit/6a6acf52f0b02c9652de3dc592b59426ca9b16d0))
+
 ## [1.58.0](https://github.com/waraseoni/vtech-next/compare/v1.57.11...v1.58.0) (2026-10-18)
 
 ### Features
