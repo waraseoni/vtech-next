@@ -1,12 +1,24 @@
 # Staff Passkey / Biometric Login — Design Doc + Implementation Plan
 
-Created: 2026-09-17 · Status: **DESIGN LOCKED — implementation DEFERRED (peak-season freeze)**
+Created: 2026-09-17 · Status: **DESIGN LOCKED — code COMPLETE (Option B custom WebAuthn, 18 Oct 2026) — pending migration apply + device QA**
 Scope: Staff/admin/developer ke liye password ke saath **optional WebAuthn (passkey) fast-login**.
 PIN **rejected** (decision record §3). Client portal untouched.
 
 > Rule n°1: is feature ke liye koi DB write se pehle `docs/DATA_MIGRATION_NOTES.md` padho.
 > Rule n°2: Koi production deploy nahi jab tak G3 (peak-season window) SAFE-no. Design + code ready
 > kar sakte hain, **apply post-season window me** (server_migration_gate_plan.md §3).
+
+## 0. SPIKE RESULT (18 Oct 2026) — D8 changed
+
+- **`supabase.auth.admin.createSession` supabase-js 2.112.4 me MAUJOOD NAHI hai**
+  (`@supabase/auth-js` dist + types me kahin nahi). Purana D8 primary path DEAD.
+- Supabase ka **native passkey** (`auth.signInWithPasskey`, `auth.admin.passkey.*`) SDK me hai,
+  par is project par **backend disabled** hai: live probe `/auth/v1/passkeys` →
+  `404 passkey_disabled — "Passkeys are disabled"`, aur Dashboard me enable toggle bhi nahi hai.
+  → Native raasta abhi unavailable.
+- Isliye **custom WebAuthn (B)** + **no-email session fallback** adopt kiya gaya (naya D8, §8).
+- No-email constraint: staff dummy emails use karte hain + free tier. `admin.generateLink()`
+  **email NAHI bhejta** (token response me deta hai) → server par hi consume, koi inbox nahi.
 
 ---
 
@@ -40,7 +52,7 @@ PIN **rejected** (decision record §3). Client portal untouched.
 | D5 | User verification | `userVerification: "preferred"` | Fingerprint nahi hua to device PIN/pass fallback (convenience). `required` = 100% biometric, par shared/weak devices par friction. Quick-login use-case me preferred theek. |
 | D6 | Attestation | `none` (privacy), authenticator = `platform` preferred + `cross-platform` allowed | AOP's device attestation ki zarurat nahi. |
 | D7 | DIscoverable | `residentKey: "preferred"`, `"mediation"` = explicit button (conditional UI baad me) | Simpler first; darwaza khula. |
-| D8 | Session issue (passkey verify ke baad) | **Server-side `supabase.auth.admin.createSession(user_id)`** (service role, server-only) → normal JWT session, RLS intact | Password ki zarurat nahi; email-OTP kainner spam nahi. **Spike check:** pinned supabase-js version me `admin.createSession` available hona chahiye (Phase 1 verify; fallback §8). |
+| D8 | Session issue (passkey verify ke baad) | **`admin.generateLink({type:'recovery', email})` → `getServerSupabase().auth.verifyOtp({type:'recovery', token_hash})`** — service-role + server cookie client | **Naya (spike 18 Oct 2026):** `admin.createSession` available nahi tha. generateLink token response me deta hai (**email send nahi hoti**), server-side one-time consume → dummy-email/free-tier safe. `email_confirm:true` safety fallback (§8). |
 | D9 | Throttle | Passkey login bhi `checkLockout(email, ip)` + `recordFailure` se guzrega | Abusive attempts same hi door se rukenge. |
 | D10 | Clone protection | `sign_count` stored + monotonic check; mismatch → verify reject + log | Device clone / fingerprint replay guard. |
 
@@ -131,7 +143,7 @@ create index user_passkeys_credential_idx on user_passkeys(credential_id);
 
 | Risk | Likelihood | Impact | Mitigation |
 |---|---|---|---|
-| `supabase.auth.admin.createSession` available nahi pinned version me | Low | High | Phase-1 spike; fallback: short-lived `generateLink(type:'recovery')` internal token ya OTPlike — design change, isliye pehle verify |
+| `admin.createSession` available nahi (SPIKE CONFIRMED) | **HIT** | High | Naya D8: `generateLink(recovery)` + `verifyOtp(token_hash)` (§0/§8). Fallback: `magiclink` type, ya dummy users par `admin.updateUserById(uid,{email_confirm:true})`. |
 | Shared office PCs — multiple passkeys boundary | High | Medium | Har user apni device par enroll; `allowedCredentials` scoped to that email's user_id; remove on staff exit |
 | Device lost / OS reset | Medium | Medium | Password hamesha fallback; stale credential remove |
 | Fingerprint rejections on dirty/cheap readers | Medium | Low | `userVerification: "preferred"`; device PIN fallback OS-level |
