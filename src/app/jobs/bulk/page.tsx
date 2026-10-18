@@ -236,7 +236,8 @@ export default function BulkJobPage() {
     const missingIds = Object.keys(errs).length > 0;
     if (missingIds) {
       setRowErrs(errs);
-      const labels = rows.map((r, i) => ({ r, i }))
+      const labels = rows
+        .map((r, i) => ({ r, i }))
         .filter(({ r }) => errs[r.id])
         .map(({ r, i }) => `Row ${i + 1} (#${r.estJobId}): ${errs[r.id].join(", ")}`);
       const short = labels.slice(0, 2).join(" | ");
@@ -451,7 +452,10 @@ export default function BulkJobPage() {
                 {rows
                   .map((r, i) => ({ r, i }))
                   .filter(({ r }) => rowErrs[r.id])
-                  .map(({ r, i }) => `Row ${i + 1} (#${r.estJobId}): ${rowErrs[r.id].join(", ")} missing`)
+                  .map(
+                    ({ r, i }) =>
+                      `Row ${i + 1} (#${r.estJobId}): ${rowErrs[r.id].join(", ")} missing`
+                  )
                   .join("  |  ")}
               </span>
             </div>
@@ -537,7 +541,9 @@ export default function BulkJobPage() {
                     <td className="px-3 py-2.5">
                       <div
                         data-bulk-mech={row.id}
-                        className={fieldErr(rErrs, "Mechanic") ? "rounded-xl ring-2 ring-red-500/60" : ""}
+                        className={
+                          fieldErr(rErrs, "Mechanic") ? "rounded-xl ring-2 ring-red-500/60" : ""
+                        }
                       >
                         <SearchableSelect
                           value={row.mechanic_id}
@@ -553,34 +559,34 @@ export default function BulkJobPage() {
                         </span>
                       )}
                     </td>
-                  <td className="px-3 py-2.5">
-                    <input
-                      type="text"
-                      value={row.uniq_id}
-                      onChange={(e) => updateRow(row.id, "uniq_id", e.target.value)}
-                      placeholder="Location/ID"
-                      className={iCls}
-                    />
-                  </td>
-                  <td className="px-3 py-2.5">
-                    <input
-                      type="text"
-                      value={row.remark}
-                      onChange={(e) => updateRow(row.id, "remark", e.target.value)}
-                      placeholder="Notes"
-                      className={iCls}
-                    />
-                  </td>
-                  <td className="px-3 py-2.5 text-center">
-                    <button
-                      onClick={() => removeRow(row.id)}
-                      className="w-7 h-7 flex items-center justify-center bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-lg transition-colors"
-                    >
-                      <Trash2 size={11} />
-                    </button>
-                  </td>
-                </tr>
-              );
+                    <td className="px-3 py-2.5">
+                      <input
+                        type="text"
+                        value={row.uniq_id}
+                        onChange={(e) => updateRow(row.id, "uniq_id", e.target.value)}
+                        placeholder="Location/ID"
+                        className={iCls}
+                      />
+                    </td>
+                    <td className="px-3 py-2.5">
+                      <input
+                        type="text"
+                        value={row.remark}
+                        onChange={(e) => updateRow(row.id, "remark", e.target.value)}
+                        placeholder="Notes"
+                        className={iCls}
+                      />
+                    </td>
+                    <td className="px-3 py-2.5 text-center">
+                      <button
+                        onClick={() => removeRow(row.id)}
+                        className="w-7 h-7 flex items-center justify-center bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-lg transition-colors"
+                      >
+                        <Trash2 size={11} />
+                      </button>
+                    </td>
+                  </tr>
+                );
               })}
             </tbody>
           </table>
@@ -600,9 +606,7 @@ export default function BulkJobPage() {
                     : "border-app border-l-4 border-l-emerald-500"
                 }`}
               >
-                <span className="absolute top-3 right-4 text-app font-black text-lg">
-                  #{i + 1}
-                </span>
+                <span className="absolute top-3 right-4 text-app font-black text-lg">#{i + 1}</span>
                 {rErrs && (
                   <span className="inline-block text-[9px] text-red-400 font-black uppercase bg-red-500/10 border border-red-500/30 rounded-md px-1.5 py-0.5 mb-2">
                     {rErrs.join(", ")} missing
@@ -654,7 +658,9 @@ export default function BulkJobPage() {
                     <label className={lCls}>Assign To</label>
                     <div
                       data-bulk-mech={row.id}
-                      className={fieldErr(rErrs, "Mechanic") ? "rounded-xl ring-2 ring-red-500/60" : ""}
+                      className={
+                        fieldErr(rErrs, "Mechanic") ? "rounded-xl ring-2 ring-red-500/60" : ""
+                      }
                     >
                       <SearchableSelect
                         value={row.mechanic_id}

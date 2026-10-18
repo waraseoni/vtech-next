@@ -978,434 +978,438 @@ function ManageJobPageInner({ params }: { params: Promise<{ id?: string }> }) {
         {/* ── SECTION 1: CLIENT + JOB NO + MECHANIC ─────────────────── */}
         {(isEdit || step === 1) && (
           <>
-        <div className="bg-panel rounded-2xl border border-app p-5">
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-2 mb-4">
-            1. Client & Assignment
-          </p>
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
-            {/* Client dropdown — col 6 */}
-            <div className="md:col-span-6">
-              <div className="flex items-center gap-2 mb-1.5">
-                <label className={labelCls}>
-                  <User size={13} className="text-blue-400" />
-                  Client <span className="text-red-400">*</span>
-                </label>
-                <button
-                  type="button"
-                  onClick={() => setShowAddClientModal(true)}
-                  className="text-[10px] font-bold text-blue-400 hover:text-blue-300 underline underline-offset-2 transition-colors"
-                >
-                  + Add New Client
-                </button>
-              </div>
-              <SearchableSelect
-                value={selectedClient?.id ?? null}
-                options={clients.map((c) => ({ id: c.id, label: c.fullname, sub: c.contact }))}
-                onSelect={(id) => {
-                  const c = clients.find((x) => String(x.id) === id);
-                  if (c) {
-                    setSelectedClient(c);
-                    fetchClientBalance(c.id);
-                  }
-                }}
-                placeholder="Search client (name/contact)…"
-                searchPlaceholder="Name ya contact se search karo…"
-                emptyText="Koi client nahi mila"
-                renderSelected={(opt) => (
-                  <div>
-                    <div className="font-bold text-white text-sm">{opt.label}</div>
-                    <div className="text-blue-400 text-xs">{opt.sub}</div>
+            <div className="bg-panel rounded-2xl border border-app p-5">
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-2 mb-4">
+                1. Client & Assignment
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+                {/* Client dropdown — col 6 */}
+                <div className="md:col-span-6">
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <label className={labelCls}>
+                      <User size={13} className="text-blue-400" />
+                      Client <span className="text-red-400">*</span>
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setShowAddClientModal(true)}
+                      className="text-[10px] font-bold text-blue-400 hover:text-blue-300 underline underline-offset-2 transition-colors"
+                    >
+                      + Add New Client
+                    </button>
                   </div>
-                )}
-              />
+                  <SearchableSelect
+                    value={selectedClient?.id ?? null}
+                    options={clients.map((c) => ({ id: c.id, label: c.fullname, sub: c.contact }))}
+                    onSelect={(id) => {
+                      const c = clients.find((x) => String(x.id) === id);
+                      if (c) {
+                        setSelectedClient(c);
+                        fetchClientBalance(c.id);
+                      }
+                    }}
+                    placeholder="Search client (name/contact)…"
+                    searchPlaceholder="Name ya contact se search karo…"
+                    emptyText="Koi client nahi mila"
+                    renderSelected={(opt) => (
+                      <div>
+                        <div className="font-bold text-white text-sm">{opt.label}</div>
+                        <div className="text-blue-400 text-xs">{opt.sub}</div>
+                      </div>
+                    )}
+                  />
 
-              {/* Client balance chip */}
-              {clientBalance && (
-                <div
-                  className={`mt-1.5 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-black border ${
-                    clientBalance.type === "due"
-                      ? "bg-red-500/10 border-red-500/20 text-red-400"
-                      : clientBalance.type === "advance"
-                        ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
-                        : "bg-muted/10 border-muted/20 text-muted"
-                  }`}
-                >
-                  <IndianRupee size={10} />
-                  {clientBalance.label}: {inr(clientBalance.amount)}
+                  {/* Client balance chip */}
+                  {clientBalance && (
+                    <div
+                      className={`mt-1.5 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-black border ${
+                        clientBalance.type === "due"
+                          ? "bg-red-500/10 border-red-500/20 text-red-400"
+                          : clientBalance.type === "advance"
+                            ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
+                            : "bg-muted/10 border-muted/20 text-muted"
+                      }`}
+                    >
+                      <IndianRupee size={10} />
+                      {clientBalance.label}: {inr(clientBalance.amount)}
+                    </div>
+                  )}
                 </div>
-              )}
+
+                {/* Job Code — col 2 */}
+                <div className="md:col-span-2">
+                  <label className={labelCls}>
+                    <Hash size={13} className="text-muted-2" />
+                    Job No.
+                  </label>
+                  <input
+                    value={jobCode}
+                    readOnly
+                    className={`${inputCls} opacity-60 cursor-not-allowed font-mono text-xs`}
+                  />
+                </div>
+
+                {/* Mechanic — col 4 */}
+                <div className="md:col-span-4">
+                  <label className={labelCls}>
+                    <UserCog size={13} className="text-purple-400" />
+                    Mechanic <span className="text-red-400">*</span>
+                  </label>
+                  <SearchableSelect
+                    value={selectedMechanic || null}
+                    options={mechanics.map((m) => ({
+                      id: m.id,
+                      label: m.fullname,
+                      sub:
+                        (userRole === "admin" || userRole === "developer") &&
+                        m.commission_percent > 0
+                          ? `${m.commission_percent}% commission`
+                          : undefined,
+                    }))}
+                    onSelect={(id) => setSelectedMechanic(id)}
+                    placeholder="— Select Mechanic —"
+                    searchPlaceholder="Mechanic ka naam type karo…"
+                    emptyText="Koi mechanic nahi mila"
+                  />
+                </div>
+              </div>
             </div>
 
-            {/* Job Code — col 2 */}
-            <div className="md:col-span-2">
-              <label className={labelCls}>
-                <Hash size={13} className="text-muted-2" />
-                Job No.
-              </label>
-              <input
-                value={jobCode}
-                readOnly
-                className={`${inputCls} opacity-60 cursor-not-allowed font-mono text-xs`}
-              />
+            {/* ── SECTION 2: DEVICE INFO ────────────────────────────────── */}
+            <div className="bg-panel rounded-2xl border border-app p-5">
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-2 mb-4">
+                2. Device Information
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className={labelCls}>
+                    <Smartphone size={13} className="text-blue-400" />
+                    Item / Model <span className="text-red-400">*</span>
+                  </label>
+                  <input
+                    value={item}
+                    onChange={(e) => setItem(e.target.value)}
+                    placeholder="e.g. iPhone 15 Pro, Samsung S24"
+                    className={inputCls}
+                  />
+                </div>
+                <div>
+                  <label className={labelCls}>
+                    <AlertCircle size={13} className="text-red-400" />
+                    Fault Reported <span className="text-red-400">*</span>
+                  </label>
+                  <input
+                    value={fault}
+                    onChange={(e) => setFault(e.target.value)}
+                    placeholder="e.g. Screen broken, Not charging"
+                    className={inputCls}
+                  />
+                </div>
+                <div>
+                  <label className={labelCls}>
+                    <MapPin size={13} className="text-amber-400" />
+                    Location / Spot
+                  </label>
+                  <JobSpotPicker
+                    value={locId}
+                    onSelect={(id, spot) => {
+                      setLocId(id);
+                      setLocName(spot?.name || "");
+                    }}
+                  />
+                </div>
+                <div>
+                  <label className={labelCls}>
+                    <MessageSquare size={13} className="text-muted-2" />
+                    Remarks
+                  </label>
+                  <input
+                    value={remark}
+                    onChange={(e) => setRemark(e.target.value)}
+                    placeholder="Any additional notes…"
+                    className={inputCls}
+                  />
+                </div>
+              </div>
             </div>
-
-            {/* Mechanic — col 4 */}
-            <div className="md:col-span-4">
-              <label className={labelCls}>
-                <UserCog size={13} className="text-purple-400" />
-                Mechanic <span className="text-red-400">*</span>
-              </label>
-              <SearchableSelect
-                value={selectedMechanic || null}
-                options={mechanics.map((m) => ({
-                  id: m.id,
-                  label: m.fullname,
-                  sub:
-                    (userRole === "admin" || userRole === "developer") && m.commission_percent > 0
-                      ? `${m.commission_percent}% commission`
-                      : undefined,
-                }))}
-                onSelect={(id) => setSelectedMechanic(id)}
-                placeholder="— Select Mechanic —"
-                searchPlaceholder="Mechanic ka naam type karo…"
-                emptyText="Koi mechanic nahi mila"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* ── SECTION 2: DEVICE INFO ────────────────────────────────── */}
-        <div className="bg-panel rounded-2xl border border-app p-5">
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-2 mb-4">
-            2. Device Information
-          </p>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className={labelCls}>
-                <Smartphone size={13} className="text-blue-400" />
-                Item / Model <span className="text-red-400">*</span>
-              </label>
-              <input
-                value={item}
-                onChange={(e) => setItem(e.target.value)}
-                placeholder="e.g. iPhone 15 Pro, Samsung S24"
-                className={inputCls}
-              />
-            </div>
-            <div>
-              <label className={labelCls}>
-                <AlertCircle size={13} className="text-red-400" />
-                Fault Reported <span className="text-red-400">*</span>
-              </label>
-              <input
-                value={fault}
-                onChange={(e) => setFault(e.target.value)}
-                placeholder="e.g. Screen broken, Not charging"
-                className={inputCls}
-              />
-            </div>
-            <div>
-              <label className={labelCls}>
-                <MapPin size={13} className="text-amber-400" />
-                Location / Spot
-              </label>
-              <JobSpotPicker
-                value={locId}
-                onSelect={(id, spot) => {
-                  setLocId(id);
-                  setLocName(spot?.name || "");
-                }}
-              />
-            </div>
-            <div>
-              <label className={labelCls}>
-                <MessageSquare size={13} className="text-muted-2" />
-                Remarks
-              </label>
-              <input
-                value={remark}
-                onChange={(e) => setRemark(e.target.value)}
-                placeholder="Any additional notes…"
-                className={inputCls}
-              />
-            </div>
-          </div>
-        </div>
           </>
         )}
         {(isEdit || step === 2) && (
           <>
-        {/* ── SECTION 3: SERVICES + PRODUCTS ───────────────────────── */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {/* SERVICES */}
-          <div className="bg-panel rounded-2xl border border-app p-5">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <Wrench size={15} className="text-blue-400" />
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted">
-                  Services
-                </p>
-              </div>
-              <span className="text-[10px] font-black text-blue-400">
-                Total: {inr(serviceTotal)}
-              </span>
-            </div>
-
-            {/* Add service — searchable, add on pick */}
-            <div className="mb-3">
-              <SearchableSelect
-                value={null}
-                options={services.map((s) => ({ id: s.id, label: s.name, sub: inr(s.price) }))}
-                onSelect={(id) => addService(parseInt(id))}
-                placeholder="— Service search karke select karo —"
-                searchPlaceholder="Service ka naam type karo…"
-                emptyText="Koi service nahi mili"
-              />
-            </div>
-
-            {/* Service table */}
-            <div className="space-y-0 border border-app rounded-xl overflow-hidden">
-              <div className="grid grid-cols-[1fr_90px_36px] bg-panel-2 px-3 py-2">
-                <span className="text-[9px] font-black uppercase tracking-wider text-muted-2">
-                  Service
-                </span>
-                <span className="text-[9px] font-black uppercase tracking-wider text-muted-2 text-right">
-                  Amount
-                </span>
-                <span />
-              </div>
-              {serviceRows.length === 0 ? (
-                <div className="px-3 py-6 text-center text-app text-xs">
-                  Koi service add nahi ki
-                </div>
-              ) : (
-                serviceRows.map((r) => (
-                  <div
-                    key={r.tempId}
-                    className="grid grid-cols-[1fr_90px_36px] items-center px-3 py-2 border-t border-app hover:bg-white/[0.02]"
-                  >
-                    <input
-                      value={r.service_name}
-                      onChange={(e) => updateServiceName(r.tempId, e.target.value)}
-                      className="bg-transparent text-white text-sm font-medium outline-none focus:text-blue-300 transition-colors w-full"
-                    />
-                    <input
-                      type="number"
-                      value={r.price}
-                      onChange={(e) => updateServicePrice(r.tempId, e.target.value)}
-                      className="bg-transparent text-emerald-400 text-sm font-black text-right outline-none focus:text-emerald-300 transition-colors w-full"
-                    />
-                    <button
-                      onClick={() => removeService(r.tempId)}
-                      className="flex justify-end text-app hover:text-red-400 transition-colors"
-                    >
-                      <Trash2 size={13} />
-                    </button>
+            {/* ── SECTION 3: SERVICES + PRODUCTS ───────────────────────── */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {/* SERVICES */}
+              <div className="bg-panel rounded-2xl border border-app p-5">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <Wrench size={15} className="text-blue-400" />
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted">
+                      Services
+                    </p>
                   </div>
-                ))
-              )}
-            </div>
-          </div>
-
-          {/* PRODUCTS */}
-          <div className="bg-panel rounded-2xl border border-app p-5">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <Package size={15} className="text-emerald-400" />
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted">
-                  Products
-                </p>
-              </div>
-              <span className="text-[10px] font-black text-emerald-400">
-                Total: {inr(productTotal)}
-              </span>
-            </div>
-
-            {/* Add product — searchable, add on pick */}
-            <div className="mb-3">
-              <SearchableSelect
-                value={null}
-                options={products.map((p) => ({
-                  id: p.id,
-                  label: p.name,
-                  sub: `${inr(p.price)} — ${p.available_stock > 0 ? `Stock: ${p.available_stock}` : "Stock khatam"}`,
-                }))}
-                onSelect={(id) => addProduct(parseInt(id))}
-                placeholder="— Product search karke select karo —"
-                searchPlaceholder="Product ka naam type karo…"
-                emptyText="Koi product nahi mila"
-              />
-            </div>
-
-            {/* Custom spare — inventory me nahi, alag se add */}
-            {!showCustom ? (
-              <button
-                type="button"
-                onClick={() => setShowCustom(true)}
-                className="w-full mb-3 text-xs bg-slate-600/10 text-muted border border-dashed border-muted/40 px-3 py-2 rounded-xl hover:text-emerald-300 hover:border-emerald-500/40 transition-all inline-flex items-center justify-center gap-1.5"
-              >
-                <Plus size={13} /> Custom spare add karo (inventory se alag)
-              </button>
-            ) : (
-              <div className="mb-3 border border-app rounded-xl bg-panel-2 p-3 grid grid-cols-1 sm:grid-cols-[1fr_90px_120px_auto] gap-2 items-end">
-                <div>
-                  <label className={labelCls}>Spare naam *</label>
-                  <input
-                    value={customName}
-                    onChange={(e) => setCustomName(e.target.value)}
-                    placeholder="e.g. SMPS Board, Belt..."
-                    className={inputCls}
-                  />
-                </div>
-                <div>
-                  <label className={labelCls}>Price</label>
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={customPrice}
-                    onChange={(e) => setCustomPrice(e.target.value)}
-                    placeholder="0"
-                    className={inputCls}
-                  />
-                </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={addProductCustom}
-                    className="bg-emerald-600/20 text-emerald-300 border border-emerald-600/40 px-3 py-2 rounded-xl hover:bg-emerald-600/30 transition-all text-xs font-bold inline-flex items-center gap-1"
-                  >
-                    <Plus size={12} /> Add
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowCustom(false);
-                      setCustomName("");
-                      setCustomPrice("");
-                    }}
-                    className="text-muted hover:text-red-400 text-xs px-2 py-2"
-                  >
-                    <X size={14} />
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Product table */}
-            <div className="space-y-0 border border-app rounded-xl overflow-hidden">
-              <div className="grid grid-cols-[1fr_50px_80px_80px_36px] bg-panel-2 px-3 py-2">
-                {["Product", "Qty", "Price", "Total", ""].map((h) => (
-                  <span
-                    key={h}
-                    className="text-[9px] font-black uppercase tracking-wider text-muted-2 last:col-span-1"
-                  >
-                    {h}
+                  <span className="text-[10px] font-black text-blue-400">
+                    Total: {inr(serviceTotal)}
                   </span>
-                ))}
-              </div>
-              {productRows.length === 0 ? (
-                <div className="px-3 py-6 text-center text-app text-xs">
-                  Koi product add nahi kiya
                 </div>
-              ) : (
-                productRows.map((r) => {
-                  const stock = products.find((p) => p.id === r.product_id)?.available_stock ?? 0;
-                  const overStock = !isEdit && r.product_id != null && r.qty > stock;
-                  return (
-                    <div
-                      key={r.tempId}
-                      className={`grid grid-cols-[1fr_50px_80px_80px_36px] items-center px-3 py-2 border-t border-app hover:bg-white/[0.02] ${overStock ? "bg-amber-500/5" : ""}`}
-                    >
-                      <span
-                        className="text-white text-xs font-medium truncate"
-                        title={r.product_name}
+
+                {/* Add service — searchable, add on pick */}
+                <div className="mb-3">
+                  <SearchableSelect
+                    value={null}
+                    options={services.map((s) => ({ id: s.id, label: s.name, sub: inr(s.price) }))}
+                    onSelect={(id) => addService(parseInt(id))}
+                    placeholder="— Service search karke select karo —"
+                    searchPlaceholder="Service ka naam type karo…"
+                    emptyText="Koi service nahi mili"
+                  />
+                </div>
+
+                {/* Service table */}
+                <div className="space-y-0 border border-app rounded-xl overflow-hidden">
+                  <div className="grid grid-cols-[1fr_90px_36px] bg-panel-2 px-3 py-2">
+                    <span className="text-[9px] font-black uppercase tracking-wider text-muted-2">
+                      Service
+                    </span>
+                    <span className="text-[9px] font-black uppercase tracking-wider text-muted-2 text-right">
+                      Amount
+                    </span>
+                    <span />
+                  </div>
+                  {serviceRows.length === 0 ? (
+                    <div className="px-3 py-6 text-center text-app text-xs">
+                      Koi service add nahi ki
+                    </div>
+                  ) : (
+                    serviceRows.map((r) => (
+                      <div
+                        key={r.tempId}
+                        className="grid grid-cols-[1fr_90px_36px] items-center px-3 py-2 border-t border-app hover:bg-white/[0.02]"
                       >
-                        {r.product_name}
-                      </span>
+                        <input
+                          value={r.service_name}
+                          onChange={(e) => updateServiceName(r.tempId, e.target.value)}
+                          className="bg-transparent text-white text-sm font-medium outline-none focus:text-blue-300 transition-colors w-full"
+                        />
+                        <input
+                          type="number"
+                          value={r.price}
+                          onChange={(e) => updateServicePrice(r.tempId, e.target.value)}
+                          className="bg-transparent text-emerald-400 text-sm font-black text-right outline-none focus:text-emerald-300 transition-colors w-full"
+                        />
+                        <button
+                          onClick={() => removeService(r.tempId)}
+                          className="flex justify-end text-app hover:text-red-400 transition-colors"
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              {/* PRODUCTS */}
+              <div className="bg-panel rounded-2xl border border-app p-5">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <Package size={15} className="text-emerald-400" />
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted">
+                      Products
+                    </p>
+                  </div>
+                  <span className="text-[10px] font-black text-emerald-400">
+                    Total: {inr(productTotal)}
+                  </span>
+                </div>
+
+                {/* Add product — searchable, add on pick */}
+                <div className="mb-3">
+                  <SearchableSelect
+                    value={null}
+                    options={products.map((p) => ({
+                      id: p.id,
+                      label: p.name,
+                      sub: `${inr(p.price)} — ${p.available_stock > 0 ? `Stock: ${p.available_stock}` : "Stock khatam"}`,
+                    }))}
+                    onSelect={(id) => addProduct(parseInt(id))}
+                    placeholder="— Product search karke select karo —"
+                    searchPlaceholder="Product ka naam type karo…"
+                    emptyText="Koi product nahi mila"
+                  />
+                </div>
+
+                {/* Custom spare — inventory me nahi, alag se add */}
+                {!showCustom ? (
+                  <button
+                    type="button"
+                    onClick={() => setShowCustom(true)}
+                    className="w-full mb-3 text-xs bg-slate-600/10 text-muted border border-dashed border-muted/40 px-3 py-2 rounded-xl hover:text-emerald-300 hover:border-emerald-500/40 transition-all inline-flex items-center justify-center gap-1.5"
+                  >
+                    <Plus size={13} /> Custom spare add karo (inventory se alag)
+                  </button>
+                ) : (
+                  <div className="mb-3 border border-app rounded-xl bg-panel-2 p-3 grid grid-cols-1 sm:grid-cols-[1fr_90px_120px_auto] gap-2 items-end">
+                    <div>
+                      <label className={labelCls}>Spare naam *</label>
+                      <input
+                        value={customName}
+                        onChange={(e) => setCustomName(e.target.value)}
+                        placeholder="e.g. SMPS Board, Belt..."
+                        className={inputCls}
+                      />
+                    </div>
+                    <div>
+                      <label className={labelCls}>Price</label>
                       <input
                         type="number"
-                        min={1}
-                        value={r.qty}
-                        onChange={(e) => updateProductQty(r.tempId, e.target.value)}
-                        className={`bg-transparent text-center text-sm font-black outline-none w-full transition-colors ${overStock ? "text-amber-400" : "text-white"}`}
+                        min="0"
+                        step="0.01"
+                        value={customPrice}
+                        onChange={(e) => setCustomPrice(e.target.value)}
+                        placeholder="0"
+                        className={inputCls}
                       />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={addProductCustom}
+                        className="bg-emerald-600/20 text-emerald-300 border border-emerald-600/40 px-3 py-2 rounded-xl hover:bg-emerald-600/30 transition-all text-xs font-bold inline-flex items-center gap-1"
+                      >
+                        <Plus size={12} /> Add
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowCustom(false);
+                          setCustomName("");
+                          setCustomPrice("");
+                        }}
+                        className="text-muted hover:text-red-400 text-xs px-2 py-2"
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Product table */}
+                <div className="space-y-0 border border-app rounded-xl overflow-hidden">
+                  <div className="grid grid-cols-[1fr_50px_80px_80px_36px] bg-panel-2 px-3 py-2">
+                    {["Product", "Qty", "Price", "Total", ""].map((h) => (
+                      <span
+                        key={h}
+                        className="text-[9px] font-black uppercase tracking-wider text-muted-2 last:col-span-1"
+                      >
+                        {h}
+                      </span>
+                    ))}
+                  </div>
+                  {productRows.length === 0 ? (
+                    <div className="px-3 py-6 text-center text-app text-xs">
+                      Koi product add nahi kiya
+                    </div>
+                  ) : (
+                    productRows.map((r) => {
+                      const stock =
+                        products.find((p) => p.id === r.product_id)?.available_stock ?? 0;
+                      const overStock = !isEdit && r.product_id != null && r.qty > stock;
+                      return (
+                        <div
+                          key={r.tempId}
+                          className={`grid grid-cols-[1fr_50px_80px_80px_36px] items-center px-3 py-2 border-t border-app hover:bg-white/[0.02] ${overStock ? "bg-amber-500/5" : ""}`}
+                        >
+                          <span
+                            className="text-white text-xs font-medium truncate"
+                            title={r.product_name}
+                          >
+                            {r.product_name}
+                          </span>
+                          <input
+                            type="number"
+                            min={1}
+                            value={r.qty}
+                            onChange={(e) => updateProductQty(r.tempId, e.target.value)}
+                            className={`bg-transparent text-center text-sm font-black outline-none w-full transition-colors ${overStock ? "text-amber-400" : "text-white"}`}
+                          />
+                          <input
+                            type="number"
+                            step="0.01"
+                            value={r.price}
+                            onChange={(e) => updateProductPrice(r.tempId, e.target.value)}
+                            className="bg-transparent text-right text-sm font-medium text-app-2 outline-none w-full"
+                          />
+                          <span className="text-emerald-400 text-xs font-black text-right pr-1">
+                            {inr(r.qty * r.price)}
+                          </span>
+                          <button
+                            onClick={() => removeProduct(r.tempId)}
+                            className="flex justify-end text-app hover:text-red-400 transition-colors"
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* ── SECTION 4: TOTALS + COMMISSION ────────────────────────── */}
+            <div className="bg-panel rounded-2xl border border-app p-5">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+                {/* Grand Total */}
+                <div className="bg-gradient-to-br from-blue-600/15 to-blue-800/10 border border-blue-500/20 rounded-2xl px-6 py-4 flex items-center justify-between">
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted">
+                      Total Payable
+                    </p>
+                    <div className="flex items-baseline gap-1 mt-1">
+                      <span className="text-muted text-sm">₹</span>
+                      <span className="text-3xl font-black text-white">
+                        {grandTotal.toLocaleString("en-IN")}
+                      </span>
+                    </div>
+                    <div className="flex gap-3 mt-1">
+                      <span className="text-[10px] text-blue-400">
+                        Services: {inr(serviceTotal)}
+                      </span>
+                      <span className="text-[10px] text-emerald-400">
+                        Products: {inr(productTotal)}
+                      </span>
+                    </div>
+                  </div>
+                  <IndianRupee className="text-blue-500/30" size={48} strokeWidth={1.5} />
+                </div>
+
+                {/* Mechanic Commission — admin/developer only */}
+                {(userRole === "admin" || userRole === "developer") && (
+                  <div>
+                    <label className={labelCls}>Mechanic Commission (₹)</label>
+                    <div className="relative">
                       <input
                         type="number"
                         step="0.01"
-                        value={r.price}
-                        onChange={(e) => updateProductPrice(r.tempId, e.target.value)}
-                        className="bg-transparent text-right text-sm font-medium text-app-2 outline-none w-full"
+                        min="0"
+                        value={commissionAmt}
+                        onChange={(e) => setCommissionAmt(e.target.value)}
+                        className={inputCls}
+                        placeholder="0.00"
                       />
-                      <span className="text-emerald-400 text-xs font-black text-right pr-1">
-                        {inr(r.qty * r.price)}
-                      </span>
-                      <button
-                        onClick={() => removeProduct(r.tempId)}
-                        className="flex justify-end text-app hover:text-red-400 transition-colors"
-                      >
-                        <Trash2 size={13} />
-                      </button>
+                      {(() => {
+                        const mech = mechanics.find((m) => m.id === parseInt(selectedMechanic));
+                        return selectedMechanic && mech && mech.commission_percent > 0 ? (
+                          <p className="text-[9px] text-muted-2 mt-1">
+                            Auto: {mech.commission_percent}% of services total
+                          </p>
+                        ) : null;
+                      })()}
                     </div>
-                  );
-                })
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* ── SECTION 4: TOTALS + COMMISSION ────────────────────────── */}
-        <div className="bg-panel rounded-2xl border border-app p-5">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
-            {/* Grand Total */}
-            <div className="bg-gradient-to-br from-blue-600/15 to-blue-800/10 border border-blue-500/20 rounded-2xl px-6 py-4 flex items-center justify-between">
-              <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted">
-                  Total Payable
-                </p>
-                <div className="flex items-baseline gap-1 mt-1">
-                  <span className="text-muted text-sm">₹</span>
-                  <span className="text-3xl font-black text-white">
-                    {grandTotal.toLocaleString("en-IN")}
-                  </span>
-                </div>
-                <div className="flex gap-3 mt-1">
-                  <span className="text-[10px] text-blue-400">Services: {inr(serviceTotal)}</span>
-                  <span className="text-[10px] text-emerald-400">
-                    Products: {inr(productTotal)}
-                  </span>
-                </div>
+                  </div>
+                )}
               </div>
-              <IndianRupee className="text-blue-500/30" size={48} strokeWidth={1.5} />
             </div>
-
-            {/* Mechanic Commission — admin/developer only */}
-            {(userRole === "admin" || userRole === "developer") && (
-              <div>
-                <label className={labelCls}>Mechanic Commission (₹)</label>
-                <div className="relative">
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={commissionAmt}
-                    onChange={(e) => setCommissionAmt(e.target.value)}
-                    className={inputCls}
-                    placeholder="0.00"
-                  />
-                  {(() => {
-                    const mech = mechanics.find((m) => m.id === parseInt(selectedMechanic));
-                    return selectedMechanic && mech && mech.commission_percent > 0 ? (
-                      <p className="text-[9px] text-muted-2 mt-1">
-                        Auto: {mech.commission_percent}% of services total
-                      </p>
-                    ) : null;
-                  })()}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
           </>
         )}
 
@@ -1419,11 +1423,7 @@ function ManageJobPageInner({ params }: { params: Promise<{ id?: string }> }) {
               title="Billing ke bina save — Pending job banegi, baad me bill karna"
               className="px-5 py-3.5 bg-panel-2 border border-app hover:border-muted text-muted hover:text-white rounded-2xl font-bold text-sm transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed active:scale-95"
             >
-              {saving ? (
-                <Loader2 size={16} className="animate-spin" />
-              ) : (
-                <Save size={16} />
-              )}
+              {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
               Quick Save
             </button>
             <Link
@@ -1448,47 +1448,47 @@ function ManageJobPageInner({ params }: { params: Promise<{ id?: string }> }) {
 
         {/* ── SAVE BUTTON ───────────────────────────────────────────── */}
         {(isEdit || step === 2) && (
-        <div className="flex items-center gap-3 pb-4">
-          {!isEdit && (
-            <button
-              type="button"
-              onClick={() => {
-                setStep(1);
-                window.scrollTo({ top: 0, behavior: "smooth" });
-              }}
-              className="px-6 py-3.5 bg-panel-2 border border-app hover:border-muted text-muted hover:text-white rounded-2xl font-bold text-sm transition-all flex items-center gap-2"
-            >
-              <ArrowLeft size={16} /> Back
-            </button>
-          )}
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className={`flex-1 md:flex-none md:px-16 py-3.5 text-white rounded-2xl font-black flex items-center justify-center gap-2 transition-all shadow-lg text-sm uppercase tracking-wide active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed ${
-              isEdit
-                ? "bg-amber-600 hover:bg-amber-500 shadow-amber-600/20"
-                : "bg-blue-600 hover:bg-blue-500 shadow-blue-600/20"
-            }`}
-          >
-            {saving ? (
-              <>
-                <Loader2 size={17} className="animate-spin" />
-                Saving…
-              </>
-            ) : (
-              <>
-                <Save size={17} strokeWidth={2.5} />
-                {isEdit ? "Update Job" : "Create Job"}
-              </>
+          <div className="flex items-center gap-3 pb-4">
+            {!isEdit && (
+              <button
+                type="button"
+                onClick={() => {
+                  setStep(1);
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                }}
+                className="px-6 py-3.5 bg-panel-2 border border-app hover:border-muted text-muted hover:text-white rounded-2xl font-bold text-sm transition-all flex items-center gap-2"
+              >
+                <ArrowLeft size={16} /> Back
+              </button>
             )}
-          </button>
-          <Link
-            href={isEdit ? `/jobs/${jobId}/view` : "/jobs"}
-            className="px-6 py-3.5 bg-panel-2 border border-app hover:border-muted text-muted hover:text-white rounded-2xl font-bold text-sm transition-all no-underline"
-          >
-            Cancel
-          </Link>
-        </div>
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className={`flex-1 md:flex-none md:px-16 py-3.5 text-white rounded-2xl font-black flex items-center justify-center gap-2 transition-all shadow-lg text-sm uppercase tracking-wide active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed ${
+                isEdit
+                  ? "bg-amber-600 hover:bg-amber-500 shadow-amber-600/20"
+                  : "bg-blue-600 hover:bg-blue-500 shadow-blue-600/20"
+              }`}
+            >
+              {saving ? (
+                <>
+                  <Loader2 size={17} className="animate-spin" />
+                  Saving…
+                </>
+              ) : (
+                <>
+                  <Save size={17} strokeWidth={2.5} />
+                  {isEdit ? "Update Job" : "Create Job"}
+                </>
+              )}
+            </button>
+            <Link
+              href={isEdit ? `/jobs/${jobId}/view` : "/jobs"}
+              className="px-6 py-3.5 bg-panel-2 border border-app hover:border-muted text-muted hover:text-white rounded-2xl font-bold text-sm transition-all no-underline"
+            >
+              Cancel
+            </Link>
+          </div>
         )}
       </div>
     </div>
