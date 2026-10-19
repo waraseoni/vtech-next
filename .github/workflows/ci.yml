@@ -59,8 +59,27 @@ jobs:
         run: npm ci
 
       - name: Build
-        run: npm run build
+        run: |
+          set -o pipefail
+          npm run build 2>&1 | tee build.log
+          code=${PIPESTATUS[0]}
+          if [ "$code" -ne 0 ]; then
+            # Error ko annotation me surface karo — Actions logs API se 403
+            # aata hai (admin-only), annotations check-runs API se bina auth
+            # ke mil jaate hain.
+            echo "::error::next build failed (exit $code). Tail of build.log below."
+            tail -n 80 build.log | sed 's/^/::error::/'
+            exit "$code"
+          fi
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+      - name: Upload build log
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: next-build-log
+          path: build.log
+          if-no-files-found: ignore
