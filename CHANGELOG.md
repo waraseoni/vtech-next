@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.67.1](https://github.com/waraseoni/vtech-next/compare/v1.67.0...v1.67.1) (2026-10-19)
+
+### Bug Fixes
+
+* **attendance:** pin tooltip/header dates to IST ([c97dc3e](https://github.com/waraseoni/vtech-next/commit/c97dc3e01b4dd52e7b25b3a816af79baf3006674))
+
 ## [1.67.0](https://github.com/waraseoni/vtech-next/compare/v1.66.0...v1.67.0) (2026-10-19)
 
 ### Features
