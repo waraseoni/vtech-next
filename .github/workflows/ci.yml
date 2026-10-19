@@ -59,16 +59,23 @@ jobs:
         run: npm ci
 
       - name: Build
+        # GH `run:` steps bash -e ke saath chalte hain — failing pipeline
+        # seedha script exit kar deta hai, isliye `|| code=$?` se error
+        # capture karte hain (errexit ko check karta hua command chhodta hai).
         run: |
           set -o pipefail
-          npm run build 2>&1 | tee build.log
-          code=${PIPESTATUS[0]}
+          code=0
+          npm run build 2>&1 | tee build.log || code=$?
           if [ "$code" -ne 0 ]; then
-            # Error ko annotation me surface karo — Actions logs API se 403
-            # aata hai (admin-only), annotations check-runs API se bina auth
-            # ke mil jaate hain.
-            echo "::error::next build failed (exit $code). Tail of build.log below."
-            tail -n 80 build.log | sed 's/^/::error::/'
+            # Actions logs download API admin-only (403/401), par check-runs
+            # annotations bina auth ke milti hain — isliye tail yahan daalte hain.
+            # % se shuru hone wale chars + CR/LF ko escape karo warna GitHub
+            # workflow command ka format toot jayega.
+            tail -n 60 build.log \
+              | sed -e 's/%/%25/g' -e 's/\r/%0D/g' \
+              | awk 'BEGIN{ORS=""} {printf "%s%%0A", $0}' > annot.txt
+            printf '::error title=next build failed (exit %s)::%s\n' \
+              "$code" "$(cat annot.txt)"
             exit "$code"
           fi
         env:
