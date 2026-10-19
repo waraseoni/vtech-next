@@ -58,6 +58,30 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Verify build secrets
+        # Missing repo secret = GitHub empty string substitute karta hai, aur
+        # error "supabaseUrl is required" jaisa confusing aata hai (page-data
+        # collection ke beech). Yahan pehle hi saaf bata dete hain.
+        # Sirf emptiness check — value kabhi print/echo nahi hoti.
+        run: |
+          missing=""
+          for v in NEXT_PUBLIC_SUPABASE_URL NEXT_PUBLIC_SUPABASE_ANON_KEY SUPABASE_SERVICE_ROLE_KEY; do
+            eval "val=\${$v}"
+            if [ -z "$val" ]; then missing="$missing $v"; fi
+          done
+          if [ -n "$missing" ]; then
+            {
+              echo "::error title=Missing GitHub Actions secrets::Build ko ye secrets chahiye par ye repo me set nahi hain:$missing"
+              echo "::error::Add karo: GitHub → repo → Settings → Secrets and variables → Actions → New repository secret (har naam ke liye)."
+            }
+            exit 1
+          fi
+          echo "all build secrets present"
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
       - name: Build
         # GH `run:` steps bash -e ke saath chalte hain — failing pipeline
         # seedha script exit kar deta hai, isliye `|| code=$?` se error
