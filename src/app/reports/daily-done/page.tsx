@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useState, useCallback } from "react";
+import { useQuery } from "@tanstack/react-query";
 import AdminPage from "@/app/components/AdminPage";
 import { supabase } from "@/lib/supabase";
 import ZoomableImage from "@/components/ZoomableImage";
@@ -217,13 +218,22 @@ const buildDoneWAMsg = (
 };
 
 export default function DailyDoneReportPage() {
-  const [loading, setLoading] = useState(true);
-  const [items, setItems] = useState<DailyDoneItem[]>([]);
   const [date, setDate] = useState(todayIST());
-  const [mechanics, setMechanics] = useState<Mechanic[]>([]);
   const [selectedMechanic, setSelectedMechanic] = useState<string>("all");
-  const [err, setErr] = useState("");
-  const [firmInfo, setFirmInfo] = useState<Record<string, string>>({});
+
+  const fetchFirmInfo = useCallback(async () => {
+    const { data: sys } = await supabase.from("system_info").select("meta_field, meta_value");
+    const info: Record<string, string> = {};
+    (sys || []).forEach((r) => {
+      info[r.meta_field] = r.meta_value;
+    });
+    return info;
+  }, []);
+  const { data: firmInfo = {} } = useQuery({
+    queryKey: ["daily-done-firm-info"],
+    queryFn: fetchFirmInfo,
+    staleTime: 30_000,
+  });
   // Sprint 3 #14: WA preview (direct open nahi)
   const [waPreview, setWaPreview] = useState<{ phone: string; msg: string } | null>(null);
   const openWaPreview = (item: DailyDoneItem) => {
@@ -231,177 +241,154 @@ export default function DailyDoneReportPage() {
     if (p) setWaPreview(p);
   };
 
-  const fetchMechanics = async () => {
-    try {
-      const { data, error } = await supabase
-        .from("mechanic_list")
-        .select("id, firstname, lastname, image_path")
-        .eq("status", 1)
-        .order("firstname");
-      if (error) throw error;
-      if (data) {
-        setMechanics(
-          data.map((m) => ({
-            id: m.id.toString(),
-            name: `${m.firstname} ${m.lastname}`.trim(),
-            image: m.image_path || null,
-          }))
-        );
-      }
-    } catch (e) {
-      console.error("Error fetching mechanics:", e);
-    }
-  };
+  const fetchMechanics = useCallback(async () => {
+    const { data, error } = await supabase
+      .from("mechanic_list")
+      .select("id, firstname, lastname, image_path")
+      .eq("status", 1)
+      .order("firstname");
+    if (error) throw error;
+    return (data || []).map((m) => ({
+      id: m.id.toString(),
+      name: `${m.firstname} ${m.lastname}`.trim(),
+      image: m.image_path || null,
+    })) as Mechanic[];
+  }, []);
+  const { data: mechanics = [] } = useQuery({
+    queryKey: ["daily-done-mechanics"],
+    queryFn: fetchMechanics,
+    staleTime: 30_000,
+  });
 
   const fetchData = useCallback(async () => {
-    setLoading(true);
-    setErr("");
-    try {
-      const dayStart = date + "T00:00:00+05:30";
-      const dayEnd = date + "T23:59:59+05:30";
+    const dayStart = date + "T00:00:00+05:30";
+    const dayEnd = date + "T23:59:59+05:30";
 
-      // 1) Dono yug ke status-change logs is din ke — done = "→ Done" transition.
-      //    (meta_id: legacy → transaction_list.id, modern → id/job_id)
-      const eraConfigs = [
-        { module: "Transactions", action: "Transaction Status Changed" },
-        { module: "Jobs", action: "Updated Job Status" },
-      ];
-      const doneLogs: Array<{ meta_id: string; date_created: string }> = [];
-      for (const era of eraConfigs) {
-        const { data: logs, error } = await supabase
-          .from("activity_logs")
-          .select("meta_id, details, date_created")
-          .eq("module", era.module)
-          .eq("action", era.action)
-          .gte("date_created", dayStart)
-          .lte("date_created", dayEnd);
-        if (error) throw error;
-        for (const log of logs || []) {
-          if (parseDoneTransition(log.details) && log.meta_id) {
-            doneLogs.push({ meta_id: String(log.meta_id), date_created: log.date_created });
-          }
+    // 1) Dono yug ke status-change logs is din ke — done = "→ Done" transition.
+    //    (meta_id: legacy → transaction_list.id, modern → id/job_id)
+    const eraConfigs = [
+      { module: "Transactions", action: "Transaction Status Changed" },
+      { module: "Jobs", action: "Updated Job Status" },
+    ];
+    const doneLogs: Array<{ meta_id: string; date_created: string }> = [];
+    for (const era of eraConfigs) {
+      const { data: logs, error } = await supabase
+        .from("activity_logs")
+        .select("meta_id, details, date_created")
+        .eq("module", era.module)
+        .eq("action", era.action)
+        .gte("date_created", dayStart)
+        .lte("date_created", dayEnd);
+      if (error) throw error;
+      for (const log of logs || []) {
+        if (parseDoneTransition(log.details) && log.meta_id) {
+          doneLogs.push({ meta_id: String(log.meta_id), date_created: log.date_created });
         }
       }
-      if (doneLogs.length === 0) {
-        setItems([]);
-        setLoading(false);
-        return;
-      }
-
-      // meta_id → us din ka earliest done-log time
-      const doneTimeByMeta = new Map<string, string>();
-      for (const log of doneLogs) {
-        const cur = doneTimeByMeta.get(log.meta_id);
-        if (!cur || log.date_created < cur) doneTimeByMeta.set(log.meta_id, log.date_created);
-      }
-
-      // 2) Meta ids ko transaction_list par resolve karo — id pehla, job_id fallback.
-      const metaIds = [...doneTimeByMeta.keys()];
-      const txnById = await supabase
-        .from("transaction_list")
-        .select("*")
-        .in("status", [2, 3, 5])
-        .in("id", metaIds);
-      if (txnById.error) throw txnById.error;
-      const txnByJob = await supabase
-        .from("transaction_list")
-        .select("*")
-        .in("status", [2, 3, 5])
-        .in("job_id", metaIds);
-      if (txnByJob.error) throw txnByJob.error;
-
-      const seen = new Set<string>();
-      const doneMap = new Map<string, { txn: TxnRow; doneAt: string }>();
-      const rows = [...(txnById.data || []), ...(txnByJob.data || [])] as TxnRow[];
-      for (const row of rows) {
-        const key = String(row.id);
-        if (seen.has(key)) continue;
-        seen.add(key);
-        // Lookup pehle txn.id (canonical), phir txn.job_id
-        const doneAt = doneTimeByMeta.get(String(row.id)) || doneTimeByMeta.get(String(row.job_id));
-        if (!doneAt) continue;
-        doneMap.set(key, { txn: row, doneAt });
-      }
-
-      let uniqueTransactions = [...doneMap.values()];
-      if (selectedMechanic !== "all") {
-        uniqueTransactions = uniqueTransactions.filter(
-          (e) => String(e.txn.mechanic_id) === selectedMechanic
-        );
-      }
-      uniqueTransactions.sort((a, b) => a.doneAt.localeCompare(b.doneAt));
-
-      if (uniqueTransactions.length === 0) {
-        setItems([]);
-        setLoading(false);
-        return;
-      }
-
-      const clientIds = [
-        ...new Set(uniqueTransactions.map((e) => e.txn.client_name).filter(Boolean)),
-      ];
-      const { data: clientData } = await supabase
-        .from("client_list")
-        .select("id, firstname, lastname, image_path, contact")
-        .in("id", clientIds);
-      const clientMap = new Map(clientData?.map((c) => [c.id.toString(), c]) || []);
-
-      const mechIds = [
-        ...new Set(uniqueTransactions.map((e) => e.txn.mechanic_id).filter(Boolean)),
-      ];
-      const { data: mechData } = await supabase
-        .from("mechanic_list")
-        .select("id, firstname, lastname, image_path")
-        .in("id", mechIds);
-      const mechMap = new Map(mechData?.map((m) => [m.id.toString(), m]) || []);
-
-      const mapped: DailyDoneItem[] = uniqueTransactions.map(({ txn: tx, doneAt }) => {
-        const client = clientMap.get(tx.client_name?.toString() || "");
-        const mech = mechMap.get(tx.mechanic_id?.toString() || "");
-        return {
-          id: tx.id.toString(),
-          done_at: doneAt,
-          transaction_id: tx.id.toString(),
-          job_id: tx.job_id ? String(tx.job_id) : "-",
-          code: tx.code || "-",
-          item: tx.item || "-",
-          amount: Number(tx.amount) || 0,
-          remark: tx.remark || "",
-          status: tx.status,
-          delivered_at: tx.date_completed || null,
-          client_id: client?.id?.toString() || "",
-          client_name: client ? `${client.firstname} ${client.lastname}`.trim() : "Unknown",
-          client_contact: client?.contact || "",
-          client_image: client?.image_path || null,
-          mechanic_name: mech ? `${mech.firstname} ${mech.lastname}`.trim() : "Not Assigned",
-          mechanic_image: mech?.image_path || null,
-        };
-      });
-
-      setItems(mapped);
-    } catch (e) {
-      setErr(e instanceof Error ? e.message : String(e));
     }
-    setLoading(false);
+    if (doneLogs.length === 0) {
+      return [];
+    }
+
+    // meta_id → us din ka earliest done-log time
+    const doneTimeByMeta = new Map<string, string>();
+    for (const log of doneLogs) {
+      const cur = doneTimeByMeta.get(log.meta_id);
+      if (!cur || log.date_created < cur) doneTimeByMeta.set(log.meta_id, log.date_created);
+    }
+
+    // 2) Meta ids ko transaction_list par resolve karo — id pehla, job_id fallback.
+    const metaIds = [...doneTimeByMeta.keys()];
+    const txnById = await supabase
+      .from("transaction_list")
+      .select("*")
+      .in("status", [2, 3, 5])
+      .in("id", metaIds);
+    if (txnById.error) throw txnById.error;
+    const txnByJob = await supabase
+      .from("transaction_list")
+      .select("*")
+      .in("status", [2, 3, 5])
+      .in("job_id", metaIds);
+    if (txnByJob.error) throw txnByJob.error;
+
+    const seen = new Set<string>();
+    const doneMap = new Map<string, { txn: TxnRow; doneAt: string }>();
+    const rows = [...(txnById.data || []), ...(txnByJob.data || [])] as TxnRow[];
+    for (const row of rows) {
+      const key = String(row.id);
+      if (seen.has(key)) continue;
+      seen.add(key);
+      // Lookup pehle txn.id (canonical), phir txn.job_id
+      const doneAt = doneTimeByMeta.get(String(row.id)) || doneTimeByMeta.get(String(row.job_id));
+      if (!doneAt) continue;
+      doneMap.set(key, { txn: row, doneAt });
+    }
+
+    let uniqueTransactions = [...doneMap.values()];
+    if (selectedMechanic !== "all") {
+      uniqueTransactions = uniqueTransactions.filter(
+        (e) => String(e.txn.mechanic_id) === selectedMechanic
+      );
+    }
+    uniqueTransactions.sort((a, b) => a.doneAt.localeCompare(b.doneAt));
+
+    if (uniqueTransactions.length === 0) {
+      return [];
+    }
+
+    const clientIds = [
+      ...new Set(uniqueTransactions.map((e) => e.txn.client_name).filter(Boolean)),
+    ];
+    const { data: clientData } = await supabase
+      .from("client_list")
+      .select("id, firstname, lastname, image_path, contact")
+      .in("id", clientIds);
+    const clientMap = new Map(clientData?.map((c) => [c.id.toString(), c]) || []);
+
+    const mechIds = [...new Set(uniqueTransactions.map((e) => e.txn.mechanic_id).filter(Boolean))];
+    const { data: mechData } = await supabase
+      .from("mechanic_list")
+      .select("id, firstname, lastname, image_path")
+      .in("id", mechIds);
+    const mechMap = new Map(mechData?.map((m) => [m.id.toString(), m]) || []);
+
+    const mapped: DailyDoneItem[] = uniqueTransactions.map(({ txn: tx, doneAt }) => {
+      const client = clientMap.get(tx.client_name?.toString() || "");
+      const mech = mechMap.get(tx.mechanic_id?.toString() || "");
+      return {
+        id: tx.id.toString(),
+        done_at: doneAt,
+        transaction_id: tx.id.toString(),
+        job_id: tx.job_id ? String(tx.job_id) : "-",
+        code: tx.code || "-",
+        item: tx.item || "-",
+        amount: Number(tx.amount) || 0,
+        remark: tx.remark || "",
+        status: tx.status,
+        delivered_at: tx.date_completed || null,
+        client_id: client?.id?.toString() || "",
+        client_name: client ? `${client.firstname} ${client.lastname}`.trim() : "Unknown",
+        client_contact: client?.contact || "",
+        client_image: client?.image_path || null,
+        mechanic_name: mech ? `${mech.firstname} ${mech.lastname}`.trim() : "Not Assigned",
+        mechanic_image: mech?.image_path || null,
+      };
+    });
+
+    return mapped;
   }, [date, selectedMechanic]);
 
-  useEffect(() => {
-    fetchMechanics();
-  }, []);
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
-
-  useEffect(() => {
-    (async () => {
-      const { data: sys } = await supabase.from("system_info").select("meta_field, meta_value");
-      const info: Record<string, string> = {};
-      (sys || []).forEach((r) => {
-        info[r.meta_field] = r.meta_value;
-      });
-      setFirmInfo(info);
-    })();
-  }, []);
+  const {
+    data: items = [],
+    error: queryErr,
+    isPending: loading,
+  } = useQuery({
+    queryKey: ["daily-done", date, selectedMechanic],
+    queryFn: fetchData,
+    staleTime: 30_000,
+  });
+  const err = queryErr instanceof Error ? queryErr.message : queryErr ? "Data load failed" : "";
 
   const totals = {
     count: items.length,

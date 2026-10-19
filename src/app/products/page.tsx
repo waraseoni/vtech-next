@@ -1,6 +1,7 @@
 ﻿"use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { useQuery } from "@tanstack/react-query";
 import AdminPage from "@/app/components/AdminPage";
 import { supabase, getCachedUser } from "@/lib/supabase";
 import {
@@ -39,14 +40,11 @@ type Product = {
 const inr = (n: number) => "₹" + (n || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 });
 
 export default function ProductsPage() {
-  const [loading, setLoading] = useState(true);
-  const [rows, setRows] = useState<Product[]>([]);
   const [search, setSearch] = useState("");
   const [isMobile, setIsMobile] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState<Product | null>(null);
   const [returnTo, setReturnTo] = useState<string | null>(null);
-  const [err, setErr] = useState("");
   const [userRole, setUserRole] = useState("staff");
 
   useEffect(() => {
@@ -74,7 +72,6 @@ export default function ProductsPage() {
   }, []);
 
   const fetchData = useCallback(async () => {
-    setLoading(true);
     const { data, error } = await supabase
       .from("product_list")
       .select(
@@ -82,14 +79,21 @@ export default function ProductsPage() {
       )
       .eq("delete_flag", 0)
       .order("name");
-    if (error) setErr(error.message);
-    setRows((data || []) as Product[]);
-    setLoading(false);
+    if (error) throw error;
+    return (data || []) as Product[];
   }, []);
 
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+  const {
+    data: rows = [],
+    error: queryErr,
+    isPending: loading,
+    refetch,
+  } = useQuery({
+    queryKey: ["products"],
+    queryFn: fetchData,
+    staleTime: 30_000,
+  });
+  const err = queryErr instanceof Error ? queryErr.message : queryErr ? "Data load failed" : "";
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -138,7 +142,7 @@ export default function ProductsPage() {
     if (!requireAdmin(userRole, "delete")) return;
     if (!confirm(`"${name}" ko delete karna hai?`)) return;
     await supabase.from("product_list").update({ delete_flag: 1 }).eq("id", id);
-    fetchData();
+    refetch();
   };
 
   const toggleStatus = async (p: Product) => {
@@ -147,7 +151,7 @@ export default function ProductsPage() {
       .from("product_list")
       .update({ status: p.status === 1 ? 0 : 1 })
       .eq("id", p.id);
-    fetchData();
+    refetch();
   };
 
   const totalValue = filtered.reduce((s, p) => s + (p.price || 0), 0);
@@ -530,7 +534,7 @@ export default function ProductsPage() {
           if (returnTo) window.location.href = returnTo;
         }}
         onSaved={() => {
-          fetchData();
+          refetch();
           if (returnTo) window.location.href = returnTo;
         }}
       />

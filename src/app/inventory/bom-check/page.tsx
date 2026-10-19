@@ -1,5 +1,6 @@
 "use client";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabase, getCachedUser } from "@/lib/supabase";
@@ -108,7 +109,11 @@ function bestMatch(query: string, products: Product[]): Product | null {
 
 /** All products that plausibly match the keyword (≥ MIN_MATCH_SCORE), highest score first. */
 const MIN_MATCH_SCORE = 60;
-function matchAlternates(query: string, products: Product[], excludeId: number | undefined): Product[] {
+function matchAlternates(
+  query: string,
+  products: Product[],
+  excludeId: number | undefined
+): Product[] {
   return products
     .map((p) => ({ p, s: scoreMatch(query, p) }))
     .filter((x) => x.s >= MIN_MATCH_SCORE && x.p.id !== excludeId)
@@ -136,10 +141,7 @@ type AlternateMatch = {
   available: number;
 };
 
-const STATUS_META: Record<
-  BomStatus,
-  { label: string; chip: string; dot: string }
-> = {
+const STATUS_META: Record<BomStatus, { label: string; chip: string; dot: string }> = {
   available: {
     label: "Available",
     chip: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30",
@@ -181,7 +183,8 @@ const SAMPLE_BILLS = [
   },
   {
     name: "Motor Driver",
-    lines: "L298N Module\nIRF540N MOSFET - 4\n12V DC Motor - 2\n1N4007 Diode - 4\n100nF Capacitor - 4",
+    lines:
+      "L298N Module\nIRF540N MOSFET - 4\n12V DC Motor - 2\n1N4007 Diode - 4\n100nF Capacitor - 4",
   },
 ];
 
@@ -190,36 +193,92 @@ export default function BomCheckPage() {
   const [roleChecked, setRoleChecked] = useState(false);
   const [projectName, setProjectName] = useState("");
   const [input, setInput] = useState("");
-  const [loadingCatalog, setLoadingCatalog] = useState(false);
-  const [catalog, setCatalog] = useState<Product[]>([]);
-  const [suppliers, setSuppliers] = useState<Map<number, Supplier[]>>(new Map());
   const [lines, setLines] = useState<BomLine[] | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [analysis, setAnalysis] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   // ── Saved templates (Phase 3) — states + load hook (hooks sab guard se pehle) ──
-  const [templates, setTemplates] = useState<BomTemplate[]>([]);
   const [tmplModal, setTmplModal] = useState<{ mode: "save" | "edit"; id?: number } | null>(null);
   const [tmplName, setTmplName] = useState("");
   const [tmplDesc, setTmplDesc] = useState("");
   const [tmplBusy, setTmplBusy] = useState(false);
   const [tmplMsg, setTmplMsg] = useState<string | null>(null);
 
-  const loadTemplates = useCallback(async () => {
+  const fetchTemplates = useCallback(async (): Promise<BomTemplate[]> => {
     try {
       const res = await fetch("/api/bom-templates", { cache: "no-store" });
       const data = (await res.json().catch(() => ({}))) as { templates?: BomTemplate[] };
-      if (!res.ok) return;
-      setTemplates(data.templates ?? []);
+      if (!res.ok) return [];
+      return data.templates ?? [];
     } catch {
       /* ignore — template section khali rehta hai */
+      return [];
     }
   }, []);
 
-  useEffect(() => {
-    void loadTemplates();
-  }, [loadTemplates]);
+  const { data: templates = [], refetch: refetchTemplates } = useQuery({
+    queryKey: ["bom-templates"],
+    queryFn: fetchTemplates,
+    staleTime: 30_000,
+  });
+
+  // ── Load catalog once ─────────────────────────────────────────────────────
+  const fetchCatalog = useCallback(async () => {
+    const [
+      { data: pl, error: plError },
+      { data: suppliersRows, error: suppliersError },
+      { data: spareLink, error: linkError },
+    ] = await Promise.all([
+      supabase
+        .from("product_list")
+        .select("id, name, description, barcode, alert_quantity, price")
+        .eq("delete_flag", 0)
+        .eq("status", 1),
+      supabase.from("suppliers").select("id, name, contact").eq("delete_flag", 0).eq("status", 1),
+      supabase.from("spare_supplier").select("spare_id, supplier_id"),
+    ]);
+    if (plError) throw plError;
+    if (suppliersError) throw suppliersError;
+    if (linkError) throw linkError;
+    const prods: Product[] = (pl || []).map((p) => ({
+      id: p.id,
+      name: p.name,
+      description: p.description || "",
+      barcode: p.barcode ?? null,
+      alert_quantity: p.alert_quantity ?? 0,
+      price: Number(p.price ?? 0),
+    }));
+
+    const suppById = new Map<number, Supplier>();
+    (suppliersRows || []).forEach((s) =>
+      suppById.set(s.id, { id: s.id, name: s.name, contact: s.contact || "" })
+    );
+    const bySpare = new Map<number, Supplier[]>();
+    (spareLink || []).forEach((l) => {
+      const s = suppById.get(l.supplier_id as number);
+      if (!s) return;
+      const arr = bySpare.get(l.spare_id as number) || [];
+      arr.push(s);
+      bySpare.set(l.spare_id as number, arr);
+    });
+    return { catalog: prods, suppliers: bySpare };
+  }, []);
+
+  const {
+    data: catalogData,
+    isFetching: loadingCatalog,
+    refetch: refetchCatalog,
+  } = useQuery({
+    queryKey: ["bom-check-catalog"],
+    queryFn: fetchCatalog,
+    staleTime: 30_000,
+  });
+  const catalog = useMemo(() => catalogData?.catalog ?? [], [catalogData]);
+  const suppliers = useMemo(
+    () => catalogData?.suppliers ?? new Map<number, Supplier[]>(),
+    [catalogData]
+  );
 
   // ── Guard ─────────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -240,48 +299,6 @@ export default function BomCheckPage() {
   if (!roleChecked) {
     return <PageLoader icon={ClipboardList} label="Loading BOM Checker..." tone="cyan" />;
   }
-
-  // ── Load catalog once ─────────────────────────────────────────────────────
-  // Returns the loaded products so callers can use the FRESH array immediately
-  // (state updates are async and would otherwise fall behind the current render).
-  const loadCatalog = async (): Promise<Product[]> => {
-    setLoadingCatalog(true);
-    try {
-      const [{ data: pl }, { data: suppliersRows }, { data: spareLink }] = await Promise.all([
-        supabase
-          .from("product_list")
-          .select("id, name, description, barcode, alert_quantity, price")
-          .eq("delete_flag", 0)
-          .eq("status", 1),
-        supabase.from("suppliers").select("id, name, contact").eq("delete_flag", 0).eq("status", 1),
-        supabase.from("spare_supplier").select("spare_id, supplier_id"),
-      ]);
-      const prods: Product[] = (pl || []).map((p) => ({
-        id: p.id,
-        name: p.name,
-        description: p.description || "",
-        barcode: p.barcode ?? null,
-        alert_quantity: p.alert_quantity ?? 0,
-        price: Number(p.price ?? 0),
-      }));
-      setCatalog(prods);
-
-      const suppById = new Map<number, Supplier>();
-      (suppliersRows || []).forEach((s) => suppById.set(s.id, { id: s.id, name: s.name, contact: s.contact || "" }));
-      const bySpare = new Map<number, Supplier[]>();
-      (spareLink || []).forEach((l) => {
-        const s = suppById.get(l.supplier_id as number);
-        if (!s) return;
-        const arr = bySpare.get(l.spare_id as number) || [];
-        arr.push(s);
-        bySpare.set(l.spare_id as number, arr);
-      });
-      setSuppliers(bySpare);
-      return prods;
-    } finally {
-      setLoadingCatalog(false);
-    }
-  };
 
   // ── Saved templates (Phase 3) — handlers (guard ke baad, plain functions) ──
   const openSaveModal = () => {
@@ -311,7 +328,8 @@ export default function BomCheckPage() {
   const buildSaveItems = async (): Promise<
     { product_id: number | null; name: string; qty: number }[]
   > => {
-    const prodCatalog: Product[] = catalog.length > 0 ? catalog : await loadCatalog();
+    const prodCatalog: Product[] =
+      catalog.length > 0 ? catalog : ((await refetchCatalog()).data?.catalog ?? []);
     const parsed = input
       .split("\n")
       .map(parseBOMLine)
@@ -341,13 +359,16 @@ export default function BomCheckPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: tmplName, description: tmplDesc, items }),
       });
-      const data = (await res.json().catch(() => ({}))) as { error?: string; template?: BomTemplate };
+      const data = (await res.json().catch(() => ({}))) as {
+        error?: string;
+        template?: BomTemplate;
+      };
       if (!res.ok) {
         setTmplMsg(data.error || "Template save nahi hua.");
         return;
       }
       setTmplModal(null);
-      await loadTemplates();
+      await refetchTemplates();
     } catch {
       setTmplMsg("Server error — dobara try karo.");
     } finally {
@@ -365,7 +386,7 @@ export default function BomCheckPage() {
         setTmplMsg(data.error || "Template delete nahi hua.");
         return;
       }
-      setTemplates((prev) => prev.filter((x) => x.id !== t.id));
+      await refetchTemplates();
     } catch {
       setTmplMsg("Server error — dobara try karo.");
     }
@@ -378,7 +399,8 @@ export default function BomCheckPage() {
     setAnalysis(null);
     // Use the FRESH catalog — `catalog` state may not have updated within this
     // same render/closure (async state update), causing first-run misses.
-    const prodCatalog: Product[] = catalog.length > 0 ? catalog : await loadCatalog();
+    const prodCatalog: Product[] =
+      catalog.length > 0 ? catalog : ((await refetchCatalog()).data?.catalog ?? []);
     const parsed = input
       .split("\n")
       .map(parseBOMLine)
@@ -461,9 +483,8 @@ export default function BomCheckPage() {
   // consume karta hai (requirement-list wala exact pattern, I4).
   // notfound lines skip — unka product_id hi nahi.
   const poDraftLines =
-    lines?.filter(
-      (l) => (l.status === "outofstock" || l.status === "insufficient") && l.product
-    ) ?? [];
+    lines?.filter((l) => (l.status === "outofstock" || l.status === "insufficient") && l.product) ??
+    [];
 
   const createPoFromBom = () => {
     const draft = poDraftLines.map((l) => ({
@@ -489,7 +510,9 @@ export default function BomCheckPage() {
               .map(
                 (l) =>
                   `  - ${l.product?.name || l.rawName} | need ${l.qty} | have ${l.available}${
-                    l.status === "insufficient" || l.status === "outofstock" ? ` | deficit ${l.deficit}` : ""
+                    l.status === "insufficient" || l.status === "outofstock"
+                      ? ` | deficit ${l.deficit}`
+                      : ""
                   }`
               )
               .join("\n")}`
@@ -500,11 +523,26 @@ export default function BomCheckPage() {
         `Technician submitted a BOM for project: ${projectName || "unspecified"}.`,
         "",
         "BOM Results:",
-        section("Available", lines.filter((l) => l.status === "available")),
-        section("Low stock", lines.filter((l) => l.status === "low")),
-        section("Insufficient", lines.filter((l) => l.status === "insufficient")),
-        section("Out of stock", lines.filter((l) => l.status === "outofstock")),
-        section("Not found", lines.filter((l) => l.status === "notfound")),
+        section(
+          "Available",
+          lines.filter((l) => l.status === "available")
+        ),
+        section(
+          "Low stock",
+          lines.filter((l) => l.status === "low")
+        ),
+        section(
+          "Insufficient",
+          lines.filter((l) => l.status === "insufficient")
+        ),
+        section(
+          "Out of stock",
+          lines.filter((l) => l.status === "outofstock")
+        ),
+        section(
+          "Not found",
+          lines.filter((l) => l.status === "notfound")
+        ),
         "",
         "Answer in Hindi/Hinglish. 3-4 lines max:",
         "1) Kya project shuru kar sakte hain? (haan/nahi + ek reason)",
@@ -527,7 +565,9 @@ export default function BomCheckPage() {
         }
       }
       if (!res.ok || !data.response) {
-        setError(data.error ? `AI error: ${data.details || data.error}` : "AI summary nahi aa paya.");
+        setError(
+          data.error ? `AI error: ${data.details || data.error}` : "AI summary nahi aa paya."
+        );
       } else {
         setAnalysis(data.response);
       }
@@ -539,8 +579,12 @@ export default function BomCheckPage() {
   };
 
   const hasIssues = lines?.some((l) => l.status !== "available" && l.status !== "low") ?? false;
-  const availCount = lines?.filter((l) => l.status === "available" || l.status === "low").length ?? 0;
-  const issueCount = lines?.filter((l) => l.status === "outofstock" || l.status === "insufficient" || l.status === "notfound").length ?? 0;
+  const availCount =
+    lines?.filter((l) => l.status === "available" || l.status === "low").length ?? 0;
+  const issueCount =
+    lines?.filter(
+      (l) => l.status === "outofstock" || l.status === "insufficient" || l.status === "notfound"
+    ).length ?? 0;
 
   return (
     <div className="min-h-screen bg-white dark:bg-app font-sans pb-16">
@@ -566,7 +610,10 @@ export default function BomCheckPage() {
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <Link href="/inventory" className="text-xs text-muted hover:text-app dark:hover:text-app-2 transition-colors">
+                  <Link
+                    href="/inventory"
+                    className="text-xs text-muted hover:text-app dark:hover:text-app-2 transition-colors"
+                  >
                     Inventory
                   </Link>
                   <span className="text-muted dark:text-app text-xs">/</span>
@@ -581,7 +628,9 @@ export default function BomCheckPage() {
               </div>
             </div>
             <button
-              onClick={() => { void loadCatalog(); }}
+              onClick={() => {
+                void refetchCatalog();
+              }}
               className="flex items-center gap-2 px-4 py-2 rounded-xl bg-panel-2 hover:bg-panel-2 dark:bg-panel-2 dark:hover:bg-[#2a3348] text-muted-2 dark:text-app-2 text-sm font-semibold transition-colors"
             >
               <RefreshCw size={15} /> Reload Catalog
@@ -596,7 +645,9 @@ export default function BomCheckPage() {
           <div className="bg-white dark:bg-panel-2 border border-app-2 dark:border-app rounded-2xl p-5">
             <div className="flex items-center gap-2 mb-3">
               <ClipboardList size={16} className="text-muted dark:text-muted" />
-              <h2 className="text-sm font-black text-app dark:text-white tracking-tight">BOM input</h2>
+              <h2 className="text-sm font-black text-app dark:text-white tracking-tight">
+                BOM input
+              </h2>
             </div>
             <input
               value={projectName}
@@ -607,7 +658,9 @@ export default function BomCheckPage() {
             <textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder={"NE555 Timer IC - 2\n4x IRF540N MOSFET\n10k Resistor (10)\nBC547 Transistor 5"}
+              placeholder={
+                "NE555 Timer IC - 2\n4x IRF540N MOSFET\n10k Resistor (10)\nBC547 Transistor 5"
+              }
               rows={10}
               className="w-full bg-white dark:bg-app border border-app-2 dark:border-app rounded-xl px-3 py-2.5 text-sm text-app dark:text-white placeholder:text-muted dark:placeholder:text-muted-2 focus:outline-none focus:border-cyan-500/60 resize-y"
             />
@@ -631,7 +684,11 @@ export default function BomCheckPage() {
               disabled={loadingCatalog || !input.trim()}
               className="mt-4 w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-500 hover:to-emerald-500 text-white font-black text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loadingCatalog ? <Loader2 size={16} className="animate-spin" /> : <Search size={16} />}
+              {loadingCatalog ? (
+                <Loader2 size={16} className="animate-spin" />
+              ) : (
+                <Search size={16} />
+              )}
               Check Stock
             </button>
 
@@ -659,7 +716,7 @@ export default function BomCheckPage() {
                   Saved Templates
                 </div>
                 <button
-                  onClick={() => void loadTemplates()}
+                  onClick={() => void refetchTemplates()}
                   title="Refresh"
                   className="text-muted dark:text-muted-2 hover:text-app dark:hover:text-app-2 transition-colors"
                 >
@@ -730,19 +787,25 @@ export default function BomCheckPage() {
                   <div className="text-[10px] font-black uppercase tracking-widest text-muted dark:text-muted">
                     Total parts
                   </div>
-                  <div className="text-2xl font-black text-app dark:text-white mt-1">{lines.length}</div>
+                  <div className="text-2xl font-black text-app dark:text-white mt-1">
+                    {lines.length}
+                  </div>
                 </div>
                 <div className="bg-white dark:bg-panel-2 border border-app-2 dark:border-app rounded-2xl p-4">
                   <div className="text-[10px] font-black uppercase tracking-widest text-muted dark:text-muted">
                     Available
                   </div>
-                  <div className="text-2xl font-black text-emerald-500 dark:text-emerald-400 mt-1">{availCount}</div>
+                  <div className="text-2xl font-black text-emerald-500 dark:text-emerald-400 mt-1">
+                    {availCount}
+                  </div>
                 </div>
                 <div className="bg-white dark:bg-panel-2 border border-app-2 dark:border-app rounded-2xl p-4">
                   <div className="text-[10px] font-black uppercase tracking-widest text-muted dark:text-muted">
                     Issues
                   </div>
-                  <div className="text-2xl font-black text-rose-500 dark:text-rose-400 mt-1">{issueCount}</div>
+                  <div className="text-2xl font-black text-rose-500 dark:text-rose-400 mt-1">
+                    {issueCount}
+                  </div>
                 </div>
                 <div
                   className={`rounded-2xl p-4 border ${
@@ -756,7 +819,9 @@ export default function BomCheckPage() {
                   </div>
                   <div
                     className={`flex items-center gap-2 text-2xl font-black mt-1 ${
-                      goStatus() === "go" ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"
+                      goStatus() === "go"
+                        ? "text-emerald-600 dark:text-emerald-400"
+                        : "text-rose-600 dark:text-rose-400"
                     }`}
                   >
                     {goStatus() === "go" ? <CheckCircle2 size={20} /> : <XCircle size={20} />}
@@ -769,7 +834,9 @@ export default function BomCheckPage() {
               <div className="bg-white dark:bg-panel-2 border border-app-2 dark:border-app rounded-2xl overflow-hidden">
                 <div className="px-5 py-3 border-b border-app-2 dark:border-app flex items-center gap-2">
                   <Layers size={15} className="text-muted dark:text-muted" />
-                  <h2 className="text-sm font-black text-app dark:text-white tracking-tight">Line details</h2>
+                  <h2 className="text-sm font-black text-app dark:text-white tracking-tight">
+                    Line details
+                  </h2>
                 </div>
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
@@ -786,11 +853,16 @@ export default function BomCheckPage() {
                     <tbody>
                       {lines.map((l) => {
                         const meta = STATUS_META[l.status];
-                        const sups = l.product ? (suppliers.get(l.product.id) || []) : [];
+                        const sups = l.product ? suppliers.get(l.product.id) || [] : [];
                         return (
-                          <tr key={l.key} className="border-t border-app-2 dark:border-app-2 hover:bg-slate-50 dark:hover:bg-app/40">
+                          <tr
+                            key={l.key}
+                            className="border-t border-app-2 dark:border-app-2 hover:bg-slate-50 dark:hover:bg-app/40"
+                          >
                             <td className="px-4 py-3 align-top">
-                              <div className="text-app dark:text-white font-semibold">{l.rawName}</div>
+                              <div className="text-app dark:text-white font-semibold">
+                                {l.rawName}
+                              </div>
                               {sups.length > 0 && (
                                 <div className="text-[10px] text-muted dark:text-muted-2 mt-1">
                                   Suppliers: {sups.map((s) => s.name).join(", ")}
@@ -801,7 +873,9 @@ export default function BomCheckPage() {
                               {l.product ? (
                                 <div>
                                   <div className="text-app dark:text-app-2">{l.product.name}</div>
-                                  <div className="text-[10px] text-muted dark:text-muted-2">id {l.product.id}</div>
+                                  <div className="text-[10px] text-muted dark:text-muted-2">
+                                    id {l.product.id}
+                                  </div>
                                   {l.alternates.length > 0 && (
                                     <div className="mt-2 border-t border-app-2 dark:border-app-2 pt-1.5">
                                       <div className="text-[10px] font-bold uppercase tracking-wide text-muted dark:text-muted">
@@ -815,7 +889,10 @@ export default function BomCheckPage() {
                                           >
                                             <span className="text-muted-2 dark:text-app-2">
                                               {alt.product.name}
-                                              <span className="text-muted dark:text-muted"> #{alt.product.id}</span>
+                                              <span className="text-muted dark:text-muted">
+                                                {" "}
+                                                #{alt.product.id}
+                                              </span>
                                             </span>
                                             <span
                                               className={`font-bold whitespace-nowrap ${
@@ -836,13 +913,17 @@ export default function BomCheckPage() {
                                 <span className="text-[11px] text-muted dark:text-muted-2">—</span>
                               )}
                             </td>
-                            <td className="px-4 py-3 text-center text-app dark:text-white font-semibold">{l.qty}</td>
+                            <td className="px-4 py-3 text-center text-app dark:text-white font-semibold">
+                              {l.qty}
+                            </td>
                             <td className="px-4 py-3 text-center font-black text-app dark:text-app-2">
                               {l.available}
                             </td>
                             <td className="px-4 py-3 text-center">
                               {l.available < l.qty ? (
-                                <span className="text-rose-600 dark:text-rose-400 font-black">-{l.deficit}</span>
+                                <span className="text-rose-600 dark:text-rose-400 font-black">
+                                  -{l.deficit}
+                                </span>
                               ) : (
                                 <span className="text-muted dark:text-muted-2">0</span>
                               )}
@@ -880,7 +961,8 @@ export default function BomCheckPage() {
                   >
                     <ShoppingCart size={16} />
                     Create PO for {poDraftLines.length} missing item
-                    {poDraftLines.length !== 1 ? "s" : ""} ({poDraftLines.reduce((s, l) => s + Math.max(1, l.deficit), 0)} pcs)
+                    {poDraftLines.length !== 1 ? "s" : ""} (
+                    {poDraftLines.reduce((s, l) => s + Math.max(1, l.deficit), 0)} pcs)
                   </button>
                   <p className="mt-2 text-[11px] text-muted dark:text-muted-2 text-center">
                     PO create modal me items ready milenge — supplier chun kar save karein.
@@ -895,7 +977,9 @@ export default function BomCheckPage() {
                   <div>
                     <div className="flex items-center gap-2 mb-3">
                       <Sparkles size={16} className="text-cyan-500 dark:text-cyan-400" />
-                      <h2 className="text-sm font-black text-app dark:text-white tracking-tight">AI Analysis</h2>
+                      <h2 className="text-sm font-black text-app dark:text-white tracking-tight">
+                        AI Analysis
+                      </h2>
                     </div>
                     <div className="whitespace-pre-wrap text-sm text-app dark:text-app-2 leading-relaxed">
                       {analysis}
@@ -907,14 +991,23 @@ export default function BomCheckPage() {
                     disabled={analyzing || !hasIssues}
                     className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-panel-2 dark:bg-app border border-app-2 dark:border-app text-cyan-700 dark:text-cyan-300 hover:border-cyan-500/40 hover:text-app dark:hover:text-white text-sm font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {analyzing ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
-                    {analyzing ? "Analyzing..." : hasIssues ? "Check with AI" : "Sab stock available hai"}
+                    {analyzing ? (
+                      <Loader2 size={16} className="animate-spin" />
+                    ) : (
+                      <Sparkles size={16} />
+                    )}
+                    {analyzing
+                      ? "Analyzing..."
+                      : hasIssues
+                        ? "Check with AI"
+                        : "Sab stock available hai"}
                   </button>
                 )}
 
                 {!analysis && !hasIssues && lines.length > 0 && (
                   <p className="mt-2 text-[11px] text-muted dark:text-muted-2 text-center">
-                    AI summary enabled sirf issues hone pe (kuch kharida/nahi mila) — sab theek ho to zaroorat nahi.
+                    AI summary enabled sirf issues hone pe (kuch kharida/nahi mila) — sab theek ho
+                    to zaroorat nahi.
                   </p>
                 )}
               </div>

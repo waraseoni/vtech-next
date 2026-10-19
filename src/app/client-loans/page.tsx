@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import AdminPage from "@/app/components/AdminPage";
 import { supabase, getCachedUser } from "@/lib/supabase";
 import { pageAll } from "@/lib/fetch-all";
@@ -50,16 +51,12 @@ function todayIST() {
 }
 
 export default function ClientLoansPage() {
-  const [loading, setLoading] = useState(true);
-  const [rows, setRows] = useState<Loan[]>([]);
-  const [clients, setClients] = useState<Client[]>([]);
   const [search, setSearch] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
   const [editing, setEditing] = useState<Loan | null>(null);
   const [viewing, setViewing] = useState<Loan | null>(null);
   const [saving, setSaving] = useState(false);
-  const [err, setErr] = useState("");
   const [userRole, setUserRole] = useState("staff");
 
   const [form, setForm] = useState({
@@ -86,51 +83,53 @@ export default function ClientLoansPage() {
   }, []);
 
   const fetchData = useCallback(async () => {
-    setLoading(true);
-    try {
-      const [loanRes, clientRes, paymentsRes] = await Promise.all([
+    const [loanRes, clientRes, paymentsRes] = await Promise.all([
+      supabase.from("client_loans").select("*").order("loan_date", { ascending: false }).limit(500),
+      supabase
+        .from("client_list")
+        .select("id, firstname, middlename, lastname, contact")
+        .eq("delete_flag", 0)
+        .order("firstname"),
+      pageAll(
         supabase
-          .from("client_loans")
-          .select("*")
-          .order("loan_date", { ascending: false })
-          .limit(500),
-        supabase
-          .from("client_list")
-          .select("id, firstname, middlename, lastname, contact")
-          .eq("delete_flag", 0)
-          .order("firstname"),
-        pageAll(
-          supabase
-            .from("client_payments")
-            .select("id, loan_id, amount, discount")
-            .not("loan_id", "is", null)
-        ),
-      ]);
-      if (loanRes.error) throw loanRes.error;
-      if (clientRes.error) throw clientRes.error;
-      const payments = paymentsRes.data || [];
-      const paymentByLoan = new Map<number, number>();
-      payments.forEach((p) => {
-        const current = paymentByLoan.get(p.loan_id) || 0;
-        paymentByLoan.set(p.loan_id, current + p.amount + p.discount);
-      });
-      const loans = (loanRes.data || []).map((loan) => ({
-        ...loan,
-        principal: loan.principal_amount,
-        paid: paymentByLoan.get(loan.id) || 0,
-        balance: (loan.total_payable || 0) - (paymentByLoan.get(loan.id) || 0),
-      }));
-      setRows(loans as Loan[]);
-      setClients((clientRes.data || []) as Client[]);
-    } catch (e) {
-      setErr(e instanceof Error ? e.message : String(e));
-    }
-    setLoading(false);
+          .from("client_payments")
+          .select("id, loan_id, amount, discount")
+          .not("loan_id", "is", null)
+      ),
+    ]);
+    if (loanRes.error) throw loanRes.error;
+    if (clientRes.error) throw clientRes.error;
+    const payments = paymentsRes.data || [];
+    const paymentByLoan = new Map<number, number>();
+    payments.forEach((p) => {
+      const current = paymentByLoan.get(p.loan_id) || 0;
+      paymentByLoan.set(p.loan_id, current + p.amount + p.discount);
+    });
+    const loans = (loanRes.data || []).map((loan) => ({
+      ...loan,
+      principal: loan.principal_amount,
+      paid: paymentByLoan.get(loan.id) || 0,
+      balance: (loan.total_payable || 0) - (paymentByLoan.get(loan.id) || 0),
+    }));
+    return {
+      loans: loans as Loan[],
+      clients: (clientRes.data || []) as Client[],
+    };
   }, []);
 
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+  const {
+    data,
+    error: queryErr,
+    isPending: loading,
+    refetch,
+  } = useQuery({
+    queryKey: ["client-loans"],
+    queryFn: fetchData,
+    staleTime: 30_000,
+  });
+  const rows = data?.loans ?? [];
+  const err = queryErr instanceof Error ? queryErr.message : queryErr ? "Data load failed" : "";
+  const clients = useMemo(() => data?.clients ?? [], [data]);
 
   const clientById = useMemo(() => {
     const m = new Map<number, Client>();
@@ -247,7 +246,7 @@ export default function ClientLoansPage() {
         if (error) throw error;
       }
       setShowModal(false);
-      fetchData();
+      refetch();
     } catch (err) {
       setFormErr((err instanceof Error ? err.message : String(err)) || "Save mein galti!");
     } finally {
@@ -259,7 +258,7 @@ export default function ClientLoansPage() {
     if (!requireAdmin(userRole, "delete")) return;
     if (!confirm("Kya aap is loan ko delete karna chahte hain?")) return;
     await supabase.from("client_loans").delete().eq("id", id);
-    fetchData();
+    refetch();
   };
 
   const toggleStatus = async (loan: Loan) => {
@@ -268,7 +267,7 @@ export default function ClientLoansPage() {
       .from("client_loans")
       .update({ status: loan.status === 1 ? 0 : 1 })
       .eq("id", loan.id);
-    fetchData();
+    refetch();
   };
 
   const totals = useMemo(
@@ -287,10 +286,7 @@ export default function ClientLoansPage() {
         <div className="px-5 py-3.5 border-b border-app flex items-center justify-between flex-wrap gap-3">
           <div className="flex items-center gap-3">
             <div className="relative">
-              <Search
-                size={14}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-2"
-              />
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-2" />
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
@@ -318,8 +314,7 @@ export default function ClientLoansPage() {
 
         <div className="px-5 py-2 border-b border-app-2 bg-app/50 grid grid-cols-4 gap-4 text-[10px] font-black uppercase tracking-widest text-muted-2">
           <div>
-            Total Principal:{" "}
-            <span className="text-app-2 font-bold">{inr(totals.principal)}</span>
+            Total Principal: <span className="text-app-2 font-bold">{inr(totals.principal)}</span>
           </div>
           <div>
             Total Paid: <span className="text-amber-400 font-bold">{inr(totals.paid)}</span>
@@ -377,9 +372,7 @@ export default function ClientLoansPage() {
                       <td className="px-4 py-3.5 text-right text-blue-400">
                         {Number(loan.interest_rate || 0).toFixed(1)}%
                       </td>
-                      <td className="px-4 py-3.5 text-right text-muted">
-                        {loan.loan_period} mo
-                      </td>
+                      <td className="px-4 py-3.5 text-right text-muted">{loan.loan_period} mo</td>
                       <td className="px-4 py-3.5 text-right font-black text-emerald-400">
                         {inr(loan.total_payable)}
                       </td>
@@ -480,9 +473,7 @@ export default function ClientLoansPage() {
                   renderSelected={(opt) => (
                     <div className="min-w-0">
                       <div className="font-bold text-white text-sm truncate">{opt.label}</div>
-                      {opt.sub && (
-                        <div className="text-[10px] text-muted truncate">{opt.sub}</div>
-                      )}
+                      {opt.sub && <div className="text-[10px] text-muted truncate">{opt.sub}</div>}
                     </div>
                   )}
                 />

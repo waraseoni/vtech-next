@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import AdminPage from "@/app/components/AdminPage";
 import { supabase, getCachedUser } from "@/lib/supabase";
 import { formatIST, toISTDatePart } from "@/lib/dateUtils";
@@ -49,9 +50,6 @@ function todayIST() {
 }
 
 export default function LendersPage() {
-  const [loading, setLoading] = useState(true);
-  const [rows, setRows] = useState<Lender[]>([]);
-  const [payments, setPayments] = useState<LoanPayment[]>([]);
   const [search, setSearch] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [showPayModal, setShowPayModal] = useState(false);
@@ -60,7 +58,6 @@ export default function LendersPage() {
   const [viewing, setViewing] = useState<Lender | null>(null);
   const [payingLender, setPayingLender] = useState<Lender | null>(null);
   const [saving, setSaving] = useState(false);
-  const [err, setErr] = useState("");
   const [userRole, setUserRole] = useState("staff");
 
   const [form, setForm] = useState({
@@ -96,30 +93,35 @@ export default function LendersPage() {
   }, []);
 
   const fetchData = useCallback(async () => {
-    setLoading(true);
-    try {
-      const [lenderRes, paymentRes] = await Promise.all([
-        supabase.from("lender_list").select("*").order("fullname").limit(500),
-        supabase
-          .from("loan_payments")
-          .select("*")
-          .order("payment_date", { ascending: false })
-          .limit(1000),
-      ]);
-      if (lenderRes.error) throw lenderRes.error;
-      if (paymentRes.error) throw paymentRes.error;
-      setRows((lenderRes.data || []) as Lender[]);
-      setPayments((paymentRes.data || []) as LoanPayment[]);
-    } catch (e) {
-      setErr(e instanceof Error ? e.message : String(e));
-    }
-    setLoading(false);
+    const [lenderRes, paymentRes] = await Promise.all([
+      supabase.from("lender_list").select("*").order("fullname").limit(500),
+      supabase
+        .from("loan_payments")
+        .select("*")
+        .order("payment_date", { ascending: false })
+        .limit(1000),
+    ]);
+    if (lenderRes.error) throw lenderRes.error;
+    if (paymentRes.error) throw paymentRes.error;
+    return {
+      loans: (lenderRes.data || []) as Lender[],
+      payments: (paymentRes.data || []) as LoanPayment[],
+    };
   }, []);
 
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
-
+  const {
+    data,
+    error: queryErr,
+    isPending: loading,
+    refetch,
+  } = useQuery({
+    queryKey: ["lenders"],
+    queryFn: fetchData,
+    staleTime: 30_000,
+  });
+  const rows = useMemo(() => data?.loans ?? [], [data]);
+  const err = queryErr instanceof Error ? queryErr.message : queryErr ? "Data load failed" : "";
+  const payments = useMemo(() => data?.payments ?? [], [data]);
   const paymentsByLender = useMemo(() => {
     const m = new Map<number, LoanPayment[]>();
     payments.forEach((p) => {
@@ -257,7 +259,7 @@ export default function LendersPage() {
         if (error) throw error;
       }
       setShowModal(false);
-      fetchData();
+      refetch();
     } catch (err) {
       setFormErr((err instanceof Error ? err.message : String(err)) || "Save mein galti!");
     } finally {
@@ -284,7 +286,7 @@ export default function LendersPage() {
       });
       if (error) throw error;
       setShowPayModal(false);
-      fetchData();
+      refetch();
     } catch (err) {
       setPayErr((err instanceof Error ? err.message : String(err)) || "EMI payment save nahi hui!");
     } finally {
@@ -296,14 +298,14 @@ export default function LendersPage() {
     if (!requireAdmin(userRole, "delete")) return;
     if (!confirm("Kya aap is payment ko delete karna chahte hain?")) return;
     await supabase.from("loan_payments").delete().eq("id", id);
-    fetchData();
+    refetch();
   };
 
   const handleDelete = async (id: number, name: string) => {
     if (!requireAdmin(userRole, "delete")) return;
     if (!confirm(`"${name}" ko delete karna hai?`)) return;
     await supabase.from("lender_list").delete().eq("id", id);
-    fetchData();
+    refetch();
   };
 
   const toggleStatus = async (l: Lender) => {
@@ -312,7 +314,7 @@ export default function LendersPage() {
       .from("lender_list")
       .update({ status: l.status === 1 ? 2 : 1 })
       .eq("id", l.id);
-    fetchData();
+    refetch();
   };
 
   const totals = useMemo(() => {
@@ -334,10 +336,7 @@ export default function LendersPage() {
         <div className="px-5 py-3.5 border-b border-app flex items-center justify-between flex-wrap gap-3">
           <div className="flex items-center gap-3">
             <div className="relative">
-              <Search
-                size={14}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-2"
-              />
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-2" />
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
@@ -410,9 +409,7 @@ export default function LendersPage() {
                       <td className="px-4 py-3.5">
                         <div className="text-xs">
                           <span className="text-muted">P: </span>
-                          <span className="font-bold text-app-2">
-                            {inr(lender.loan_amount)}
-                          </span>
+                          <span className="font-bold text-app-2">{inr(lender.loan_amount)}</span>
                           <span className="text-muted-2 ml-2">R: </span>
                           <span className="text-blue-400">
                             {Number(lender.interest_rate || 0).toFixed(1)}%

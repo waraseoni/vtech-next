@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect, useCallback, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import ZoomableImage from "@/components/ZoomableImage";
@@ -34,7 +35,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import StockModal from "./components/StockModal";
-import LocationPicker from "@/components/LocationPicker";
+import LocationPicker, { type Hierarchy } from "@/components/LocationPicker";
 import { logActivity } from "@/lib/activity";
 import { printBarcodeLabels, safeBarcode } from "@/lib/barcodePrint";
 import { locPath, EMPTY_LOCATION, type LocationParts } from "@/lib/locations";
@@ -126,35 +127,14 @@ export default function ProductDetailPage() {
   const params = useParams();
   const productId = Number(params.id);
 
-  const [product, setProduct] = useState<Product | null>(null);
-  const [stockIn, setStockIn] = useState<StockIn[]>([]);
-  const [stockOut, setStockOut] = useState<StockOut[]>([]);
-  const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [userRole, setUserRole] = useState<string>("staff");
   const [roleChecked, setRoleChecked] = useState(false);
   const [editingStock, setEditingStock] = useState<StockIn | null>(null);
-  const [stats, setStats] = useState({
-    totalIn: 0,
-    totalSold: 0,
-    available: 0,
-    revenue: 0,
-    stockValue: 0,
-  });
   const [activeTab, setActiveTab] = useState<"in" | "out" | "ledger">("in");
-  const [poCodes, setPoCodes] = useState<Map<number, string>>(new Map());
   const [locEditing, setLocEditing] = useState(false);
   const [editLoc, setEditLoc] = useState<LocationParts>({ ...EMPTY_LOCATION });
   const [locSaving, setLocSaving] = useState(false);
-  const [productLocations, setProductLocations] = useState<
-    { id: number; zone: string; rack: string; bin: string; box: string }[]
-  >([]);
-  const [locHierarchy, setLocHierarchy] = useState<{
-    zones: { id: number; name: string }[];
-    racks: { id: number; name: string; zone_id: number }[];
-    bins: { id: number; name: string; rack_id: number }[];
-    boxes: { id: number; name: string; bin_id: number }[];
-  }>({ zones: [], racks: [], bins: [], boxes: [] });
 
   useEffect(() => {
     getCachedUser().then(({ data: { user } }) => {
@@ -176,7 +156,6 @@ export default function ProductDetailPage() {
 
   // ── Fetch ──────────────────────────────────────────────────────────────────
   const fetchData = useCallback(async () => {
-    setLoading(true);
     try {
       // Phase 1 — independent lookups in parallel
       const [prodRes, stockRes, jobRes, saleRes] = await Promise.all([
@@ -199,7 +178,6 @@ export default function ProductDetailPage() {
       const { error: prodErr } = prodRes;
       if (prodErr) throw prodErr;
       const prod = prodRes.data as Product | null;
-      setProduct(prod);
 
       // `product_locations`/`locations` RLS-gated hain → anon-client khali []
       // deta hai. Isliye service-role server route se read hota hai.
@@ -228,10 +206,8 @@ export default function ProductDetailPage() {
       } catch {
         mappedLocs = [];
       }
-      setProductLocations(mappedLocs);
 
       const stockInData = stockRes.data || [];
-      setStockIn(stockInData);
       const totalIn = stockInData.reduce((s, r) => s + r.quantity, 0);
 
       // Fetch PO codes for stock-in rows received from purchase orders
@@ -252,7 +228,6 @@ export default function ProductDetailPage() {
           poCodes.set(r.id, r.po_code)
         );
       }
-      setPoCodes(poCodes);
 
       const jobItems = jobRes.data || [];
       const saleItems = saleRes.data || [];
@@ -345,47 +320,79 @@ export default function ProductDetailPage() {
       const allOut = [...jobOut, ...saleOut].sort(
         (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
       );
-      setStockOut(allOut);
 
       const totalSold = allOut.reduce((s, o) => s + o.qty, 0);
       const revenue = allOut.reduce((s, o) => s + o.total, 0);
       const available = totalIn - totalSold;
       const stockVal = stockValue(available, prod?.price);
-      setStats({ totalIn, totalSold, available, revenue, stockValue: stockVal });
+      return {
+        product: prod,
+        productLocations: mappedLocs,
+        stockIn: stockInData,
+        poCodes,
+        stockOut: allOut,
+        stats: { totalIn, totalSold, available, revenue, stockValue: stockVal },
+      };
     } catch (err) {
       console.error(err);
-    } finally {
-      setLoading(false);
+      throw err;
     }
   }, [productId]);
 
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+  const {
+    data,
+    isPending: loading,
+    refetch: refetchData,
+  } = useQuery({
+    queryKey: ["inventory-detail", productId],
+    queryFn: fetchData,
+    staleTime: 30_000,
+  });
+
+  const product = data?.product ?? null;
+  const stockIn = useMemo(() => data?.stockIn ?? [], [data]);
+  const stockOut = useMemo(() => data?.stockOut ?? [], [data]);
+  const poCodes = useMemo(() => data?.poCodes ?? new Map<number, string>(), [data]);
+  const productLocations = useMemo(() => data?.productLocations ?? [], [data]);
+  const stats = data?.stats ?? {
+    totalIn: 0,
+    totalSold: 0,
+    available: 0,
+    revenue: 0,
+    stockValue: 0,
+  };
 
   // Load hierarchy (zone→rack→bin→box) for the location picker dropdowns.
   // Server route (service-role, RLS-bypass) se — anon-client ab location tables
   // directly nahi padh sakta (RLS lockdown).
-  useEffect(() => {
-    (async () => {
+  const { data: locHierarchyData } = useQuery({
+    queryKey: ["location-options"],
+    queryFn: async () => {
       try {
         const res = await fetch("/api/locations/options");
         if (res.ok) {
           const json = await res.json();
           if (json && !json.error && json.hierarchy) {
-            setLocHierarchy({
+            return {
               zones: Array.isArray(json.hierarchy.zones) ? json.hierarchy.zones : [],
               racks: Array.isArray(json.hierarchy.racks) ? json.hierarchy.racks : [],
               bins: Array.isArray(json.hierarchy.bins) ? json.hierarchy.bins : [],
               boxes: Array.isArray(json.hierarchy.boxes) ? json.hierarchy.boxes : [],
-            });
+            };
           }
         }
+        return null;
       } catch (e) {
         console.error("Failed to load location hierarchy", e);
+        return null;
       }
-    })();
-  }, []);
+    },
+    staleTime: 30_000,
+  });
+  const locHierarchy = useMemo<Hierarchy>(
+    () => locHierarchyData ?? { zones: [], racks: [], bins: [], boxes: [] },
+    [locHierarchyData]
+  );
 
   const handleDeleteStock = async (id: number) => {
     if (!confirm("Delete this stock entry?")) return;
@@ -398,7 +405,7 @@ export default function ProductDetailPage() {
         productId,
         `Product: ${product?.name || "Unknown"} | Removed ${entry?.quantity} units | Stock ID: ${id}`
       );
-      fetchData();
+      refetchData();
     } else toast.error("Failed to delete: " + error.message);
   };
 
@@ -812,7 +819,7 @@ export default function ProductDetailPage() {
                           `Product: ${product.name} | Location: ${locPath(editLoc) || "cleared"}`
                         );
                         setLocEditing(false);
-                        fetchData();
+                        refetchData();
                       } catch (err) {
                         toast.error("Failed: " + (err as Error).message);
                       }
@@ -1368,7 +1375,7 @@ export default function ProductDetailPage() {
           onClose={() => setModalOpen(false)}
           onSaved={() => {
             setModalOpen(false);
-            fetchData();
+            refetchData();
           }}
         />
       )}

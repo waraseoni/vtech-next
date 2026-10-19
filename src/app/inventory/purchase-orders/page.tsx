@@ -1,5 +1,6 @@
 "use client";
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { todayIST } from "@/lib/dateUtils";
@@ -105,9 +106,6 @@ const fmtDate = (d: string | null) =>
     : "—";
 
 export default function PurchaseOrdersPage() {
-  const [pos, setPos] = useState<PO[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
   const [search, setSearch] = useState("");
   const [statusF, setStatusF] = useState<"all" | POStatus>("all");
   const [modalOpen, setModalOpen] = useState(false);
@@ -116,18 +114,12 @@ export default function PurchaseOrdersPage() {
   const [editTarget, setEditTarget] = useState<PO | null>(null);
   const [initialDraft, setInitialDraft] = useState<DraftItem[] | null>(null);
   const [initialSupplierId, setInitialSupplierId] = useState("");
-  const [firmName, setFirmName] = useState("");
-  const [firmMobile, setFirmMobile] = useState("");
-  const [firmAddress, setFirmAddress] = useState("");
-  const [ownerName, setOwnerName] = useState("");
   // WhatsApp modal state
   const [waModalOpen, setWaModalOpen] = useState(false);
   const [waMessage, setWaMessage] = useState("");
   const [waPhone, setWaPhone] = useState("");
 
-  const fetchPos = async (silent = false) => {
-    if (!silent) setLoading(true);
-    else setRefreshing(true);
+  const fetchPos = useCallback(async () => {
     try {
       const [poRes, supRes, personRes, sysRes] = await Promise.all([
         supabase
@@ -143,7 +135,12 @@ export default function PurchaseOrdersPage() {
           .order("is_primary", { ascending: false }),
         supabase.from("system_info").select("meta_field, meta_value"),
       ]);
-      const supplierMap = new Map((supRes.data || []).map((s: { id: number; name: string; contact: string | null }) => [s.id, { name: s.name, phone: s.contact || "" }]));
+      const supplierMap = new Map(
+        (supRes.data || []).map((s: { id: number; name: string; contact: string | null }) => [
+          s.id,
+          { name: s.name, phone: s.contact || "" },
+        ])
+      );
       const personById = new Map(
         (personRes.data || []).map((p) => [p.id, { supplier_id: p.supplier_id, name: p.name }])
       );
@@ -194,47 +191,66 @@ export default function PurchaseOrdersPage() {
       (sysRes.data || []).forEach((r: { meta_field: string; meta_value: string }) => {
         sysInfo[r.meta_field] = r.meta_value;
       });
-      setFirmName(sysInfo.name || "V-Technologies");
-      setFirmMobile(sysInfo.contact || "");
-      setFirmAddress(sysInfo.address || "");
+      const firmName = sysInfo.name || "V-Technologies";
+      const firmMobile = sysInfo.contact || "";
+      const firmAddress = sysInfo.address || "";
 
       // Owner name (logged-in user)
+      let ownerName = "";
       try {
-        const { data: { user } } = await supabase.auth.getUser();
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
         if (user) {
           const { data: prof } = await supabase
             .from("profiles")
             .select("full_name")
             .eq("id", user.id)
             .maybeSingle();
-          setOwnerName(prof?.full_name || user.user_metadata?.full_name || "");
+          ownerName = prof?.full_name || user.user_metadata?.full_name || "";
         }
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
 
-      setPos(
-        poRows.map((p) => ({
+      return {
+        pos: poRows.map((p) => ({
           ...p,
-          supplier_name: p.supplier_id ? (supplierMap.get(p.supplier_id)?.name || "Unknown") : "—",
-          supplier_phone: p.supplier_id ? (supplierMap.get(p.supplier_id)?.phone || "") : "",
+          supplier_name: p.supplier_id ? supplierMap.get(p.supplier_id)?.name || "Unknown" : "—",
+          supplier_phone: p.supplier_id ? supplierMap.get(p.supplier_id)?.phone || "" : "",
           person_name:
             p.contact_person_id && personById.get(p.contact_person_id)
               ? personById.get(p.contact_person_id)!.name
               : undefined,
           status: p.status as POStatus,
           items: itemMap.get(p.id) || [],
-        }))
-      );
+        })),
+        firmName,
+        firmMobile,
+        firmAddress,
+        ownerName,
+      };
     } catch (err) {
       console.error(err);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
+      throw err;
     }
-  };
-
-  useEffect(() => {
-    fetchPos();
   }, []);
+
+  const {
+    data,
+    isPending: loading,
+    isFetching: refreshing,
+    refetch: refetchPos,
+  } = useQuery({
+    queryKey: ["purchase-orders"],
+    queryFn: fetchPos,
+    staleTime: 30_000,
+  });
+  const pos = useMemo(() => data?.pos ?? [], [data]);
+  const firmName = data?.firmName ?? "V-Technologies";
+  const firmMobile = data?.firmMobile ?? "";
+  const firmAddress = data?.firmAddress ?? "";
+  const ownerName = data?.ownerName ?? "";
 
   useEffect(() => {
     try {
@@ -253,7 +269,9 @@ export default function PurchaseOrdersPage() {
         if (supplierRaw) {
           try {
             setInitialSupplierId(JSON.parse(supplierRaw));
-          } catch { /* ignore */ }
+          } catch {
+            /* ignore */
+          }
           window.sessionStorage.removeItem("po_draft_supplier");
         }
         const sp = new URLSearchParams(qs);
@@ -294,7 +312,7 @@ export default function PurchaseOrdersPage() {
         po.id,
         `PO: ${po.po_code} | Status → ${status}`
       );
-      fetchPos();
+      refetchPos();
     } catch (err) {
       toast.error("Failed: " + (err instanceof Error ? err.message : String(err)));
     } finally {
@@ -304,7 +322,11 @@ export default function PurchaseOrdersPage() {
 
   const submitReceive = async (
     target: PO,
-    payload: { lineQtys: Record<number, number>; lineCosts: Record<number, { unit_cost: number; sell_price: number }>; expenses: number }
+    payload: {
+      lineQtys: Record<number, number>;
+      lineCosts: Record<number, { unit_cost: number; sell_price: number }>;
+      expenses: number;
+    }
   ) => {
     setActing(target.id);
     try {
@@ -340,7 +362,7 @@ export default function PurchaseOrdersPage() {
         `PO: ${target.po_code} | ${lines.length} line(s) received (${totalReceived} units in)`
       );
       setReceiveTarget(null);
-      fetchPos();
+      refetchPos();
     } catch (err) {
       toast.error("Failed: " + (err instanceof Error ? err.message : String(err)));
     } finally {
@@ -357,7 +379,7 @@ export default function PurchaseOrdersPage() {
     const { error } = await supabase.from("purchase_orders").delete().eq("id", po.id);
     if (!error) {
       await logActivity("PO Deleted", "Inventory", po.id, `PO: ${po.po_code} deleted`);
-      fetchPos();
+      refetchPos();
     } else toast.error("Failed: " + error.message);
   };
 
@@ -368,7 +390,13 @@ export default function PurchaseOrdersPage() {
     // Strip owner/firm name from address start to avoid repetition
     const esc = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     const cleanAddress = firmAddress
-      .replace(new RegExp(`^\\s*(?:${[ownerName, firmName].filter(Boolean).map(esc).join("|")})\\s*[,\-–.]?\\s*`, "i"), "")
+      .replace(
+        new RegExp(
+          `^\\s*(?:${[ownerName, firmName].filter(Boolean).map(esc).join("|")})\\s*[,\-–.]?\\s*`,
+          "i"
+        ),
+        ""
+      )
       .trim();
     return [
       `Namaste ${po.supplier_name},`,
@@ -476,7 +504,7 @@ export default function PurchaseOrdersPage() {
                 <Truck size={13} /> Suppliers
               </Link>
               <button
-                onClick={() => fetchPos(true)}
+                onClick={() => refetchPos()}
                 disabled={refreshing}
                 className="flex items-center gap-1.5 px-3 py-2 bg-panel hover:bg-panel-2 border border-app text-muted hover:text-white rounded-xl text-xs font-bold transition-all"
               >
@@ -551,10 +579,7 @@ export default function PurchaseOrdersPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
         <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
           <div className="relative flex-1">
-            <Search
-              className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-2"
-              size={15}
-            />
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-2" size={15} />
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -637,7 +662,12 @@ export default function PurchaseOrdersPage() {
                             po.supplier_name
                           )}{" "}
                           · {fmtDate(po.date_created)}
-                          {po.person_name && <> · <b className="text-muted font-bold">{po.person_name}</b></>}
+                          {po.person_name && (
+                            <>
+                              {" "}
+                              · <b className="text-muted font-bold">{po.person_name}</b>
+                            </>
+                          )}
                         </div>
                         {po.transaction_id != null && (
                           <Link
@@ -659,7 +689,9 @@ export default function PurchaseOrdersPage() {
                       </Link>
                       <button
                         title="Print / Download PDF"
-                        onClick={() => window.open(`/api/print-purchase-order?po_id=${po.id}`, "_blank")}
+                        onClick={() =>
+                          window.open(`/api/print-purchase-order?po_id=${po.id}`, "_blank")
+                        }
                         className="p-2 bg-panel-2 hover:bg-emerald-600/30 border border-app hover:border-emerald-500/40 rounded-lg text-muted hover:text-emerald-400 transition-all"
                       >
                         <Printer size={13} />
@@ -802,7 +834,7 @@ export default function PurchaseOrdersPage() {
             setEditTarget(null);
             setInitialDraft(null);
             setInitialSupplierId("");
-            fetchPos();
+            refetchPos();
           }}
         />
       )}
@@ -825,10 +857,7 @@ export default function PurchaseOrdersPage() {
           message={waMessage}
           onMessageChange={(v) => setWaMessage(v)}
           onSend={(finalText) => {
-            window.open(
-              `https://wa.me/${waPhone}?text=${encodeURIComponent(finalText)}`,
-              "_blank"
-            );
+            window.open(`https://wa.me/${waPhone}?text=${encodeURIComponent(finalText)}`, "_blank");
             setWaModalOpen(false);
           }}
           onClose={() => setWaModalOpen(false)}
@@ -856,7 +885,6 @@ function CreatePOModal({
   const [supplierId, setSupplierId] = useState<string>(
     editing?.supplier_id ? String(editing.supplier_id) : initialSupplierId || ""
   );
-  const [products, setProducts] = useState<Array<{ id: number; name: string }>>([]);
   const [lines, setLines] = useState<DraftItem[]>(() =>
     editing && editing.items.length
       ? editing.items.map((l) => ({
@@ -876,9 +904,6 @@ function CreatePOModal({
   const [notes, setNotes] = useState(editing?.notes || "");
   const [contactPerson, setContactPerson] = useState(
     editing?.contact_person_id != null ? String(editing.contact_person_id) : ""
-  );
-  const [persons, setPersons] = useState<Array<{ id: number; name: string; is_primary: boolean }>>(
-    []
   );
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -902,15 +927,20 @@ function CreatePOModal({
   const today = todayIST();
   const overlayRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    supabase
-      .from("product_list")
-      .select("id, name")
-      .eq("delete_flag", 0)
-      .eq("status", 1)
-      .order("name")
-      .then(({ data }) => setProducts((data || []).map((p) => ({ id: p.id, name: p.name }))));
-  }, []);
+  const { data: products = [] } = useQuery({
+    queryKey: ["po-products"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("product_list")
+        .select("id, name")
+        .eq("delete_flag", 0)
+        .eq("status", 1)
+        .order("name");
+      if (error) throw error;
+      return (data || []).map((p) => ({ id: p.id, name: p.name }));
+    },
+    staleTime: 30_000,
+  });
 
   // Supplier badalne par uske contact persons load karo.
   // Edit mode mein pehli baar (mount par) contactPerson prefill preserve karo.
@@ -918,26 +948,24 @@ function CreatePOModal({
   useEffect(() => {
     if (isFirstRun.current) isFirstRun.current = false;
     else setContactPerson("");
-
-    if (!supplierId) {
-      setPersons([]);
-      return;
-    }
-    supabase
-      .from("supplier_contact_persons")
-      .select("id, name, is_primary")
-      .eq("supplier_id", Number(supplierId))
-      .order("is_primary", { ascending: false })
-      .then(({ data }) =>
-        setPersons(
-          ((data || []) as Array<{ id: number; name: string; is_primary: boolean }>).map((p) => ({
-            id: p.id,
-            name: p.name,
-            is_primary: p.is_primary,
-          }))
-        )
-      );
   }, [supplierId]);
+
+  const { data: persons = [] } = useQuery({
+    queryKey: ["supplier-contact-persons", supplierId],
+    enabled: !!supplierId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("supplier_contact_persons")
+        .select("id, name, is_primary")
+        .eq("supplier_id", Number(supplierId))
+        .order("is_primary", { ascending: false });
+      if (error) throw error;
+      return ((data || []) as Array<{ id: number; name: string; is_primary: boolean }>).map(
+        (p) => ({ id: p.id, name: p.name, is_primary: p.is_primary })
+      );
+    },
+    staleTime: 30_000,
+  });
 
   const setLine = (idx: number, patch: Partial<DraftItem>) =>
     setLines((ls) => ls.map((l, i) => (i === idx ? { ...l, ...patch } : l)));
@@ -1045,8 +1073,7 @@ function CreatePOModal({
     }
   };
 
-  const addLine = () =>
-    setLines((ls) => [...ls, { product_id: 0, product_name: "", qty: 1 }]);
+  const addLine = () => setLines((ls) => [...ls, { product_id: 0, product_name: "", qty: 1 }]);
   const removeLine = (idx: number) =>
     setLines((ls) => (ls.length > 1 ? ls.filter((_, i) => i !== idx) : ls));
 
@@ -1240,9 +1267,7 @@ function CreatePOModal({
               <span className="text-[10px] text-app font-bold uppercase tracking-widest block">
                 Price
               </span>
-              <span className="text-sm font-bold text-muted">
-                As per supplier invoice
-              </span>
+              <span className="text-sm font-bold text-muted">As per supplier invoice</span>
             </div>
             <button
               type="button"
@@ -1290,7 +1315,11 @@ function ReceiveStockModal({
   target: PO;
   busy: boolean;
   onClose: () => void;
-  onSubmit: (payload: { lineQtys: Record<number, number>; lineCosts: Record<number, { unit_cost: number; sell_price: number }>; expenses: number }) => void;
+  onSubmit: (payload: {
+    lineQtys: Record<number, number>;
+    lineCosts: Record<number, { unit_cost: number; sell_price: number }>;
+    expenses: number;
+  }) => void;
 }) {
   const [qtys, setQtys] = useState<Record<number, number>>(() => {
     const init: Record<number, number> = {};
@@ -1345,7 +1374,9 @@ function ReceiveStockModal({
             <div className="flex items-center justify-between gap-3">
               <div>
                 <div className="text-xs font-bold text-app-2">Total PO Expenses</div>
-                <div className="text-[10px] text-muted-2">Freight, handling, packing etc. (distributed per unit)</div>
+                <div className="text-[10px] text-muted-2">
+                  Freight, handling, packing etc. (distributed per unit)
+                </div>
               </div>
               <div className="flex items-center gap-1">
                 <span className="text-muted text-sm font-bold">₹</span>
@@ -1378,9 +1409,7 @@ function ReceiveStockModal({
                 {/* Header row */}
                 <div className="flex items-center justify-between gap-2">
                   <div className="min-w-0">
-                    <div className="text-xs font-bold text-app-2 truncate">
-                      {item.product_name}
-                    </div>
+                    <div className="text-xs font-bold text-app-2 truncate">{item.product_name}</div>
                     <div className="text-[10px] text-muted-2 mt-0.5">
                       Ordered {item.qty_ordered} · Recv {item.qty_received} ·{" "}
                       <span className="text-emerald-400 font-bold">Open {outstanding}</span>
@@ -1453,7 +1482,13 @@ function ReceiveStockModal({
                       <div className="col-span-2 flex items-center gap-2 text-[10px] text-muted border-t border-app pt-2">
                         <span>Cost Price = ₹{uc.toFixed(2)}</span>
                         {getExpensePerUnit > 0 && (
-                          <> + ₹{getExpensePerUnit.toFixed(2)} expense = <span className="text-emerald-400 font-bold">₹{costWithExpense.toFixed(2)}</span></>
+                          <>
+                            {" "}
+                            + ₹{getExpensePerUnit.toFixed(2)} expense ={" "}
+                            <span className="text-emerald-400 font-bold">
+                              ₹{costWithExpense.toFixed(2)}
+                            </span>
+                          </>
                         )}
                         {sp > 0 && costWithExpense > 0 && (
                           <span className="ml-auto text-amber-400 font-bold">
@@ -1482,11 +1517,14 @@ function ReceiveStockModal({
             <span className="text-xl font-black text-emerald-400">{totalReceiving} units</span>
             {expenses > 0 && totalReceiving > 0 && (
               <span className="block text-[10px] text-muted-2 font-bold mt-0.5">
-                + ₹{expenses.toLocaleString("en-IN")} expenses (₹{getExpensePerUnit.toFixed(2)}/unit)
+                + ₹{expenses.toLocaleString("en-IN")} expenses (₹{getExpensePerUnit.toFixed(2)}
+                /unit)
               </span>
             )}
             <span className="block text-[10px] text-app font-bold mt-0.5">
-              {allFull && totalReceiving > 0 ? "Will mark PO as Received" : "PO stays Partially Received"}
+              {allFull && totalReceiving > 0
+                ? "Will mark PO as Received"
+                : "PO stays Partially Received"}
             </span>
           </div>
           <button
@@ -1499,9 +1537,7 @@ function ReceiveStockModal({
           <button
             type="button"
             disabled={busy || totalReceiving <= 0}
-            onClick={() =>
-              onSubmit({ lineQtys: qtys, lineCosts: costs, expenses })
-            }
+            onClick={() => onSubmit({ lineQtys: qtys, lineCosts: costs, expenses })}
             className="flex items-center gap-2 px-6 py-3 rounded-xl font-extrabold text-sm transition-all active:scale-[0.98] disabled:opacity-60 shadow-lg bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-500/20"
           >
             {busy ? <Loader2 size={16} className="animate-spin" /> : <ArrowRight size={16} />}

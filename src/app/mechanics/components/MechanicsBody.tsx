@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
 import ZoomableImage from "@/components/ZoomableImage";
@@ -84,14 +85,11 @@ export default function MechanicsBody({
   mechanics: Mechanic[];
   userRole: string;
 }) {
-  const [rows, setRows] = useState<Mechanic[]>(initialMechanics);
   const [userRole] = useState<string>(initialUserRole);
   const [search, setSearch] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState<Mechanic | null>(null);
   const [saving, setSaving] = useState(false);
-  const [err, setErr] = useState("");
-  const [refreshing, setRefreshing] = useState(false);
   // Duty time (staff_duty_schedule, P2) — form alag state hai taaki mechanic_list
   // payload me by mistake na chala jaye. RLS: sirf admin/developer likh sakta hai.
   const [dutyForm, setDutyForm] = useState<Duty>(DEFAULT_DUTY);
@@ -110,11 +108,9 @@ export default function MechanicsBody({
   });
   const [formErr, setFormErr] = useState("");
 
-  // Write ke baad list taba-dili se refresh (interactive mutation — initial
-  // SSR load server se aata hai, ye sirf add/edit/delete/toggle ke baad).
-  const refreshData = useCallback(async () => {
-    setRefreshing(true);
-    setErr("");
+  // Har mount par naya fetch nahi — 30s tak cache-hit; save/delete/toggle ke
+  // baad refetch().
+  const fetchData = useCallback(async () => {
     const { data, error } = await supabase
       .from("mechanic_list")
       .select(
@@ -122,10 +118,22 @@ export default function MechanicsBody({
       )
       .eq("delete_flag", 0)
       .order("firstname", { ascending: true });
-    if (error) setErr(error.message);
-    if (data) setRows((data as Mechanic[]) || []);
-    setRefreshing(false);
+    if (error) throw error;
+    return (data || []) as Mechanic[];
   }, []);
+
+  const {
+    data: rows = [],
+    error: queryErr,
+    isPending: refreshing,
+    refetch,
+  } = useQuery({
+    queryKey: ["mechanics"],
+    queryFn: fetchData,
+    staleTime: 30_000,
+    initialData: initialMechanics,
+  });
+  const err = queryErr instanceof Error ? queryErr.message : queryErr ? "Data load failed" : "";
 
   // Shop-level fallback duty (system_info biz_open/biz_close) — mount par ek baar.
   // Koi staff schedule row nahi ho to duty yahi hogi (biz open/close hours).
@@ -344,7 +352,7 @@ export default function MechanicsBody({
         }
       }
       setShowModal(false);
-      refreshData();
+      refetch();
     } catch (e) {
       setFormErr((e instanceof Error && e.message ? e.message : "") || "Save mein galti!");
     } finally {
@@ -358,7 +366,7 @@ export default function MechanicsBody({
     const { error } = await supabase.from("mechanic_list").update({ delete_flag: 1 }).eq("id", id);
     if (!error) {
       await logActivity("Deleted Staff Member", "Mechanics", id, `Staff: ${name}`);
-      refreshData();
+      refetch();
     }
   };
 
@@ -377,7 +385,7 @@ export default function MechanicsBody({
         m.id,
         `Staff: ${name} → ${newStatus === 1 ? "Active" : "Inactive"}`
       );
-      refreshData();
+      refetch();
     }
   };
 

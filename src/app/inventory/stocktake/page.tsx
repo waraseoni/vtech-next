@@ -1,5 +1,6 @@
 "use client";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
+import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { supabase, getCachedUser } from "@/lib/supabase";
 import { fetchStockByProducts, type StockRow } from "@/lib/inventoryStock";
@@ -38,12 +39,8 @@ export default function StocktakePage() {
   const [roleChecked, setRoleChecked] = useState(false);
 
   // product picker
-  const [products, setProducts] = useState<
-    { id: number; name: string; barcode: string | null; alert_quantity: number }[]
-  >([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [selId, setSelId] = useState<number | null>(null);
-  const [stockMap, setStockMap] = useState<Map<number, StockRow>>(new Map());
 
   // entry form
   const [countedQty, setCountedQty] = useState<string>("");
@@ -59,10 +56,6 @@ export default function StocktakePage() {
     availableBefore: number;
     countedQty: number;
   } | null>(null);
-
-  // recent history
-  const [recent, setRecent] = useState<RecentAdjustment[]>([]);
-  const [loadingRecent, setLoadingRecent] = useState(false);
 
   // ── Guard ─────────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -84,26 +77,39 @@ export default function StocktakePage() {
   }, []);
 
   // ── Load product list + current stock ─────────────────────────────────────
-  const loadProducts = async () => {
-    const { data: pl } = await supabase
+  const fetchProducts = useCallback(async () => {
+    const { data: pl, error } = await supabase
       .from("product_list")
       .select("id, name, barcode, alert_quantity")
       .eq("delete_flag", 0)
       .order("name");
+    if (error) throw error;
     const list = (pl || []).map((p) => ({
       id: p.id,
       name: p.name,
       barcode: p.barcode,
       alert_quantity: p.alert_quantity,
     }));
-    setProducts(list);
     const ids = list.map((p) => p.id);
+    let stock: Map<number, StockRow>;
     try {
-      setStockMap(await fetchStockByProducts(ids));
+      stock = await fetchStockByProducts(ids);
     } catch {
-      setStockMap(new Map());
+      stock = new Map();
     }
-  };
+    return { products: list, stockMap: stock };
+  }, []);
+
+  const { data: productData, refetch: refetchProducts } = useQuery({
+    queryKey: ["stocktake-products"],
+    queryFn: fetchProducts,
+    staleTime: 30_000,
+  });
+  const products = useMemo(() => productData?.products ?? [], [productData]);
+  const stockMap = useMemo(
+    () => productData?.stockMap ?? new Map<number, StockRow>(),
+    [productData]
+  );
 
   const filtered = useMemo(() => {
     const q = searchTerm.trim().toLowerCase();
@@ -133,13 +139,13 @@ export default function StocktakePage() {
   };
 
   // ── Recent adjustments ────────────────────────────────────────────────────
-  const loadRecent = async () => {
-    setLoadingRecent(true);
-    const { data: adj } = await supabase
+  const fetchRecent = useCallback(async (): Promise<RecentAdjustment[]> => {
+    const { data: adj, error } = await supabase
       .from("stock_adjustments")
       .select("id, product_id, delta, reason, remark, created_at")
       .order("created_at", { ascending: false })
       .limit(15);
+    if (error) throw error;
     const adjRows = adj || [];
     const prodIds = [...new Set(adjRows.map((a) => a.product_id))];
     const { data: counts } =
@@ -153,24 +159,26 @@ export default function StocktakePage() {
     (((counts as unknown) || []) as { product_id: number; counted_qty: number }[]).forEach((c) =>
       countByProd.set(c.product_id, c.counted_qty)
     );
-    setRecent(
-      adjRows.map((a) => ({
-        id: a.id as number,
-        product_id: a.product_id as number,
-        delta: a.delta as number,
-        reason: a.reason as string,
-        remark: (a.remark as string) ?? null,
-        created_at: a.created_at as string | null,
-        counted_qty: countByProd.get(a.product_id as number) ?? null,
-      }))
-    );
-    setLoadingRecent(false);
-  };
-
-  useEffect(() => {
-    loadProducts();
-    loadRecent();
+    return adjRows.map((a) => ({
+      id: a.id as number,
+      product_id: a.product_id as number,
+      delta: a.delta as number,
+      reason: a.reason as string,
+      remark: (a.remark as string) ?? null,
+      created_at: a.created_at as string | null,
+      counted_qty: countByProd.get(a.product_id as number) ?? null,
+    }));
   }, []);
+
+  const {
+    data: recent = [],
+    isPending: loadingRecent,
+    refetch: refetchRecent,
+  } = useQuery({
+    queryKey: ["stocktake-recent"],
+    queryFn: fetchRecent,
+    staleTime: 30_000,
+  });
 
   // ── Save stocktake ────────────────────────────────────────────────────────
   const handleSave = async () => {
@@ -210,8 +218,7 @@ export default function StocktakePage() {
       );
 
       // refresh derived stock + recent history
-      await loadProducts();
-      await loadRecent();
+      await Promise.all([refetchProducts(), refetchRecent()]);
       setCountedQty("");
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
@@ -242,7 +249,14 @@ export default function StocktakePage() {
     <div className="min-h-screen bg-white dark:bg-app font-sans pb-16">
       {/* ── HERO HEADER ── */}
       <div className="relative overflow-hidden bg-white dark:bg-app border-b border-app-2 dark:border-app">
-        <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: "linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)", backgroundSize: "40px 40px" }} />
+        <div
+          className="absolute inset-0 opacity-[0.03]"
+          style={{
+            backgroundImage:
+              "linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)",
+            backgroundSize: "40px 40px",
+          }}
+        />
         <div className="absolute -top-20 -left-20 w-72 h-72 bg-teal-600/10 rounded-full blur-3xl" />
         <div className="absolute -top-10 right-10 w-48 h-48 bg-emerald-600/8 rounded-full blur-2xl" />
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
@@ -255,7 +269,10 @@ export default function StocktakePage() {
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <Link href="/inventory" className="text-xs text-muted hover:text-app dark:hover:text-app-2 transition-colors">
+                  <Link
+                    href="/inventory"
+                    className="text-xs text-muted hover:text-app dark:hover:text-app-2 transition-colors"
+                  >
                     Inventory
                   </Link>
                   <span className="text-muted dark:text-app text-xs">/</span>
@@ -264,13 +281,15 @@ export default function StocktakePage() {
                 <h1 className="text-xl sm:text-2xl font-black text-app dark:text-white tracking-tight mt-0.5">
                   Stocktake &amp; Adjustment
                 </h1>
-                <p className="text-muted dark:text-muted text-sm mt-0.5">Physical count reconciliation — full audit trail.</p>
+                <p className="text-muted dark:text-muted text-sm mt-0.5">
+                  Physical count reconciliation — full audit trail.
+                </p>
               </div>
             </div>
             <button
               onClick={() => {
-                loadProducts();
-                loadRecent();
+                refetchProducts();
+                refetchRecent();
               }}
               className="flex items-center gap-2 px-4 py-2 rounded-xl bg-panel-2 hover:bg-panel-2 dark:bg-panel-2 dark:hover:bg-[#2a3348] text-muted-2 dark:text-app-2 text-sm font-semibold transition-colors"
             >
@@ -285,10 +304,15 @@ export default function StocktakePage() {
         <div className="bg-white dark:bg-panel-2 border border-app-2 dark:border-app rounded-2xl p-5">
           <div className="flex items-center gap-2 mb-3">
             <Search size={16} className="text-muted dark:text-muted" />
-            <h2 className="text-sm font-black text-app dark:text-white tracking-tight">Select a product</h2>
+            <h2 className="text-sm font-black text-app dark:text-white tracking-tight">
+              Select a product
+            </h2>
           </div>
           <div className="relative mb-3">
-            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted dark:text-muted-2" />
+            <Search
+              size={15}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-muted dark:text-muted-2"
+            />
             <input
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -306,12 +330,18 @@ export default function StocktakePage() {
                   key={p.id}
                   onClick={() => pickProduct(p.id)}
                   className={`w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl text-left transition-colors ${
-                    isSel ? "bg-teal-500/15 border border-teal-500/40" : "border border-transparent hover:bg-panel-2 dark:hover:bg-panel-2"
+                    isSel
+                      ? "bg-teal-500/15 border border-teal-500/40"
+                      : "border border-transparent hover:bg-panel-2 dark:hover:bg-panel-2"
                   }`}
                 >
                   <div className="min-w-0">
-                    <div className="text-sm text-app dark:text-white font-semibold truncate">{p.name}</div>
-                    <div className="text-[11px] text-muted dark:text-muted">{p.barcode || "no barcode"}</div>
+                    <div className="text-sm text-app dark:text-white font-semibold truncate">
+                      {p.name}
+                    </div>
+                    <div className="text-[11px] text-muted dark:text-muted">
+                      {p.barcode || "no barcode"}
+                    </div>
                   </div>
                   <div className="flex-shrink-0 text-right">
                     <div
@@ -331,7 +361,9 @@ export default function StocktakePage() {
               );
             })}
             {filtered.length === 0 && (
-              <div className="text-center text-muted dark:text-muted-2 text-sm py-8">No products match.</div>
+              <div className="text-center text-muted dark:text-muted-2 text-sm py-8">
+                No products match.
+              </div>
             )}
           </div>
         </div>
@@ -342,12 +374,18 @@ export default function StocktakePage() {
             <div className="bg-white dark:bg-panel-2 border border-app-2 dark:border-app rounded-2xl p-5">
               <div className="flex items-start justify-between gap-3 mb-4">
                 <div>
-                  <h2 className="text-base font-black text-app dark:text-white tracking-tight">{selected.name}</h2>
-                  <div className="text-xs text-muted dark:text-muted mt-0.5">{selected.barcode || "no barcode"}</div>
+                  <h2 className="text-base font-black text-app dark:text-white tracking-tight">
+                    {selected.name}
+                  </h2>
+                  <div className="text-xs text-muted dark:text-muted mt-0.5">
+                    {selected.barcode || "no barcode"}
+                  </div>
                 </div>
                 <div className="text-right">
                   <div className="text-xs text-muted dark:text-muted">System available</div>
-                  <div className={`text-2xl font-black ${available <= 0 ? "text-rose-600 dark:text-rose-400" : "text-emerald-600 dark:text-emerald-400"}`}>
+                  <div
+                    className={`text-2xl font-black ${available <= 0 ? "text-rose-600 dark:text-rose-400" : "text-emerald-600 dark:text-emerald-400"}`}
+                  >
                     {available}
                   </div>
                 </div>
@@ -357,7 +395,8 @@ export default function StocktakePage() {
                 <div className="mb-4 rounded-xl bg-teal-500/10 border border-teal-500/30 p-3 flex items-center gap-3">
                   <Check size={18} className="text-teal-600 dark:text-teal-400 flex-shrink-0" />
                   <div className="text-sm text-teal-800 dark:text-teal-200">
-                    Saved — {lastResult.countedQty} counted (was {lastResult.availableBefore}). Delta{" "}
+                    Saved — {lastResult.countedQty} counted (was {lastResult.availableBefore}).
+                    Delta{" "}
                     <span className="font-black">
                       {lastResult.delta > 0 ? "+" : ""}
                       {lastResult.delta}
@@ -369,7 +408,9 @@ export default function StocktakePage() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs text-muted dark:text-muted font-semibold">Counted quantity</label>
+                  <label className="text-xs text-muted dark:text-muted font-semibold">
+                    Counted quantity
+                  </label>
                   <input
                     type="number"
                     value={countedQty}
@@ -401,7 +442,13 @@ export default function StocktakePage() {
                 </div>
                 <div
                   className={`flex items-center gap-2 font-black text-lg ${
-                    delta === null ? "text-muted dark:text-muted-2" : delta > 0 ? "text-emerald-600 dark:text-emerald-400" : delta < 0 ? "text-rose-600 dark:text-rose-400" : "text-muted dark:text-muted"
+                    delta === null
+                      ? "text-muted dark:text-muted-2"
+                      : delta > 0
+                        ? "text-emerald-600 dark:text-emerald-400"
+                        : delta < 0
+                          ? "text-rose-600 dark:text-rose-400"
+                          : "text-muted dark:text-muted"
                   }`}
                 >
                   {delta !== null && delta > 0 && <TrendingUp size={18} />}
@@ -410,13 +457,16 @@ export default function StocktakePage() {
                 </div>
               </div>
               <p className="mt-2 text-[11px] text-muted dark:text-muted-2 leading-relaxed">
-                A new stock row is added with this {delta !== null ? (delta >= 0 ? "positive" : "negative") : ""} quantity so the
+                A new stock row is added with this{" "}
+                {delta !== null ? (delta >= 0 ? "positive" : "negative") : ""} quantity so the
                 derived available matches your physical count. History is never deleted.
               </p>
 
               <div className="grid sm:grid-cols-2 gap-3 mt-4">
                 <div>
-                  <label className="text-xs text-muted dark:text-muted font-semibold">Note (count)</label>
+                  <label className="text-xs text-muted dark:text-muted font-semibold">
+                    Note (count)
+                  </label>
                   <input
                     value={note}
                     onChange={(e) => setNote(e.target.value)}
@@ -425,7 +475,9 @@ export default function StocktakePage() {
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-muted dark:text-muted font-semibold">Remark (adjustment)</label>
+                  <label className="text-xs text-muted dark:text-muted font-semibold">
+                    Remark (adjustment)
+                  </label>
                   <input
                     value={remark}
                     onChange={(e) => setRemark(e.target.value)}
@@ -454,7 +506,9 @@ export default function StocktakePage() {
           ) : (
             <div className="bg-white dark:bg-panel-2 border border-dashed border-app-2 dark:border-app rounded-2xl p-10 text-center">
               <ClipboardList size={32} className="text-muted dark:text-app mx-auto mb-3" />
-              <p className="text-muted dark:text-muted text-sm">Select a product to start counting.</p>
+              <p className="text-muted dark:text-muted text-sm">
+                Select a product to start counting.
+              </p>
             </div>
           )}
 
@@ -462,7 +516,9 @@ export default function StocktakePage() {
           <div className="bg-white dark:bg-panel-2 border border-app-2 dark:border-app rounded-2xl p-5">
             <div className="flex items-center gap-2 mb-3">
               <FileText size={16} className="text-muted dark:text-muted" />
-              <h2 className="text-sm font-black text-app dark:text-white tracking-tight">Recent adjustments</h2>
+              <h2 className="text-sm font-black text-app dark:text-white tracking-tight">
+                Recent adjustments
+              </h2>
             </div>
             {loadingRecent ? (
               <div className="flex justify-center py-6">
@@ -475,16 +531,24 @@ export default function StocktakePage() {
                 {recent.map((a) => {
                   const pl = products.find((p) => p.id === a.product_id);
                   return (
-                    <div key={a.id} className="flex items-center justify-between gap-3 px-3 py-2 rounded-xl bg-slate-50 dark:bg-app border border-app-2 dark:border-app">
+                    <div
+                      key={a.id}
+                      className="flex items-center justify-between gap-3 px-3 py-2 rounded-xl bg-slate-50 dark:bg-app border border-app-2 dark:border-app"
+                    >
                       <div className="min-w-0">
-                        <div className="text-sm text-app dark:text-white font-semibold truncate">{pl?.name || `#${a.product_id}`}</div>
+                        <div className="text-sm text-app dark:text-white font-semibold truncate">
+                          {pl?.name || `#${a.product_id}`}
+                        </div>
                         <div className="text-[11px] text-muted capitalize">
                           {a.reason}
                           {a.counted_qty != null ? ` · counted ${a.counted_qty}` : ""}
                         </div>
                       </div>
-                      <div className={`flex-shrink-0 font-black ${a.delta > 0 ? "text-emerald-600 dark:text-emerald-400" : a.delta < 0 ? "text-rose-600 dark:text-rose-400" : "text-muted dark:text-muted"}`}>
-                        {a.delta > 0 ? "+" : ""}{a.delta}
+                      <div
+                        className={`flex-shrink-0 font-black ${a.delta > 0 ? "text-emerald-600 dark:text-emerald-400" : a.delta < 0 ? "text-rose-600 dark:text-rose-400" : "text-muted dark:text-muted"}`}
+                      >
+                        {a.delta > 0 ? "+" : ""}
+                        {a.delta}
                       </div>
                     </div>
                   );

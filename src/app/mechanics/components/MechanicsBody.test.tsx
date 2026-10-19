@@ -2,6 +2,7 @@
 import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import type { ReactNode } from "react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import MechanicsBody from "./MechanicsBody";
 import type { Mechanic } from "./helpers";
 
@@ -110,8 +111,14 @@ const HISTORY_ROW = {
   effective_from: "2000-01-01",
 };
 
-const renderBody = (userRole: string) =>
-  render(<MechanicsBody mechanics={[MECHANIC]} userRole={userRole} />);
+const renderBody = (userRole: string) => {
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return render(
+    <QueryClientProvider client={qc}>
+      <MechanicsBody mechanics={[MECHANIC]} userRole={userRole} />
+    </QueryClientProvider>
+  );
+};
 
 const clickEdit = () => fireEvent.click(screen.getByRole("button", { name: "Edit Vikram Kumar" }));
 

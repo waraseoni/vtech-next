@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
+import { useQuery } from "@tanstack/react-query";
 import AdminPage from "@/app/components/AdminPage";
 import { supabase } from "@/lib/supabase";
 import { formatIST, startOfMonthIST, endOfMonthIST, toISTDatePart } from "@/lib/dateUtils";
@@ -16,10 +17,6 @@ type Row = {
 };
 
 export default function ClientPaymentReportPage() {
-  const [allRows, setAllRows] = useState<Row[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [err, setErr] = useState<string>("");
-
   // Filters
   const [fromDate, setFromDate] = useState<string>("");
   const [toDate, setToDate] = useState<string>("");
@@ -38,28 +35,27 @@ export default function ClientPaymentReportPage() {
   };
 
   // Fetch all payments
-  useEffect(() => {
-    const fetchPayments = async () => {
-      setErr("");
-      setLoading(true);
-
-      const { data, error } = await supabase
-        .from("client_payments")
-        .select("id, payment_date, client_id, amount, discount, payment_mode, remarks")
-        .order("payment_date", { ascending: false })
-        .order("id", { ascending: false })
-        .limit(1000);
-
-      if (error) {
-        setErr(error.message);
-      } else {
-        setAllRows((data || []) as Row[]);
-      }
-      setLoading(false);
-    };
-
-    fetchPayments();
+  const fetchPayments = useCallback(async () => {
+    const { data, error } = await supabase
+      .from("client_payments")
+      .select("id, payment_date, client_id, amount, discount, payment_mode, remarks")
+      .order("payment_date", { ascending: false })
+      .order("id", { ascending: false })
+      .limit(1000);
+    if (error) throw error;
+    return (data || []) as Row[];
   }, []);
+
+  const {
+    data: allRows = [],
+    error: queryErr,
+    isPending: loading,
+  } = useQuery({
+    queryKey: ["client-payment-report"],
+    queryFn: fetchPayments,
+    staleTime: 30_000,
+  });
+  const err = queryErr instanceof Error ? queryErr.message : queryErr ? "Data load failed" : "";
 
   // Set default to current month on first load
   useEffect(() => {

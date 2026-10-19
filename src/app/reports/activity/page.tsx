@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import {
   History,
@@ -43,11 +44,8 @@ type LogEntry = {
 const LEGACY_CUTOFF_MS = new Date("2026-08-15T00:00:00.000Z").getTime();
 
 export default function ActivityLogPage() {
-  const [logs, setLogs] = useState<LogEntry[]>([]);
-  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [moduleFilter, setModuleFilter] = useState("all");
-  const [modules, setModules] = useState<string[]>([]);
   const [retention, setRetention] = useState(90);
   const [cleaning, setCleaning] = useState(false);
   const [cleanMsg, setCleanMsg] = useState("");
@@ -79,7 +77,7 @@ export default function ActivityLogPage() {
       const json = await res.json();
       if (json.status === "success") {
         setCleanMsg(json.msg);
-        fetchLogs();
+        refetch();
       } else {
         toast.error(json.msg || "Cleanup failed");
       }
@@ -90,8 +88,7 @@ export default function ActivityLogPage() {
     }
   };
 
-  const fetchLogs = async () => {
-    setLoading(true);
+  const fetchLogs = useCallback(async () => {
     try {
       // 1. Fetch Logs (Simplified query first to ensure it works even if join fails)
       let query = supabase
@@ -147,16 +144,14 @@ export default function ActivityLogPage() {
         profiles: { full_name: nameFor(log) },
       }));
 
-      setLogs(formattedLogs);
-
       // 3. Extract unique modules
       const { data: modData } = await supabase.from("activity_logs").select("module");
-      if (modData) {
-        const uniqueMods = Array.from(new Set(modData.map((m) => m.module)))
-          .filter(Boolean)
-          .sort() as string[];
-        setModules(uniqueMods);
-      }
+      const uniqueMods = modData
+        ? (Array.from(new Set(modData.map((m) => m.module)))
+            .filter(Boolean)
+            .sort() as string[])
+        : [];
+      return { logs: formattedLogs as LogEntry[], modules: uniqueMods };
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       console.error("Error fetching logs:", msg || err);
@@ -166,19 +161,26 @@ export default function ActivityLogPage() {
           "Error: 'activity_logs' table is missing in Supabase. Please run the SQL command provided in the previous step."
         );
       }
-    } finally {
-      setLoading(false);
+      throw err;
     }
-  };
+  }, [moduleFilter, searchTerm]);
 
-  useEffect(() => {
-    fetchLogs();
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- fetchLogs also called by manual search (handleSearch); useCallback would refetch on every searchTerm keystroke
-  }, [moduleFilter]);
+  const {
+    data: activityData,
+    isPending: loading,
+    refetch,
+  } = useQuery({
+    queryKey: ["activity", moduleFilter],
+    queryFn: fetchLogs,
+    staleTime: 30_000,
+    retry: false,
+  });
+  const logs = activityData?.logs ?? [];
+  const modules = activityData?.modules ?? [];
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    fetchLogs();
+    refetch();
   };
 
   const getModuleColor = (mod: string) => {
@@ -240,7 +242,7 @@ export default function ActivityLogPage() {
           </div>
         </div>
         <button
-          onClick={fetchLogs}
+          onClick={() => refetch()}
           className="flex items-center gap-2 px-4 py-2 bg-app border border-app hover:border-blue-500/50 rounded-xl text-xs font-bold text-muted hover:text-white transition-all shadow-sm"
         >
           <RefreshCw size={14} className={loading ? "animate-spin" : ""} />

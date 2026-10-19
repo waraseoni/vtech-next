@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import ZoomableImage from "@/components/ZoomableImage";
@@ -201,7 +202,9 @@ export default function MessagesPage() {
     };
   }, [isMobile, activeId, conversations.length]);
 
-  // session + profiles + presence bootstrap
+  // session + role check — directory (profiles/presence/conversations) alag
+  // query me aati hai, taaki back-navigation par cache-hit ho.
+  const [dirReady, setDirReady] = useState(false);
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -231,58 +234,7 @@ export default function MessagesPage() {
           }
           return;
         }
-
-        // staff/developer/admin profiles directory — messenger sirf staff ke liye
-        const { data: profs, error: profErr } = await supabase
-          .from("profiles")
-          .select("id, full_name, role, avatar_url")
-          .neq("id", user.id)
-          .in("role", ["admin", "staff", "developer"])
-          .order("full_name", { ascending: true });
-        if (profErr) {
-          // ek result par profile lookup fail (misleading "no users") se bachne ke liye
-          // basic columns ke saath dubara try karo
-          const { data: basic } = await supabase
-            .from("profiles")
-            .select("id, full_name, role, avatar_url")
-            .neq("id", user.id)
-            .in("role", ["admin", "staff", "developer"])
-            .order("full_name", { ascending: true });
-          if (cancelled) return;
-          const plist0 = (basic || []) as ProfileLite[];
-          setProfiles(plist0);
-          const pm0: Record<string, ProfileLite> = {};
-          plist0.forEach((p) => (pm0[p.id] = p));
-          profileMapRef.current = pm0;
-          setLoading(false);
-          setNotFound(plist0.length === 0);
-          return;
-        }
-        if (cancelled) return;
-        const plist = (profs || []) as ProfileLite[];
-        setProfiles(plist);
-        const pm: Record<string, ProfileLite> = {};
-        plist.forEach((p) => (pm[p.id] = p));
-        profileMapRef.current = pm;
-
-        // presence snapshot
-        const { data: pres, error: presErr } = await supabase
-          .from("user_presence")
-          .select("user_id, status, last_seen");
-        if (!presErr && !cancelled) {
-          const pmap: Record<string, Presence> = {};
-          (pres || []).forEach(
-            (r) => (pmap[r.user_id] = { status: r.status, last_seen: r.last_seen })
-          );
-          setPresenceMap(pmap);
-          // conversations
-          const convs = await fetchConversations(user.id, plist, pmap);
-          if (cancelled) return;
-          setConversations(convs);
-          convRef.current = convs;
-        }
-        setLoading(false);
-        setNotFound(plist.length === 0);
+        setDirReady(true);
       } catch {
         if (!cancelled) {
           setLoadErr("Kuch gadbad hui — messenger load nahi hua");
@@ -295,6 +247,72 @@ export default function MessagesPage() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Directory: profiles + presence snapshot + conversations. Realtime updates
+  // inke useState copies ko mutate karte hain — query sirf mount/cache se
+  // hydrate karta hai.
+  const fetchDirectory = useCallback(async () => {
+    const me = meIdRef.current;
+    const { data: profs, error: profErr } = await supabase
+      .from("profiles")
+      .select("id, full_name, role, avatar_url")
+      .neq("id", me)
+      .in("role", ["admin", "staff", "developer"])
+      .order("full_name", { ascending: true });
+    if (profErr) {
+      // ek result par profile lookup fail (misleading "no users") se bachne ke liye
+      // basic columns ke saath dubara try karo
+      const { data: basic } = await supabase
+        .from("profiles")
+        .select("id, full_name, role, avatar_url")
+        .neq("id", me)
+        .in("role", ["admin", "staff", "developer"])
+        .order("full_name", { ascending: true });
+      return {
+        profiles: (basic || []) as ProfileLite[],
+        presenceMap: {} as Record<string, Presence>,
+        conversations: [] as Conversation[],
+      };
+    }
+    const plist = (profs || []) as ProfileLite[];
+    // presence snapshot
+    const { data: pres, error: presErr } = await supabase
+      .from("user_presence")
+      .select("user_id, status, last_seen");
+    const pmap: Record<string, Presence> = {};
+    if (!presErr) {
+      (pres || []).forEach((r) => (pmap[r.user_id] = { status: r.status, last_seen: r.last_seen }));
+    }
+    const convs = presErr ? [] : await fetchConversations(me, plist, pmap);
+    return { profiles: plist, presenceMap: pmap, conversations: convs };
+  }, []);
+
+  const { data: dir, error: dirErr } = useQuery({
+    queryKey: ["messages-directory"],
+    queryFn: fetchDirectory,
+    enabled: dirReady,
+    staleTime: 30_000,
+  });
+
+  useEffect(() => {
+    if (!dir) return;
+    setProfiles(dir.profiles);
+    const pm: Record<string, ProfileLite> = {};
+    dir.profiles.forEach((p) => (pm[p.id] = p));
+    profileMapRef.current = pm;
+    setPresenceMap(dir.presenceMap);
+    setConversations(dir.conversations);
+    convRef.current = dir.conversations;
+    setNotFound(dir.profiles.length === 0);
+    setLoading(false);
+  }, [dir]);
+
+  useEffect(() => {
+    if (dirErr) {
+      setLoadErr("Kuch gadbad hui — messenger load nahi hua");
+      setLoading(false);
+    }
+  }, [dirErr]);
 
   // live presence updates
   useEffect(() => {

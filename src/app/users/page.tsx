@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { supabase, getCachedUser } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -56,9 +57,7 @@ function fmtDate(d: string | null | undefined) {
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function UsersPage() {
   const router = useRouter();
-  const [users, setUsers] = useState<Profile[]>([]);
   const [presenceMap, setPresenceMap] = useState<Record<string, Presence>>({});
-  const [loading, setLoading] = useState(true);
   const [myId, setMyId] = useState("");
 
   // Reset password modal
@@ -98,19 +97,17 @@ export default function UsersPage() {
       cancelled = true;
       sub.unsubscribe();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // ── Fetch users ────────────────────────────────────────────────────────────
   const fetchUsers = useCallback(async () => {
-    setLoading(true);
     try {
       const {
         data: { user },
       } = await getCachedUser();
       if (!user) {
         router.push("/login");
-        return;
+        return [];
       }
       setMyId(user.id);
 
@@ -122,7 +119,7 @@ export default function UsersPage() {
 
       if (myProfile?.role !== "admin") {
         router.push("/");
-        return;
+        return [];
       }
 
       // Fetch all profiles — PHP ki tarah: sab users current ko chhodke
@@ -140,9 +137,7 @@ export default function UsersPage() {
           .select("id, full_name, role")
           .neq("id", user.id)
           .order("full_name", { ascending: true });
-        setUsers(basic || []);
-        setLoading(false);
-        return;
+        return (basic || []) as Profile[];
       }
 
       // Mechanic names fetch karo agar mechanic_id linked hai
@@ -158,23 +153,26 @@ export default function UsersPage() {
         });
       }
 
-      setUsers(
-        (profiles || []).map((p) => ({
-          ...p,
-          mechanic_name: p.mechanic_id ? mechMap.get(p.mechanic_id) || "" : "",
-        }))
-      );
+      return (profiles || []).map((p) => ({
+        ...p,
+        mechanic_name: p.mechanic_id ? mechMap.get(p.mechanic_id) || "" : "",
+      })) as Profile[];
     } catch (err) {
       console.error("fetchUsers:", err);
       toast.error("Users load karne mein galti!");
-    } finally {
-      setLoading(false);
+      throw err;
     }
   }, [router]);
 
-  useEffect(() => {
-    fetchUsers();
-  }, [fetchUsers]);
+  const {
+    data: users = [],
+    isPending: loading,
+    refetch,
+  } = useQuery({
+    queryKey: ["users"],
+    queryFn: fetchUsers,
+    staleTime: 30_000,
+  });
 
   // ── Reset Password ─────────────────────────────────────────────────────────
   const handleResetPassword = async () => {
@@ -228,7 +226,7 @@ export default function UsersPage() {
 
       toast.success(`${deleteUser.full_name || "User"} delete ho gaya!`);
       setDeleteUser(null);
-      fetchUsers();
+      refetch();
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : "Delete failed!");
     } finally {
@@ -305,7 +303,7 @@ export default function UsersPage() {
           </div>
           <div className="flex items-center gap-2">
             <button
-              onClick={fetchUsers}
+              onClick={() => refetch()}
               className="w-9 h-9 flex items-center justify-center bg-panel-2 border border-app-2 hover:bg-panel-2 text-muted hover:text-white rounded-xl transition-all"
             >
               <RefreshCw size={14} />

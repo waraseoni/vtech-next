@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import ZoomableImage from "@/components/ZoomableImage";
@@ -142,16 +143,10 @@ const MechAvatar = ({
 
 export default function DeliveredReportClient({ fromDate, toDate, clientId }: Props) {
   const router = useRouter();
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [clientsList, setClientsList] = useState<{ id: number; name: string }[]>([]);
   const [from, setFrom] = useState(fromDate || todayIST());
   const [to, setTo] = useState(toDate || todayIST());
   const [selectedClientId, setSelectedClientId] = useState<string>(clientId || "all");
-  const [clientTotals, setClientTotals] = useState<Record<number, ClientTotals>>({});
   const [showDetailModal, setShowDetailModal] = useState<Transaction | null>(null);
-  const [firmInfo, setFirmInfo] = useState<Record<string, string>>({});
   // Sprint 3 #14: WA preview (direct open nahi)
   const [waPreview, setWaPreview] = useState<{ phone: string; msg: string } | null>(null);
 
@@ -160,6 +155,188 @@ export default function DeliveredReportClient({ fromDate, toDate, clientId }: Pr
     setTo(toDate || todayIST());
     setSelectedClientId(clientId || "all");
   }, [fromDate, toDate, clientId]);
+
+  const fetchClients = useCallback(async () => {
+    const { data, error } = await supabase
+      .from("client_list")
+      .select("id, firstname, middlename, lastname")
+      .order("firstname");
+    if (error) throw error;
+    return (data || []).map((c) => ({
+      id: c.id,
+      name: `${c.firstname} ${c.middlename || ""} ${c.lastname || ""}`.replace(/\s+/g, " ").trim(),
+    }));
+  }, []);
+
+  const { data: clientsList = [] } = useQuery({
+    queryKey: ["delivered-report-clients"],
+    queryFn: fetchClients,
+    staleTime: 30_000,
+  });
+
+  const fetchFirmInfo = useCallback(async () => {
+    const { data: sys } = await supabase.from("system_info").select("meta_field, meta_value");
+    const info: Record<string, string> = {};
+    (sys || []).forEach((r) => {
+      info[r.meta_field] = r.meta_value;
+    });
+    return info;
+  }, []);
+  const { data: firmInfo = {} } = useQuery({
+    queryKey: ["delivered-report-firm-info"],
+    queryFn: fetchFirmInfo,
+    staleTime: 30_000,
+  });
+
+  const fetchData = useCallback(async () => {
+    const startDate = `${from}T00:00:00+05:30`;
+    const endDate = `${to}T23:59:59+05:30`;
+    let query = supabase
+      .from("transaction_list")
+      .select("id, job_id, date_completed, item, amount, client_name, mechanic_id")
+      .eq("status", 5)
+      .eq("del_status", 0)
+      .gte("date_completed", startDate)
+      .lte("date_completed", endDate)
+      .order("date_completed", { ascending: false });
+    if (selectedClientId !== "all") {
+      query = query.eq("client_name", parseInt(selectedClientId));
+    }
+    const { data: txData, error: txError } = await query;
+    if (txError) throw txError;
+    if (!txData || txData.length === 0) {
+      return {
+        transactions: [] as Transaction[],
+        clientTotals: {} as Record<number, ClientTotals>,
+      };
+    }
+    const clientIds = [...new Set(txData.map((t) => t.client_name).filter((id) => id != null))];
+    const mechIds = [...new Set(txData.map((t) => t.mechanic_id).filter(Boolean))];
+    const [
+      { data: clientsData },
+      { data: billedData },
+      { data: paymentsData },
+      { data: salesData },
+      { data: loansData },
+      { data: mechData },
+    ] = await Promise.all([
+      clientIds.length > 0
+        ? supabase
+            .from("client_list")
+            .select("id, firstname, middlename, lastname, contact, opening_balance, image_path")
+            .in("id", clientIds)
+        : Promise.resolve({ data: [] }),
+      // Billed = sirf DELIVERED (status=5) jobs — canonical formula
+      // (client-due.ts). Pehle yahan status filter nahi tha, isliye client
+      // ke pending/in-progress jobs bhi due me ginte the. del_status=0
+      // page ki list ke consistent.
+      clientIds.length > 0
+        ? supabase
+            .from("transaction_list")
+            .select("client_name, amount")
+            .eq("status", 5)
+            .eq("del_status", 0)
+            .in("client_name", clientIds)
+        : Promise.resolve({ data: [] }),
+      // Saare payments (service + loan-linked) — partitioning helper karta hai
+      clientIds.length > 0
+        ? supabase
+            .from("client_payments")
+            .select("client_id, amount, discount, loan_id")
+            .in("client_id", clientIds)
+        : Promise.resolve({ data: [] }),
+      clientIds.length > 0
+        ? supabase.from("direct_sales").select("client_id, total_amount").in("client_id", clientIds)
+        : Promise.resolve({ data: [] }),
+      // ACTIVE loans sirf — ye balance ko badhate hain (canonical ke mutabik)
+      clientIds.length > 0
+        ? supabase
+            .from("client_loans")
+            .select("id, client_id, total_payable")
+            .eq("status", 1)
+            .in("client_id", clientIds)
+        : Promise.resolve({ data: [] }),
+      mechIds.length > 0
+        ? supabase
+            .from("mechanic_list")
+            .select("id, firstname, lastname, image_path")
+            .in("id", mechIds)
+        : Promise.resolve({ data: [] }),
+    ]);
+    const clientMap: Record<
+      number,
+      { name: string; contact: string; opening_balance: number; image_path: string | null }
+    > = {};
+    (clientsData || []).forEach((c) => {
+      clientMap[c.id] = {
+        name: `${c.firstname} ${c.middlename || ""} ${c.lastname || ""}`
+          .replace(/\s+/g, " ")
+          .trim(),
+        contact: c.contact || "",
+        opening_balance: c.opening_balance || 0,
+        image_path: c.image_path || null,
+      };
+    });
+    const mechMap: Record<number, { name: string; image_path: string | null }> = {};
+    (mechData || []).forEach((m) => {
+      mechMap[m.id] = {
+        name: `${m.firstname} ${m.lastname}`.trim(),
+        image_path: m.image_path || null,
+      };
+    });
+    const totals: Record<number, ClientTotals> = {};
+    const dueMaps = buildDueMaps({
+      repairs: billedData,
+      directSales: salesData,
+      payments: paymentsData,
+      loans: loansData,
+    });
+    clientIds.forEach((id) => {
+      totals[id] = {
+        netBalance: balanceFromMaps(dueMaps, id, clientMap[id]?.opening_balance || 0),
+      };
+    });
+    const transactions: Transaction[] = txData.map((t) => {
+      const client = clientMap[t.client_name] || {
+        name: "Unknown",
+        contact: "",
+        opening_balance: 0,
+        image_path: null,
+      };
+      const mech = t.mechanic_id ? mechMap[t.mechanic_id] : null;
+      return {
+        id: t.id,
+        job_id: t.job_id,
+        date_completed: t.date_completed,
+        item: t.item,
+        amount: t.amount || 0,
+        client_id: t.client_name,
+        client_name: client.name,
+        client_contact: client.contact,
+        client_image: client.image_path,
+        mechanic_name: mech?.name || "Not Assigned",
+        mechanic_image: mech?.image_path || null,
+        opening_balance: client.opening_balance,
+      };
+    });
+    return { transactions, clientTotals: totals };
+  }, [from, to, selectedClientId]);
+
+  const {
+    data: reportData,
+    isPending: loading,
+    isFetching: refreshing,
+    refetch,
+  } = useQuery({
+    queryKey: ["delivered-report", from, to, selectedClientId],
+    queryFn: fetchData,
+    staleTime: 30_000,
+  });
+  const transactions = useMemo<Transaction[]>(() => reportData?.transactions ?? [], [reportData]);
+  const clientTotals = useMemo<Record<number, ClientTotals>>(
+    () => reportData?.clientTotals ?? {},
+    [reportData]
+  );
 
   const stats = useMemo(() => {
     const count = transactions.length;
@@ -171,192 +348,6 @@ export default function DeliveredReportClient({ fromDate, toDate, clientId }: Pr
     const totalBalance = Object.values(clientTotals).reduce((s, ct) => s + ct.netBalance, 0);
     return { count, total, unique, avg, totalBalance };
   }, [transactions, clientTotals]);
-
-  useEffect(() => {
-    const fetchClients = async () => {
-      const { data } = await supabase
-        .from("client_list")
-        .select("id, firstname, middlename, lastname")
-        .order("firstname");
-      if (data) {
-        setClientsList(
-          data.map((c) => ({
-            id: c.id,
-            name: `${c.firstname} ${c.middlename || ""} ${c.lastname || ""}`
-              .replace(/\s+/g, " ")
-              .trim(),
-          }))
-        );
-      }
-    };
-    fetchClients();
-  }, []);
-
-  useEffect(() => {
-    (async () => {
-      const { data: sys } = await supabase.from("system_info").select("meta_field, meta_value");
-      const info: Record<string, string> = {};
-      (sys || []).forEach((r) => {
-        info[r.meta_field] = r.meta_value;
-      });
-      setFirmInfo(info);
-    })();
-  }, []);
-
-  const fetchData = useCallback(
-    async (isRefresh = false) => {
-      if (isRefresh) setRefreshing(true);
-      else setLoading(true);
-      try {
-        const startDate = `${from}T00:00:00+05:30`;
-        const endDate = `${to}T23:59:59+05:30`;
-        let query = supabase
-          .from("transaction_list")
-          .select("id, job_id, date_completed, item, amount, client_name, mechanic_id")
-          .eq("status", 5)
-          .eq("del_status", 0)
-          .gte("date_completed", startDate)
-          .lte("date_completed", endDate)
-          .order("date_completed", { ascending: false });
-        if (selectedClientId !== "all") {
-          query = query.eq("client_name", parseInt(selectedClientId));
-        }
-        const { data: txData } = await query;
-        if (!txData || txData.length === 0) {
-          setTransactions([]);
-          setClientTotals({});
-          setLoading(false);
-          setRefreshing(false);
-          return;
-        }
-        const clientIds = [...new Set(txData.map((t) => t.client_name).filter((id) => id != null))];
-        const mechIds = [...new Set(txData.map((t) => t.mechanic_id).filter(Boolean))];
-        const [
-          { data: clientsData },
-          { data: billedData },
-          { data: paymentsData },
-          { data: salesData },
-          { data: loansData },
-          { data: mechData },
-        ] = await Promise.all([
-          clientIds.length > 0
-            ? supabase
-                .from("client_list")
-                .select("id, firstname, middlename, lastname, contact, opening_balance, image_path")
-                .in("id", clientIds)
-            : Promise.resolve({ data: [] }),
-          // Billed = sirf DELIVERED (status=5) jobs — canonical formula
-          // (client-due.ts). Pehle yahan status filter nahi tha, isliye client
-          // ke pending/in-progress jobs bhi due me ginte the. del_status=0
-          // page ki list ke consistent.
-          clientIds.length > 0
-            ? supabase
-                .from("transaction_list")
-                .select("client_name, amount")
-                .eq("status", 5)
-                .eq("del_status", 0)
-                .in("client_name", clientIds)
-            : Promise.resolve({ data: [] }),
-          // Saare payments (service + loan-linked) — partitioning helper karta hai
-          clientIds.length > 0
-            ? supabase
-                .from("client_payments")
-                .select("client_id, amount, discount, loan_id")
-                .in("client_id", clientIds)
-            : Promise.resolve({ data: [] }),
-          clientIds.length > 0
-            ? supabase
-                .from("direct_sales")
-                .select("client_id, total_amount")
-                .in("client_id", clientIds)
-            : Promise.resolve({ data: [] }),
-          // ACTIVE loans sirf — ye balance ko badhate hain (canonical ke mutabik)
-          clientIds.length > 0
-            ? supabase
-                .from("client_loans")
-                .select("id, client_id, total_payable")
-                .eq("status", 1)
-                .in("client_id", clientIds)
-            : Promise.resolve({ data: [] }),
-          mechIds.length > 0
-            ? supabase
-                .from("mechanic_list")
-                .select("id, firstname, lastname, image_path")
-                .in("id", mechIds)
-            : Promise.resolve({ data: [] }),
-        ]);
-        const clientMap: Record<
-          number,
-          { name: string; contact: string; opening_balance: number; image_path: string | null }
-        > = {};
-        (clientsData || []).forEach((c) => {
-          clientMap[c.id] = {
-            name: `${c.firstname} ${c.middlename || ""} ${c.lastname || ""}`
-              .replace(/\s+/g, " ")
-              .trim(),
-            contact: c.contact || "",
-            opening_balance: c.opening_balance || 0,
-            image_path: c.image_path || null,
-          };
-        });
-        const mechMap: Record<number, { name: string; image_path: string | null }> = {};
-        (mechData || []).forEach((m) => {
-          mechMap[m.id] = {
-            name: `${m.firstname} ${m.lastname}`.trim(),
-            image_path: m.image_path || null,
-          };
-        });
-        const totals: Record<number, ClientTotals> = {};
-        const dueMaps = buildDueMaps({
-          repairs: billedData,
-          directSales: salesData,
-          payments: paymentsData,
-          loans: loansData,
-        });
-        clientIds.forEach((id) => {
-          totals[id] = {
-            netBalance: balanceFromMaps(dueMaps, id, clientMap[id]?.opening_balance || 0),
-          };
-        });
-        setClientTotals(totals);
-        setTransactions(
-          txData.map((t) => {
-            const client = clientMap[t.client_name] || {
-              name: "Unknown",
-              contact: "",
-              opening_balance: 0,
-              image_path: null,
-            };
-            const mech = t.mechanic_id ? mechMap[t.mechanic_id] : null;
-            return {
-              id: t.id,
-              job_id: t.job_id,
-              date_completed: t.date_completed,
-              item: t.item,
-              amount: t.amount || 0,
-              client_id: t.client_name,
-              client_name: client.name,
-              client_contact: client.contact,
-              client_image: client.image_path,
-              mechanic_name: mech?.name || "Not Assigned",
-              mechanic_image: mech?.image_path || null,
-              opening_balance: client.opening_balance,
-            };
-          })
-        );
-      } catch (err) {
-        console.error("Error:", err);
-      } finally {
-        setLoading(false);
-        setRefreshing(false);
-      }
-    },
-    [from, to, selectedClientId]
-  );
-
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
 
   const handleFilter = (e: React.FormEvent) => {
     e.preventDefault();
@@ -463,7 +454,7 @@ export default function DeliveredReportClient({ fromDate, toDate, clientId }: Pr
             <CheckSquare size={12} /> Done
           </Link>
           <button
-            onClick={() => fetchData(true)}
+            onClick={() => refetch()}
             disabled={refreshing}
             className="p-1.5 bg-app hover:bg-panel-2 border border-app rounded-xl text-muted hover:text-white transition-all disabled:opacity-50 flex-shrink-0"
             title="Refresh"
