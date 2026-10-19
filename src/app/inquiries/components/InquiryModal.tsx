@@ -277,9 +277,7 @@ export default function InquiryModal({ inquiryId, onClose, onUpdate }: Props) {
               <div className="text-[9px] font-extrabold uppercase tracking-widest text-muted-2 mb-0.5">
                 Received
               </div>
-              <div className="text-xs font-semibold text-app-2">
-                {fmtIST(inquiry.date_created)}
-              </div>
+              <div className="text-xs font-semibold text-app-2">{fmtIST(inquiry.date_created)}</div>
             </div>
             <div className="ml-auto flex items-center gap-1 text-[10px] text-app">
               <Clock size={9} />

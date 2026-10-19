@@ -60,14 +60,18 @@ export default function OutsideWorkPage() {
       // Sirf geo-tagged (bahar se hua kaam) — latest 500, bounded
       const { data, error } = await supabase
         .from("activity_logs")
-        .select("id, user_id, action, module, meta_id, details, date_created, geo_lat, geo_lng, geo_distance_m")
+        .select(
+          "id, user_id, action, module, meta_id, details, date_created, geo_lat, geo_lng, geo_distance_m"
+        )
         .not("geo_lat", "is", null)
         .order("date_created", { ascending: false })
         .limit(500);
       if (error) {
         // Columns abhi apply nahi hue (migration pending) → seedha batao
         if (error.code === "42703" || /geo_lat/i.test(error.message)) {
-          throw new Error("Geo columns abhi DB me nahi — migration chalao (20260927_activity_geo_tags.sql)");
+          throw new Error(
+            "Geo columns abhi DB me nahi — migration chalao (20260927_activity_geo_tags.sql)"
+          );
         }
         throw error;
       }
@@ -83,14 +87,18 @@ export default function OutsideWorkPage() {
         nameMap = new Map(
           (mechs || []).map((m) => [
             m.id,
-            [m.firstname, m.middlename, m.lastname].filter(Boolean).join(" ").trim() || `Staff #${m.id}`,
+            [m.firstname, m.middlename, m.lastname].filter(Boolean).join(" ").trim() ||
+              `Staff #${m.id}`,
           ])
         );
       }
       setRows(
         logs.map((l) => ({
           ...l,
-          staffName: Number(l.user_id) === 0 ? "Admin" : nameMap.get(Number(l.user_id)) || `Staff #${l.user_id}`,
+          staffName:
+            Number(l.user_id) === 0
+              ? "Admin"
+              : nameMap.get(Number(l.user_id)) || `Staff #${l.user_id}`,
         }))
       );
     } catch (err) {
@@ -135,11 +143,20 @@ export default function OutsideWorkPage() {
         header: "Kab",
         render: (r) => (
           <span className="text-[11px] font-bold text-muted whitespace-nowrap">
-            {formatIST(r.date_created, { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
+            {formatIST(r.date_created, {
+              day: "2-digit",
+              month: "short",
+              hour: "2-digit",
+              minute: "2-digit",
+            })}
           </span>
         ),
       },
-      { key: "staffName", header: "Staff", render: (r) => <span className="font-black text-white text-xs">{r.staffName}</span> },
+      {
+        key: "staffName",
+        header: "Staff",
+        render: (r) => <span className="font-black text-white text-xs">{r.staffName}</span>,
+      },
       {
         key: "job",
         header: "Job / Record",
@@ -163,7 +180,10 @@ export default function OutsideWorkPage() {
         render: (r) => {
           const link = recordLink(r.module, r.meta_id);
           return link ? (
-            <Link href={link} className="text-xs text-app-2 hover:text-white hover:underline underline-offset-2">
+            <Link
+              href={link}
+              className="text-xs text-app-2 hover:text-white hover:underline underline-offset-2"
+            >
               {r.action}
             </Link>
           ) : (
@@ -171,7 +191,11 @@ export default function OutsideWorkPage() {
           );
         },
       },
-      { key: "module", header: "Module", render: (r) => <span className="text-[11px] text-muted">{r.module}</span> },
+      {
+        key: "module",
+        header: "Module",
+        render: (r) => <span className="text-[11px] text-muted">{r.module}</span>,
+      },
       {
         key: "geo",
         header: "Kahan Se",

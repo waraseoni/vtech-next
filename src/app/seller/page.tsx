@@ -500,9 +500,7 @@ function NewLicenseModal({
             <div className="w-12 h-12 mx-auto bg-emerald-500/15 text-emerald-400 rounded-2xl flex items-center justify-center mb-4">
               <Check size={22} />
             </div>
-            <p className="text-xs font-bold text-app-2">
-              License ban gaya. Client ko ye key do:
-            </p>
+            <p className="text-xs font-bold text-app-2">License ban gaya. Client ko ye key do:</p>
             <div className="mt-4 flex items-center justify-center gap-2 bg-app border border-emerald-500/25 rounded-xl px-4 py-3">
               <span className="font-mono text-sm font-black text-emerald-300 tracking-wider">
                 {createdKey}

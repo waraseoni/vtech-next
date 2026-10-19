@@ -10,10 +10,7 @@ import { parseOpenApiToSchema, type SupabaseTableSchema } from "./backupSchema";
 /** Server runtime me cwd = project root (backups/ wahi hota hai). */
 export const BACKUP_DIR = path.join(process.cwd(), "backups");
 
-export async function fetchOpenApiSchema(
-  url: string,
-  key: string
-): Promise<SupabaseTableSchema[]> {
+export async function fetchOpenApiSchema(url: string, key: string): Promise<SupabaseTableSchema[]> {
   const res = await fetch(`${url}/rest/v1/`, {
     headers: { apikey: key, Authorization: `Bearer ${key}`, Accept: "application/openapi+json" },
     cache: "no-store",
@@ -25,7 +22,8 @@ export async function fetchOpenApiSchema(
 async function fetchTableAll(url: string, key: string, t: SupabaseTableSchema) {
   const orderField = t.pk[0] || t.cols[0] || "id";
   const gens = new Set(t.generated);
-  const select = gens.size > 0 && t.cols.length > 0 ? t.cols.filter((c) => !gens.has(c)).join(",") : "*";
+  const select =
+    gens.size > 0 && t.cols.length > 0 ? t.cols.filter((c) => !gens.has(c)).join(",") : "*";
   const headers = { apikey: key, Authorization: `Bearer ${key}` };
   const all: Record<string, unknown>[] = [];
   for (let offset = 0; ; offset += 1000) {
@@ -88,7 +86,12 @@ async function ensureBucket(url: string, key: string) {
   throw new Error(`bucket create failed: ${res.status} ${body}`);
 }
 
-export async function uploadBackupToStorage(url: string, key: string, fileName: string, data: string) {
+export async function uploadBackupToStorage(
+  url: string,
+  key: string,
+  fileName: string,
+  data: string
+) {
   await ensureBucket(url, key);
   const res = await fetch(`${url}/storage/v1/object/${STORAGE_BUCKET}/${fileName}`, {
     method: "POST",
@@ -107,14 +110,23 @@ export async function listStorageBackups(url: string, key: string, max = 5) {
   const res = await fetch(`${url}/storage/v1/object/list/${STORAGE_BUCKET}`, {
     method: "POST",
     headers: { apikey: key, Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ prefix: "", limit: 200, offset: 0, sortBy: { column: "name", order: "desc" } }),
+    body: JSON.stringify({
+      prefix: "",
+      limit: 200,
+      offset: 0,
+      sortBy: { column: "name", order: "desc" },
+    }),
   });
   if (!res.ok) return [];
   const items = (await res.json()) as { name: string; id?: string; updated_at?: string }[];
   return items
     .filter((i) => /^vtech_backup_.+\.json$/.test(i.name))
     .slice(0, max)
-    .map((i) => ({ name: i.name, size: undefined as number | undefined, modified: i.updated_at ?? "" }));
+    .map((i) => ({
+      name: i.name,
+      size: undefined as number | undefined,
+      modified: i.updated_at ?? "",
+    }));
 }
 
 /** Pure logic: schema+fetch+verify+write — CLI (mjs) aur API route dono is pattern par. */
@@ -177,12 +189,22 @@ export async function runScheduledBackup(url: string, key: string): Promise<Sche
 
   // Cloud copy — Supabase Storage 'backups' bucket (platform aankh par bhi save):
   // Vercel deploy me yahi PERSISTENT copy hoti hai, browser/download nahi chahiye.
-  let storage: ScheduledBackupResult["storage"] = { uploaded: false, bucket: STORAGE_BUCKET, fileName, error: "not attempted" };
+  let storage: ScheduledBackupResult["storage"] = {
+    uploaded: false,
+    bucket: STORAGE_BUCKET,
+    fileName,
+    error: "not attempted",
+  };
   try {
     await uploadBackupToStorage(url, key, fileName, data);
     storage = { uploaded: true, bucket: STORAGE_BUCKET, fileName };
   } catch (e) {
-    storage = { uploaded: false, bucket: STORAGE_BUCKET, fileName, error: e instanceof Error ? e.message : "upload fail" };
+    storage = {
+      uploaded: false,
+      bucket: STORAGE_BUCKET,
+      fileName,
+      error: e instanceof Error ? e.message : "upload fail",
+    };
     console.warn("scheduled backup: storage upload fail —", storage.error);
   }
 
@@ -200,17 +222,23 @@ export async function runScheduledBackup(url: string, key: string): Promise<Sche
 
 /** Sirf apni backup files hi delete ho — path traversal / random object block. */
 export function isBackupFileName(name: unknown): name is string {
-  return typeof name === "string" && /^vtech_backup_[\w.\-]+\.json$/.test(name) && !name.includes("..");
+  return (
+    typeof name === "string" && /^vtech_backup_[\w.\-]+\.json$/.test(name) && !name.includes("..")
+  );
 }
 
 /** Supabase Storage 'backups' bucket se ek object delete (service-role). */
 export async function deleteStorageBackup(url: string, key: string, name: string) {
   if (!isBackupFileName(name)) throw new Error("Invalid backup file name.");
-  const res = await fetch(`${url}/storage/v1/object/${STORAGE_BUCKET}/${encodeURIComponent(name)}`, {
-    method: "DELETE",
-    headers: { apikey: key, Authorization: `Bearer ${key}` },
-  });
-  if (!res.ok) throw new Error(`storage delete failed: ${res.status} ${(await res.text()).slice(0, 150)}`);
+  const res = await fetch(
+    `${url}/storage/v1/object/${STORAGE_BUCKET}/${encodeURIComponent(name)}`,
+    {
+      method: "DELETE",
+      headers: { apikey: key, Authorization: `Bearer ${key}` },
+    }
+  );
+  if (!res.ok)
+    throw new Error(`storage delete failed: ${res.status} ${(await res.text()).slice(0, 150)}`);
   return { name, bucket: STORAGE_BUCKET };
 }
 
@@ -238,13 +266,21 @@ export function readLocalBackup(name: string): Buffer {
 }
 
 /** Supabase Storage 'backups' bucket se object bytes (download ke liye). */
-export async function downloadStorageBackup(url: string, key: string, name: string): Promise<ArrayBuffer> {
+export async function downloadStorageBackup(
+  url: string,
+  key: string,
+  name: string
+): Promise<ArrayBuffer> {
   if (!isBackupFileName(name)) throw new Error("Invalid backup file name.");
-  const res = await fetch(`${url}/storage/v1/object/${STORAGE_BUCKET}/${encodeURIComponent(name)}`, {
-    headers: { apikey: key, Authorization: `Bearer ${key}` },
-    cache: "no-store",
-  });
-  if (!res.ok) throw new Error(`storage download failed: ${res.status} ${(await res.text()).slice(0, 150)}`);
+  const res = await fetch(
+    `${url}/storage/v1/object/${STORAGE_BUCKET}/${encodeURIComponent(name)}`,
+    {
+      headers: { apikey: key, Authorization: `Bearer ${key}` },
+      cache: "no-store",
+    }
+  );
+  if (!res.ok)
+    throw new Error(`storage download failed: ${res.status} ${(await res.text()).slice(0, 150)}`);
   return res.arrayBuffer();
 }
 

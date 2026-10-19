@@ -160,7 +160,8 @@ export async function addExpenseFromPayment(input: {
       .select("id", { count: "exact", head: true })
       .eq("supplier_payment_id", input.paymentId);
     if (countErr) return { created: false, error: countErr.message };
-    if (count && count > 0) return { created: false, error: "Pehle se expense entry ban gayi hai." };
+    if (count && count > 0)
+      return { created: false, error: "Pehle se expense entry ban gayi hai." };
 
     const date = input.paymentDate || new Date().toISOString().slice(0, 10);
     const { error } = await supabase.from("expense_list").insert({

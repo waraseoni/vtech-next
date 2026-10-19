@@ -1,12 +1,6 @@
 "use client";
 
-export function ShortcutHelpOverlay({
-  open,
-  onClose,
-}: {
-  open: boolean;
-  onClose: () => void;
-}) {
+export function ShortcutHelpOverlay({ open, onClose }: { open: boolean; onClose: () => void }) {
   if (!open) return null;
   return (
     <div
@@ -29,45 +23,31 @@ export function ShortcutHelpOverlay({
         <div className="space-y-3 text-sm">
           <div className="flex items-center justify-between">
             <span className="text-muted">Dashboard</span>
-            <kbd className="px-2 py-0.5 rounded bg-muted text-app text-xs font-bold">
-              g d
-            </kbd>
+            <kbd className="px-2 py-0.5 rounded bg-muted text-app text-xs font-bold">g d</kbd>
           </div>
           <div className="flex items-center justify-between">
             <span className="text-muted">Jobs</span>
-            <kbd className="px-2 py-0.5 rounded bg-muted text-app text-xs font-bold">
-              g j
-            </kbd>
+            <kbd className="px-2 py-0.5 rounded bg-muted text-app text-xs font-bold">g j</kbd>
           </div>
           <div className="flex items-center justify-between">
             <span className="text-muted">Clients</span>
-            <kbd className="px-2 py-0.5 rounded bg-muted text-app text-xs font-bold">
-              g c
-            </kbd>
+            <kbd className="px-2 py-0.5 rounded bg-muted text-app text-xs font-bold">g c</kbd>
           </div>
           <div className="flex items-center justify-between">
             <span className="text-muted">Sales</span>
-            <kbd className="px-2 py-0.5 rounded bg-muted text-app text-xs font-bold">
-              g s
-            </kbd>
+            <kbd className="px-2 py-0.5 rounded bg-muted text-app text-xs font-bold">g s</kbd>
           </div>
           <div className="flex items-center justify-between">
             <span className="text-muted">Search (universal)</span>
-            <kbd className="px-2 py-0.5 rounded bg-muted text-app text-xs font-bold">
-              Ctrl K
-            </kbd>
+            <kbd className="px-2 py-0.5 rounded bg-muted text-app text-xs font-bold">Ctrl K</kbd>
           </div>
           <div className="flex items-center justify-between">
             <span className="text-muted">Close / Escape</span>
-            <kbd className="px-2 py-0.5 rounded bg-muted text-app text-xs font-bold">
-              Esc
-            </kbd>
+            <kbd className="px-2 py-0.5 rounded bg-muted text-app text-xs font-bold">Esc</kbd>
           </div>
           <div className="flex items-center justify-between">
             <span className="text-muted">This help</span>
-            <kbd className="px-2 py-0.5 rounded bg-muted text-app text-xs font-bold">
-              ?
-            </kbd>
+            <kbd className="px-2 py-0.5 rounded bg-muted text-app text-xs font-bold">?</kbd>
           </div>
         </div>
       </div>

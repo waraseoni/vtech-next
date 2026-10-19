@@ -466,9 +466,7 @@ function CashFlowPageInner() {
                         key={i}
                         className={`${i > 0 ? "border-t border-app/50" : ""} hover:bg-white/[0.02] transition-colors`}
                       >
-                        <td className="px-5 py-4 text-sm font-semibold text-app-2">
-                          {row.label}
-                        </td>
+                        <td className="px-5 py-4 text-sm font-semibold text-app-2">{row.label}</td>
                         <td className="px-5 py-4 text-sm font-black text-right text-emerald-400 tabular-nums">
                           {rupee(row.value)}
                         </td>
@@ -504,9 +502,7 @@ function CashFlowPageInner() {
                         key={i}
                         className={`${i > 0 ? "border-t border-app/50" : ""} hover:bg-white/[0.02] transition-colors`}
                       >
-                        <td className="px-5 py-4 text-sm font-semibold text-app-2">
-                          {row.label}
-                        </td>
+                        <td className="px-5 py-4 text-sm font-semibold text-app-2">{row.label}</td>
                         <td className="px-5 py-4 text-sm font-black text-right text-rose-400 tabular-nums">
                           {rupee(row.value)}
                         </td>

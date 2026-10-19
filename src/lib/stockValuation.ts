@@ -102,7 +102,9 @@ export async function fetchProductValuation(): Promise<ProductValuationReport> {
     const avgCost = st?.avg_purchase_cost ?? 0;
     const value = available > 0 ? available * avgCost : 0;
     const location =
-      (st?.place && st.place.trim()) || locPath(partsFromRow(p as Parameters<typeof partsFromRow>[0])) || "No Location";
+      (st?.place && st.place.trim()) ||
+      locPath(partsFromRow(p as Parameters<typeof partsFromRow>[0])) ||
+      "No Location";
 
     if (available > 0) inStockCount++;
     else outOfStockCount++;
@@ -131,9 +133,7 @@ export async function fetchLocationValuation(): Promise<LocationValuationReport>
   const [{ data: inv }, { data: pl }] = await Promise.all([
     // I6-Phase-2 (2026-09-25): inventory_list.place_* DROP — `place`
     // (trigger-synced display path) hi select hota hai.
-    supabase
-      .from("inventory_list")
-      .select("product_id, quantity, purchase_cost, place"),
+    supabase.from("inventory_list").select("product_id, quantity, purchase_cost, place"),
     supabase.from("product_list").select("id, name"),
   ]);
 

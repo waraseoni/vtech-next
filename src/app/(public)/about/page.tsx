@@ -285,9 +285,7 @@ export default function AboutPage() {
               </div>
               <div className="rounded-2xl p-6 text-center bg-gradient-to-br from-blue-600/20 to-cyan-600/10 border border-blue-500/20">
                 <p className="font-display text-3xl font-black text-white">24×7</p>
-                <p className="text-[12px] font-bold text-muted mt-1">
-                  Emergency Repair Service
-                </p>
+                <p className="text-[12px] font-bold text-muted mt-1">Emergency Repair Service</p>
               </div>
             </div>
           </div>
@@ -415,9 +413,7 @@ export default function AboutPage() {
                     <Star key={s} size={14} fill="currentColor" />
                   ))}
                 </div>
-                <p className="text-[14px] text-app-2 leading-relaxed mb-4">
-                  &ldquo;{t.q}&rdquo;
-                </p>
+                <p className="text-[14px] text-app-2 leading-relaxed mb-4">&ldquo;{t.q}&rdquo;</p>
                 <p className="text-[13px] font-bold text-white">- {t.n}</p>
               </div>
             ))}

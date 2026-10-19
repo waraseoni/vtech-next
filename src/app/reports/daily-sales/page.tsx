@@ -363,9 +363,7 @@ export default function DailySalesReportPage() {
                         </td>
                         <td className="px-4 py-3 font-bold text-app-2">{item.product_name}</td>
                         <td className="px-4 py-3 text-right text-app-2">{inr(item.price)}</td>
-                        <td className="px-4 py-3 text-right font-bold text-app-2">
-                          {item.qty}
-                        </td>
+                        <td className="px-4 py-3 text-right font-bold text-app-2">{item.qty}</td>
                         <td className="px-4 py-3 text-right font-black text-emerald-400">
                           {inr(item.price * item.qty)}
                         </td>
@@ -402,9 +400,7 @@ export default function DailySalesReportPage() {
                 <div key={item.id} className="bg-panel border border-app rounded-2xl p-4">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <p className="text-sm font-black text-app-2 truncate">
-                        {item.product_name}
-                      </p>
+                      <p className="text-sm font-black text-app-2 truncate">{item.product_name}</p>
                       <p className="text-[10px] font-bold text-blue-400 mt-0.5">
                         #{i + 1} · {item.transaction_code || "—"}
                       </p>

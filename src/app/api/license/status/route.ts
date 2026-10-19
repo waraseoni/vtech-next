@@ -132,10 +132,7 @@ export async function GET(req: NextRequest) {
               upsertField("license_last_checked", checkedAt),
               upsertField("license_status", JSON.stringify(parsed)),
             ]);
-          } else if (
-            res.error &&
-            BUSINESS_DOWNGRADE.some((tag) => res.error?.includes(tag))
-          ) {
+          } else if (res.error && BUSINESS_DOWNGRADE.some((tag) => res.error?.includes(tag))) {
             // Asli central rejection → persist karo + block.
             parsed.remoteValid = false;
             parsed.remoteError = res.error;

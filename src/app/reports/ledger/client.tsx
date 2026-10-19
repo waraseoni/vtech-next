@@ -987,10 +987,7 @@ export default function LedgerReportClient({ fromDate, toDate }: Props) {
               totalCls: "text-amber-400",
             },
           ].map(({ title, icon: Icon, rows, cols, empty, renderRow, total, totalCls }) => (
-            <div
-              key={title}
-              className="bg-panel border border-app rounded-2xl overflow-hidden"
-            >
+            <div key={title} className="bg-panel border border-app rounded-2xl overflow-hidden">
               <div className="flex items-center gap-2 px-4 py-3 border-b border-app bg-panel-2">
                 <Icon size={12} className="text-muted" />
                 <span className="text-xs font-extrabold text-muted uppercase tracking-wider">

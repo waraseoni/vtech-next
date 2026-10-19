@@ -5,11 +5,7 @@
 import { Suspense } from "react";
 import { getServerSupabase } from "@/lib/api-auth";
 import { startOfMonthIST, todayIST } from "@/lib/dateUtils";
-import {
-  DirectSalesClient,
-  type DirectSale,
-  type SaleStats,
-} from "./DirectSalesClient";
+import { DirectSalesClient, type DirectSale, type SaleStats } from "./DirectSalesClient";
 
 interface SaleSearchParams {
   from?: string;
@@ -137,9 +133,7 @@ export default async function DirectSalesPage({
         },
       ])
     );
-    const mMap = new Map(
-      (mechsRes.data || []).map((m) => [m.id, `${m.firstname} ${m.lastname}`])
-    );
+    const mMap = new Map((mechsRes.data || []).map((m) => [m.id, `${m.firstname} ${m.lastname}`]));
     const eMap = new Map(
       (editorsRes.data || []).map((e) => [e.id, `${e.firstname} ${e.lastname}`])
     );

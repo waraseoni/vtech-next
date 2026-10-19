@@ -179,8 +179,8 @@ export default function ManageLocationsPage() {
             : "location_bins";
       items = items.filter(
         (r) =>
-          ((r as Record<string, unknown>)[parentTable] as { id?: number } | null | undefined)?.id ===
-          parentId
+          ((r as Record<string, unknown>)[parentTable] as { id?: number } | null | undefined)
+            ?.id === parentId
       );
     }
 
@@ -219,7 +219,7 @@ export default function ManageLocationsPage() {
     }
     setTreeSel(next);
     const immediate = chain[chain.length - 1];
-    setParentId(level === immediate ? val : next[immediate] ?? null);
+    setParentId(level === immediate ? val : (next[immediate] ?? null));
   };
 
   const openAdd = () => {
@@ -425,10 +425,7 @@ export default function ManageLocationsPage() {
         <div className="px-5 py-3 border-b border-app flex items-center justify-between flex-wrap gap-3">
           <div className="flex items-center gap-3">
             <div className="relative">
-              <Search
-                size={14}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-2"
-              />
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-2" />
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}

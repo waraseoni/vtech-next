@@ -37,7 +37,8 @@ export type Conversation = {
   presence: Presence | null;
 };
 
-const MSG_COLS = "id, sender_id, recipient_id, content, read_at, delivered_at, media_url, media_type, media_name, deleted_at, created_at";
+const MSG_COLS =
+  "id, sender_id, recipient_id, content, read_at, delivered_at, media_url, media_type, media_name, deleted_at, created_at";
 
 // conversations — meri saari baat-cheetein (other-user + last msg + unread + presence).
 export async function fetchConversations(
@@ -95,7 +96,9 @@ export async function fetchMessages(me: string, other: string): Promise<Message[
   const { data, error } = await supabase
     .from("messages")
     .select(MSG_COLS)
-    .or(`and(sender_id.eq.${me},recipient_id.eq.${other}),and(sender_id.eq.${other},recipient_id.eq.${me})`)
+    .or(
+      `and(sender_id.eq.${me},recipient_id.eq.${other}),and(sender_id.eq.${other},recipient_id.eq.${me})`
+    )
     .is("deleted_at", null)
     .order("created_at", { ascending: true });
   if (error) return [];
@@ -180,7 +183,9 @@ export async function markRead(me: string, other: string): Promise<void> {
       if (typeof window !== "undefined") {
         window.dispatchEvent(new CustomEvent("vtech:messages-read", { detail: { me } }));
       }
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
   }
 }
 
@@ -300,10 +305,7 @@ export function broadcastTyping(toUserId: string, fromUserId: string): void {
   }
 }
 
-export function subscribeTyping(
-  me: string,
-  cb: (fromUserId: string) => void
-): () => void {
+export function subscribeTyping(me: string, cb: (fromUserId: string) => void): () => void {
   let chan: ReturnType<typeof supabase.channel> | null = null;
   try {
     chan = makeTypingChan();

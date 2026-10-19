@@ -26,11 +26,14 @@ import React, {
 import { supabase, getCachedUser } from "@/lib/supabase";
 import { logActivity } from "@/lib/activity";
 import { setGeoAudit } from "@/lib/geoAudit";
-import { setWriteGuardState, resetWriteGuardState, withWriteGuardBypass, installApiWriteGate, notifyWriteBlocked } from "@/lib/writeGuard";
 import {
-  verifyAttendanceLocation,
-  type GeoResult,
-} from "@/lib/geofence";
+  setWriteGuardState,
+  resetWriteGuardState,
+  withWriteGuardBypass,
+  installApiWriteGate,
+  notifyWriteBlocked,
+} from "@/lib/writeGuard";
+import { verifyAttendanceLocation, type GeoResult } from "@/lib/geofence";
 import { logger } from "@/lib/logger";
 
 // ─── Types ────────────────────────────────────────────────────────────────
@@ -221,7 +224,11 @@ export function ViewOnlyProvider({
     // "unknown" geo + staff: pehle check se pehle lock NAHI (flashing se bacho) —
     // D2 fail-closed sirf KNOWN failure (denied/timeout/...) par lagta hai.
     const viewOnly = geo ? verdict.viewOnly : false;
-    const status: ViewOnlyStatus = geo ? verdict.status : role === "staff" ? "unknown" : verdict.status;
+    const status: ViewOnlyStatus = geo
+      ? verdict.status
+      : role === "staff"
+        ? "unknown"
+        : verdict.status;
     // ── Central write gate publish (synchronous, render ke andar) ──────────
     // `supabase.ts` ka Proxy ye padhta hai. Memo ke andar (effect me nahi) —
     // isliye ek render-tick ka gap nahi jisme write slip ho sake. Idempotent
@@ -283,7 +290,12 @@ export function ViewOnlyProvider({
     // bypass. Business writes kabhi isme nahi aate.
     withWriteGuardBypass(() => {
       if (to === "outside") {
-        logActivity("Geofence Outside", "Staff", undefined, `${dist} bahar, permit nahi — view only`);
+        logActivity(
+          "Geofence Outside",
+          "Staff",
+          undefined,
+          `${dist} bahar, permit nahi — view only`
+        );
       } else if (to === "permit") {
         logActivity(
           "Permit Session Active",
@@ -293,8 +305,18 @@ export function ViewOnlyProvider({
         );
       } else if (to === "inside") {
         logActivity("Geofence Inside", "Staff", undefined, "wapas office ke andar");
-      } else if (to === "denied" || to === "unavailable" || to === "timeout" || to === "unsupported") {
-        logActivity("Geofence Location Unavailable", "Staff", undefined, `GPS ${to} — fail-safe view only`);
+      } else if (
+        to === "denied" ||
+        to === "unavailable" ||
+        to === "timeout" ||
+        to === "unsupported"
+      ) {
+        logActivity(
+          "Geofence Location Unavailable",
+          "Staff",
+          undefined,
+          `GPS ${to} — fail-safe view only`
+        );
       }
     });
   }, [role, state]);
@@ -305,13 +327,7 @@ export function ViewOnlyProvider({
 // ─── CanWrite wrapper (Option 1 — incremental, safe) ──────────────────────
 // viewOnly par poore subtree ke clicks/submits capture-phase me roko + toast.
 // `display:contents` se layout par zero asar (extra box nahi banta).
-export function CanWrite({
-  children,
-  message,
-}: {
-  children: React.ReactNode;
-  message?: string;
-}) {
+export function CanWrite({ children, message }: { children: React.ReactNode; message?: string }) {
   const { viewOnly } = useViewOnly();
   if (!viewOnly) return <>{children}</>;
   const block = (e: React.SyntheticEvent) => {

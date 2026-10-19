@@ -263,9 +263,7 @@ export default function SearchableSelect({
         onClick={toggle}
         aria-expanded={open}
         className={`w-full min-h-[42px] flex items-center justify-between gap-2 px-3 py-2.5 bg-panel-2 border rounded-xl text-sm transition-all outline-none text-left ${
-          open
-            ? "border-blue-500/60 ring-1 ring-blue-500/20"
-            : "border-app hover:border-muted"
+          open ? "border-blue-500/60 ring-1 ring-blue-500/20" : "border-app hover:border-muted"
         }`}
       >
         <span className="min-w-0 flex-1">
@@ -290,7 +288,11 @@ export default function SearchableSelect({
         !isDesktop &&
         createPortal(
           /* ── MOBILE: centered sheet ── */
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" role="dialog" aria-modal="true">
+          <div
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+            role="dialog"
+            aria-modal="true"
+          >
             {/* Backdrop */}
             <div
               className="absolute inset-0 bg-black/70 animate-[fade-in_150ms_ease-out]"

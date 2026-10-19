@@ -153,15 +153,11 @@ function LoanReportContent() {
       {/* Summary */}
       <div className="grid grid-cols-3 lg:grid-cols-5 gap-3">
         <div className="bg-panel border border-app rounded-2xl p-4 text-center">
-          <p className="text-[10px] font-black uppercase text-muted-2 tracking-widest">
-            Principal
-          </p>
+          <p className="text-[10px] font-black uppercase text-muted-2 tracking-widest">Principal</p>
           <p className="text-base font-black text-blue-400 mt-1">{inr(tPrincipal)}</p>
         </div>
         <div className="bg-panel border border-app rounded-2xl p-4 text-center">
-          <p className="text-[10px] font-black uppercase text-muted-2 tracking-widest">
-            Interest
-          </p>
+          <p className="text-[10px] font-black uppercase text-muted-2 tracking-widest">Interest</p>
           <p className="text-base font-black text-emerald-400 mt-1">{inr(tInterest)}</p>
         </div>
         <div className="bg-panel border border-app rounded-2xl p-4 text-center">
@@ -171,9 +167,7 @@ function LoanReportContent() {
           <p className="text-base font-black text-app-2 mt-1">{inr(tTarget)}</p>
         </div>
         <div className="bg-panel border border-app rounded-2xl p-4 text-center">
-          <p className="text-[10px] font-black uppercase text-muted-2 tracking-widest">
-            Received
-          </p>
+          <p className="text-[10px] font-black uppercase text-muted-2 tracking-widest">Received</p>
           <p className="text-base font-black text-teal-400 mt-1">{inr(tReceived)}</p>
         </div>
         <div className="bg-panel border border-app rounded-2xl p-4 text-center">
@@ -231,9 +225,7 @@ function LoanReportContent() {
                     className="border-t border-app/50 hover:bg-white/[0.02] transition-colors"
                   >
                     <td className="px-3 py-2.5 text-xs text-muted text-center">{i + 1}</td>
-                    <td className="px-3 py-2.5 text-xs font-bold text-app-2">
-                      {r.client_name}
-                    </td>
+                    <td className="px-3 py-2.5 text-xs font-bold text-app-2">{r.client_name}</td>
                     <td className="px-3 py-2.5 text-xs text-right text-app-2">
                       {inr(r.principal_amount)}
                     </td>

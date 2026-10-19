@@ -43,7 +43,8 @@ vi.mock("@supabase/ssr", () => ({
       return tables.get(t)!.builder;
     },
     rpc: (fn: string) => ({
-      then: (resolve: (v: unknown) => void) => resolve({ data: fn === "read_only_rpc" ? 1 : 42, error: null }),
+      then: (resolve: (v: unknown) => void) =>
+        resolve({ data: fn === "read_only_rpc" ? 1 : 42, error: null }),
     }),
     auth: { getUser: () => Promise.resolve({ data: { user: { id: "u1" } }, error: null }) },
     channel: () => ({ on: () => ({}), subscribe: () => ({}) }),
@@ -172,9 +173,8 @@ describe("supabase client proxy — writes BLOCKED jab staff bahar + no permit",
       supabase.from("b").update({}).eq("id", 1),
       supabase.from("c").delete().eq("id", 1),
     ]);
-    for (const r of results) expect((r as { error: { code: string } }).error.code).toBe(
-      "GEO_WRITE_BLOCKED"
-    );
+    for (const r of results)
+      expect((r as { error: { code: string } }).error.code).toBe("GEO_WRITE_BLOCKED");
   });
 });
 

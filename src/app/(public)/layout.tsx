@@ -25,10 +25,10 @@ import dynamic from "next/dynamic";
 // static import se har public route (/ , /about, /contact, /job-status) wo load
 // karta tha. Dynamic chunk = initial JS se bahar. Conditional render (qrOpen)
 // se chunk sirf pehli baar click par hi download hota hai.
-const QrShareModal = dynamic(
-  () => import("./components/qr-share").then((m) => m.QrShareModal),
-  { ssr: false, loading: () => null }
-);
+const QrShareModal = dynamic(() => import("./components/qr-share").then((m) => m.QrShareModal), {
+  ssr: false,
+  loading: () => null,
+});
 const NAV_LINKS = [
   { href: "/", label: "Home" },
   { href: "/about", label: "About" },
@@ -165,7 +165,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
 
   return (
     <div className="min-h-screen bg-app text-white overflow-x-hidden">
-            {/* ─── NAVBAR ─────────────────────────────────────────────────────── */}
+      {/* ─── NAVBAR ─────────────────────────────────────────────────────── */}
       <header
         className={`fixed inset-x-0 top-0 z-50 border-b transition-all duration-300 ${
           scrolled || menuOpen

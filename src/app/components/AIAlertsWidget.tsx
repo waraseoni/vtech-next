@@ -192,9 +192,7 @@ export default function AIAlertsWidget() {
               >
                 <div className="flex items-center gap-2 mb-2">
                   <Icon size={14} className={meta.color} />
-                  <span className="text-xs font-bold text-app dark:text-app-2">
-                    {group.title}
-                  </span>
+                  <span className="text-xs font-bold text-app dark:text-app-2">{group.title}</span>
                   <span
                     className={`ml-auto text-[10px] font-black px-2 py-0.5 rounded-full border ${
                       isWarn

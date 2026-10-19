@@ -166,9 +166,7 @@ export default function PowerSupplyPage() {
                       >
                         <Phone size={14} /> Apna charger dikhao
                       </a>
-                      <p className="text-[11px] text-muted mt-1">
-                        Photo bhejo — turant estimate
-                      </p>
+                      <p className="text-[11px] text-muted mt-1">Photo bhejo — turant estimate</p>
                     </div>
                   </div>
                 </div>

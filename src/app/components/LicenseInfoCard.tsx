@@ -172,9 +172,7 @@ export default function LicenseInfoCard() {
         <div className="mt-1.5 bg-panel-2 dark:bg-panel-2 border border-blue-500/10 rounded-xl px-3.5 py-2.5 space-y-1.5">
           <div className="flex items-center gap-2">
             <User size={11} className="text-muted" />
-            <span className="text-[11px] text-app dark:text-app-2">
-              {SELLER_INFO.name}
-            </span>
+            <span className="text-[11px] text-app dark:text-app-2">{SELLER_INFO.name}</span>
           </div>
           <div className="flex items-center gap-2">
             <MapPin size={11} className="text-muted" />

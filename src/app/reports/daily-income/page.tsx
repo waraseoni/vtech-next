@@ -452,9 +452,7 @@ function DailyIncomeContent() {
       {loading ? (
         <div className="py-24 text-center">
           <Loader2 size={32} className="animate-spin text-blue-500 mx-auto mb-4" />
-          <p className="text-muted text-xs font-black uppercase tracking-[0.2em]">
-            Calculating...
-          </p>
+          <p className="text-muted text-xs font-black uppercase tracking-[0.2em]">Calculating...</p>
         </div>
       ) : (
         <div className="space-y-6">
@@ -723,9 +721,7 @@ function DailyIncomeContent() {
                       >
                         {inr(data.net_profit)}
                       </p>
-                      <p className="text-[10px] text-muted-2 mt-1">
-                        (Revenue - Business Expenses)
-                      </p>
+                      <p className="text-[10px] text-muted-2 mt-1">(Revenue - Business Expenses)</p>
                     </td>
                   </tr>
                 </tbody>

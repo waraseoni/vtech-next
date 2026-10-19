@@ -27,10 +27,12 @@ const listeners = new Set<(userId: string, row: PresenceRow) => void>();
 
 async function writeStatus(userId: string, status: "online" | "offline") {
   try {
-    await supabase.from("user_presence").upsert(
-      { user_id: userId, status, last_seen: new Date().toISOString() },
-      { onConflict: "user_id" }
-    );
+    await supabase
+      .from("user_presence")
+      .upsert(
+        { user_id: userId, status, last_seen: new Date().toISOString() },
+        { onConflict: "user_id" }
+      );
   } catch {
     // ignore — presence is best-effort
   }

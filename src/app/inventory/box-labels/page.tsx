@@ -393,7 +393,8 @@ export default function BoxLabelsPage() {
                 <span>Total {boxes.length} box(es)</span>
                 <span>•</span>
                 <span className="text-blue-400 font-bold">
-                  {selectedBoxes.length} box selected ({totalLabelsToPrint} print labels, {totalPages} page(s))
+                  {selectedBoxes.length} box selected ({totalLabelsToPrint} print labels,{" "}
+                  {totalPages} page(s))
                 </span>
               </div>
             </div>
@@ -839,9 +840,7 @@ export default function BoxLabelsPage() {
                               <input
                                 type="text"
                                 value={item.name}
-                                onChange={(e) =>
-                                  updateItem(originalIdx, itemIdx, e.target.value)
-                                }
+                                onChange={(e) => updateItem(originalIdx, itemIdx, e.target.value)}
                                 placeholder="Item / Product Name"
                                 className="min-w-0 flex-1 bg-panel border border-app rounded-lg px-2.5 py-1.5 text-xs text-app-2 placeholder-slate-600 outline-none focus:border-blue-500"
                               />
@@ -910,9 +909,7 @@ export default function BoxLabelsPage() {
 
               {/* Status summary */}
               <div className="text-[11px] text-muted mb-3 flex items-center justify-between">
-                <span>
-                  Showing {printItemsList.length} total label(s)
-                </span>
+                <span>Showing {printItemsList.length} total label(s)</span>
                 <span className="font-semibold text-purple-400">
                   {totalPages} Page(s) • {options.widthMm}×{options.heightMm}mm
                 </span>
@@ -960,17 +957,15 @@ export default function BoxLabelsPage() {
 }
 
 /* ── inline template preview card (Single Label) ────────────────────────── */
-function TemplatePreviewCard({
-  box,
-  options,
-}: {
-  box: BoxLabelData;
-  options: BoxPrintOptions;
-}) {
+function TemplatePreviewCard({ box, options }: { box: BoxLabelData; options: BoxPrintOptions }) {
   const cellBorder = "1px solid #cbd5e1";
   const cellRadius = 7;
   const n = box.items.length;
-  const { cols, fonts, capacity } = itemsLayout(n, options, box.items.map((i) => i.name));
+  const { cols, fonts, capacity } = itemsLayout(
+    n,
+    options,
+    box.items.map((i) => i.name)
+  );
   const visibleItems = box.items.slice(0, capacity);
   const fontPt = (fonts[0] || 8) as number;
   const fontPx = fontPt * 1.333;
@@ -1030,10 +1025,10 @@ function TemplatePreviewCard({
           style={{
             display: "grid",
             gridTemplateColumns: n > 0 ? `repeat(${cols}, 1fr)` : undefined,
-            gridAutoRows: "1fr",   /* bounded: rows split available height equally */
+            gridAutoRows: "1fr" /* bounded: rows split available height equally */,
             columnGap: 4,
             rowGap: 2,
-            flex: 1,               /* cell-content ki baaki height lena zaroori */
+            flex: 1 /* cell-content ki baaki height lena zaroori */,
             minHeight: 0,
             maxHeight: "100%",
             overflow: "hidden",
@@ -1117,7 +1112,9 @@ function TemplatePreviewCard({
             boxSizing: "border-box" as const,
           }}
         >
-          <span style={{ fontSize: 7.5, fontWeight: 900, color: "#8a94a6", letterSpacing: "0.1em" }}>
+          <span
+            style={{ fontSize: 7.5, fontWeight: 900, color: "#8a94a6", letterSpacing: "0.1em" }}
+          >
             BOX
           </span>
           <span
@@ -1233,7 +1230,11 @@ function SheetPreview({
     if (item) {
       // Calculate realistic item layout for mini cell
       const n = item.items.length;
-      const { cols, fonts, capacity } = itemsLayout(n, options, item.items.map((i) => i.name));
+      const { cols, fonts, capacity } = itemsLayout(
+        n,
+        options,
+        item.items.map((i) => i.name)
+      );
       const visibleItems = item.items.slice(0, capacity);
       const miniFontScale = cellPxH / (options.heightMm * 3.78);
       const fontPt = (fonts[0] || 8) as number;
@@ -1326,7 +1327,9 @@ function SheetPreview({
                   </div>
                 ))
               ) : (
-                <span style={{ fontSize: 4, color: "#cbd5e1", fontStyle: "italic" }}>— khali —</span>
+                <span style={{ fontSize: 4, color: "#cbd5e1", fontStyle: "italic" }}>
+                  — khali —
+                </span>
               )}
             </div>
           </div>

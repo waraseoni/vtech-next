@@ -37,7 +37,9 @@ export function useKeyboardShortcuts(config: ShortcutConfig) {
       if (e.key === "g" && !e.ctrlKey && !e.metaKey && !e.altKey && !waitingForG.current) {
         e.preventDefault();
         waitingForG.current = true;
-        setTimeout(() => { waitingForG.current = false; }, 2000);
+        setTimeout(() => {
+          waitingForG.current = false;
+        }, 2000);
         return;
       }
 

@@ -668,7 +668,15 @@ ${el.innerHTML}
                     <Calendar size={13} style={{ verticalAlign: "middle", marginRight: 4 }} />
                     Date Range
                   </div>
-                  <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 8, flexWrap: "wrap" }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      gap: 8,
+                      alignItems: "center",
+                      marginBottom: 8,
+                      flexWrap: "wrap",
+                    }}
+                  >
                     <input
                       type="date"
                       value={localFrom}
@@ -1046,8 +1054,7 @@ ${el.innerHTML}
               { label: "Total Discount Given", val: totals.discount },
             ].map((item) => (
               <div key={item.label} className="theme-heading" style={{ fontSize: 10 }}>
-                <span className="text-muted">{item.label}:</span>{" "}
-                <strong>{inr(item.val)}</strong>
+                <span className="text-muted">{item.label}:</span> <strong>{inr(item.val)}</strong>
               </div>
             ))}
           </div>

@@ -28,8 +28,8 @@ export function MobileBottomTab({ onMore, onBack }: { onMore?: () => void; onBac
             tab.key === "dashboard"
               ? pathname === "/dashboard"
               : tab.href
-              ? pathname.startsWith(tab.href)
-              : false;
+                ? pathname.startsWith(tab.href)
+                : false;
           return (
             <button
               key={tab.key}

@@ -21,12 +21,7 @@ interface EmptyStateProps {
   action?: { label: string; onClick: () => void };
 }
 
-export const EmptyState: React.FC<EmptyStateProps> = ({
-  icon: Icon,
-  title,
-  hint,
-  action,
-}) => (
+export const EmptyState: React.FC<EmptyStateProps> = ({ icon: Icon, title, hint, action }) => (
   <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
     <div className="w-16 h-16 rounded-2xl bg-muted/10 border border-muted/20 flex items-center justify-center mb-4">
       <Icon size={28} className="text-muted" />

@@ -71,16 +71,14 @@ export default function WaPreviewModal({
             <p className="text-[10px] font-black uppercase tracking-wider text-muted-2 mb-1.5">
               Preview
             </p>
-              {/* Rendered preview — theme-aware bubble (app token system) */}
+            {/* Rendered preview — theme-aware bubble (app token system) */}
             <div className="bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 rounded-xl rounded-tr-sm px-3.5 py-2.5 shadow-sm ml-6">
               {/* NOTE: .text-app plain class hai (var-based, dono themes me sahi) —
                   ispar dark: prefix mat lagao, dead code ban jata hai */}
               <p className="text-sm leading-relaxed whitespace-pre-wrap break-words text-app">
                 {message || <span className="opacity-50 italic">Empty message…</span>}
               </p>
-              <p className="text-[10px] text-right mt-1 text-muted-2">
-                {message.length} chars
-              </p>
+              <p className="text-[10px] text-right mt-1 text-muted-2">{message.length} chars</p>
             </div>
           </div>
           {editable && (

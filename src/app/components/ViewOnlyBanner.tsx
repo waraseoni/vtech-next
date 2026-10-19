@@ -86,9 +86,7 @@ export function ViewOnlyBanner({ isAdmin }: { isAdmin: boolean }) {
       ? ` (office se ~${Math.round(distanceM)}m bahar)`
       : "";
 
-  const msgException = onMessages
-    ? " Messages bhejna is page par allowed hai."
-    : "";
+  const msgException = onMessages ? " Messages bhejna is page par allowed hai." : "";
 
   return (
     <div className="mx-3 sm:mx-5 mt-3 rounded-xl border border-red-500/50 bg-red-500/10 px-4 py-2.5 flex items-center gap-2.5">
@@ -97,8 +95,8 @@ export function ViewOnlyBanner({ isAdmin }: { isAdmin: boolean }) {
         VIEW ONLY —{" "}
         {status === "outside" ? (
           <>
-            Aap office ke bahar hain{detail}. Baaki changes sirf office ke
-            andar se honge.{msgException}
+            Aap office ke bahar hain{detail}. Baaki changes sirf office ke andar se honge.
+            {msgException}
           </>
         ) : (
           <>

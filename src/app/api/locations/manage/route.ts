@@ -59,9 +59,7 @@ export async function GET(request: NextRequest) {
           .order("name"),
         sb
           .from("location_bins")
-          .select(
-            "*, location_racks(id, name, zone_id, location_zones(id, name))"
-          )
+          .select("*, location_racks(id, name, zone_id, location_zones(id, name))")
           .eq("delete_flag", 0)
           .order("name"),
         sb
@@ -75,11 +73,7 @@ export async function GET(request: NextRequest) {
 
       // `tab=full` par bhi har item ke liye childCount banao (page isi fetch se
       // "Children" column dikhata hai). Zones→racks, racks→bins, bins→boxes.
-      const countChildren = async (
-        rows: unknown[],
-        childTable: string,
-        childFk: string
-      ) => {
+      const countChildren = async (rows: unknown[], childTable: string, childFk: string) => {
         if (rows.length === 0) return rows;
         const ids = rows.map((r) => (r as { id: number }).id);
         const { data: childRows } = await sb

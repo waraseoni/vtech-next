@@ -53,9 +53,10 @@ describe("decideViewOnly (Tier A soft, fail-closed)", () => {
       viewOnly: false,
       status: "disabled",
     });
-    expect(
-      decideViewOnly({ role: "staff", geoReason: "no-config", permitActive: false })
-    ).toEqual({ viewOnly: false, status: "no-config" });
+    expect(decideViewOnly({ role: "staff", geoReason: "no-config", permitActive: false })).toEqual({
+      viewOnly: false,
+      status: "no-config",
+    });
   });
 });
 

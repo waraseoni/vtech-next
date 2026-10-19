@@ -356,17 +356,13 @@ function FinancialReportContent() {
                     </tr>
 
                     <tr className="hover:bg-white/[0.01] transition-colors">
-                      <td className="px-6 py-4 text-muted font-medium">
-                        Shop Operating Expenses
-                      </td>
+                      <td className="px-6 py-4 text-muted font-medium">Shop Operating Expenses</td>
                       <td className="px-6 py-4 text-right font-black text-red-400">
                         -{inr(data.expenses)}
                       </td>
                     </tr>
                     <tr className="hover:bg-white/[0.01] transition-colors">
-                      <td className="px-6 py-4 text-muted font-medium">
-                        Staff Advance / Salaries
-                      </td>
+                      <td className="px-6 py-4 text-muted font-medium">Staff Advance / Salaries</td>
                       <td className="px-6 py-4 text-right font-black text-red-400">
                         -{inr(data.advance_paid)}
                       </td>

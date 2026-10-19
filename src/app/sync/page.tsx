@@ -440,9 +440,7 @@ export default function SyncPage() {
       <div className="bg-panel border border-app rounded-2xl overflow-hidden">
         <div className="flex items-center gap-2.5 px-5 py-3.5 bg-gradient-to-r from-indigo-600/20 to-transparent border-b border-app">
           <FileText size={14} className="text-indigo-400" />
-          <h3 className="text-xs font-black uppercase tracking-wider text-muted">
-            Sync History
-          </h3>
+          <h3 className="text-xs font-black uppercase tracking-wider text-muted">Sync History</h3>
           <span className="ml-auto text-[10px] text-muted">
             Last {(info?.history ?? []).length}
           </span>
@@ -505,9 +503,7 @@ export default function SyncPage() {
         <div className="bg-app border border-app rounded-2xl overflow-hidden">
           <div className="flex items-center gap-2.5 px-5 py-3 border-b border-app">
             <FileText size={13} className="text-muted" />
-            <h3 className="text-xs font-black uppercase tracking-wider text-muted">
-              Recent Log
-            </h3>
+            <h3 className="text-xs font-black uppercase tracking-wider text-muted">Recent Log</h3>
           </div>
           <div className="px-5 py-3 max-h-44 overflow-y-auto space-y-1">
             {info.log.map((l, i) => (

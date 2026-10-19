@@ -21,7 +21,9 @@ const optsOf = (fn: unknown, call: number) =>
   (fn as ReturnType<typeof vi.fn>).mock.calls[call][1] as { id: string; duration: number };
 
 beforeEach(() => {
-  for (const fn of Object.values(s)) if (typeof (fn as { mockClear?: unknown }).mockClear === "function") (fn as { mockClear: () => void }).mockClear();
+  for (const fn of Object.values(s))
+    if (typeof (fn as { mockClear?: unknown }).mockClear === "function")
+      (fn as { mockClear: () => void }).mockClear();
   vi.useRealTimers();
 });
 

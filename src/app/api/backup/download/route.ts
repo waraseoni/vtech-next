@@ -28,7 +28,10 @@ export async function GET(request: Request) {
       }
       data = await downloadStorageBackup(url, key, name);
     } else {
-      return NextResponse.json({ ok: false, error: "target cloud|local hona chahiye." }, { status: 400 });
+      return NextResponse.json(
+        { ok: false, error: "target cloud|local hona chahiye." },
+        { status: 400 }
+      );
     }
 
     return new NextResponse(data as BodyInit, {

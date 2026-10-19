@@ -517,10 +517,7 @@ export default function ManageJobPage() {
             <div>
               <label className={lCls}>Job Sheet No. *</label>
               <div className="relative">
-                <Hash
-                  size={13}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-2"
-                />
+                <Hash size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-2" />
                 <input
                   type="text"
                   value={jobId}
@@ -588,9 +585,7 @@ export default function ManageJobPage() {
           <div className="bg-panel border border-app rounded-2xl overflow-hidden">
             <div className="flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-blue-600/20 to-transparent border-b border-app">
               <Settings2 size={14} className="text-blue-400" />
-              <h3 className="text-xs font-black uppercase tracking-wider text-muted">
-                Services
-              </h3>
+              <h3 className="text-xs font-black uppercase tracking-wider text-muted">Services</h3>
             </div>
             <div className="p-4 space-y-3">
               <div className="flex gap-2">

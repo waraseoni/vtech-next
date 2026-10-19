@@ -102,11 +102,7 @@ function buildTree(prods: ProductLoc[]): TreeNode {
   };
 
   /** Parent ke andar (nested location hierarchy) node get/create. */
-  const upsert = (
-    parent: TreeNode,
-    level: number,
-    parts: LocationParts
-  ): TreeNode => {
+  const upsert = (parent: TreeNode, level: number, parts: LocationParts): TreeNode => {
     const key = SEGS.slice(0, level + 1).join("|") + ":" + locPath(parts);
     let node = parent.children.get(key);
     if (!node) {
@@ -127,11 +123,7 @@ function buildTree(prods: ProductLoc[]): TreeNode {
     return node;
   };
 
-  const addOwn = (
-    node: TreeNode,
-    prod: { id: number; name: string },
-    qty: number
-  ) => {
+  const addOwn = (node: TreeNode, prod: { id: number; name: string }, qty: number) => {
     const existing = node.ownProducts.find((x) => x.id === prod.id);
     if (existing) existing.qty += qty;
     else node.ownProducts.push({ id: prod.id, name: prod.name, qty });
@@ -238,7 +230,12 @@ export default function LocatePage() {
       >();
       Object.entries(plLocsData).forEach(([pid, locs]) => {
         const arr = Array.isArray(locs)
-          ? (locs as { zone?: string | null; rack?: string | null; bin?: string | null; box?: string | null }[])
+          ? (locs as {
+              zone?: string | null;
+              rack?: string | null;
+              bin?: string | null;
+              box?: string | null;
+            }[])
           : [];
         const mapped = (arr || []).map((loc) => ({
           zone: loc?.zone || "",
@@ -655,10 +652,7 @@ export default function LocatePage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
         <div className="flex flex-col sm:flex-row gap-2.5">
           <div className="relative flex-1">
-            <Search
-              className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-2"
-              size={15}
-            />
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-2" size={15} />
             <input
               type="text"
               value={scanInput}
@@ -750,10 +744,7 @@ export default function LocatePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 space-y-3">
           {/* local quick filter */}
           <div className="relative">
-            <Search
-              className="absolute left-3.5 top-1/2 -translate-y-1/2 text-app"
-              size={14}
-            />
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-app" size={14} />
             <input
               type="text"
               value={q}
@@ -931,10 +922,7 @@ export default function LocatePage() {
                         <span className="inline-flex items-center gap-0.5 text-[10px] text-blue-400 font-bold">
                           <FileText size={9} /> {p.unlocatedPoCodes.slice(0, 2).join(", ")}
                           {p.unlocatedPoCodes.length > 2 && (
-                            <span className="text-muted-2">
-                              {" "}
-                              +{p.unlocatedPoCodes.length - 2}
-                            </span>
+                            <span className="text-muted-2"> +{p.unlocatedPoCodes.length - 2}</span>
                           )}
                         </span>
                       )}
@@ -977,12 +965,10 @@ export default function LocatePage() {
               <QrCode size={20} className="text-emerald-400" />
             </div>
             <h3 className="text-white font-black">Shelf Location QR</h3>
-            <p className="text-[11px] text-muted font-bold mt-1 break-words">
-              {locPath(qrOpen)}
-            </p>
+            <p className="text-[11px] text-muted font-bold mt-1 break-words">{locPath(qrOpen)}</p>
             <div className="mt-4 bg-white rounded-2xl p-3 inline-block mx-auto">
               {qrUrl ? (
-                <Image src={qrUrl} alt="QR" width={176} height={176} className="w-44 h-44"  />
+                <Image src={qrUrl} alt="QR" width={176} height={176} className="w-44 h-44" />
               ) : (
                 <Loader2 size={40} className="animate-spin text-muted" />
               )}

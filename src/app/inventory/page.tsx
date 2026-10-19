@@ -14,9 +14,7 @@ function Denied() {
       <div className="text-center">
         <ShieldCheck size={40} className="text-app mx-auto mb-3" />
         <h1 className="text-lg font-black text-white tracking-tight">Admin only</h1>
-        <p className="text-muted-2 text-sm mt-1">
-          Stock Overview sirf admin dekh sakta hai.
-        </p>
+        <p className="text-muted-2 text-sm mt-1">Stock Overview sirf admin dekh sakta hai.</p>
       </div>
     </div>
   );
@@ -51,10 +49,7 @@ export default async function InventoryPage() {
     const ids = pl.map((p) => p.id);
 
     const [poLinkRes, stockRes] = await Promise.all([
-      supabase
-        .from("inventory_list")
-        .select("product_id, purchase_order_id")
-        .in("product_id", ids),
+      supabase.from("inventory_list").select("product_id, purchase_order_id").in("product_id", ids),
       supabase.rpc("get_inventory_stock", { p_product_ids: ids }),
     ]);
 

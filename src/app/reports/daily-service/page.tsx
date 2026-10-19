@@ -358,10 +358,7 @@ export default function DailyServiceReportPage() {
                   color: "bg-muted/10 text-muted border-muted/20",
                 };
                 return (
-                  <div
-                    key={job.id}
-                    className="bg-panel border border-app rounded-2xl p-4"
-                  >
+                  <div key={job.id} className="bg-panel border border-app rounded-2xl p-4">
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
                         <p className="text-sm font-black text-app-2 truncate">{job.code}</p>

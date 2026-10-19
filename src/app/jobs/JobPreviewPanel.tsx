@@ -116,9 +116,7 @@ export function JobPreviewPanel({
       )}
       {missing && (
         <div className="flex-1 flex items-center justify-center p-6 text-center">
-          <p className="text-muted text-sm font-bold">
-            Job nahi mili (delete ho gayi hogi).
-          </p>
+          <p className="text-muted text-sm font-bold">Job nahi mili (delete ho gayi hogi).</p>
         </div>
       )}
       {txn && st && (
@@ -147,9 +145,7 @@ export function JobPreviewPanel({
                   .filter(Boolean)
                   .join(" ") || "Unknown Client"}
               </p>
-              {txn.client_contact && (
-                <p className="text-xs text-muted">{txn.client_contact}</p>
-              )}
+              {txn.client_contact && <p className="text-xs text-muted">{txn.client_contact}</p>}
             </div>
             <div>
               <p className="text-[9px] font-black uppercase tracking-widest text-muted-2">Item</p>
@@ -157,7 +153,9 @@ export function JobPreviewPanel({
             </div>
             {txn.fault && (
               <div>
-                <p className="text-[9px] font-black uppercase tracking-widest text-muted-2">Fault</p>
+                <p className="text-[9px] font-black uppercase tracking-widest text-muted-2">
+                  Fault
+                </p>
                 <p className="text-xs text-muted">{txn.fault}</p>
               </div>
             )}
@@ -178,11 +176,7 @@ export function JobPreviewPanel({
                 disabled={busy}
                 className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all active:scale-95"
               >
-                {busy ? (
-                  <Loader2 size={13} className="animate-spin" />
-                ) : (
-                  <ArrowRight size={13} />
-                )}
+                {busy ? <Loader2 size={13} className="animate-spin" /> : <ArrowRight size={13} />}
                 {next.label}
               </button>
             )}

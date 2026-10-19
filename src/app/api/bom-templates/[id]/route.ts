@@ -9,7 +9,10 @@ const parseId = async (ctx: Ctx): Promise<number | null> => {
   return Number.isInteger(n) && n > 0 ? n : null;
 };
 
-function normalizeItems(raw: unknown): { items: { product_id: number | null; name: string; qty: number; notes?: string }[]; error: string | null } {
+function normalizeItems(raw: unknown): {
+  items: { product_id: number | null; name: string; qty: number; notes?: string }[];
+  error: string | null;
+} {
   if (!Array.isArray(raw)) return { items: [], error: "items array hona chahiye" };
   if (raw.length === 0) return { items: [], error: "Koi component line nahi hai" };
   const items: { product_id: number | null; name: string; qty: number; notes?: string }[] = [];
@@ -18,9 +21,12 @@ function normalizeItems(raw: unknown): { items: { product_id: number | null; nam
     const name = typeof obj.name === "string" ? obj.name.trim() : "";
     const qty = typeof obj.qty === "number" ? obj.qty : NaN;
     if (!name) return { items: [], error: "Har line ka component naam chahiye" };
-    if (!Number.isInteger(qty) || qty < 1) return { items: [], error: "Har line ki qty positive integer chahiye" };
+    if (!Number.isInteger(qty) || qty < 1)
+      return { items: [], error: "Har line ki qty positive integer chahiye" };
     const product_id =
-      typeof obj.product_id === "number" && Number.isInteger(obj.product_id) ? obj.product_id : null;
+      typeof obj.product_id === "number" && Number.isInteger(obj.product_id)
+        ? obj.product_id
+        : null;
     const notes = typeof obj.notes === "string" ? obj.notes.trim() : "";
     items.push({ product_id, name, qty, ...(notes ? { notes } : {}) });
   }
@@ -53,7 +59,10 @@ export async function GET(_req: NextRequest, ctx: Ctx) {
     .maybeSingle();
 
   if (error) {
-    return NextResponse.json({ error: `bom_templates load fail: ${error.message}` }, { status: 500 });
+    return NextResponse.json(
+      { error: `bom_templates load fail: ${error.message}` },
+      { status: 500 }
+    );
   }
   if (!data) return NextResponse.json({ error: "Template nahi mila" }, { status: 404 });
   return NextResponse.json({ template: data });
@@ -95,7 +104,10 @@ export async function PUT(req: NextRequest, ctx: Ctx) {
     .maybeSingle();
 
   if (error) {
-    return NextResponse.json({ error: `bom_templates update fail: ${error.message}` }, { status: 500 });
+    return NextResponse.json(
+      { error: `bom_templates update fail: ${error.message}` },
+      { status: 500 }
+    );
   }
   if (!data) return NextResponse.json({ error: "Template nahi mila" }, { status: 404 });
   return NextResponse.json({ template: data });
@@ -111,7 +123,10 @@ export async function DELETE(req: NextRequest, ctx: Ctx) {
 
   const { error } = await auth.supabase.from("bom_templates").delete().eq("id", id);
   if (error) {
-    return NextResponse.json({ error: `bom_templates delete fail: ${error.message}` }, { status: 500 });
+    return NextResponse.json(
+      { error: `bom_templates delete fail: ${error.message}` },
+      { status: 500 }
+    );
   }
   return NextResponse.json({ ok: true });
 }

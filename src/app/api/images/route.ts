@@ -120,7 +120,11 @@ async function listBucketFiles(
     if (!data || data.length === 0) break;
     for (const f of data) {
       if (f.metadata) {
-        items.push({ name: prefix + f.name, size: f.metadata.size || 0, created_at: f.created_at || "" });
+        items.push({
+          name: prefix + f.name,
+          size: f.metadata.size || 0,
+          created_at: f.created_at || "",
+        });
       } else if (recursive) {
         // folder — andar recurse (media bucket messenger files folders me rakhta hai)
         items.push(...(await listBucketFiles(bucket, true, prefix + f.name + "/")));

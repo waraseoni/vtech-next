@@ -32,8 +32,7 @@ const fmtDay = new Intl.DateTimeFormat("en-IN", {
 });
 
 const inr = (n: number) =>
-  "₹" +
-  Math.abs(n).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  "₹" + Math.abs(n).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 export default function StockValuationReport() {
   const today = todayIST();
@@ -157,7 +156,9 @@ export default function StockValuationReport() {
           <div className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest opacity-80">
             Units Available
           </div>
-          <div className="text-2xl sm:text-3xl font-black mt-1">{totalUnits.toLocaleString("en-IN")}</div>
+          <div className="text-2xl sm:text-3xl font-black mt-1">
+            {totalUnits.toLocaleString("en-IN")}
+          </div>
           <div className="text-[10px] text-cyan-200/70 font-bold mt-1">
             {products.length} active products
           </div>
@@ -183,10 +184,10 @@ export default function StockValuationReport() {
           <span className="font-black text-app-2 uppercase tracking-widest">
             Do views ka farak:
           </span>{" "}
-          <b>Product value</b> = available (sales kat ke) × weighted avg purchase cost — abhi
-          sell karein to kitna. <b>Location value</b> = sankh me pada inbound stock (qty ×
-          purchase cost) shelf ke hisaab se. Sales ko shelf-level par split nahi kiya ja sakta,
-          isliye ye dono alag hain.
+          <b>Product value</b> = available (sales kat ke) × weighted avg purchase cost — abhi sell
+          karein to kitna. <b>Location value</b> = sankh me pada inbound stock (qty × purchase cost)
+          shelf ke hisaab se. Sales ko shelf-level par split nahi kiya ja sakta, isliye ye dono alag
+          hain.
         </p>
       </div>
 
@@ -327,7 +328,9 @@ export default function StockValuationReport() {
                   <div className="text-[9px] font-black uppercase tracking-widest text-muted-2">
                     Value
                   </div>
-                  <div className="text-xl font-black text-emerald-400">{inr(locTotals.totalValue)}</div>
+                  <div className="text-xl font-black text-emerald-400">
+                    {inr(locTotals.totalValue)}
+                  </div>
                 </div>
               </div>
             </div>

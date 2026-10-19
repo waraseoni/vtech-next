@@ -580,9 +580,7 @@ export default function PublicHome() {
                     <Star key={s} size={14} fill="currentColor" />
                   ))}
                 </div>
-                <p className="text-[14px] text-app-2 leading-relaxed mb-4">
-                  &ldquo;{t.q}&rdquo;
-                </p>
+                <p className="text-[14px] text-app-2 leading-relaxed mb-4">&ldquo;{t.q}&rdquo;</p>
                 <p className="text-[13px] font-bold text-white">- {t.n}</p>
               </div>
             ))}

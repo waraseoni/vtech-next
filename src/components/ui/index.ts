@@ -10,7 +10,7 @@
 // ============================================================================
 
 export { StatusBadge } from "./StatusBadge";
-export type { } from "./StatusBadge";
+export type {} from "./StatusBadge";
 
 export { EmptyState } from "./EmptyState";
 

@@ -158,14 +158,9 @@ export function renderMarkdown(markdown: string): string {
       }
       const headHtml = header.map((cell) => `<th>${renderInline(cell)}</th>`).join("");
       const bodyHtml = rows
-        .map(
-          (row) =>
-            `<tr>${row.map((cell) => `<td>${renderInline(cell)}</td>`).join("")}</tr>`
-        )
+        .map((row) => `<tr>${row.map((cell) => `<td>${renderInline(cell)}</td>`).join("")}</tr>`)
         .join("");
-      html.push(
-        `<table><thead><tr>${headHtml}</tr></thead><tbody>${bodyHtml}</tbody></table>`
-      );
+      html.push(`<table><thead><tr>${headHtml}</tr></thead><tbody>${bodyHtml}</tbody></table>`);
       continue;
     }
 

@@ -74,7 +74,7 @@ export function isWriteBlocked(): boolean {
  * Gate ko sirf us ek kaam ke liye bypass karne ka raasta — geofence session
  * audit (`logActivity("Geofence Outside", …)`).
  *
-  * Kyu zaroori: staff jab bahar jaata hai tab `viewOnly` ON ho jata hai, aur
+ * Kyu zaroori: staff jab bahar jaata hai tab `viewOnly` ON ho jata hai, aur
  * usi waqt "staff bahar gaya" entry likhni hoti hai. Bina bypass ke wo log hi
  * block ho jayegi — yaani audit sabse zaroori moment par chup ho jayegi.
  *
@@ -121,15 +121,17 @@ export function installApiWriteGate(): void {
       method = (init?.method ?? input.method ?? "GET").toUpperCase();
     }
 
-    const isApi = url.startsWith("/api/") || url.includes("://") && new URL(url, location.href).pathname.startsWith("/api/");
+    const isApi =
+      url.startsWith("/api/") ||
+      (url.includes("://") && new URL(url, location.href).pathname.startsWith("/api/"));
     if (isApi && MUTATING_VERBS.has(method) && isWriteBlocked() && !isMessagingApiExempt(url)) {
       notifyWriteBlocked();
       logger.warn(`[geofence] blocked API write: ${method} ${url}`);
       return Promise.resolve(
-        new Response(
-          JSON.stringify({ error: writeBlockedMessage(), code: "GEO_WRITE_BLOCKED" }),
-          { status: 403, headers: { "Content-Type": "application/json" } }
-        )
+        new Response(JSON.stringify({ error: writeBlockedMessage(), code: "GEO_WRITE_BLOCKED" }), {
+          status: 403,
+          headers: { "Content-Type": "application/json" },
+        })
       );
     }
 
@@ -137,7 +139,9 @@ export function installApiWriteGate(): void {
     // se khud check karta hai — client clock par trust nahi).
     if (isApi && MUTATING_VERBS.has(method)) {
       const s = getWriteGuardState();
-      const headers = new Headers(init?.headers ?? (input instanceof Request ? input.headers : undefined));
+      const headers = new Headers(
+        init?.headers ?? (input instanceof Request ? input.headers : undefined)
+      );
       headers.set(GEO_HEADER_STATUS, s.status);
       headers.set(GEO_HEADER_BLOCKED, s.blocked ? "1" : "0");
       if (s.distanceM != null) headers.set(GEO_HEADER_DISTANCE, String(Math.round(s.distanceM)));
@@ -267,10 +271,11 @@ export function blockedBuilder<T = unknown>(message = writeBlockedMessage()): un
     get(_t, prop) {
       if (prop === "then") return (resolve: (v: unknown) => void) => resolve(result);
       if (prop === "catch") return () => Promise.resolve(result);
-      if (prop === "finally") return (fn?: () => void) => {
-        fn?.();
-        return Promise.resolve(result);
-      };
+      if (prop === "finally")
+        return (fn?: () => void) => {
+          fn?.();
+          return Promise.resolve(result);
+        };
       // `.select()`, `.eq()`, `.single()`, `.order()`, `.match()` … — sab chain
       // hote rehte hain aur aakhir me `then` se resolve hote hain.
       return () => proxy;

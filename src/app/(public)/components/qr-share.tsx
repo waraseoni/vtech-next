@@ -197,7 +197,6 @@ export function QrShareModal({ open, onClose }: { open: boolean; onClose: () => 
               width={200}
               height={200}
               className="w-full h-full object-contain"
-              
             />
           ) : (
             <div className="w-full h-full flex flex-col items-center justify-center gap-2 text-muted">
@@ -279,8 +278,8 @@ export function QrShareModal({ open, onClose }: { open: boolean; onClose: () => 
             </div>
             <p className="mt-2 text-[10px] text-muted-2 leading-relaxed">
               WhatsApp par <span className="text-muted">contact chun kar forward</span> karo. QR
-              image bhejne ke liye pehle <span className="text-muted">Save QR Image</span>{" "}
-              dabao, phir WhatsApp mein attach karo.
+              image bhejne ke liye pehle <span className="text-muted">Save QR Image</span> dabao,
+              phir WhatsApp mein attach karo.
             </p>
             <p className="mt-1 text-[10px] text-app leading-relaxed">
               Note: native mobile share sheet sirf{" "}

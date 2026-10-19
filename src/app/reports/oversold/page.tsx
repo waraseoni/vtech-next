@@ -58,10 +58,7 @@ export default function OversoldReport() {
         return;
       }
 
-      const { data: prods } = await supabase
-        .from("product_list")
-        .select("id, name")
-        .in("id", ids);
+      const { data: prods } = await supabase.from("product_list").select("id, name").in("id", ids);
 
       const nameMap = new Map<number, string>();
       (prods || []).forEach((p) => nameMap.set(p.id, p.name));
@@ -319,9 +316,9 @@ export default function OversoldReport() {
       <div className="flex items-start gap-3 bg-amber-500/8 border border-amber-500/20 rounded-xl px-4 py-3 no-print">
         <AlertTriangle size={14} className="text-amber-400 flex-shrink-0 mt-0.5" />
         <p className="text-[11px] text-amber-500/90 font-bold leading-relaxed">
-          Oversell allowed by design — ye report deliberate oversell ko shrinkage/typo se alag
-          karne ke liye hai. Stock theek karne ke liye Inventory → Stock Use karein (physical count
-          ke liye Inventory → Stocktake).
+          Oversell allowed by design — ye report deliberate oversell ko shrinkage/typo se alag karne
+          ke liye hai. Stock theek karne ke liye Inventory → Stock Use karein (physical count ke
+          liye Inventory → Stocktake).
         </p>
       </div>
     </div>

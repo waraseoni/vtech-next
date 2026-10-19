@@ -153,9 +153,7 @@ function SetupPageInner() {
             <form onSubmit={submit} className="space-y-4">
               <div className="text-center mb-1">
                 <h2 className="text-lg font-black text-white">Admin Account Banao</h2>
-                <p className="text-muted-2 text-sm mt-0.5">
-                  Pehla user is system ka admin banega.
-                </p>
+                <p className="text-muted-2 text-sm mt-0.5">Pehla user is system ka admin banega.</p>
               </div>
 
               {error && (

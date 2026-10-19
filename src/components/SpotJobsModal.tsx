@@ -140,9 +140,7 @@ export default function SpotJobsModal({
                               href={`/jobs/${j.id}/view`}
                               className="flex items-center gap-3 opacity-60 hover:opacity-100 no-underline transition-opacity"
                             >
-                              <span className="text-muted text-[10px] font-bold">
-                                #{j.job_id}
-                              </span>
+                              <span className="text-muted text-[10px] font-bold">#{j.job_id}</span>
                               <span className="text-muted-2 text-[10px] truncate flex-1">
                                 {j.item}
                               </span>

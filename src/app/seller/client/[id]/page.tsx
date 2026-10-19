@@ -641,10 +641,7 @@ export default function ClientDetailPage() {
             </div>
 
             {/* ── Credentials ── */}
-            <form
-              onSubmit={save}
-              className="bg-panel border border-app rounded-2xl p-5 space-y-4"
-            >
+            <form onSubmit={save} className="bg-panel border border-app rounded-2xl p-5 space-y-4">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <h2 className="text-[10px] font-black uppercase tracking-widest text-muted flex items-center gap-1.5">
                   <Server size={13} className="text-blue-400" /> Client Credentials (encrypted at

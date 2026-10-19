@@ -98,10 +98,7 @@ describe("isMessagingStorageExempt — sirf `media` bucket", () => {
 describe("isMessagingApiExempt — sirf messaging routes", () => {
   beforeEach(() => at("/messages"));
 
-  it.each([
-    "/api/messages/push",
-    "/api/media/delete",
-  ])("%s exempt hai", (u) => {
+  it.each(["/api/messages/push", "/api/media/delete"])("%s exempt hai", (u) => {
     expect(isMessagingApiExempt(u)).toBe(true);
   });
 

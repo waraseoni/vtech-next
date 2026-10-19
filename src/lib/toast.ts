@@ -85,14 +85,11 @@ export const toast = {
     sonnerToast.success(msg, { duration: opts?.duration ?? 3000 }),
 
   /** Error — persistent (user dismiss kare tabhi hat-ta hai) */
-  error: (msg: string, opts?: ToastOpts) =>
-    sonnerToast.error(msg, optsFor(msg, Infinity, opts)),
+  error: (msg: string, opts?: ToastOpts) => sonnerToast.error(msg, optsFor(msg, Infinity, opts)),
 
-  warning: (msg: string, opts?: ToastOpts) =>
-    sonnerToast.warning(msg, optsFor(msg, 5000, opts)),
+  warning: (msg: string, opts?: ToastOpts) => sonnerToast.warning(msg, optsFor(msg, 5000, opts)),
 
-  info: (msg: string, opts?: ToastOpts) =>
-    sonnerToast.info(msg, optsFor(msg, 4000, opts)),
+  info: (msg: string, opts?: ToastOpts) => sonnerToast.info(msg, optsFor(msg, 4000, opts)),
 
   /** Default sonner toast (type neutral) */
   message: (msg: string) => sonnerToast(msg),

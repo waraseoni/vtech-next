@@ -500,10 +500,7 @@ export default function AIChatPage() {
                             ? Wallet
                             : AlertTriangle;
                   return (
-                    <div
-                      key={gi}
-                      className="rounded-xl bg-app/80 border border-app p-3"
-                    >
+                    <div key={gi} className="rounded-xl bg-app/80 border border-app p-3">
                       <div className="flex items-center gap-2 mb-2">
                         <Icon size={14} className={isWarn ? "text-amber-400" : "text-sky-400"} />
                         <span className="text-xs font-bold text-app-2">{group.title}</span>
@@ -539,9 +536,7 @@ export default function AIChatPage() {
                               className="flex items-center justify-between gap-2 text-xs text-muted"
                             >
                               <span className="truncate">{label}</span>
-                              {sub && (
-                                <span className="shrink-0 font-bold text-muted">{sub}</span>
-                              )}
+                              {sub && <span className="shrink-0 font-bold text-muted">{sub}</span>}
                             </div>
                           );
                         })}
@@ -554,9 +549,7 @@ export default function AIChatPage() {
                     </div>
                   );
                 })}
-                {notifs.note && (
-                  <div className="text-[10px] text-muted italic">{notifs.note}</div>
-                )}
+                {notifs.note && <div className="text-[10px] text-muted italic">{notifs.note}</div>}
               </div>
             )}
           </div>

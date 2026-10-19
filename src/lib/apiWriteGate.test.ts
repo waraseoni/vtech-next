@@ -10,11 +10,7 @@ vi.mock("@/lib/toast", () => ({
   default: { warning: (m: string) => warn(m) },
 }));
 
-import {
-  installApiWriteGate,
-  resetWriteGuardState,
-  setWriteGuardState,
-} from "@/lib/writeGuard";
+import { installApiWriteGate, resetWriteGuardState, setWriteGuardState } from "@/lib/writeGuard";
 
 let calls: Array<{ url: string; init?: RequestInit }> = [];
 

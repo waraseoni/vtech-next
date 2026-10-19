@@ -44,7 +44,12 @@ export default function SupplierPicker({
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [isDesktop, setIsDesktop] = useState(true);
-  const [pos, setPos] = useState<{ top: number; left: number; width: number; maxListH: number } | null>(null);
+  const [pos, setPos] = useState<{
+    top: number;
+    left: number;
+    width: number;
+    maxListH: number;
+  } | null>(null);
   const [showCreate, setShowCreate] = useState(false);
   const [newName, setNewName] = useState("");
   const [newContact, setNewContact] = useState("");
@@ -143,7 +148,9 @@ export default function SupplierPicker({
     if (!open || isDesktop) return;
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = prev; };
+    return () => {
+      document.body.style.overflow = prev;
+    };
   }, [open, isDesktop]);
 
   // Focus create name input when form opens
@@ -154,19 +161,29 @@ export default function SupplierPicker({
   }, [showCreate]);
 
   const q = search.trim().toLowerCase();
-  const filtered = q
-    ? suppliers.filter((s) => s.name.toLowerCase().includes(q))
-    : suppliers;
+  const filtered = q ? suppliers.filter((s) => s.name.toLowerCase().includes(q)) : suppliers;
 
   const handleCreate = async () => {
     const name = newName.trim();
-    if (!name) { setCreateErr("Supplier name zaroori hai!"); return; }
+    if (!name) {
+      setCreateErr("Supplier name zaroori hai!");
+      return;
+    }
     setCreating(true);
     setCreateErr("");
     try {
       const { data, error } = await supabase
         .from("suppliers")
-        .insert([{ name, contact: newContact.trim() || null, email: null, address: null, status: 1, delete_flag: 0 }])
+        .insert([
+          {
+            name,
+            contact: newContact.trim() || null,
+            email: null,
+            address: null,
+            status: 1,
+            delete_flag: 0,
+          },
+        ])
         .select("id, name")
         .single();
       if (error) throw error;
@@ -199,7 +216,10 @@ export default function SupplierPicker({
 
   const searchBox = (
     <div className="relative mb-2">
-      <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-2 pointer-events-none" size={15} />
+      <Search
+        className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-2 pointer-events-none"
+        size={15}
+      />
       <input
         ref={searchRef}
         autoFocus={typeof window !== "undefined" && window.matchMedia("(pointer: fine)").matches}
@@ -214,7 +234,10 @@ export default function SupplierPicker({
       {search && (
         <button
           type="button"
-          onClick={() => { setSearch(""); searchRef.current?.focus(); }}
+          onClick={() => {
+            setSearch("");
+            searchRef.current?.focus();
+          }}
           className="absolute right-2.5 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center rounded-full bg-panel-2 text-muted hover:text-white transition-colors"
         >
           <X size={12} />
@@ -231,7 +254,12 @@ export default function SupplierPicker({
         </span>
         <button
           type="button"
-          onClick={() => { setShowCreate(false); setNewName(""); setNewContact(""); setCreateErr(""); }}
+          onClick={() => {
+            setShowCreate(false);
+            setNewName("");
+            setNewContact("");
+            setCreateErr("");
+          }}
           className="text-muted-2 hover:text-muted"
         >
           <X size={14} />
@@ -243,14 +271,24 @@ export default function SupplierPicker({
         onChange={(e) => setNewName(e.target.value)}
         placeholder="Supplier name *"
         className="w-full px-3 py-2 bg-app border border-app rounded-lg text-sm text-white placeholder:text-app outline-none focus:border-blue-500"
-        onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleCreate(); } }}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            handleCreate();
+          }
+        }}
       />
       <input
         value={newContact}
         onChange={(e) => setNewContact(e.target.value)}
         placeholder="Contact (optional)"
         className="w-full px-3 py-2 bg-app border border-app rounded-lg text-sm text-white placeholder:text-app outline-none focus:border-blue-500"
-        onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleCreate(); } }}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            handleCreate();
+          }
+        }}
       />
       {createErr && <p className="text-red-400 text-xs">{createErr}</p>}
       <button
@@ -279,8 +317,17 @@ export default function SupplierPicker({
               <span
                 role="button"
                 tabIndex={0}
-                onClick={(e) => { e.stopPropagation(); toggleMulti(s.id); }}
-                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); toggleMulti(s.id); } }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleMulti(s.id);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    toggleMulti(s.id);
+                  }
+                }}
                 className="hover:text-emerald-200 cursor-pointer"
               >
                 <X size={10} />
@@ -293,12 +340,17 @@ export default function SupplierPicker({
       {/* Clear option (single-select) */}
       {!multi && clearLabel && (
         <div
-          onClick={() => { onSelect?.(null); close(); }}
+          onClick={() => {
+            onSelect?.(null);
+            close();
+          }}
           className={`flex items-center justify-between px-3 py-2.5 rounded-xl transition-all group cursor-pointer hover:bg-white/5 active:bg-white/10 ${
             value === null || value === "" ? "text-blue-300" : "text-muted"
           }`}
         >
-          <span className="text-sm font-bold group-hover:text-blue-300 transition-colors">{clearLabel}</span>
+          <span className="text-sm font-bold group-hover:text-blue-300 transition-colors">
+            {clearLabel}
+          </span>
           {value === null || value === "" ? (
             <Check size={15} className="text-emerald-400 flex-shrink-0" />
           ) : (
@@ -316,22 +368,31 @@ export default function SupplierPicker({
           return (
             <div
               key={s.id}
-              onClick={() => multi ? toggleMulti(s.id) : (() => { onSelect?.(String(s.id)); close(); })()}
-              className={`flex items-center justify-between px-3 min-h-[44px] py-2 rounded-xl transition-all group cursor-pointer ${
-                "hover:bg-white/5 active:bg-blue-500/10"
-              }`}
+              onClick={() =>
+                multi
+                  ? toggleMulti(s.id)
+                  : (() => {
+                      onSelect?.(String(s.id));
+                      close();
+                    })()
+              }
+              className={`flex items-center justify-between px-3 min-h-[44px] py-2 rounded-xl transition-all group cursor-pointer ${"hover:bg-white/5 active:bg-blue-500/10"}`}
             >
               <div className="min-w-0">
-                <div className={`text-sm font-bold truncate transition-colors ${
-                  isSel ? "text-blue-300" : "text-white group-hover:text-blue-300"
-                }`}>
+                <div
+                  className={`text-sm font-bold truncate transition-colors ${
+                    isSel ? "text-blue-300" : "text-white group-hover:text-blue-300"
+                  }`}
+                >
                   {s.name}
                 </div>
               </div>
               {multi ? (
-                <span className={`w-4 h-4 rounded flex items-center justify-center flex-shrink-0 border ${
-                  isSel ? "bg-emerald-500 border-emerald-500 text-white" : "border-app-2"
-                }`}>
+                <span
+                  className={`w-4 h-4 rounded flex items-center justify-center flex-shrink-0 border ${
+                    isSel ? "bg-emerald-500 border-emerald-500 text-white" : "border-app-2"
+                  }`}
+                >
                   {isSel && <Check size={11} />}
                 </span>
               ) : (
@@ -383,13 +444,25 @@ export default function SupplierPicker({
             ) : (
               <span className="flex items-center gap-1.5 flex-wrap">
                 {selectedOpts.slice(0, 3).map((s) => (
-                  <span key={s.id} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 text-[10px] font-bold">
+                  <span
+                    key={s.id}
+                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 text-[10px] font-bold"
+                  >
                     {s.name}
                     <span
                       role="button"
                       tabIndex={0}
-                      onClick={(e) => { e.stopPropagation(); toggleMulti(s.id); }}
-                      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); toggleMulti(s.id); } }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleMulti(s.id);
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          toggleMulti(s.id);
+                        }
+                      }}
                       className="hover:text-emerald-200 cursor-pointer"
                     >
                       <X size={10} />
@@ -397,7 +470,9 @@ export default function SupplierPicker({
                   </span>
                 ))}
                 {selectedOpts.length > 3 && (
-                  <span className="text-[10px] font-bold text-muted">+{selectedOpts.length - 3} aur</span>
+                  <span className="text-[10px] font-bold text-muted">
+                    +{selectedOpts.length - 3} aur
+                  </span>
                 )}
               </span>
             )
@@ -407,48 +482,65 @@ export default function SupplierPicker({
             <span className="text-muted-2 font-medium">{placeholder}</span>
           )}
         </span>
-        <ChevronDown size={16} className={`text-muted flex-shrink-0 transition-transform ${open ? "rotate-180" : ""}`} />
+        <ChevronDown
+          size={16}
+          className={`text-muted flex-shrink-0 transition-transform ${open ? "rotate-180" : ""}`}
+        />
       </button>
 
       {/* Mobile: centered bottom sheet */}
-      {open && typeof document !== "undefined" && !isDesktop && createPortal(
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" role="dialog" aria-modal="true">
-          <div className="absolute inset-0 bg-black/70 animate-[fade-in_150ms_ease-out]" onClick={close} />
+      {open &&
+        typeof document !== "undefined" &&
+        !isDesktop &&
+        createPortal(
           <div
-            ref={menuRef}
-            className="relative w-full max-w-md bg-panel border border-app rounded-2xl shadow-2xl flex flex-col max-h-[82vh] animate-[sheet-up_220ms_cubic-bezier(0.22,1,0.36,1)]"
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+            role="dialog"
+            aria-modal="true"
           >
-            <div className="flex justify-center pt-2.5 pb-1 flex-shrink-0" onClick={close}>
-              <div className="w-10 h-1 rounded-full bg-slate-600" />
+            <div
+              className="absolute inset-0 bg-black/70 animate-[fade-in_150ms_ease-out]"
+              onClick={close}
+            />
+            <div
+              ref={menuRef}
+              className="relative w-full max-w-md bg-panel border border-app rounded-2xl shadow-2xl flex flex-col max-h-[82vh] animate-[sheet-up_220ms_cubic-bezier(0.22,1,0.36,1)]"
+            >
+              <div className="flex justify-center pt-2.5 pb-1 flex-shrink-0" onClick={close}>
+                <div className="w-10 h-1 rounded-full bg-slate-600" />
+              </div>
+              <div className="px-4 pb-2 flex-shrink-0">
+                <p className="text-[10px] font-extrabold uppercase tracking-widest text-muted-2 mb-2">
+                  {placeholder.replace(/[—-]/g, "").trim()}
+                </p>
+                {searchBox}
+              </div>
+              <div className="flex-1 overflow-y-auto overscroll-contain px-4 pb-2 space-y-0.5">
+                {listContent}
+              </div>
             </div>
-            <div className="px-4 pb-2 flex-shrink-0">
-              <p className="text-[10px] font-extrabold uppercase tracking-widest text-muted-2 mb-2">
-                {placeholder.replace(/[—-]/g, "").trim()}
-              </p>
-              {searchBox}
-            </div>
-            <div className="flex-1 overflow-y-auto overscroll-contain px-4 pb-2 space-y-0.5">
-              {listContent}
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
+          </div>,
+          document.body
+        )}
 
       {/* Desktop: anchored dropdown */}
-      {open && pos && isDesktop && typeof document !== "undefined" && createPortal(
-        <div
-          ref={menuRef}
-          style={{ top: pos.top, left: pos.left, width: pos.width }}
-          className="fixed z-[100] bg-panel border border-app rounded-2xl shadow-2xl p-3 animate-[fade-in_120ms_ease-out]"
-        >
-          {searchBox}
-          <div className="overflow-y-auto space-y-0.5" style={{ maxHeight: pos.maxListH }}>
-            {listContent}
-          </div>
-        </div>,
-        document.body
-      )}
+      {open &&
+        pos &&
+        isDesktop &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <div
+            ref={menuRef}
+            style={{ top: pos.top, left: pos.left, width: pos.width }}
+            className="fixed z-[100] bg-panel border border-app rounded-2xl shadow-2xl p-3 animate-[fade-in_120ms_ease-out]"
+          >
+            {searchBox}
+            <div className="overflow-y-auto space-y-0.5" style={{ maxHeight: pos.maxListH }}>
+              {listContent}
+            </div>
+          </div>,
+          document.body
+        )}
     </div>
   );
 }

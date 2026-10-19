@@ -181,8 +181,8 @@ export default function GeofencePermitsPage() {
             <Plus size={14} className="text-emerald-400" /> Naya Permit
           </h2>
           <p className="text-[11px] text-muted mb-3">
-            Staff ko batana na bhoolein: permit par bahar se hue kaam ki location audit me save
-            hoti hai (Reports → Bahar Se Hua Kaam).
+            Staff ko batana na bhoolein: permit par bahar se hue kaam ki location audit me save hoti
+            hai (Reports → Bahar Se Hua Kaam).
           </p>
           <div className="grid sm:grid-cols-2 gap-3">
             <label className="block">
@@ -243,9 +243,7 @@ export default function GeofencePermitsPage() {
 
         {/* Active permits */}
         <div className="bg-panel border border-app rounded-2xl px-5 py-4">
-          <h2 className="text-sm font-black text-white mb-3">
-            Active Permits ({active.length})
-          </h2>
+          <h2 className="text-sm font-black text-white mb-3">Active Permits ({active.length})</h2>
           {loading ? (
             <div className="flex items-center justify-center py-8">
               <Loader2 size={22} className="animate-spin text-muted-2" />

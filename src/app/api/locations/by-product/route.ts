@@ -34,7 +34,16 @@ export async function GET(request: NextRequest) {
 
     const response: Record<
       number,
-      { zone: string; rack: string; bin: string; box: string; zone_id?: number | null; rack_id?: number | null; bin_id?: number | null; box_id?: number | null }[]
+      {
+        zone: string;
+        rack: string;
+        bin: string;
+        box: string;
+        zone_id?: number | null;
+        rack_id?: number | null;
+        bin_id?: number | null;
+        box_id?: number | null;
+      }[]
     > = {};
     if (ids.length === 0) return NextResponse.json(response);
 
@@ -49,8 +58,28 @@ export async function GET(request: NextRequest) {
     for (const row of (data || []) as Array<{
       product_id: number;
       locations:
-        | { id: number; zone?: string | null; rack?: string | null; bin?: string | null; box?: string | null; zone_id?: number | null; rack_id?: number | null; bin_id?: number | null; box_id?: number | null }
-        | Array<{ id: number; zone?: string | null; rack?: string | null; bin?: string | null; box?: string | null; zone_id?: number | null; rack_id?: number | null; bin_id?: number | null; box_id?: number | null }>;
+        | {
+            id: number;
+            zone?: string | null;
+            rack?: string | null;
+            bin?: string | null;
+            box?: string | null;
+            zone_id?: number | null;
+            rack_id?: number | null;
+            bin_id?: number | null;
+            box_id?: number | null;
+          }
+        | Array<{
+            id: number;
+            zone?: string | null;
+            rack?: string | null;
+            bin?: string | null;
+            box?: string | null;
+            zone_id?: number | null;
+            rack_id?: number | null;
+            bin_id?: number | null;
+            box_id?: number | null;
+          }>;
     }>) {
       const loc = Array.isArray(row.locations) ? row.locations[0] : row.locations;
       const entry = {

@@ -355,10 +355,7 @@ export default function PaymentsPageInner({ initialClients, initialPayments }: P
               Search
             </label>
             <div className="relative">
-              <Search
-                size={14}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-2"
-              />
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-2" />
               <input
                 value={search}
                 onChange={(e) => {
@@ -657,9 +654,7 @@ export default function PaymentsPageInner({ initialClients, initialPayments }: P
                     </div>
                   </div>
                   {p.remarks && (
-                    <div className="text-xs text-muted mb-3 bg-app rounded-lg p-2">
-                      {p.remarks}
-                    </div>
+                    <div className="text-xs text-muted mb-3 bg-app rounded-lg p-2">{p.remarks}</div>
                   )}
                   <div className="flex gap-2">
                     <button
@@ -777,9 +772,7 @@ export default function PaymentsPageInner({ initialClients, initialPayments }: P
                   renderSelected={(opt) => (
                     <div className="min-w-0">
                       <div className="font-bold text-white text-sm truncate">{opt.label}</div>
-                      {opt.sub && (
-                        <div className="text-[10px] text-muted truncate">{opt.sub}</div>
-                      )}
+                      {opt.sub && <div className="text-[10px] text-muted truncate">{opt.sub}</div>}
                     </div>
                   )}
                 />
@@ -907,9 +900,7 @@ export default function PaymentsPageInner({ initialClients, initialPayments }: P
                   </div>
                   <div className="sm:text-right">
                     <div className="text-lg font-black">{paymentCode(receiptPayment.id)}</div>
-                    <div className="text-sm text-muted">
-                      {fmtDate(receiptPayment.payment_date)}
-                    </div>
+                    <div className="text-sm text-muted">{fmtDate(receiptPayment.payment_date)}</div>
                   </div>
                 </div>
                 <div className="mt-5 grid gap-4 sm:grid-cols-2">
@@ -955,9 +946,7 @@ export default function PaymentsPageInner({ initialClients, initialPayments }: P
                     </tr>
                     {(receiptPayment.discount || 0) > 0 && (
                       <tr className="border border-app-2">
-                        <td className="border border-app-2 px-3 py-2 font-semibold">
-                          Discount
-                        </td>
+                        <td className="border border-app-2 px-3 py-2 font-semibold">Discount</td>
                         <td className="border border-app-2 px-3 py-2 text-right font-black text-amber-600">
                           -{fmtMoney(receiptPayment.discount || 0)}
                         </td>

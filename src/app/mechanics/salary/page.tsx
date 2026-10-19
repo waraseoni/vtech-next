@@ -15,7 +15,8 @@ async function SalaryPage({ searchParams }: Props) {
 
   const params = await searchParams;
   const currentMonthStr = format(new Date(), "yyyy-MM");
-  const month = params?.month && /^\d{4}-\d{2}$/.test(params.month) ? params.month : currentMonthStr;
+  const month =
+    params?.month && /^\d{4}-\d{2}$/.test(params.month) ? params.month : currentMonthStr;
 
   const [initialReportData, initialMechanics] = await Promise.all([
     fetchSalaryReportData(month),

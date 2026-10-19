@@ -27,11 +27,15 @@ export type PushResult =
 
 const VAPID_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || "";
 
+type CapacitorWindow = Window & {
+  Capacitor?: { isNativePlatform?: () => boolean };
+};
+
 // Kapasar native runtime detect karo (Android app, not browser).
 function isNative(): boolean {
   if (typeof window === "undefined") return false;
-  // @ts-expect-error Capacitor global browser runtime par plug karta hai
-  return !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+  const w = window as CapacitorWindow;
+  return !!(w.Capacitor?.isNativePlatform && w.Capacitor.isNativePlatform());
 }
 
 function base64UrlToUint8Array(base64: string): Uint8Array<ArrayBuffer> {
@@ -58,7 +62,9 @@ export async function subscribeToPush(): Promise<PushResult> {
   // ── Native (Capacitor/Android) path ────────────────────────────────────
   if (isNative()) {
     try {
-      const { PushNotifications } = await import(/* webpackIgnore: true */ "@capacitor/push-notifications");
+      const { PushNotifications } = await import(
+        /* webpackIgnore: true */ "@capacitor/push-notifications"
+      );
       const perm = await PushNotifications.requestPermissions();
       if (perm.receive !== "granted") return { ok: true, mode: "denied" };
 
@@ -142,7 +148,9 @@ export async function disablePush(): Promise<PushResult> {
   // ── Native path ────────────────────────────────────────────────────────
   if (isNative()) {
     try {
-      const { PushNotifications } = await import(/* webpackIgnore: true */ "@capacitor/push-notifications");
+      const { PushNotifications } = await import(
+        /* webpackIgnore: true */ "@capacitor/push-notifications"
+      );
       await PushNotifications.unregister();
       const userId = await currentUserId();
       if (userId) {

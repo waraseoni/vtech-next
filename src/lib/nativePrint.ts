@@ -220,7 +220,7 @@ export function initNativeBridge(): void {
 
     // @ts-expect-error — typed replacement of global window.open
     window.open = (url?: string | URL, target?: string, features?: string) => {
-      const u = typeof url === "string" ? url : url?.toString?.() ?? "";
+      const u = typeof url === "string" ? url : (url?.toString?.() ?? "");
       // Popup print pattern: target "_blank" with empty/blank URL → fake window.
       if (u === "" || u === "about:blank") {
         return createPrintProxy(typeof target === "string" ? target : "V-Tech PRO");
@@ -315,9 +315,7 @@ export function initNativeBridge(): void {
           }
           fetch(href, { credentials: "same-origin" })
             .then((r) => r.text())
-            .then((html) =>
-              Printer.printHtml({ html: ensureBaseHref(html), name: "V-Tech PRO" })
-            )
+            .then((html) => Printer.printHtml({ html: ensureBaseHref(html), name: "V-Tech PRO" }))
             .catch(() => openExternalUrl(href));
         }
       },

@@ -406,10 +406,7 @@ export default function SupplierPurchasesReport() {
                                 </thead>
                                 <tbody>
                                   {r.products.map((p) => (
-                                    <tr
-                                      key={p.productName}
-                                      className="border-t border-app/40"
-                                    >
+                                    <tr key={p.productName} className="border-t border-app/40">
                                       <td className="px-4 py-2 text-sm font-bold text-app-2">
                                         {p.productName}
                                       </td>

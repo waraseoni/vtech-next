@@ -442,9 +442,7 @@ export default function DbToolsPage() {
 
                 <div className="pt-2 mt-2 border-t border-app">
                   <p className="text-[9px] text-muted-2 mb-1">Prerequisites:</p>
-                  <code className="text-[10px] text-muted font-mono">
-                    scoop install postgresql
-                  </code>
+                  <code className="text-[10px] text-muted font-mono">scoop install postgresql</code>
                 </div>
               </div>
             </div>

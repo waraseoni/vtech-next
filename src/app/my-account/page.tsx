@@ -240,9 +240,7 @@ export default function MyAccountPage() {
                   </span>
                 </div>
 
-                <p className="text-app-2 font-bold text-sm mt-3">
-                  {j.item || "Item nahi likha"}
-                </p>
+                <p className="text-app-2 font-bold text-sm mt-3">{j.item || "Item nahi likha"}</p>
                 {j.fault && <p className="text-muted text-xs mt-1">{j.fault}</p>}
                 {j.remark && <p className="text-muted-2 text-xs mt-1 italic">{j.remark}</p>}
 

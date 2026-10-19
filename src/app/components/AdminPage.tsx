@@ -31,10 +31,9 @@ export default function AdminPage({ title, subtitle, allowStaff, children }: Pro
         .eq("id", user.id)
         .maybeSingle();
       const role = p?.role;
-      const ok =
-        allowStaff
-          ? role === "admin" || role === "developer" || role === "staff"
-          : role === "admin";
+      const ok = allowStaff
+        ? role === "admin" || role === "developer" || role === "staff"
+        : role === "admin";
       if (!ok) {
         router.push("/");
         return;
@@ -47,9 +46,7 @@ export default function AdminPage({ title, subtitle, allowStaff, children }: Pro
   if (loading) {
     return (
       <div className="min-h-screen bg-app flex items-center justify-center">
-        <p className="text-muted-2 text-xs font-extrabold uppercase tracking-[0.3em]">
-          Loading...
-        </p>
+        <p className="text-muted-2 text-xs font-extrabold uppercase tracking-[0.3em]">Loading...</p>
       </div>
     );
   }
@@ -61,7 +58,9 @@ export default function AdminPage({ title, subtitle, allowStaff, children }: Pro
       <div className="max-w-6xl mx-auto">
         {title && (
           <div className="mb-4 sm:mb-5">
-            <h1 className="text-lg sm:text-xl md:text-2xl font-black text-white tracking-tight">{title}</h1>
+            <h1 className="text-lg sm:text-xl md:text-2xl font-black text-white tracking-tight">
+              {title}
+            </h1>
             {subtitle && <p className="text-muted-2 text-xs sm:text-sm mt-1">{subtitle}</p>}
           </div>
         )}

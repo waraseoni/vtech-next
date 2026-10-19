@@ -30,7 +30,8 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   const admin = await requireAdmin();
-  if (!admin) return NextResponse.json({ error: "Sirf Admin permit de sakta hai" }, { status: 403 });
+  if (!admin)
+    return NextResponse.json({ error: "Sirf Admin permit de sakta hai" }, { status: 403 });
   const body = (await req.json()) as {
     user_id?: string;
     mechanic_id?: number | null;
@@ -60,7 +61,10 @@ export async function POST(req: NextRequest) {
   if (error) {
     if (error.code === "42P01") {
       return NextResponse.json(
-        { error: "Permit table abhi DB me nahi — migration chalao (20260926_staff_geofence_permit.sql)" },
+        {
+          error:
+            "Permit table abhi DB me nahi — migration chalao (20260926_staff_geofence_permit.sql)",
+        },
         { status: 500 }
       );
     }
@@ -77,7 +81,8 @@ export async function POST(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   const admin = await requireAdmin();
-  if (!admin) return NextResponse.json({ error: "Sirf Admin revoke kar sakta hai" }, { status: 403 });
+  if (!admin)
+    return NextResponse.json({ error: "Sirf Admin revoke kar sakta hai" }, { status: 403 });
   const { searchParams } = new URL(req.url);
   const id = searchParams.get("id");
   if (!id) return NextResponse.json({ error: "id zaroori hai" }, { status: 400 });

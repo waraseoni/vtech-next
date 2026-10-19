@@ -78,7 +78,10 @@ export async function DELETE(request: Request) {
       }
       await deleteStorageBackup(url, key, name);
     } else {
-      return NextResponse.json({ ok: false, error: "target cloud|local hona chahiye." }, { status: 400 });
+      return NextResponse.json(
+        { ok: false, error: "target cloud|local hona chahiye." },
+        { status: 400 }
+      );
     }
     return NextResponse.json({ ok: true, deleted: name, target });
   } catch (error) {

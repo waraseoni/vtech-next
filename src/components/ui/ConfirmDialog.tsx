@@ -62,13 +62,12 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
         <div className="flex items-start gap-3 mb-4">
           <div
             className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
-              danger ? "bg-red-500/10 border border-red-500/20" : "bg-amber-500/10 border border-amber-500/20"
+              danger
+                ? "bg-red-500/10 border border-red-500/20"
+                : "bg-amber-500/10 border border-amber-500/20"
             }`}
           >
-            <AlertTriangle
-              size={18}
-              className={danger ? "text-red-400" : "text-amber-400"}
-            />
+            <AlertTriangle size={18} className={danger ? "text-red-400" : "text-amber-400"} />
           </div>
           <div>
             <h3 className="text-sm font-black text-white">{title}</h3>
@@ -89,9 +88,7 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
             onClick={onConfirm}
             disabled={loading}
             className={`flex-1 min-h-[44px] rounded-xl text-white text-xs font-bold transition-colors disabled:opacity-50 ${
-              danger
-                ? "bg-red-600 hover:bg-red-500"
-                : "bg-blue-600 hover:bg-blue-500"
+              danger ? "bg-red-600 hover:bg-red-500" : "bg-blue-600 hover:bg-blue-500"
             }`}
           >
             {loading ? "…" : confirmLabel}

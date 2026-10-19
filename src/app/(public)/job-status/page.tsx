@@ -294,9 +294,7 @@ export default function JobStatusPage() {
             {/* Recent Jobs for reference */}
             {!recentLoading && recentJobs.length > 0 && (
               <div className="mt-8">
-                <h3 className="text-sm font-bold mb-3 text-muted">
-                  Recent Jobs (for reference)
-                </h3>
+                <h3 className="text-sm font-bold mb-3 text-muted">Recent Jobs (for reference)</h3>
                 <div className="rounded-3xl overflow-hidden bg-white/[0.03] border border-white/[0.08]">
                   {recentJobs.map((j) => (
                     <button
@@ -492,9 +490,7 @@ export default function JobStatusPage() {
                       <p className="font-display text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-300">
                         ₹{job.amount.toLocaleString("en-IN")}
                       </p>
-                      <p className="text-xs mt-2 text-muted">
-                        Includes all services and products
-                      </p>
+                      <p className="text-xs mt-2 text-muted">Includes all services and products</p>
                     </div>
 
                     {/* Remarks */}

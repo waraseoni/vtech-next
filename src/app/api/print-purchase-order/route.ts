@@ -34,16 +34,46 @@ function fmtDate(d: string | null): string {
 }
 
 function inr(n: number): string {
-  return "\u20b9" + n.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return (
+    "\u20b9" + n.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  );
 }
 
 function numberToWords(num: number): string {
   const ones = [
-    "", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine",
-    "Ten", "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen", "Sixteen",
-    "Seventeen", "Eighteen", "Nineteen",
+    "",
+    "One",
+    "Two",
+    "Three",
+    "Four",
+    "Five",
+    "Six",
+    "Seven",
+    "Eight",
+    "Nine",
+    "Ten",
+    "Eleven",
+    "Twelve",
+    "Thirteen",
+    "Fourteen",
+    "Fifteen",
+    "Sixteen",
+    "Seventeen",
+    "Eighteen",
+    "Nineteen",
   ];
-  const tens = ["", "", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety"];
+  const tens = [
+    "",
+    "",
+    "Twenty",
+    "Thirty",
+    "Forty",
+    "Fifty",
+    "Sixty",
+    "Seventy",
+    "Eighty",
+    "Ninety",
+  ];
   function helper(n: number): string {
     if (n === 0) return "";
     if (n < 20) return ones[n] + " ";
@@ -52,9 +82,12 @@ function numberToWords(num: number): string {
   }
   if (num === 0) return "Zero Rupees Only";
   let w = "";
-  const cr = Math.floor(num / 10000000); num %= 10000000;
-  const lk = Math.floor(num / 100000); num %= 100000;
-  const th = Math.floor(num / 1000); num %= 1000;
+  const cr = Math.floor(num / 10000000);
+  num %= 10000000;
+  const lk = Math.floor(num / 100000);
+  num %= 100000;
+  const th = Math.floor(num / 1000);
+  num %= 1000;
   if (cr) w += helper(cr) + "Crore ";
   if (lk) w += helper(lk) + "Lakh ";
   if (th) w += helper(th) + "Thousand ";
@@ -74,8 +107,7 @@ const STATUS_LABEL: Record<string, string> = {
 // ─── ROUTE HANDLER ────────────────────────────────────────────────────────────
 export async function GET(req: NextRequest) {
   const user = await requireStaff();
-  if (!user)
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const url = new URL(req.url);
   const poId = url.searchParams.get("po_id");
@@ -89,7 +121,9 @@ export async function GET(req: NextRequest) {
   // ── Fetch PO header ──
   const { data: po } = await supabase
     .from("purchase_orders")
-    .select("id, po_code, supplier_id, contact_person_id, status, expected_date, notes, total_amount, date_created, received_date")
+    .select(
+      "id, po_code, supplier_id, contact_person_id, status, expected_date, notes, total_amount, date_created, received_date"
+    )
     .eq("id", Number(poId))
     .maybeSingle();
 
@@ -140,7 +174,8 @@ export async function GET(req: NextRequest) {
     .select("product_id, qty_ordered, qty_received, unit_cost")
     .eq("purchase_order_id", po.id);
 
-  const items: Array<{ name: string; qty: number; received: number; rate: number; total: number }> = [];
+  const items: Array<{ name: string; qty: number; received: number; rate: number; total: number }> =
+    [];
   if (itemRows && itemRows.length) {
     const pIds = [...new Set(itemRows.map((i) => i.product_id))];
     const { data: prods } = await supabase
@@ -181,10 +216,13 @@ export async function GET(req: NextRequest) {
     : `<tr><td colspan="3" class="tc" style="color:#999">No items</td></tr>`;
 
   const statusColor =
-    po.status === "received" ? "#28a745" :
-    po.status === "cancelled" ? "#dc3545" :
-    po.status === "ordered" ? "#007bff" :
-    "#ffc107";
+    po.status === "received"
+      ? "#28a745"
+      : po.status === "cancelled"
+        ? "#dc3545"
+        : po.status === "ordered"
+          ? "#007bff"
+          : "#ffc107";
 
   // ── Supplier address full line ──
   const supAddrParts = [supplierAddress, supplierCity, supplierState].filter(Boolean);
@@ -274,9 +312,10 @@ export async function GET(req: NextRequest) {
   <!-- Header -->
   <div class="hdr">
     <div class="hdr-left">
-      ${SHOP.logo
-        ? `<img src="${SHOP.logo}" alt="Logo" style="max-height:64px;max-width:180px;object-fit:contain;" />`
-        : `<div style="font-size:28px;font-weight:900;color:#007bff">V\u2022TECH</div>
+      ${
+        SHOP.logo
+          ? `<img src="${SHOP.logo}" alt="Logo" style="max-height:64px;max-width:180px;object-fit:contain;" />`
+          : `<div style="font-size:28px;font-weight:900;color:#007bff">V\u2022TECH</div>
            <div style="font-size:10px;font-weight:700;color:#999;letter-spacing:2px">REPAIR SHOP</div>`
       }
       <div class="shop-name" style="margin-top:6px">${SHOP.name}</div>

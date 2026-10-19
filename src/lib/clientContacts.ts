@@ -38,8 +38,7 @@ export const telLink = (phone: string) => `tel:+91${stripDigits(phone)}`;
 
 export const smsLink = (phone: string) => `sms:+91${stripDigits(phone)}`;
 
-export const waChatLink = (phone: string) =>
-  `https://wa.me/91${stripDigits(phone)}`;
+export const waChatLink = (phone: string) => `https://wa.me/91${stripDigits(phone)}`;
 
 const norm = (phone: string) => stripDigits(phone).trim();
 
@@ -73,7 +72,12 @@ export function normalizeContacts(input: ClientContactInput[]): {
     // extra stars to secondary (pehla star win karta hai, rest self-heal).
     const isPrimary = c.is_primary && !primarySeen;
     if (isPrimary) primarySeen = true;
-    contacts.push({ ...c, phone: digits, label: c.label.trim() || "Mobile", is_primary: isPrimary });
+    contacts.push({
+      ...c,
+      phone: digits,
+      label: c.label.trim() || "Mobile",
+      is_primary: isPrimary,
+    });
   }
 
   if (contacts.length > 0 && !primarySeen) {
@@ -99,9 +103,7 @@ export async function fetchClientContacts(clientId: number): Promise<ClientConta
 }
 
 /** Multiple clients ke contacts ek saath (list page bulk attach). */
-export async function fetchClientContactsBulk(
-  clientIds: number[]
-): Promise<ClientContact[]> {
+export async function fetchClientContactsBulk(clientIds: number[]): Promise<ClientContact[]> {
   if (clientIds.length === 0) return [];
   const { data, error } = await supabase
     .from("client_contacts")
@@ -150,25 +152,20 @@ export async function syncClientContacts(
         .eq("id", row.id);
       if (error) throw new Error(`client_contacts update fail: ${error.message}`);
     } else {
-      const { error } = await supabase
-        .from("client_contacts")
-        .insert({
-          client_id: clientId,
-          name: c.name.trim() || null,
-          label: c.label.trim() || "Mobile",
-          phone: c.phone,
-          is_primary: c.is_primary,
-        });
+      const { error } = await supabase.from("client_contacts").insert({
+        client_id: clientId,
+        name: c.name.trim() || null,
+        label: c.label.trim() || "Mobile",
+        phone: c.phone,
+        is_primary: c.is_primary,
+      });
       if (error) throw new Error(`client_contacts insert fail: ${error.message}`);
     }
   }
 
   for (const row of existingRows) {
     if (desiredPhones.has(norm(row.phone))) continue;
-    const { error } = await supabase
-      .from("client_contacts")
-      .delete()
-      .eq("id", row.id);
+    const { error } = await supabase.from("client_contacts").delete().eq("id", row.id);
     if (error) throw new Error(`client_contacts delete fail: ${error.message}`);
   }
 

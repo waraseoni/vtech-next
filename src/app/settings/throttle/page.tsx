@@ -2,14 +2,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { supabase, getCachedUser } from "@/lib/supabase";
-import {
-  ShieldAlert,
-  Loader2,
-  RefreshCw,
-  Unlock,
-  Search,
-  Timer,
-} from "lucide-react";
+import { ShieldAlert, Loader2, RefreshCw, Unlock, Search, Timer } from "lucide-react";
 import { toast } from "@/lib/toast";
 
 interface ThrottleRow {
@@ -140,10 +133,7 @@ export default function ThrottlePage() {
 
         <div className="bg-panel border border-app rounded-2xl p-4">
           <div className="relative">
-            <Search
-              size={15}
-              className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-2"
-            />
+            <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-2" />
             <input
               value={q}
               onChange={(e) => setQ(e.target.value)}
@@ -263,8 +253,8 @@ export default function ThrottlePage() {
               </div>
               <h3 className="text-base font-black text-white">Unlock Karein?</h3>
               <p className="text-sm text-muted">
-                <strong className="text-app-2">{unlock.email}</strong> ka login lock hata dein?
-                Fail counter bhi clear ho jayega.
+                <strong className="text-app-2">{unlock.email}</strong> ka login lock hata dein? Fail
+                counter bhi clear ho jayega.
               </p>
             </div>
             <div className="flex gap-3 mt-5">

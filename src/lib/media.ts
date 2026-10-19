@@ -107,6 +107,10 @@ export async function deleteMedia(path: string): Promise<void> {
   });
   if (!res.ok) {
     const json = await res.json().catch(() => ({}));
-    throw new Error((json as { error?: string; msg?: string }).error || (json as { msg?: string }).msg || "Media delete fail hua");
+    throw new Error(
+      (json as { error?: string; msg?: string }).error ||
+        (json as { msg?: string }).msg ||
+        "Media delete fail hua"
+    );
   }
 }

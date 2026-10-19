@@ -35,8 +35,7 @@ export async function POST(request: NextRequest) {
       box?: string;
     };
 
-    if (!product_id)
-      return NextResponse.json({ error: "product_id required" }, { status: 400 });
+    if (!product_id) return NextResponse.json({ error: "product_id required" }, { status: 400 });
 
     const z = (zone || "").trim();
     const r = (rack || "").trim();

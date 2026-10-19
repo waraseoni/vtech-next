@@ -74,15 +74,15 @@ export function boxQrToken(data: BoxLabelData, parts?: Partial<LocationParts> | 
 }
 
 /* ── Print metric (mm) constants — .label / .cell-content / .items CSS se ── */
-const LABEL_PAD_MM = 1;     // .label padding (tight — frame 80×40 ke andar rahe)
+const LABEL_PAD_MM = 1; // .label padding (tight — frame 80×40 ke andar rahe)
 const CONTENT_GAP_MM = 1.2; // label ke andar left-content ↔ right column gap
 const CONTENT_PAD_X_MM = 1.5; // .cell-content horizontal padding
-const GRID_COL_GAP_MM = 1;   // .items grid-column-gap
+const GRID_COL_GAP_MM = 1; // .items grid-column-gap
 const GRID_ROW_GAP_MM = 0.6; // .items grid-row-gap (tight — rows ke beech gap kam)
-const ITEMS_TITLE_MM = 3.2;  // "Contents" header ki approximate height (mm)
-const CHAR_EM = 0.6;         // bold Arial me avg char width (em)
+const ITEMS_TITLE_MM = 3.2; // "Contents" header ki approximate height (mm)
+const CHAR_EM = 0.6; // bold Arial me avg char width (em)
 const MIN_FONT_PT = 3.5;
-const MAX_WRAP_LINES = 2;    // har item max 2 lines me wrap ho sakta hai
+const MAX_WRAP_LINES = 2; // har item max 2 lines me wrap ho sakta hai
 
 /** Content column ki width (mm) — right column ko minus kar ke (frame LOCKED). */
 function contentColWidthMm(opts: BoxPrintOptions, cols: number): number {
@@ -153,9 +153,10 @@ export function itemsLayout(
   const rows = opts.contentRows > 0 ? opts.contentRows : Math.ceil(n / cols);
   const hFit = heightFitFontPt(opts, rows);
   const wFit = widthFitFontPt(opts, cols, effNames);
-  const bestFont = opts.fontSizePt > 0
-    ? Math.min(opts.fontSizePt, Math.max(MIN_FONT_PT, wFit))
-    : Math.min(opts.maxFont, Math.max(MIN_FONT_PT, Math.min(hFit, wFit)));
+  const bestFont =
+    opts.fontSizePt > 0
+      ? Math.min(opts.fontSizePt, Math.max(MIN_FONT_PT, wFit))
+      : Math.min(opts.maxFont, Math.max(MIN_FONT_PT, Math.min(hFit, wFit)));
 
   const capacity = cols * rows;
   const fonts = Array.from({ length: capacity }, () => bestFont);
@@ -172,7 +173,11 @@ function buildLabelHtml(
   _opts: BoxPrintOptions
 ): string {
   const n = data.items.length;
-  const { cols, fonts, capacity } = itemsLayout(n, _opts, data.items.map((i) => i.name));
+  const { cols, fonts, capacity } = itemsLayout(
+    n,
+    _opts,
+    data.items.map((i) => i.name)
+  );
   const visibleItems = data.items.slice(0, capacity);
   const fontPt = (fonts[0] || 7) as number;
   const fontPx = fontPt * 1.333;
@@ -192,9 +197,7 @@ function buildLabelHtml(
     `padding:1px 2px;box-sizing:border-box;min-width:0;align-self:center`;
 
   const itemsHtml = visibleItems.length
-    ? visibleItems
-        .map((it) => `<div style="${itemStyle}">${escapeHtml(it.name)}</div>`)
-        .join("")
+    ? visibleItems.map((it) => `<div style="${itemStyle}">${escapeHtml(it.name)}</div>`).join("")
     : `<div style="${itemStyle};color:#9ca3af;font-style:italic;border:1px dashed #e5e7eb;background:#f9fafb">— khali —</div>`;
 
   const itemsStyle =
@@ -250,9 +253,7 @@ export async function printBoxLabels(
   const pagesHtml: string[] = [];
   for (let i = 0; i < labelsWithQr.length; i += labelsPerPage) {
     const slice = labelsWithQr.slice(i, i + labelsPerPage);
-    const cells = slice
-      .map(({ box, qr }) => buildLabelHtml(box, qr, w, h, opts))
-      .join("");
+    const cells = slice.map(({ box, qr }) => buildLabelHtml(box, qr, w, h, opts)).join("");
     const empty = labelsPerPage - slice.length;
     const emptyCells =
       empty > 0

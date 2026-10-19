@@ -260,7 +260,10 @@ export function DirectSalesClient({
       ]),
     ];
     const csv = rows.map((r) => r.join(",")).join("\n");
-    downloadBlob(new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" }), `sales_${todayIST().replace(/-/g, "")}.csv`);
+    downloadBlob(
+      new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" }),
+      `sales_${todayIST().replace(/-/g, "")}.csv`
+    );
   };
 
   const printReport = () => {
@@ -295,9 +298,7 @@ export function DirectSalesClient({
             </span>
           </div>
           {s.last_editor_name && (
-            <div className="text-[9px] text-app mt-0.5">
-              Edited: {s.last_editor_name}
-            </div>
+            <div className="text-[9px] text-app mt-0.5">Edited: {s.last_editor_name}</div>
           )}
         </div>
       ),
@@ -333,9 +334,7 @@ export function DirectSalesClient({
                     Due: ₹{Math.abs(s.client_due).toLocaleString("en-IN")}
                   </div>
                 ) : (
-                  <div className="text-[9px] font-black text-emerald-500 mt-0.5">
-                    Clear
-                  </div>
+                  <div className="text-[9px] font-black text-emerald-500 mt-0.5">Clear</div>
                 ))}
               {s.client_contact && (
                 <button
@@ -353,9 +352,7 @@ export function DirectSalesClient({
     {
       key: "staff_name",
       header: "Staff",
-      render: (s) => (
-        <span className="text-xs text-muted font-medium">{s.staff_name}</span>
-      ),
+      render: (s) => <span className="text-xs text-muted font-medium">{s.staff_name}</span>,
     },
     {
       key: "total_amount",
@@ -453,10 +450,7 @@ export function DirectSalesClient({
               },
               { label: "Avg", value: `₹${stats.avgAmount.toFixed(0)}`, color: "text-purple-400" },
             ].map(({ label, value, color }) => (
-              <div
-                key={label}
-                className="bg-panel border border-app rounded-xl p-2.5 text-center"
-              >
+              <div key={label} className="bg-panel border border-app rounded-xl p-2.5 text-center">
                 <div className={`text-base font-black ${color}`}>{value}</div>
                 <div className="text-[9px] text-app font-bold uppercase tracking-widest">
                   {label}
@@ -533,10 +527,7 @@ export function DirectSalesClient({
         <div className="px-3 pt-3 space-y-2.5">
           {filteredSales.map((s) => {
             return (
-              <div
-                key={s.id}
-                className="bg-panel border border-app rounded-2xl overflow-hidden"
-              >
+              <div key={s.id} className="bg-panel border border-app rounded-2xl overflow-hidden">
                 <div
                   className={`h-0.5 w-full ${
                     s.payment_mode === "Cash"
@@ -588,9 +579,7 @@ export function DirectSalesClient({
                             {s.client_name}
                           </Link>
                         ) : (
-                          <span className="text-xs text-muted font-medium">
-                            Walk-in Customer
-                          </span>
+                          <span className="text-xs text-muted font-medium">Walk-in Customer</span>
                         )}
                         {s.client_due != null && s.client_due > 0 && (
                           <span className="inline-flex items-center px-1.5 py-0.5 rounded-md border border-red-500/20 bg-red-500/10 text-red-400 text-[9px] font-black whitespace-nowrap">
@@ -967,15 +956,13 @@ export function DirectSalesClient({
           <div className="border-t border-app bg-panel-2 flex items-center gap-4 px-4 py-3">
             {/* Totals footer — plain div (tfoot div ke andar invalid HTML hai → hydration error) */}
             <p className="text-[10px] font-extrabold uppercase tracking-wider text-muted-2">
-              {sales.length} sales · {formatIST(dateFrom, { day: "2-digit", month: "short" })}{" "}
-              → {formatIST(dateTo, { day: "2-digit", month: "short", year: "numeric" })}
+              {sales.length} sales · {formatIST(dateFrom, { day: "2-digit", month: "short" })} →{" "}
+              {formatIST(dateTo, { day: "2-digit", month: "short", year: "numeric" })}
             </p>
             <p className="ml-auto text-right font-black text-emerald-400 text-base">
               ₹{stats.totalAmount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
             </p>
-            <p className="text-xs text-muted-2 font-bold">
-              Avg: ₹{stats.avgAmount.toFixed(0)}
-            </p>
+            <p className="text-xs text-muted-2 font-bold">Avg: ₹{stats.avgAmount.toFixed(0)}</p>
           </div>
         )}
       </div>

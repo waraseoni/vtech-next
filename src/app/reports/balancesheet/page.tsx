@@ -788,12 +788,8 @@ function InventoryTab({ data }: { data: StockRow[] }) {
                     <span className="text-sm font-bold text-app-2">{s.product_name}</span>
                     <div className="text-[10px] text-muted-2">{s.description}</div>
                   </td>
-                  <td className="px-3 py-2.5 text-xs text-right text-muted">
-                    {s.total_stock_in}
-                  </td>
-                  <td className="px-3 py-2.5 text-xs text-right text-muted">
-                    {s.sold_quantity}
-                  </td>
+                  <td className="px-3 py-2.5 text-xs text-right text-muted">{s.total_stock_in}</td>
+                  <td className="px-3 py-2.5 text-xs text-right text-muted">{s.sold_quantity}</td>
                   <td
                     className={`px-3 py-2.5 text-xs text-right font-bold ${s.remaining_stock <= 0 ? "text-red-400" : s.remaining_stock <= 5 ? "text-amber-400" : "text-emerald-400"}`}
                   >
@@ -888,9 +884,7 @@ function ExpenseTab({ data }: { data: ExpenseRow[] }) {
             <>
               {data.map((e) => (
                 <tr key={e.expense_category} className="border-t border-app/50">
-                  <td className="px-3 py-3 text-sm font-bold text-app-2">
-                    {e.expense_category}
-                  </td>
+                  <td className="px-3 py-3 text-sm font-bold text-app-2">{e.expense_category}</td>
                   <td className="px-3 py-3 text-sm text-right font-black text-red-400">
                     {inr(e.amount)}
                   </td>
@@ -992,9 +986,7 @@ function LoanTab({ data }: { data: LoanRow[] }) {
                 className="border-t border-app/50 hover:bg-white/[0.02] transition-colors"
               >
                 <td className="px-3 py-2.5 text-sm font-bold text-app-2">{l.lender_name}</td>
-                <td className="px-3 py-2.5 text-xs text-right text-muted">
-                  {inr(l.loan_amount)}
-                </td>
+                <td className="px-3 py-2.5 text-xs text-right text-muted">{inr(l.loan_amount)}</td>
                 <td className="px-3 py-2.5 text-xs text-right font-bold text-emerald-400">
                   {inr(l.paid_in_period)}
                 </td>

@@ -110,7 +110,11 @@ function InquiriesPageInner() {
     return (data || []) as Inquiry[];
   }, [fromDate, toDate, statusFilter]);
 
-  const { data, isPending: loading, refetch } = useQuery({
+  const {
+    data,
+    isPending: loading,
+    refetch,
+  } = useQuery({
     queryKey: ["inquiries", fromDate, toDate, statusFilter],
     queryFn: fetchInquiries,
     staleTime: 30_000,

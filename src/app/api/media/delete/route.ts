@@ -41,10 +41,7 @@ export async function POST(req: NextRequest) {
     // Staff: sirf usi message ki media jisme wo sender YA recipient hai.
     const allowed: string[] = [];
     for (const p of paths) {
-      let q = admin
-        .from("messages")
-        .select("id")
-        .eq("media_url", p);
+      let q = admin.from("messages").select("id").eq("media_url", p);
       if (!isAdminDev) q = q.or(`sender_id.eq.${me},recipient_id.eq.${me}`);
       const { data } = await q.maybeSingle();
       if (data) allowed.push(p);

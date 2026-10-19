@@ -101,7 +101,11 @@ describe("enforceApiGeoGate — staff + blocked, permit check", () => {
   });
 
   it("block message me distance + geo status included", async () => {
-    const res = await enforceApiGeoGate(blockedReq({ "x-vtech-geo-distance": "850.4" }), "staff", "u1");
+    const res = await enforceApiGeoGate(
+      blockedReq({ "x-vtech-geo-distance": "850.4" }),
+      "staff",
+      "u1"
+    );
     const body = (await res!.json()) as { error: string; geo: string };
     expect(body.error).toContain("850");
     expect(body.error).toContain("Bina permit ke koi bhi change nahi ho sakta");

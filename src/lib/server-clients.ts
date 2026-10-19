@@ -207,28 +207,16 @@ async function fetchFinancialsLegacy(
   /* eslint-enable @typescript-eslint/no-explicit-any */
 
   const [repairs, repairsDone, dirSales, payments, loans, lastTxns] = await Promise.all([
-    selectIn(
-      "transaction_list",
-      "client_name, amount",
-      "client_name",
-      ids.map(String),
-      (q) => q.eq("status", JOB_STATUS_DELIVERED)
+    selectIn("transaction_list", "client_name, amount", "client_name", ids.map(String), (q) =>
+      q.eq("status", JOB_STATUS_DELIVERED)
     ),
-    selectIn(
-      "transaction_list",
-      "client_name, amount",
-      "client_name",
-      ids.map(String),
-      (q) => q.eq("status", JOB_STATUS_DONE)
+    selectIn("transaction_list", "client_name, amount", "client_name", ids.map(String), (q) =>
+      q.eq("status", JOB_STATUS_DONE)
     ),
     selectIn("direct_sales", "client_id, total_amount", "client_id", ids),
     selectIn("client_payments", "client_id, amount, discount, loan_id", "client_id", ids),
-    selectIn(
-      "client_loans",
-      "id, client_id, total_payable",
-      "client_id",
-      ids,
-      (q) => q.eq("status", LOAN_STATUS_ACTIVE)
+    selectIn("client_loans", "id, client_id, total_payable", "client_id", ids, (q) =>
+      q.eq("status", LOAN_STATUS_ACTIVE)
     ),
     selectIn("transaction_list", "client_name, date_created", "client_name", ids.map(String)),
   ]);
@@ -288,25 +276,26 @@ export async function fetchClientsPageData(
   const finPromise = fetchFinancialsViaRpc(supabase).catch(() => null);
 
   const [userRole, sysResult, clsResult, finResult] = await Promise.all([
-    options.userRole ? Promise.resolve(options.userRole) : (async () => {
-        try {
-          const { data: { user } } = await supabase.auth.getUser();
-          if (!user) return "staff";
-          const { data: profile } = await supabase
-            .from("profiles")
-            .select("role")
-            .eq("id", user.id)
-            .maybeSingle();
-          return profile?.role ?? "staff";
-        } catch {
-          return "staff";
-        }
-      })(),
+    options.userRole
+      ? Promise.resolve(options.userRole)
+      : (async () => {
+          try {
+            const {
+              data: { user },
+            } = await supabase.auth.getUser();
+            if (!user) return "staff";
+            const { data: profile } = await supabase
+              .from("profiles")
+              .select("role")
+              .eq("id", user.id)
+              .maybeSingle();
+            return profile?.role ?? "staff";
+          } catch {
+            return "staff";
+          }
+        })(),
 
-    supabase
-      .from("system_info")
-      .select("meta_field, meta_value")
-      .in("meta_field", FIRM_INFO_KEYS),
+    supabase.from("system_info").select("meta_field, meta_value").in("meta_field", FIRM_INFO_KEYS),
 
     supabase
       .from("client_list")

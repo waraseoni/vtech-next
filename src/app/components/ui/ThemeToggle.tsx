@@ -98,14 +98,17 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({
   const activeCls = "bg-blue-600 text-white";
   const idleCls =
     "text-muted-2 hover:bg-panel-2 hover:text-app dark:text-muted dark:hover:bg-white/[0.06] dark:hover:text-white";
-  const labelCls =
-    "text-muted dark:text-muted";
+  const labelCls = "text-muted dark:text-muted";
 
   return (
     <div ref={wrapRef} className="relative flex-shrink-0">
       <button
         onClick={open ? () => setOpen(false) : openMenu}
-        title={themePref === "system" ? "Theme: System (auto)" : `Theme: ${theme === "dark" ? "Dark" : "Light"}`}
+        title={
+          themePref === "system"
+            ? "Theme: System (auto)"
+            : `Theme: ${theme === "dark" ? "Dark" : "Light"}`
+        }
         aria-label="Theme options"
         aria-expanded={open}
         className={buttonClassName}
@@ -119,14 +122,17 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({
           className="fixed z-[70] rounded-xl border border-app-2 bg-white/95 backdrop-blur-xl shadow-2xl py-1.5 dark:border-white/10 dark:bg-panel-2/95"
           onClick={(e) => e.stopPropagation()}
         >
-          <div className={`px-3 pb-1.5 pt-1 text-[10px] font-black uppercase tracking-wider ${labelCls}`}>
+          <div
+            className={`px-3 pb-1.5 pt-1 text-[10px] font-black uppercase tracking-wider ${labelCls}`}
+          >
             Theme
           </div>
           <button
             onClick={() => pick("system")}
             className={`w-full flex items-center gap-2.5 px-3 py-2 text-xs font-bold transition-colors ${themePref === "system" ? activeCls : idleCls}`}
           >
-            <Monitor size={14} /> System <span className="ml-auto text-[10px] font-medium opacity-70">Auto</span>
+            <Monitor size={14} /> System{" "}
+            <span className="ml-auto text-[10px] font-medium opacity-70">Auto</span>
           </button>
           <button
             onClick={() => pick("light")}

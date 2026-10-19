@@ -136,9 +136,9 @@ describe("writeBlockedMessage", () => {
     expect(writeBlockedMessage({ blocked: true, status: "denied", distanceM: null })).toContain(
       "permission"
     );
-    expect(writeBlockedMessage({ blocked: true, status: "unsupported", distanceM: null })).toContain(
-      "browser"
-    );
+    expect(
+      writeBlockedMessage({ blocked: true, status: "unsupported", distanceM: null })
+    ).toContain("browser");
   });
 
   it("distance unknown ho to 'm door' chhota ho jata hai", () => {

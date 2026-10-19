@@ -135,7 +135,9 @@ export const supabase: typeof baseClient = new Proxy(baseClient, {
                     };
                   }
                   const ov = Reflect.get(o, om, o) as unknown;
-                  return typeof ov === "function" ? (ov as (...a: unknown[]) => unknown).bind(o) : ov;
+                  return typeof ov === "function"
+                    ? (ov as (...a: unknown[]) => unknown).bind(o)
+                    : ov;
                 },
               });
             };

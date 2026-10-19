@@ -363,9 +363,7 @@ export default function WhatsAppTemplatesPage() {
                     >
                       <div className="flex items-center gap-2">
                         <MessageSquare size={12} className="text-green-400" />
-                        <span className="text-sm font-bold text-app-2">
-                          {TEMPLATE_LABELS[key]}
-                        </span>
+                        <span className="text-sm font-bold text-app-2">{TEMPLATE_LABELS[key]}</span>
                         <span className="text-[10px] text-muted-2">({key})</span>
                         {isModified && (
                           <span className="px-1.5 py-0.5 bg-amber-500/10 border border-amber-500/20 text-amber-400 rounded text-[9px] font-bold">

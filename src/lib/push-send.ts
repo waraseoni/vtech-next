@@ -52,9 +52,7 @@ function getMessaging(): Messaging | null {
 }
 
 export function isPushConfigured() {
-  return (
-    (!!VAPID_PUBLIC_KEY && !!VAPID_PRIVATE_KEY) || !!process.env.FIREBASE_SERVICE_ACCOUNT
-  );
+  return (!!VAPID_PUBLIC_KEY && !!VAPID_PRIVATE_KEY) || !!process.env.FIREBASE_SERVICE_ACCOUNT;
 }
 
 type SubRow = {
@@ -70,7 +68,10 @@ type SubRow = {
  * Returns: { status: "sent" | "failed" | "gone", message }
  * "gone" = subscription inactive (404/410 / FCM invalid-token) → delete karo.
  */
-async function sendOne(sub: SubRow, payload: PushPayload): Promise<{
+async function sendOne(
+  sub: SubRow,
+  payload: PushPayload
+): Promise<{
   status: "sent" | "failed" | "gone";
   message: string;
 }> {
@@ -104,7 +105,11 @@ async function sendOne(sub: SubRow, payload: PushPayload): Promise<{
       return { status: "sent", message: "" };
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      if (msg.includes("registration-token-not-registered") || msg.includes("unregistered") || msg.includes("NONEXISTENT")) {
+      if (
+        msg.includes("registration-token-not-registered") ||
+        msg.includes("unregistered") ||
+        msg.includes("NONEXISTENT")
+      ) {
         return { status: "gone", message: msg };
       }
       return { status: "failed", message: msg.slice(0, 200) };
@@ -129,7 +134,12 @@ async function sendOne(sub: SubRow, payload: PushPayload): Promise<{
     return { status: "sent", message: "" };
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    if (msg.includes("404") || msg.includes("410") || msg.includes("Not Found") || msg.includes("Gone")) {
+    if (
+      msg.includes("404") ||
+      msg.includes("410") ||
+      msg.includes("Not Found") ||
+      msg.includes("Gone")
+    ) {
       return { status: "gone", message: msg };
     }
     return { status: "failed", message: msg.slice(0, 200) };

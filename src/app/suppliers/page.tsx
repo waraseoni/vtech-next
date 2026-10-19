@@ -3,11 +3,7 @@
 // SuppliersClient me. Dues math lib (supplierPayments) ko mirror karta hai —
 // lib "use client" hai isliye server par import nahi ho sakta.
 import { getServerSupabase } from "@/lib/api-auth";
-import {
-  SuppliersClient,
-  type RawPersonRow,
-  type RawPhoneRow,
-} from "./SuppliersClient";
+import { SuppliersClient, type RawPersonRow, type RawPhoneRow } from "./SuppliersClient";
 import type { SupplierRow } from "@/components/SupplierFormModal";
 
 export default async function SuppliersPage() {
@@ -27,18 +23,19 @@ export default async function SuppliersPage() {
     role = profile?.role ?? "staff";
   }
 
-  const [{ data: suppliers, error }, { data: personRows }, { data: phoneRows }, { data: payments }, { data: pos }] =
-    await Promise.all([
-      supabase.from("suppliers").select("*").eq("delete_flag", 0).order("name"),
-      supabase
-        .from("supplier_contact_persons")
-        .select("id, supplier_id, name, role, is_primary"),
-      supabase
-        .from("supplier_contact_phones")
-        .select("id, person_id, label, phone, is_primary"),
-      supabase.from("supplier_payments").select("supplier_id, amount"),
-      supabase.from("purchase_orders").select("supplier_id, total_amount"),
-    ]);
+  const [
+    { data: suppliers, error },
+    { data: personRows },
+    { data: phoneRows },
+    { data: payments },
+    { data: pos },
+  ] = await Promise.all([
+    supabase.from("suppliers").select("*").eq("delete_flag", 0).order("name"),
+    supabase.from("supplier_contact_persons").select("id, supplier_id, name, role, is_primary"),
+    supabase.from("supplier_contact_phones").select("id, person_id, label, phone, is_primary"),
+    supabase.from("supplier_payments").select("supplier_id, amount"),
+    supabase.from("purchase_orders").select("supplier_id, total_amount"),
+  ]);
 
   // Dues: billed (PO) − paid, per supplier (lib mirror)
   const paidBySupplier: Record<number, number> = {};

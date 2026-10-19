@@ -27,10 +27,20 @@ interface LocationPickerProps {
 type FieldKey = keyof LocationParts;
 
 const FIELD_META: { key: FieldKey; label: string; placeholder: string; weight?: string }[] = [
-  { key: "zone", label: "Zone / Area", placeholder: "Type to search zone...", weight: "sm:col-span-2" },
+  {
+    key: "zone",
+    label: "Zone / Area",
+    placeholder: "Type to search zone...",
+    weight: "sm:col-span-2",
+  },
   { key: "rack", label: "Rack / Shelf", placeholder: "Type to search rack...", weight: "" },
   { key: "bin", label: "Bin / Section", placeholder: "Type to search bin...", weight: "" },
-  { key: "box", label: "Box / Drawer", placeholder: "Type to search box...", weight: "sm:col-span-2" },
+  {
+    key: "box",
+    label: "Box / Drawer",
+    placeholder: "Type to search box...",
+    weight: "sm:col-span-2",
+  },
 ];
 
 /** Hierarchy IDs se code banata hai — Z1-R3-B2-X5 format me. */
@@ -135,9 +145,10 @@ export default function LocationPicker({
 
     if (box) {
       const curBinId = bin ? hier.bins.find((b) => b.name === bin)?.id : undefined;
-      let boxRec = curBinId != null
-        ? hier.boxes.find((x) => x.name === box && x.bin_id === curBinId)
-        : undefined;
+      let boxRec =
+        curBinId != null
+          ? hier.boxes.find((x) => x.name === box && x.bin_id === curBinId)
+          : undefined;
       if (!boxRec) boxRec = hier.boxes.find((x) => x.name === box);
       const binRec = boxRec ? hier.bins.find((b) => b.id === boxRec.bin_id) : undefined;
       if (binRec) {
@@ -151,9 +162,10 @@ export default function LocationPicker({
       }
     } else if (bin) {
       const curRackId = rack ? hier.racks.find((r) => r.name === rack)?.id : undefined;
-      let binRec = curRackId != null
-        ? hier.bins.find((b) => b.name === bin && b.rack_id === curRackId)
-        : undefined;
+      let binRec =
+        curRackId != null
+          ? hier.bins.find((b) => b.name === bin && b.rack_id === curRackId)
+          : undefined;
       if (!binRec) binRec = hier.bins.find((b) => b.name === bin);
       if (binRec) {
         const rackRec = hier.racks.find((r) => r.id === binRec.rack_id);
@@ -165,9 +177,10 @@ export default function LocationPicker({
       }
     } else if (rack) {
       const curZoneId = zone ? hier.zones.find((z) => z.name === zone)?.id : undefined;
-      let rackRec = curZoneId != null
-        ? hier.racks.find((r) => r.name === rack && r.zone_id === curZoneId)
-        : undefined;
+      let rackRec =
+        curZoneId != null
+          ? hier.racks.find((r) => r.name === rack && r.zone_id === curZoneId)
+          : undefined;
       if (!rackRec) rackRec = hier.racks.find((r) => r.name === rack);
       if (rackRec) {
         const zoneRec = hier.zones.find((z) => z.id === rackRec.zone_id);
@@ -289,7 +302,12 @@ export default function LocationPicker({
       next = withAncestry({ zone: chosen.zone, rack: chosen.rack, bin: chosen.bin, box: "" });
       next = { ...next, box: "" };
     } else {
-      next = withAncestry({ zone: chosen.zone, rack: chosen.rack, bin: chosen.bin, box: chosen.box });
+      next = withAncestry({
+        zone: chosen.zone,
+        rack: chosen.rack,
+        bin: chosen.bin,
+        box: chosen.box,
+      });
     }
     onChange(next);
     setDisambiguate(null);
@@ -423,7 +441,9 @@ export default function LocationPicker({
                             }`}
                           >
                             <span className="truncate">{o}</span>
-                            {isSel && <Check size={13} className="text-emerald-400 flex-shrink-0 ml-2" />}
+                            {isSel && (
+                              <Check size={13} className="text-emerald-400 flex-shrink-0 ml-2" />
+                            )}
                           </button>
                         );
                       })
@@ -441,7 +461,10 @@ export default function LocationPicker({
           <ChevronDown size={11} className="text-emerald-500/60 rotate-180" />
           Save hone par label: <span className="text-muted font-mono">{locPath(value)}</span>
           {locationCode && (
-            <> | Code: <span className="text-emerald-400 font-mono">{locationCode}</span></>
+            <>
+              {" "}
+              | Code: <span className="text-emerald-400 font-mono">{locationCode}</span>
+            </>
           )}
         </p>
       )}

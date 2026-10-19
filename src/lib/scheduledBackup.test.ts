@@ -12,7 +12,9 @@ import {
 describe("isBucketExistsError", () => {
   it("duplicate bucket ko harmless maanta hai (400/409)", () => {
     expect(isBucketExistsError(409, "")).toBe(true);
-    expect(isBucketExistsError(400, '{"error":"Duplicate","message":"The resource already exists"}')).toBe(true);
+    expect(
+      isBucketExistsError(400, '{"error":"Duplicate","message":"The resource already exists"}')
+    ).toBe(true);
     expect(isBucketExistsError(400, "Bucket already exists")).toBe(true);
   });
 

@@ -18,9 +18,12 @@ function normalizeItems(raw: unknown): { items: BomTemplateItemInput[]; error: s
     const name = typeof obj.name === "string" ? obj.name.trim() : "";
     const qty = typeof obj.qty === "number" ? obj.qty : NaN;
     if (!name) return { items: [], error: "Har line ka component naam chahiye" };
-    if (!Number.isInteger(qty) || qty < 1) return { items: [], error: "Har line ki qty positive integer chahiye" };
+    if (!Number.isInteger(qty) || qty < 1)
+      return { items: [], error: "Har line ki qty positive integer chahiye" };
     const product_id =
-      typeof obj.product_id === "number" && Number.isInteger(obj.product_id) ? obj.product_id : null;
+      typeof obj.product_id === "number" && Number.isInteger(obj.product_id)
+        ? obj.product_id
+        : null;
     const notes = typeof obj.notes === "string" ? obj.notes.trim() : "";
     items.push({ product_id, name, qty, ...(notes ? { notes } : {}) });
   }
@@ -53,7 +56,10 @@ export async function GET() {
     .order("id", { ascending: true });
 
   if (error) {
-    return NextResponse.json({ error: `bom_templates load fail: ${error.message}` }, { status: 500 });
+    return NextResponse.json(
+      { error: `bom_templates load fail: ${error.message}` },
+      { status: 500 }
+    );
   }
   return NextResponse.json({ templates: data ?? [] });
 }
@@ -85,7 +91,10 @@ export async function POST(req: NextRequest) {
     .single();
 
   if (error) {
-    return NextResponse.json({ error: `bom_templates save fail: ${error.message}` }, { status: 500 });
+    return NextResponse.json(
+      { error: `bom_templates save fail: ${error.message}` },
+      { status: 500 }
+    );
   }
   return NextResponse.json({ template: data }, { status: 201 });
 }

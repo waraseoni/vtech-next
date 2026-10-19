@@ -250,7 +250,8 @@ const REPORTS: ReportItem[] = [
   },
   {
     title: "Bahar Se Hua Kaam",
-    description: "Office ke bahar se hue har kaam ki list — kaun staff, kahan se, kya change. Sirf admin.",
+    description:
+      "Office ke bahar se hue har kaam ki list — kaun staff, kahan se, kya change. Sirf admin.",
     href: "/reports/outside-work",
     icon: <MapPin size={16} />,
     category: "Staff & Performance",
@@ -434,9 +435,7 @@ export default function ReportsCenter() {
           </div>
           <div className="space-y-1">
             <h3 className="text-sm font-bold text-muted">No matching reports</h3>
-            <p className="text-[11px] text-muted-2 italic">
-              Try a different keyword or category.
-            </p>
+            <p className="text-[11px] text-muted-2 italic">Try a different keyword or category.</p>
           </div>
         </div>
       )}

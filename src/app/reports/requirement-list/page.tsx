@@ -160,8 +160,9 @@ function RequirementListContent() {
 
   const totalItems = filtered.length;
   const outOfStock = filtered.filter((i) => i.current_stock <= 0).length;
-  const lowStock = filtered.filter((i) => i.current_stock > 0 && i.current_stock <= i.effective_alert)
-    .length;
+  const lowStock = filtered.filter(
+    (i) => i.current_stock > 0 && i.current_stock <= i.effective_alert
+  ).length;
   const totalNeed = filtered.reduce((s, i) => s + i.need_to_order, 0);
 
   const createPoFromList = () => {
@@ -548,9 +549,9 @@ function RequirementListContent() {
 
                   <div className="mt-4 grid grid-cols-3 gap-2 text-center">
                     <div className="bg-app border border-app rounded-xl p-3">
-                    <div
-                      className={`text-xl font-black ${isOut ? "text-red-400" : "text-amber-700 dark:text-amber-400"}`}
-                    >
+                      <div
+                        className={`text-xl font-black ${isOut ? "text-red-400" : "text-amber-700 dark:text-amber-400"}`}
+                      >
                         {item.current_stock}
                       </div>
                       <div className="text-[9px] font-black uppercase tracking-widest text-muted-2 mt-0.5">
@@ -605,7 +606,10 @@ function RequirementListContent() {
                     ) : (
                       <span className="text-[10px] text-muted-2 italic">
                         No supplier linked —{" "}
-                        <Link href="/products" className="text-amber-700 dark:text-amber-500 no-print">
+                        <Link
+                          href="/products"
+                          className="text-amber-700 dark:text-amber-500 no-print"
+                        >
                           link in Products
                         </Link>
                       </span>

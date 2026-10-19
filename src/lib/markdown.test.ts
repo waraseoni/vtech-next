@@ -9,7 +9,7 @@ describe("renderMarkdown", () => {
   });
 
   it("renders fenced code blocks escaped", () => {
-    const html = renderMarkdown("```powershell\nnode a.mjs --dir \"D:\\x\"\n```");
+    const html = renderMarkdown('```powershell\nnode a.mjs --dir "D:\\x"\n```');
     expect(html).toContain('<pre><code class="language-powershell">');
     expect(html).toContain("&quot;D:\\x&quot;");
   });
@@ -17,7 +17,9 @@ describe("renderMarkdown", () => {
   it("renders tables with header and body rows", () => {
     const html = renderMarkdown("| A | B |\n|---|---|\n| **x** | `y` |");
     expect(html).toContain("<table><thead><tr><th>A</th><th>B</th></tr></thead>");
-    expect(html).toContain("<tbody><tr><td><strong>x</strong></td><td><code>y</code></td></tr></tbody>");
+    expect(html).toContain(
+      "<tbody><tr><td><strong>x</strong></td><td><code>y</code></td></tr></tbody>"
+    );
   });
 
   it("renders nested unordered lists", () => {

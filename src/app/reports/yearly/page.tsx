@@ -456,9 +456,7 @@ export default function YearlyReportPage() {
                       <td className="px-3 py-3 text-right text-amber-400">
                         {inr(totals.commission)}
                       </td>
-                      <td className="px-3 py-3 text-right text-muted">
-                        {inr(totals.expenses)}
-                      </td>
+                      <td className="px-3 py-3 text-right text-muted">{inr(totals.expenses)}</td>
                       <td className="px-3 py-3 text-right text-muted">{inr(totals.emi)}</td>
                       <td className="px-3 py-3 text-right text-rose-400">{inr(totals.discount)}</td>
                       <td className="px-3 py-3 text-right font-black text-rose-400">

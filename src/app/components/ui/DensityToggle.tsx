@@ -19,7 +19,11 @@ export function DensityToggle({
   return (
     <button
       onClick={() => onSelect(compact ? "comfortable" : "compact")}
-      title={compact ? "Density: Compact (click → Comfortable)" : "Density: Comfortable (click → Compact)"}
+      title={
+        compact
+          ? "Density: Compact (click → Comfortable)"
+          : "Density: Comfortable (click → Compact)"
+      }
       aria-label="Toggle density"
       aria-pressed={compact}
       className={`${buttonClassName} ${compact ? "border-blue-500/50 text-blue-400" : ""}`}

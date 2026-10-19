@@ -1,14 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useCallback } from "react";
-import {
-  ChevronLeft,
-  ChevronRight,
-  ArrowUpDown,
-  ArrowUp,
-  ArrowDown,
-  Loader2,
-} from "lucide-react";
+import { ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown, Loader2 } from "lucide-react";
 import { EmptyState } from "./EmptyState";
 import { ClipboardList } from "lucide-react";
 
@@ -44,11 +37,7 @@ export interface DataTableProps<T> {
 // ─── Helpers ──────────────────────────────────────────────────────────
 
 const alignClass = (align?: string) =>
-  align === "right"
-    ? "text-right"
-    : align === "center"
-    ? "text-center"
-    : "text-left";
+  align === "right" ? "text-right" : align === "center" ? "text-center" : "text-left";
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
 
@@ -158,10 +147,7 @@ export function DataTable<T>({
             <Loader2 size={24} className="animate-spin text-muted-2" />
           </div>
         ) : data.length === 0 ? (
-          <EmptyState
-            icon={ClipboardList}
-            title={emptyMessage}
-          />
+          <EmptyState icon={ClipboardList} title={emptyMessage} />
         ) : (
           <table className="w-full text-sm">
             <thead className="bg-panel-2">
@@ -202,10 +188,7 @@ export function DataTable<T>({
                   className="hover:bg-white/[0.02] transition-colors"
                 >
                   {columns.map((col) => (
-                    <td
-                      key={col.key}
-                      className={`px-4 py-3.5 ${alignClass(col.align)}`}
-                    >
+                    <td key={col.key} className={`px-4 py-3.5 ${alignClass(col.align)}`}>
                       {col.render
                         ? col.render(item, index)
                         : String((item as Record<string, unknown>)[col.key] ?? "—")}
