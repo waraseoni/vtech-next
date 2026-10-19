@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.67.0](https://github.com/waraseoni/vtech-next/compare/v1.66.0...v1.67.0) (2026-10-19)
+
+### Features
+
+* **client-cache:** convert JobsBody, supplier detail and backup pages ([78e11f8](https://github.com/waraseoni/vtech-next/commit/78e11f8bc46df0bc375e904451699da48e24f512))
+
 ## [1.66.0](https://github.com/waraseoni/vtech-next/compare/v1.65.0...v1.66.0) (2026-10-19)
 
 ### Features
