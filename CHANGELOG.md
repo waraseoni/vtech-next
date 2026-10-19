@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## [1.65.0](https://github.com/waraseoni/vtech-next/compare/v1.64.0...v1.65.0) (2026-10-19)
+
+### Features
+
+* **client-cache:** convert 14 list/report pages to TanStack Query ([d21e245](https://github.com/waraseoni/vtech-next/commit/d21e245fbf20e0df235a1e4d0cd7868beeeef148))
+
+### Performance Improvements
+
+* **client-cache:** stop refetch-on-mount for dashboard + services ([956373c](https://github.com/waraseoni/vtech-next/commit/956373cdaf265f46715cb26528f66395b4968d71))
+
 ## [1.64.0](https://github.com/waraseoni/vtech-next/compare/v1.63.0...v1.64.0) (2026-10-18)
 
 ### Features
