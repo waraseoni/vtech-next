@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.66.0](https://github.com/waraseoni/vtech-next/compare/v1.65.0...v1.66.0) (2026-10-19)
+
+### Features
+
+* **client-cache:** convert 8 more list/report pages to TanStack Query ([ae96cdc](https://github.com/waraseoni/vtech-next/commit/ae96cdcebe868c2b8b6a1066fcdddcf17db42ca2))
+
 ## [1.65.0](https://github.com/waraseoni/vtech-next/compare/v1.64.0...v1.65.0) (2026-10-19)
 
 ### Features
