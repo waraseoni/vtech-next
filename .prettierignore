@@ -17,3 +17,7 @@ backups
 scratch
 .freebuff
 mariadb dump
+# Backup/restore data dumps — tracked for ops, not code. Prettier reformat
+# se multi-MB churn hota, isliye glob se bahar.
+backup_comm_*.json
+vtech_backup_*.json

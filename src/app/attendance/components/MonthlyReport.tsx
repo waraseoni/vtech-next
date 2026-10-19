@@ -153,6 +153,7 @@ const dayLabel = (dateStr: string): string =>
     day: "2-digit",
     month: "short",
     year: "numeric",
+    timeZone: "Asia/Kolkata",
   });
 
 /**
@@ -755,6 +756,7 @@ export default function MonthlyReport({
   const monthName = parseISTDate(month + "-01").toLocaleDateString("en-IN", {
     month: "long",
     year: "numeric",
+    timeZone: "Asia/Kolkata",
   });
   const isCurrentMonth = month === currentMonthIST();
   const DOW_LABELS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
