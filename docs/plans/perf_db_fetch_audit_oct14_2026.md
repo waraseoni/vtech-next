@@ -197,7 +197,7 @@ Rollback: `vercel.json` se `crons` hata do.
 
 ### Phase 3 — Client data cache (all pages, medium-high effort, high UX impact)
 
-**✅ FOUNDATION + HOT PAGES IMPLEMENTED (2026-10-18):**
+**✅ IMPLEMENTED (2026-10-18 → 2026-10-19):**
 
 1. `@tanstack/react-query@5.104.4` + root `Providers` (`src/app/Providers.tsx`,
    `RootClient` ke bahar — public pages + boot/license guards ke har branch
@@ -227,9 +227,31 @@ Rollback: `vercel.json` se `crons` hata do.
    edit-delete) ke baad `invalidateQueries(clientDetailKey)`. Teeno detail
    pages ab cached — back/forward aur search-click par network call nahi.
 
-- **Abhi bhi pending:** baaki ~105 list/report pages ka `useQuery` migration,
-  aur unke save-flows ka invalidation (list pages abhi bhi remount par fresh
-  fetch karte hain).
+8. **List/report pages (2026-10-19, 4 commits, 26 files):** har mount-effect
+   offender convert — products · users · services · dashboard (financial +
+   due-stats) · mechanics/MechanicsBody · messages · client-loans · lenders ·
+   inquiries · reports/{activity,client-payment,daily-done,pending-jobs,
+   delivered/client} · jobs/{spot-labels,combined-invoice,JobsBody} ·
+   suppliers/{SuppliersClient,[id]} · inventory/{InventoryClient,[id],
+   locations,bom-check,stocktake,purchase-orders} · backup · attendance/
+   MonthlyReport. Pattern: fetch → snapshot return (setState hata); locally
+   mutated state `useState` + hydration effect + `invalidateQueries`;
+   `placeholderData: keepPreviousData` se filter-flip par loader-flash nahi.
+   RSC-seeded pages (`SuppliersClient`, `InventoryClient`, `MechanicsBody`)
+   `initialData:` se first-paint bhi zero-RT. Test renders
+   `QueryClientProvider` wrap karte hain (`MechanicsBody.test.tsx`,
+   `MonthlyReport.test.tsx`, `retry:false`).
+
+- **Deliberately NOT converted:** `jobs/useJobList.ts` — RSC-seed gate ka apna
+  regression suite (`useJobList.test.tsx`, 5 tests) mount-par zero-fetch
+  validate karta hai, aur `JobsBody` isme 6 jagah `setTransactions` se locally
+  mutate karta hai; useQuery se ye mechanics badalte + seed tests rewrite
+  hote. `ClientsBody` bhi chhoda (fully RSC-seeded, no fetch effect).
+
+- **Impact:** refetch-on-mount khatam across the app; back/forward +
+  search-result click ab staleTime (30s) ke andar cache-hit. Abhi bhi pending:
+  Phase 4 (post-hydration waterfall → RSC) — list pages abhi bhi 3-5
+  sequential query waves + `PageLoader` lete hain.
 
 ### Phase 4 — Remove post-hydration waterfall (key pages, medium-high effort)
 
@@ -333,10 +355,10 @@ Gates: prettier ✓ (touched) · eslint ✓ · tsc ✓ · vitest **388/388** ✓
 `next build` ✓. Commits: `3ac54ad` (style) · `c3bca29` · `370dffd` ·
 `2511ad4` · `54ecd4a` · migration commit ke saath.
 
-**Abhi bhi pending (bade wins, medium-high effort):** Phase 3 ka rest
-(~105 list/report pages ka `useQuery` migration — detail pages teeno done),
-Phase 4 (post-hydration waterfall → RSC), Phase 7 (bundle weight). List
-pages abhi bhi 3-5 sequential query waves + `PageLoader` lete hain.
+**Abhi bhi pending (bade wins, medium-high effort):** Phase 4 (post-hydration
+waterfall → RSC — list pages abhi bhi 3-5 sequential query waves +
+`PageLoader` lete hain), Phase 7 (bundle weight), Phase B W3c
+(reports/accounting-dashboard batching).
 
 ## Measurement plan
 

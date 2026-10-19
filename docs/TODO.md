@@ -340,7 +340,7 @@ Base messenger already live (`30aae41`). Ye round un requested features add kart
   17 indexes + `pg_trgm` GIN (navbar search ke `ILIKE '%q%'` ke liye).
   ✅ applied (2026-10-19).
 
-### Phase A3 — Client data cache (audit Phase 3) ✅ foundation + hot pages (2026-10-18)
+### Phase A3 — Client data cache (audit Phase 3) ✅ COMPLETE (2026-10-19)
 
 - [x] **React Query foundation** — `@tanstack/react-query@5.104.4` + root
   `Providers` (`src/app/Providers.tsx`, `RootClient` ke bahar — public pages
@@ -359,13 +359,28 @@ Base messenger already live (`30aae41`). Ye round un requested features add kart
   snapshot me; client photo / job status+spot / payment edit-delete jaisi local
   edits ke baad `invalidateQueries` (warna 30s cache purana dikha deta)
 - [x] **Settings save → invalidate `["system-info"]`** — firm details turant fresh
-- [ ] Baaki ~105 list/report pages ka migration (detail pages teeno done)
-  + unke save-flows ka invalidation
+- [x] **List/report pages → `useQuery`** (2026-10-19, 4 commits) — har mount-effect
+  offender convert: products · users · services · dashboard (financial + due-stats) ·
+  mechanics/MechanicsBody · messages · client-loans · lenders · inquiries ·
+  reports/{activity,client-payment,daily-done,pending-jobs,delivered/client} ·
+  jobs/{spot-labels,combined-invoice,JobsBody} · suppliers/{SuppliersClient,[id]} ·
+  inventory/{InventoryClient,[id],locations,bom-check,stocktake,purchase-orders} ·
+  backup · attendance/MonthlyReport. 26 files; back/forward + search-click ab
+  staleTime (30s) ke andar cache-hit; har save/delete/mutation site ab `refetch()`
+  (warna cache purana re-hydrate karta). RSC-seeded pages (`SuppliersClient`,
+  `InventoryClient`, `MechanicsBody`) `initialData:` se first-paint bhi zero-RT.
+- [x] **Test renders wrap `QueryClientProvider`** — `MechanicsBody.test.tsx` +
+  `MonthlyReport.test.tsx` (`retry:false`; warna `No QueryClient set` throw).
 
-> Detail pages (clients / jobs / direct-sales) + system-info ab cached hain;
-> baaki hain list/report pages. Audit Phase 4 (post-hydration waterfall → RSC)
-> abhi bhi pending — list pages abhi bhi 3-5 sequential query waves +
-> `PageLoader` lete hain (Phase C ka W7/W8).
+> **Deliberately NOT converted:** `jobs/useJobList.ts` — RSC-seed gate ka apna
+> regression suite hai (`useJobList.test.tsx`, 5 tests) jo mount-par zero-fetch
+> validate karta hai, aur `JobsBody` isme 6 jagah `setTransactions` se locally
+> mutate karta hai. useQuery me convert karne se ye mechanics badalte + seed
+> tests rewrite hote — incremental value (back-nav cache) modest hai vs risk.
+> `ClientsBody` bhi chhoda — fully RSC-seeded, koi fetch-on-mount effect nahi.
+
+> Audit Phase 4 (post-hydration waterfall → RSC) abhi bhi pending — list pages
+> abhi bhi 3-5 sequential query waves + `PageLoader` lete hain (Phase C W7/W8).
 
 ### Phase B — Season-safe data batching
 
