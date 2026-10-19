@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef, Suspense } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useSearchParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { pageAll } from "@/lib/fetch-all";
@@ -97,8 +98,6 @@ function PendingJobsContent() {
     searchParams.get("period") ? searchParams.get("period") === "month" : false
   );
   const [anchorMonth, setAnchorMonth] = useState(searchParams.get("month") || currentMonthIST());
-  const [loading, setLoading] = useState(true);
-  const [jobs, setJobs] = useState<DbRow[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
@@ -143,70 +142,61 @@ function PendingJobsContent() {
   };
 
   const fetchData = useCallback(async () => {
-    setLoading(true);
-    try {
-      const end = `${to}T23:59:59+05:30`;
+    const end = `${to}T23:59:59+05:30`;
 
-      let query = supabase
-        .from("transaction_list")
-        .select("*")
-        .neq("status", 5) // Exclude Delivered
-        .neq("status", 4) // Exclude Cancelled
-        .eq("del_status", 0)
-        .lte("date_created", end);
+    let query = supabase
+      .from("transaction_list")
+      .select("*")
+      .neq("status", 5) // Exclude Delivered
+      .neq("status", 4) // Exclude Cancelled
+      .eq("del_status", 0)
+      .lte("date_created", end);
 
-      // "All Time" (empty from) → no lower-bound filter, so NOTHING is excluded.
-      if (from) {
-        query = query.gte("date_created", `${from}T00:00:00+05:30`);
-      }
-
-      if (status !== "all") {
-        query = query.eq("status", parseInt(status));
-      }
-
-      query = query.order("date_created", { ascending: false });
-
-      const { data } = await pageAll(query);
-
-      const pendingJobs = data || [];
-      if (pendingJobs.length === 0) {
-        setJobs([]);
-        setLoading(false);
-        return;
-      }
-
-      const clientIdsNum = [
-        ...new Set(pendingJobs.map((t) => Number(t.client_name)).filter((id) => !isNaN(id))),
-      ];
-
-      const clientMap = new Map();
-      if (clientIdsNum.length > 0) {
-        const { data: clients, error: clientErr } = await supabase
-          .from("client_list")
-          .select("id, firstname, lastname, contact")
-          .in("id", clientIdsNum);
-
-        if (!clientErr && clients) {
-          clients.forEach((c) => clientMap.set(c.id, c));
-        }
-      }
-
-      const enrichedJobs = pendingJobs.map((job) => ({
-        ...job,
-        client: clientMap.get(Number(job.client_name)) || null,
-      }));
-
-      setJobs(enrichedJobs);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
+    // "All Time" (empty from) → no lower-bound filter, so NOTHING is excluded.
+    if (from) {
+      query = query.gte("date_created", `${from}T00:00:00+05:30`);
     }
+
+    if (status !== "all") {
+      query = query.eq("status", parseInt(status));
+    }
+
+    query = query.order("date_created", { ascending: false });
+
+    const { data } = await pageAll(query);
+
+    const pendingJobs = data || [];
+    if (pendingJobs.length === 0) {
+      return [];
+    }
+
+    const clientIdsNum = [
+      ...new Set(pendingJobs.map((t) => Number(t.client_name)).filter((id) => !isNaN(id))),
+    ];
+
+    const clientMap = new Map();
+    if (clientIdsNum.length > 0) {
+      const { data: clients, error: clientErr } = await supabase
+        .from("client_list")
+        .select("id, firstname, lastname, contact")
+        .in("id", clientIdsNum);
+
+      if (!clientErr && clients) {
+        clients.forEach((c) => clientMap.set(c.id, c));
+      }
+    }
+
+    return pendingJobs.map((job) => ({
+      ...job,
+      client: clientMap.get(Number(job.client_name)) || null,
+    }));
   }, [from, to, status]);
 
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+  const { data: jobs = [], isPending: loading } = useQuery({
+    queryKey: ["pending-jobs", from, to, status],
+    queryFn: fetchData,
+    staleTime: 30_000,
+  });
 
   const handleFilter = (e: React.FormEvent) => {
     e.preventDefault();
@@ -920,9 +910,7 @@ function PendingJobsContent() {
                   {job.item}
                   <div className="text-[10px] text-gray-500">Fault: {job.fault}</div>
                 </td>
-                <td className="border border-app-2 px-2 py-1.5">
-                  {STATUS_MAP[job.status]?.label}
-                </td>
+                <td className="border border-app-2 px-2 py-1.5">{STATUS_MAP[job.status]?.label}</td>
                 <td className="border border-app-2 px-2 py-1.5 text-center">
                   {daysPending(job.date_created)}d
                 </td>

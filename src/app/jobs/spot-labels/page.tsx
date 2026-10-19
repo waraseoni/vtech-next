@@ -5,6 +5,7 @@
 // Print Sheet → preview modal with grid settings + live preview → popup window print.
 
 import { useEffect, useState, useCallback, useMemo, useRef } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import {
@@ -85,7 +86,6 @@ async function fetchAllLinkedLocationIds(): Promise<Set<number>> {
 export default function SpotLabelsPage() {
   const [spots, setSpots] = useState<Spot[]>([]);
   const [urls, setUrls] = useState<Record<number, string>>({});
-  const [loading, setLoading] = useState(true);
   const [refs, setRefs] = useState<Record<number, number>>({});
   const [deleting, setDeleting] = useState<number | null>(null);
   const [bulkDeleting, setBulkDeleting] = useState(false);
@@ -104,7 +104,7 @@ export default function SpotLabelsPage() {
   const labelsPerPage = gridCols * gridRows;
   const totalPages = Math.ceil(spots.length / labelsPerPage) || 1;
 
-  const loadSpotsAndRefs = async (): Promise<Spot[]> => {
+  const loadData = useCallback(async () => {
     const { data } = await supabase
       .from("locations")
       .select("id, rack")
@@ -112,8 +112,8 @@ export default function SpotLabelsPage() {
       .eq("zone", "")
       .order("rack");
     const list: Spot[] = (data || []).map((l) => ({ id: l.id, name: l.rack || "" }));
-    setSpots(list);
-    setAllLinkedIds(await fetchAllLinkedLocationIds());
+    const allLinkedIds = await fetchAllLinkedLocationIds();
+    const counts: Record<number, number> = {};
     if (list.length > 0) {
       const { data: refData } = await supabase
         .from("transaction_list")
@@ -123,26 +123,40 @@ export default function SpotLabelsPage() {
           list.map((s) => s.id)
         )
         .eq("del_status", 0);
-      const counts: Record<number, number> = {};
       ((refData || []) as Array<{ location_id: number }>).forEach((r) => {
         counts[r.location_id] = (counts[r.location_id] || 0) + 1;
       });
-      setRefs(counts);
     }
-    return list;
-  };
+    const origin = window.location.origin;
+    const entries = await Promise.all(
+      list.map(async (s) => [s.id, await qrDataUrl(`${origin}/jobs?spot=${s.id}`)] as const)
+    );
+    return {
+      spots: list,
+      refs: counts,
+      allLinkedIds,
+      urls: Object.fromEntries(entries),
+    };
+  }, []);
+
+  const queryClient = useQueryClient();
+  const {
+    data,
+    isPending: loading,
+    refetch,
+  } = useQuery({
+    queryKey: ["spot-labels"],
+    queryFn: loadData,
+    staleTime: 30_000,
+  });
 
   useEffect(() => {
-    (async () => {
-      const list = await loadSpotsAndRefs();
-      const origin = window.location.origin;
-      const entries = await Promise.all(
-        list.map(async (s) => [s.id, await qrDataUrl(`${origin}/jobs?spot=${s.id}`)] as const)
-      );
-      setUrls(Object.fromEntries(entries));
-      setLoading(false);
-    })();
-  }, []);
+    if (!data) return;
+    setSpots(data.spots);
+    setRefs(data.refs);
+    setAllLinkedIds(data.allLinkedIds);
+    setUrls(data.urls);
+  }, [data]);
 
   const handleDeleteSpot = async (s: Spot) => {
     const used = refs[s.id] || 0;
@@ -176,6 +190,7 @@ export default function SpotLabelsPage() {
         delete n[s.id];
         return n;
       });
+      queryClient.invalidateQueries({ queryKey: ["spot-labels"] });
     }
     setDeleting(null);
   };
@@ -183,8 +198,9 @@ export default function SpotLabelsPage() {
   const handleDeleteEmptySpots = async () => {
     setBulkDeleting(true);
     try {
-      const freshSpots = await loadSpotsAndRefs();
-      const usedIds = await fetchAllLinkedLocationIds();
+      const fresh = await refetch();
+      const freshSpots = fresh.data?.spots ?? [];
+      const usedIds = fresh.data?.allLinkedIds ?? new Set<number>();
       if (!freshSpots.length) {
         toast.info("Koi spot nahi.");
         return;
@@ -220,6 +236,7 @@ export default function SpotLabelsPage() {
         setRefs((prev) =>
           Object.fromEntries(Object.entries(prev).filter(([id]) => !deletedIds.has(Number(id))))
         );
+        queryClient.invalidateQueries({ queryKey: ["spot-labels"] });
       }
       toast.success(`${deleted} spot(s) delete ho gaye.`);
     } catch (err) {
@@ -417,7 +434,6 @@ html,body{width:100%;height:100%}
               display: "block",
               margin: "0 auto",
             }}
-            
           />
         ) : (
           <div
@@ -559,7 +575,6 @@ html,body{width:100%;height:100%}
                       width={200}
                       height={200}
                       className="mx-auto w-full h-auto"
-                      
                     />
                   ) : (
                     <div className="mx-auto w-full aspect-square bg-panel-2 animate-pulse rounded" />

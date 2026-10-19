@@ -1,5 +1,6 @@
 import { render, screen, fireEvent, within, waitFor } from "@testing-library/react";
 import { describe, it, expect, vi, beforeAll, afterAll } from "vitest";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import MonthlyReport from "./MonthlyReport";
 
 // ── Fixtures ────────────────────────────────────────────────────────────────
@@ -89,8 +90,14 @@ const cell = (name: RegExp) => within(mobileRoot()).getByRole("button", { name }
 const findCell = (name: RegExp) =>
   waitFor(() => within(mobileRoot()).getByRole("button", { name }));
 
-const renderReport = (userRole: "admin" | "staff" | "developer") =>
-  render(<MonthlyReport userRole={userRole} mechanicId={7} />);
+const renderReport = (userRole: "admin" | "staff" | "developer") => {
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return render(
+    <QueryClientProvider client={qc}>
+      <MonthlyReport userRole={userRole} mechanicId={7} />
+    </QueryClientProvider>
+  );
+};
 
 describe("MonthlyReport compact cells + detail tooltip", () => {
   // Clock lock: warna status (future/past) real date par depend karta.

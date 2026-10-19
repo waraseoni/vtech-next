@@ -5,7 +5,8 @@
 // khaali). Service-role wali locations (`/api/locations/by-product`) mount
 // par merge hoti hain (progressive) + Refresh/scan/add par full fetchData.
 // Behavior 1:1 same — sirf pehla paint server se aata hai.
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
+import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import ZoomableImage from "@/components/ZoomableImage";
 import { safeImageSrc } from "@/lib/image-utils";
@@ -157,8 +158,6 @@ export function InventoryClient({
 }) {
   // Server se aaya data = pehla paint (koi client waterfall nahi)
   const [products, setProducts] = useState<ProductStock[]>(initialProducts);
-  const [loading, setLoading] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [filter, setFilter] = useState<FilterType>("all");
   const [sortKey, setSortKey] = useState<SortKey>("name");
@@ -200,29 +199,8 @@ export function InventoryClient({
     return () => mq.removeEventListener("change", h);
   }, []);
 
-  // ── Locations progressive merge (mount par ek baar) ──────────────────────
-  // Server places khaali bhejta hai (service-role); ye effect unhe bharta hai.
-  useEffect(() => {
-    let alive = true;
-    (async () => {
-      const ids = initialProducts.map((p) => p.id);
-      if (!ids.length) return;
-      const locMap = await fetchLocationsMap(ids);
-      if (!alive || locMap.size === 0) return;
-      setProducts((prev) => prev.map((p) => ({ ...p, ...placesOf(locMap, p.id) })));
-    })();
-    return () => {
-      alive = false;
-    };
-    // mount-once: initialProducts server props hain, dobara merge nahi
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   // ── Fetch (full refresh: Refresh button + scan/add modal onSaved) ────────
-  const fetchProducts = async (silent = false) => {
-    if (!silent) setLoading(true);
-    else setRefreshing(true);
-
+  const fetchProducts = useCallback(async (): Promise<ProductStock[]> => {
     try {
       const { data: pl } = await supabase
         .from("product_list")
@@ -231,8 +209,7 @@ export function InventoryClient({
         .order("name");
 
       if (!pl) {
-        setProducts([]);
-        return;
+        return [];
       }
 
       // Batch fetch all inventory + sold data at once (avoid N+1)
@@ -307,14 +284,41 @@ export function InventoryClient({
         };
       });
 
-      setProducts(result);
+      return result;
     } catch (e) {
       console.error(e);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
+      throw e;
     }
-  };
+  }, []);
+
+  const {
+    data: productsData,
+    isPending: loading,
+    isFetching: refreshing,
+    refetch,
+  } = useQuery({
+    queryKey: ["inventory-list"],
+    queryFn: fetchProducts,
+    staleTime: 30_000,
+    initialData: initialProducts,
+  });
+
+  useEffect(() => {
+    if (productsData) setProducts(productsData);
+  }, [productsData]);
+
+  // ── Locations progressive merge (mount par ek baar) ──────────────────────
+  // Server places khaali bhejta hai (service-role); ye query unhe bharta hai.
+  const { data: locations } = useQuery({
+    queryKey: ["inventory-locations"],
+    queryFn: () => fetchLocationsMap(initialProducts.map((p) => p.id)),
+    staleTime: 30_000,
+  });
+
+  useEffect(() => {
+    if (!locations || locations.size === 0) return;
+    setProducts((prev) => prev.map((p) => ({ ...p, ...placesOf(locations, p.id) })));
+  }, [locations]);
 
   // ── Stats ─────────────────────────────────────────────────────────────────
   const stats = useMemo(
@@ -568,7 +572,7 @@ export function InventoryClient({
                 <ScanLine size={13} /> Scan
               </button>
               <button
-                onClick={() => fetchProducts(true)}
+                onClick={() => refetch()}
                 disabled={refreshing}
                 className="flex items-center gap-1.5 px-3 py-2 bg-panel hover:bg-panel-2 border border-app text-muted hover:text-white rounded-xl text-xs font-bold transition-all"
               >
@@ -1384,7 +1388,7 @@ export function InventoryClient({
           onClose={() => setScanOpen(false)}
           onSaved={() => {
             setScanOpen(false);
-            fetchProducts();
+            refetch();
           }}
         />
       )}
@@ -1396,7 +1400,7 @@ export function InventoryClient({
         onClose={() => setAddOpen(false)}
         onSaved={() => {
           setAddOpen(false);
-          fetchProducts();
+          refetch();
         }}
       />
 

@@ -7,6 +7,7 @@
 // ═══════════════════════════════════════════════════════════════════
 
 import React, { useState, useEffect, useCallback } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
 import {
@@ -68,83 +69,73 @@ export default function CombinedInvoicePage() {
   // ── Step 1: Client selection ─────────────────────────────────────
   const [step, setStep] = useState<1 | 2>(1);
   const [clientSearch, setClientSearch] = useState("");
-  const [clients, setClients] = useState<Client[]>([]);
-  const [clientLoading, setClientLoading] = useState(false);
+  const [debouncedClientSearch, setDebouncedClientSearch] = useState("");
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
 
   // ── Step 2: Job selection ────────────────────────────────────────
-  const [jobs, setJobs] = useState<Transaction[]>([]);
-  const [jobLoading, setJobLoading] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [billType, setBillType] = useState<"non_gst" | "gst">("non_gst");
   const [statusFilter, setStatusFilter] = useState<number | "">("");
 
   // ── Search clients ───────────────────────────────────────────────
-  const searchClients = useCallback(async (q: string) => {
-    if (!q.trim()) {
-      setClients([]);
-      return;
-    }
-    setClientLoading(true);
-    const like = `%${q}%`;
-    const { data } = await supabase
-      .from("client_list")
-      .select("id, firstname, middlename, lastname, contact, address")
-      .eq("delete_flag", 0)
-      .or(
-        `firstname.ilike.${like},middlename.ilike.${like},lastname.ilike.${like},contact.ilike.${like}`
-      )
-      .order("firstname")
-      .limit(20);
-    setClients((data as Client[]) || []);
-    setClientLoading(false);
-  }, []);
-
+  // Debounce search so typing doesn't refetch on every keystroke
   useEffect(() => {
-    const t = setTimeout(() => searchClients(clientSearch), 300);
+    const t = setTimeout(() => setDebouncedClientSearch(clientSearch), 300);
     return () => clearTimeout(t);
-  }, [clientSearch, searchClients]);
+  }, [clientSearch]);
 
-  // Load all clients on mount
-  useEffect(() => {
-    (async () => {
-      setClientLoading(true);
+  const fetchClients = useCallback(async () => {
+    if (debouncedClientSearch.trim()) {
+      const like = `%${debouncedClientSearch}%`;
       const { data } = await supabase
         .from("client_list")
         .select("id, firstname, middlename, lastname, contact, address")
         .eq("delete_flag", 0)
+        .or(
+          `firstname.ilike.${like},middlename.ilike.${like},lastname.ilike.${like},contact.ilike.${like}`
+        )
         .order("firstname")
-        .limit(50);
-      setClients((data as Client[]) || []);
-      setClientLoading(false);
-    })();
-  }, []);
+        .limit(20);
+      return (data as Client[]) || [];
+    }
+    const { data } = await supabase
+      .from("client_list")
+      .select("id, firstname, middlename, lastname, contact, address")
+      .eq("delete_flag", 0)
+      .order("firstname")
+      .limit(50);
+    return (data as Client[]) || [];
+  }, [debouncedClientSearch]);
+
+  const { data: clients = [], isPending: clientLoading } = useQuery({
+    queryKey: ["combined-invoice-clients", debouncedClientSearch],
+    queryFn: fetchClients,
+    staleTime: 30_000,
+  });
 
   // ── Load jobs for selected client ────────────────────────────────
-  const loadJobs = useCallback(
-    async (clientId: number) => {
-      setJobLoading(true);
-      let q = supabase
-        .from("transaction_list")
-        .select("id, job_id, code, item, fault, amount, status, date_created")
-        .eq("client_name", String(clientId))
-        .neq("status", 4) // exclude cancelled
-        .eq("del_status", 0)
-        .order("date_created", { ascending: false });
+  const loadJobs = useCallback(async () => {
+    if (!selectedClient) return [];
+    let q = supabase
+      .from("transaction_list")
+      .select("id, job_id, code, item, fault, amount, status, date_created")
+      .eq("client_name", String(selectedClient.id))
+      .neq("status", 4) // exclude cancelled
+      .eq("del_status", 0)
+      .order("date_created", { ascending: false });
 
-      if (statusFilter !== "") q = q.eq("status", statusFilter);
+    if (statusFilter !== "") q = q.eq("status", statusFilter);
 
-      const { data } = await q;
-      setJobs((data as Transaction[]) || []);
-      setJobLoading(false);
-    },
-    [statusFilter]
-  );
+    const { data } = await q;
+    return (data as Transaction[]) || [];
+  }, [selectedClient, statusFilter]);
 
-  useEffect(() => {
-    // client select hone par jobs fetch; loading init sync legit
-    if (selectedClient) loadJobs(selectedClient.id);
-  }, [selectedClient, loadJobs]);
+  const { data: jobs = [], isPending: jobLoading } = useQuery({
+    queryKey: ["combined-invoice-jobs", selectedClient?.id ?? null, statusFilter],
+    queryFn: loadJobs,
+    enabled: !!selectedClient,
+    staleTime: 30_000,
+  });
 
   // ── Select client → go to step 2 ────────────────────────────────
   const handleSelectClient = (client: Client) => {
@@ -337,7 +328,6 @@ export default function CombinedInvoicePage() {
                 onClick={() => {
                   setStep(1);
                   setSelectedClient(null);
-                  setJobs([]);
                   setSelectedIds(new Set());
                 }}
                 className="px-4 py-2 bg-panel-2 hover:bg-[#2a3550] text-muted hover:text-white rounded-lg text-xs font-bold transition-all flex items-center gap-1.5"

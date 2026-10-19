@@ -5,12 +5,17 @@
 // edit/delete interactivity + mutation ke baad refresh rehta hai.
 // Behavior 1:1 same — sirf pehla load server se aata hai (no client waterfall).
 import { useEffect, useState, useCallback } from "react";
+import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import Image from "next/image";
 import AdminPage from "@/app/components/AdminPage";
 import { supabase, getCachedUser } from "@/lib/supabase";
 import { safeImageSrc } from "@/lib/image-utils";
-import SupplierFormModal, { SupplierRow, ContactPerson, ContactPhone } from "@/components/SupplierFormModal";
+import SupplierFormModal, {
+  SupplierRow,
+  ContactPerson,
+  ContactPhone,
+} from "@/components/SupplierFormModal";
 import Lightbox from "@/components/Lightbox";
 import { fetchSupplierDues } from "@/lib/supplierPayments";
 import { requireAdmin } from "@/lib/requireAdmin";
@@ -116,16 +121,9 @@ function ContactBlock({ persons }: { persons: ContactPerson[] }) {
           ) : (
             <div className="flex flex-col gap-1">
               {p.phones.map((ph, idx) => (
-                <div
-                  key={idx}
-                  className="flex items-center gap-1.5 text-muted text-xs min-w-0"
-                >
+                <div key={idx} className="flex items-center gap-1.5 text-muted text-xs min-w-0">
                   {ph.is_primary && (
-                    <Star
-                      size={9}
-                      className="text-amber-400 flex-shrink-0"
-                      fill="currentColor"
-                    />
+                    <Star size={9} className="text-amber-400 flex-shrink-0" fill="currentColor" />
                   )}
                   <span className="text-muted-2 text-[9px] font-black uppercase flex-shrink-0">
                     {ph.label}
@@ -184,18 +182,11 @@ export function SuppliersClient({
   initialError,
 }: SuppliersInitial) {
   // Server se aaya data = pehla paint (koi client waterfall nahi)
-  const [loading, setLoading] = useState(false);
-  const [rows, setRows] = useState<SupplierRow[]>(initialRows);
-  const [personsMap, setPersonsMap] = useState<Record<number, ContactPerson[]>>(() =>
-    buildPersonsMap(initialPersons, initialPhones)
-  );
   const [search, setSearch] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState<SupplierRow | null>(null);
-  const [err, setErr] = useState(initialError || "");
   const [userRole, setUserRole] = useState(initialRole || "staff");
   const [zoomSrc, setZoomSrc] = useState("");
-  const [duesMap, setDuesMap] = useState<Record<number, number>>(initialDues);
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
@@ -220,31 +211,50 @@ export function SuppliersClient({
     });
   }, [initialRole]);
 
-  // Refresh — mutation (save/delete/toggle) ke baad. Pehla load server se
-  // aata hai isliye mount par nahi chalta (SSR ka fayda).
+  // Refresh — mutation (save/delete/toggle) ke baad refetch(). Pehla paint
+  // server props se (initialData) — 30s tak cache-hit, mount par nahi chalta.
   const fetchData = useCallback(async () => {
-    setLoading(true);
     const [{ data, error }, { data: personRows }, { data: phoneRows }] = await Promise.all([
       supabase.from("suppliers").select("*").eq("delete_flag", 0).order("name"),
-      supabase
-        .from("supplier_contact_persons")
-        .select("id, supplier_id, name, role, is_primary"),
-      supabase
-        .from("supplier_contact_phones")
-        .select("id, person_id, label, phone, is_primary"),
+      supabase.from("supplier_contact_persons").select("id, supplier_id, name, role, is_primary"),
+      supabase.from("supplier_contact_phones").select("id, person_id, label, phone, is_primary"),
     ]);
-    if (error) setErr(error.message);
-    setRows((data || []) as SupplierRow[]);
-    setPersonsMap(
-      buildPersonsMap(
+    if (error) throw error;
+    const dues = await fetchSupplierDues();
+    return {
+      rows: (data || []) as SupplierRow[],
+      personsMap: buildPersonsMap(
         (personRows || []) as RawPersonRow[],
         (phoneRows || []) as RawPhoneRow[]
-      )
-    );
-    const dues = await fetchSupplierDues();
-    setDuesMap(Object.fromEntries(dues.map((d) => [d.supplierId, d.outstanding])));
-    setLoading(false);
+      ),
+      duesMap: Object.fromEntries(dues.map((d) => [d.supplierId, d.outstanding])),
+    };
   }, []);
+
+  const {
+    data,
+    error: queryErr,
+    isPending: loading,
+    refetch,
+  } = useQuery({
+    queryKey: ["suppliers"],
+    queryFn: fetchData,
+    staleTime: 30_000,
+    initialData: () => ({
+      rows: initialRows,
+      personsMap: buildPersonsMap(initialPersons, initialPhones),
+      duesMap: initialDues,
+    }),
+  });
+  const rows = data?.rows ?? [];
+  const personsMap = data?.personsMap ?? {};
+  const duesMap = data?.duesMap ?? {};
+  const err =
+    queryErr instanceof Error
+      ? queryErr.message
+      : queryErr
+        ? "Data load failed"
+        : initialError || "";
 
   const allPhones = (id: number) =>
     (personsMap[id] || []).flatMap((p) => p.phones.map((ph) => ph.phone)).join(" ");
@@ -266,8 +276,7 @@ export function SuppliersClient({
     return [];
   };
 
-  const allPersonNames = (id: number) =>
-    (personsMap[id] || []).map((p) => p.name).join(" ");
+  const allPersonNames = (id: number) => (personsMap[id] || []).map((p) => p.name).join(" ");
 
   const filtered = rows.filter(
     (s) =>
@@ -291,7 +300,7 @@ export function SuppliersClient({
     if (!requireAdmin(userRole, "delete")) return;
     if (!confirm(`"${name}" ko delete karna hai?`)) return;
     await supabase.from("suppliers").update({ delete_flag: 1 }).eq("id", id);
-    fetchData();
+    refetch();
   };
 
   const toggleStatus = async (s: SupplierRow) => {
@@ -300,7 +309,7 @@ export function SuppliersClient({
       .from("suppliers")
       .update({ status: s.status === 1 ? 0 : 1 })
       .eq("id", s.id);
-    fetchData();
+    refetch();
   };
 
   return (
@@ -310,10 +319,7 @@ export function SuppliersClient({
         <div className="px-5 py-3.5 border-b border-app flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div className="flex items-center gap-3 flex-wrap">
             <div className="relative flex-1 min-w-[180px]">
-              <Search
-                size={14}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-2"
-              />
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-2" />
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
@@ -377,9 +383,7 @@ export function SuppliersClient({
                         {safeImageSrc(s.photo_url) ? (
                           <button
                             type="button"
-                            onClick={() =>
-                              setZoomSrc(safeImageSrc(s.photo_url))
-                            }
+                            onClick={() => setZoomSrc(safeImageSrc(s.photo_url))}
                             title="Visiting card bada karke dekho"
                             className="flex-shrink-0 rounded-lg border border-transparent p-0.5 hover:border-blue-500/50 hover:scale-105 transition-all"
                           >
@@ -408,11 +412,7 @@ export function SuppliersClient({
                   {
                     key: "contact",
                     header: "Contact Numbers",
-                    render: (s) => (
-                      <ContactBlock
-                        persons={personsOf(s)}
-                      />
-                    ),
+                    render: (s) => <ContactBlock persons={personsOf(s)} />,
                   },
                   {
                     key: "email",
@@ -425,8 +425,7 @@ export function SuppliersClient({
                           title={`Email: ${s.email}`}
                           className="flex items-center gap-1.5 text-muted hover:text-blue-400 text-xs hover:underline transition-colors"
                         >
-                          <Mail size={11} className="text-muted-2" />{" "}
-                          {s.email}
+                          <Mail size={11} className="text-muted-2" /> {s.email}
                         </a>
                       ) : (
                         <span className="text-app text-xs">—</span>
@@ -441,11 +440,7 @@ export function SuppliersClient({
                           className="flex items-center gap-1.5 text-muted text-xs max-w-[200px] truncate"
                           title={s.address}
                         >
-                          <MapPin
-                            size={11}
-                            className="text-muted-2 flex-shrink-0"
-                          />{" "}
-                          {s.address}
+                          <MapPin size={11} className="text-muted-2 flex-shrink-0" /> {s.address}
                         </div>
                       ) : (
                         <span className="text-app text-xs">—</span>
@@ -464,11 +459,7 @@ export function SuppliersClient({
                             : "bg-muted/10 border-muted/20 text-muted hover:bg-muted/20"
                         }`}
                       >
-                        {s.status === 1 ? (
-                          <ToggleRight size={14} />
-                        ) : (
-                          <ToggleLeft size={14} />
-                        )}
+                        {s.status === 1 ? <ToggleRight size={14} /> : <ToggleLeft size={14} />}
                         {s.status === 1 ? "Active" : "Inactive"}
                       </button>
                     ),
@@ -485,11 +476,12 @@ export function SuppliersClient({
                             due > 0
                               ? "bg-amber-500/10 border-amber-500/20 text-amber-400"
                               : due < 0
-                              ? "bg-red-500/10 border-red-500/20 text-red-400"
-                              : "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
+                                ? "bg-red-500/10 border-red-500/20 text-red-400"
+                                : "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
                           }`}
                         >
-                          ₹{due.toLocaleString("en-IN", {
+                          ₹
+                          {due.toLocaleString("en-IN", {
                             maximumFractionDigits: 2,
                           })}
                         </span>
@@ -516,9 +508,7 @@ export function SuppliersClient({
                         </button>
                         {userRole === "admin" && (
                           <button
-                            onClick={() =>
-                              handleDelete(s.id, s.name)
-                            }
+                            onClick={() => handleDelete(s.id, s.name)}
                             className="p-1.5 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 transition"
                           >
                             <Trash2 size={13} />
@@ -679,7 +669,7 @@ export function SuppliersClient({
         open={showModal}
         editing={editing}
         onClose={() => setShowModal(false)}
-        onSaved={fetchData}
+        onSaved={() => refetch()}
       />
 
       {zoomSrc && <Lightbox src={zoomSrc} alt="Visiting card" onClose={() => setZoomSrc("")} />}

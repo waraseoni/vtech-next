@@ -1,5 +1,6 @@
 "use client";
 import { Suspense, useState, useEffect, useCallback, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
@@ -73,12 +74,6 @@ function InquiriesPageInner() {
     setToDate(searchParams.get("to") || lastOfMon());
     setStatusFilter((searchParams.get("status") as "all" | "unread" | "read") || "all");
   }, [searchParams]);
-  const [inquiries, setInquiries] = useState<Inquiry[]>([]);
-  const [loading, setLoading] = useState(true);
-  // BUG FIX 1: stats fetched from a second unrestricted query — stats were always
-  // ALL-TIME totals regardless of date filter. Fixed: compute from filtered data
-  // AND a separate all-time count query for the header badge
-  const [allTimeStats, setAllTimeStats] = useState({ total: 0, unread: 0 });
 
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedInquiryId, setSelectedInquiryId] = useState<number | null>(null);
@@ -97,60 +92,58 @@ function InquiriesPageInner() {
 
   // ── Fetch ──────────────────────────────────────────────────────────────────
   const fetchInquiries = useCallback(async () => {
-    setLoading(true);
-    try {
-      // BUG FIX 2: date filter was using plain toDate string (e.g. "2024-03-31")
-      // which misses entries on the last day. Fixed: use T23:59:59 end-of-day
-      let q = supabase
-        .from("message_list")
-        .select("*")
-        .gte("date_created", `${fromDate}T00:00:00`)
-        .lte("date_created", `${toDate}T23:59:59`)
-        .order("status", { ascending: true }) // unread first
-        .order("date_created", { ascending: false });
+    // BUG FIX 2: date filter was using plain toDate string (e.g. "2024-03-31")
+    // which misses entries on the last day. Fixed: use T23:59:59 end-of-day
+    let q = supabase
+      .from("message_list")
+      .select("*")
+      .gte("date_created", `${fromDate}T00:00:00`)
+      .lte("date_created", `${toDate}T23:59:59`)
+      .order("status", { ascending: true }) // unread first
+      .order("date_created", { ascending: false });
 
-      if (statusFilter === "unread") q = q.eq("status", 0);
-      if (statusFilter === "read") q = q.eq("status", 1);
+    if (statusFilter === "unread") q = q.eq("status", 0);
+    if (statusFilter === "read") q = q.eq("status", 1);
 
-      const { data, error } = await q;
-      if (error) throw error;
-      setInquiries(data || []);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
+    const { data, error } = await q;
+    if (error) throw error;
+    return (data || []) as Inquiry[];
   }, [fromDate, toDate, statusFilter]);
 
-  useEffect(() => {
-    fetchInquiries();
-  }, [fetchInquiries]);
+  const { data, isPending: loading, refetch } = useQuery({
+    queryKey: ["inquiries", fromDate, toDate, statusFilter],
+    queryFn: fetchInquiries,
+    staleTime: 30_000,
+  });
+  const inquiries = useMemo(() => data ?? [], [data]);
 
   // All-time unread badge — sirf mount par ek baar (filter change par nahi).
   // Pehle ye `fetchInquiries` ke andar tha → har filter change par ek extra
   // full `select("status")` round-trip aata tha. Ab standalone + fetch-once.
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      // PERF (lightning B3): dono head-counts independent — serial 2 RTT → 1.
-      const [{ count: total }, { count: unread }] = await Promise.all([
-        supabase.from("message_list").select("status", { count: "exact", head: true }),
-        supabase
-          .from("message_list")
-          .select("status", { count: "exact", head: true })
-          .eq("status", 0),
-      ]);
-      if (!cancelled) setAllTimeStats({ total: total || 0, unread: unread || 0 });
-    })();
-    return () => {
-      cancelled = true;
-    };
+  // BUG FIX 1: stats fetched from a second unrestricted query — stats were always
+  // ALL-TIME totals regardless of date filter. Fixed: compute from filtered data
+  // AND a separate all-time count query for the header badge
+  const fetchAllTimeStats = useCallback(async () => {
+    // PERF (lightning B3): dono head-counts independent — serial 2 RTT → 1.
+    const [{ count: total }, { count: unread }] = await Promise.all([
+      supabase.from("message_list").select("status", { count: "exact", head: true }),
+      supabase
+        .from("message_list")
+        .select("status", { count: "exact", head: true })
+        .eq("status", 0),
+    ]);
+    return { total: total || 0, unread: unread || 0 };
   }, []);
+  const { data: allTimeStats = { total: 0, unread: 0 } } = useQuery({
+    queryKey: ["inquiries-all-time-stats"],
+    queryFn: fetchAllTimeStats,
+    staleTime: 30_000,
+  });
 
   const handleDelete = async (id: number) => {
     if (!confirm("Is inquiry ko permanently delete karna chahte hain?")) return;
     const { error } = await supabase.from("message_list").delete().eq("id", id);
-    if (!error) fetchInquiries();
+    if (!error) refetch();
     else toast.error("Delete failed");
   };
 
@@ -255,10 +248,7 @@ function InquiriesPageInner() {
               { label: "Unread", value: filteredStats.unread, color: "text-blue-400" },
               { label: "Read", value: filteredStats.read, color: "text-emerald-400" },
             ].map(({ label, value, color }) => (
-              <div
-                key={label}
-                className="bg-panel border border-app rounded-xl p-2.5 text-center"
-              >
+              <div key={label} className="bg-panel border border-app rounded-xl p-2.5 text-center">
                 <div className={`text-base font-black ${color}`}>{value}</div>
                 <div className="text-[9px] text-app font-bold uppercase tracking-widest">
                   {label}
@@ -473,7 +463,7 @@ function InquiriesPageInner() {
             inquiryId={selectedInquiryId}
             onClose={() => setModalOpen(false)}
             onUpdate={() => {
-              fetchInquiries();
+              refetch();
               setModalOpen(false);
             }}
           />
@@ -746,21 +736,14 @@ function InquiriesPageInner() {
                     </div>
                     <div className="flex items-center gap-1 mt-0.5">
                       <Clock size={9} className="text-app" />
-                      <span className="text-[10px] text-muted-2">
-                        {fmtTime(inq.date_created)}
-                      </span>
+                      <span className="text-[10px] text-muted-2">{fmtTime(inq.date_created)}</span>
                     </div>
-                    <div className="text-[9px] text-app mt-0.5">
-                      {daysAgo(inq.date_created)}
-                    </div>
+                    <div className="text-[9px] text-app mt-0.5">{daysAgo(inq.date_created)}</div>
                   </td>
 
                   {/* Message preview */}
                   <td className="px-4 py-3.5 max-w-xs">
-                    <p
-                      className="text-xs text-muted truncate leading-relaxed"
-                      title={inq.message}
-                    >
+                    <p className="text-xs text-muted truncate leading-relaxed" title={inq.message}>
                       {inq.message}
                     </p>
                   </td>
@@ -831,10 +814,7 @@ function InquiriesPageInner() {
                     {filteredStats.total} total · {filteredStats.unread} unread ·{" "}
                     {filteredStats.read} read
                   </td>
-                  <td
-                    colSpan={2}
-                    className="px-4 py-3 text-[10px] text-app font-bold text-right"
-                  >
+                  <td colSpan={2} className="px-4 py-3 text-[10px] text-app font-bold text-right">
                     {new Date(fromDate).toLocaleDateString("en-IN", {
                       day: "2-digit",
                       month: "short",
@@ -858,7 +838,7 @@ function InquiriesPageInner() {
           inquiryId={selectedInquiryId}
           onClose={() => setModalOpen(false)}
           onUpdate={() => {
-            fetchInquiries();
+            refetch();
             // BUG FIX 5: Original closed modal on every update (including auto-read)
             // Now only keep open — user manually closes. Auto-read doesn't close it.
           }}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import AdminPage from "@/app/components/AdminPage";
 import { supabase, getCachedUser } from "@/lib/supabase";
@@ -110,19 +111,10 @@ const defaultForm: FormState = {
 
 export default function LocationsPage() {
   const router = useRouter();
-  const [loading, setLoading] = useState(true);
-  const [rows, setRows] = useState<LocationWithCount[]>([]);
-  const [hierarchy, setHierarchy] = useState<HierarchyData>({
-    zones: [],
-    racks: [],
-    bins: [],
-    boxes: [],
-  });
   const [search, setSearch] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState<LocRow | null>(null);
   const [saving, setSaving] = useState(false);
-  const [err, setErr] = useState("");
   const [userRole, setUserRole] = useState("staff");
   const [form, setForm] = useState<FormState>(defaultForm);
   const [formErr, setFormErr] = useState("");
@@ -147,8 +139,6 @@ export default function LocationsPage() {
   /* ─── fetch data ────────────────────────────────────────────────────── */
 
   const fetchData = useCallback(async () => {
-    setLoading(true);
-
     const [locRes, hierRes] = await Promise.all([
       fetch("/api/locations"),
       fetch("/api/locations/manage?tab=full"),
@@ -158,9 +148,7 @@ export default function LocationsPage() {
     const hierJson = await hierRes.json();
 
     if (!locRes.ok) {
-      setErr(locJson.error || "Failed to fetch");
-      setLoading(false);
-      return;
+      throw new Error(locJson.error || "Failed to fetch");
     }
 
     const locations = (locJson.locations || []) as LocRow[];
@@ -180,14 +168,25 @@ export default function LocationsPage() {
       productCount: (countMap[loc.id] || []).length,
     }));
 
-    setRows(merged);
-    if (hierRes.ok) setHierarchy(hierJson);
-    setLoading(false);
+    return {
+      rows: merged,
+      hierarchy: hierRes.ok ? (hierJson as HierarchyData) : null,
+    };
   }, []);
 
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+  const {
+    data: snapshot,
+    error: queryErr,
+    isPending: loading,
+    refetch,
+  } = useQuery({
+    queryKey: ["inventory-locations"],
+    queryFn: fetchData,
+    staleTime: 30_000,
+  });
+  const rows = snapshot?.rows ?? [];
+  const hierarchy = snapshot?.hierarchy ?? { zones: [], racks: [], bins: [], boxes: [] };
+  const err = queryErr instanceof Error ? queryErr.message : queryErr ? "Data load failed" : "";
 
   /* ─── stats ─────────────────────────────────────────────────────────── */
 
@@ -295,7 +294,7 @@ export default function LocationsPage() {
       }
 
       setShowModal(false);
-      fetchData();
+      refetch();
     } catch (error) {
       setFormErr(error instanceof Error ? error.message : String(error));
     } finally {
@@ -316,7 +315,7 @@ export default function LocationsPage() {
       body: JSON.stringify({ id: loc.id, delete_flag: 1 }),
     });
     await logActivity("Deleted Location", "Inventory", loc.id, `Location: ${path} | ID: ${loc.id}`);
-    fetchData();
+    refetch();
   };
 
   /* ─── toggle status ─────────────────────────────────────────────────── */
@@ -328,7 +327,7 @@ export default function LocationsPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id: loc.id, status: loc.status === 1 ? 0 : 1 }),
     });
-    fetchData();
+    refetch();
   };
 
   /* ─── QR helpers ────────────────────────────────────────────────────── */
@@ -410,10 +409,7 @@ export default function LocationsPage() {
         <div className="px-5 py-3.5 border-b border-app flex items-center justify-between flex-wrap gap-3">
           <div className="flex items-center gap-3">
             <div className="relative">
-              <Search
-                size={14}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-2"
-              />
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-2" />
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}

@@ -13,6 +13,7 @@
 // ─────────────────────────────────────────────────────────────────
 import { useState, useEffect, useCallback, useMemo, useRef, useLayoutEffect } from "react";
 import { createPortal } from "react-dom";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import ZoomableImage from "@/components/ZoomableImage";
 import {
@@ -350,7 +351,6 @@ export default function MonthlyReport({
   }, [monthParam, month]);
 
   const [mechanicsData, setMechanicsData] = useState<MechanicMonthData[]>([]);
-  const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [selected, setSelected] = useState<{
     mechanicId: number;
@@ -360,187 +360,188 @@ export default function MonthlyReport({
     timeIn?: string;
     timeOut?: string;
   } | null>(null);
-  const [refreshKey, setRefreshKey] = useState(0);
-  // P3: purane din jisme check-in hai par checkout nahi → header button se close.
-  const [pendingClose, setPendingClose] = useState<PendingClose[]>([]);
   const [closing, setClosing] = useState(false);
-  // P3: is mahine kitni duty changes hui (header note).
-  const [dutyChanges, setDutyChanges] = useState(0);
   // Detail tooltip — hover (desktop) / tap (mobile). pinned = click se khula.
   const [tip, setTip] = useState<TipState | null>(null);
   const tipTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   // §4.3 lazy auto-close — sirf ek baar per mount (refresh/month-change par na dohraaye).
   const lazyClosedRef = useRef(false);
 
-  // silent=true: refresh ke liye — spinner blink nahi (data wahi hai, sirf
-  // auto-close ke baad rows/pending update chahiye).
-  const fetchData = useCallback(
-    async (silent = false) => {
-      if (!silent) setLoading(true);
-      let mechQuery = supabase
-        .from("mechanic_list")
-        .select("id, firstname, lastname, image_path")
-        .eq("status", 1);
-      if (userRole === "staff") {
-        mechQuery = mechanicId ? mechQuery.eq("id", mechanicId) : mechQuery.eq("id", 0);
-      }
-      const { data: mechs, error: mechErr } = await mechQuery.order("firstname");
-      if (mechErr || !mechs || mechs.length === 0) {
-        setMechanicsData([]);
-        setPendingClose([]);
-        setDutyChanges(0);
-        if (!silent) setLoading(false);
-        return;
-      }
+  const fetchData = useCallback(async () => {
+    let mechQuery = supabase
+      .from("mechanic_list")
+      .select("id, firstname, lastname, image_path")
+      .eq("status", 1);
+    if (userRole === "staff") {
+      mechQuery = mechanicId ? mechQuery.eq("id", mechanicId) : mechQuery.eq("id", 0);
+    }
+    const { data: mechs, error: mechErr } = await mechQuery.order("firstname");
+    if (mechErr || !mechs || mechs.length === 0) {
+      return { rows: [] as MechanicMonthData[], pending: [] as PendingClose[], dutyChanges: 0 };
+    }
 
-      const d = parseISTDate(month + "-01");
-      const y = d.getFullYear();
-      const m = d.getMonth() + 1;
-      const daysInMonth = new Date(y, m, 0).getDate();
-      const startDate = `${month}-01`;
-      const endDate = `${month}-${daysInMonth.toString().padStart(2, "0")}`;
+    const d = parseISTDate(month + "-01");
+    const y = d.getFullYear();
+    const m = d.getMonth() + 1;
+    const daysInMonth = new Date(y, m, 0).getDate();
+    const startDate = `${month}-01`;
+    const endDate = `${month}-${daysInMonth.toString().padStart(2, "0")}`;
 
-      const { data: attData } = await supabase
-        .from("attendance_list")
-        .select("id, mechanic_id, curr_date, status, time_in, time_out")
-        .gte("curr_date", startDate)
-        .lte("curr_date", endDate);
+    const { data: attData } = await supabase
+      .from("attendance_list")
+      .select("id, mechanic_id, curr_date, status, time_in, time_out")
+      .gte("curr_date", startDate)
+      .lte("curr_date", endDate);
 
-      const now = new Date();
-      const todayStr = new Intl.DateTimeFormat("en-CA", {
-        timeZone: "Asia/Kolkata",
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-      }).format(now);
+    const now = new Date();
+    const todayStr = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Asia/Kolkata",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).format(now);
 
-      // §9: label/tooltips ka "current duty" basis — aaj (modal parity; future
-      // row kabhi label na badle), purane mahine me month-end (historical).
-      const labelBasis = endDate < todayStr ? endDate : todayStr;
+    // §9: label/tooltips ka "current duty" basis — aaj (modal parity; future
+    // row kabhi label na badle), purane mahine me month-end (historical).
+    const labelBasis = endDate < todayStr ? endDate : todayStr;
 
-      // P3: duty history (batch — N+1 nahi) + shop fallback, dono ek saath.
-      const mechIds = mechs.map((m) => m.id);
-      const [dutyRes, sysRes] = await Promise.all([
-        supabase
-          .from("staff_duty_schedule")
-          .select("mechanic_id, duty_start, duty_end, break_minutes, effective_from")
-          .in("mechanic_id", mechIds)
-          .lte("effective_from", endDate)
-          .order("effective_from", { ascending: false }),
-        supabase
-          .from("system_info")
-          .select("meta_field, meta_value")
-          .in("meta_field", ["biz_open", "biz_close"]),
-      ]);
-      const bizDuty = bizDutyFromMeta(
-        (sysRes.data as Array<{ meta_field: string; meta_value: string | null }>) || []
-      );
-      const dutyRows = (dutyRes.data || []) as DutyScheduleRow[];
-      // Mahine ke beech me duty badli? (effective_from strictly 01 tarikh ke baad)
-      setDutyChanges(
-        dutyRows.filter((r) => r.effective_from > startDate && r.effective_from <= endDate).length
-      );
-      const nowInfo = nowIST();
-      const pending: PendingClose[] = [];
+    // P3: duty history (batch — N+1 nahi) + shop fallback, dono ek saath.
+    const mechIds = mechs.map((m) => m.id);
+    const [dutyRes, sysRes] = await Promise.all([
+      supabase
+        .from("staff_duty_schedule")
+        .select("mechanic_id, duty_start, duty_end, break_minutes, effective_from")
+        .in("mechanic_id", mechIds)
+        .lte("effective_from", endDate)
+        .order("effective_from", { ascending: false }),
+      supabase
+        .from("system_info")
+        .select("meta_field, meta_value")
+        .in("meta_field", ["biz_open", "biz_close"]),
+    ]);
+    const bizDuty = bizDutyFromMeta(
+      (sysRes.data as Array<{ meta_field: string; meta_value: string | null }>) || []
+    );
+    const dutyRows = (dutyRes.data || []) as DutyScheduleRow[];
+    // Mahine ke beech me duty badli? (effective_from strictly 01 tarikh ke baad)
+    const dutyChanges = dutyRows.filter(
+      (r) => r.effective_from > startDate && r.effective_from <= endDate
+    ).length;
+    const nowInfo = nowIST();
+    const pending: PendingClose[] = [];
 
-      const result: MechanicMonthData[] = mechs.map((mech) => {
-        const sched = dutyRows.filter((r) => r.mechanic_id === mech.id);
-        const mechName = `${mech.firstname} ${mech.lastname}`.trim();
-        const days: DayData[] = [];
-        let fullDays = 0,
-          halfDays = 0,
-          absentDays = 0;
-        for (let day = 1; day <= daysInMonth; day++) {
-          const dateStr = `${month}-${day.toString().padStart(2, "0")}`;
-          const att = attData?.find((a) => a.mechanic_id === mech.id && a.curr_date === dateStr);
-          const isFuture = dateStr >= todayStr;
-          let status: 0 | 1 | 2 | 3;
-          if (att) {
-            status = att.status as 1 | 2 | 3;
-          } else if (isFuture) {
-            status = 0;
-          } else {
-            status = 2;
-          }
-          if (status === 1) fullDays++;
-          else if (status === 3) halfDays++;
-          else if (status === 2) absentDays++;
-          const timeIn = (att?.time_in as string)?.slice(0, 5) || "";
-          const rawOut = (att?.time_out as string)?.slice(0, 5) || "";
-          // Us din ki applicable duty (history se) → engine (auto-checkout + OT).
-          const duty = dutyFor(sched, dateStr, bizDuty);
-          const c = att
-            ? computeDay(
-                {
-                  curr_date: dateStr,
-                  status: Number(att.status),
-                  time_in: (att.time_in as string) ?? null,
-                  time_out: (att.time_out as string) ?? null,
-                },
-                duty,
-                nowInfo
-              )
-            : null;
-
-          // P3 "Close pending days": purana din + check-in ho chuka + checkout nahi.
-          if (
-            att?.id != null &&
-            att.time_in &&
-            !att.time_out &&
-            dateStr < todayStr &&
-            (att.status === 1 || att.status === 3)
-          ) {
-            pending.push({
-              id: Number(att.id),
-              dateStr,
-              mechName,
-              timeIn: att.time_in as string,
+    const result: MechanicMonthData[] = mechs.map((mech) => {
+      const sched = dutyRows.filter((r) => r.mechanic_id === mech.id);
+      const mechName = `${mech.firstname} ${mech.lastname}`.trim();
+      const days: DayData[] = [];
+      let fullDays = 0,
+        halfDays = 0,
+        absentDays = 0;
+      for (let day = 1; day <= daysInMonth; day++) {
+        const dateStr = `${month}-${day.toString().padStart(2, "0")}`;
+        const att = attData?.find((a) => a.mechanic_id === mech.id && a.curr_date === dateStr);
+        const isFuture = dateStr >= todayStr;
+        let status: 0 | 1 | 2 | 3;
+        if (att) {
+          status = att.status as 1 | 2 | 3;
+        } else if (isFuture) {
+          status = 0;
+        } else {
+          status = 2;
+        }
+        if (status === 1) fullDays++;
+        else if (status === 3) halfDays++;
+        else if (status === 2) absentDays++;
+        const timeIn = (att?.time_in as string)?.slice(0, 5) || "";
+        const rawOut = (att?.time_out as string)?.slice(0, 5) || "";
+        // Us din ki applicable duty (history se) → engine (auto-checkout + OT).
+        const duty = dutyFor(sched, dateStr, bizDuty);
+        const c = att
+          ? computeDay(
+              {
+                curr_date: dateStr,
+                status: Number(att.status),
+                time_in: (att.time_in as string) ?? null,
+                time_out: (att.time_out as string) ?? null,
+              },
               duty,
-            });
-          }
+              nowInfo
+            )
+          : null;
 
-          days.push({
-            day,
-            status,
-            isSunday: parseISTDate(dateStr).getDay() === 0,
-            timeIn,
-            timeOut: c?.effOut ?? rawOut, // effective (auto ya real)
-            hours: c && c.workedMin > 0 ? fmtMins(c.workedMin) : "—",
-            outAuto: c?.isAutoClosed ?? false,
-            working: c?.working ?? false,
-            otMin: c?.otMin ?? 0,
-            dutyMin: c?.dutyMin ?? 0,
-            lateMin: c?.lateInMin ?? 0,
-            dutyRange: fmtDuty(duty),
-            workedMin: c && c.workedMin > 0 ? c.workedMin : 0,
+        // P3 "Close pending days": purana din + check-in ho chuka + checkout nahi.
+        if (
+          att?.id != null &&
+          att.time_in &&
+          !att.time_out &&
+          dateStr < todayStr &&
+          (att.status === 1 || att.status === 3)
+        ) {
+          pending.push({
+            id: Number(att.id),
+            dateStr,
+            mechName,
+            timeIn: att.time_in as string,
+            duty,
           });
         }
-        return {
-          mechanic: {
-            id: mech.id,
-            name: mechName,
-            image: (mech.image_path as string) || null,
-          },
-          days,
-          fullDays,
-          halfDays,
-          absentDays,
-          // Naam ke neeche: current duty (labelBasis = aaj/month-end) — modal se match.
-          dutyLabel: fmtDuty(dutyFor(sched, labelBasis, bizDuty)),
-          // MTD total — current month me future days 0 hain to sum "aaj tak" hi hai.
-          monthMins: days.reduce((s, d) => s + d.workedMin, 0),
-        };
-      });
-      setMechanicsData(result);
-      setPendingClose(pending);
-      if (!silent) setLoading(false);
-    },
-    [month, userRole, mechanicId]
-  );
 
+        days.push({
+          day,
+          status,
+          isSunday: parseISTDate(dateStr).getDay() === 0,
+          timeIn,
+          timeOut: c?.effOut ?? rawOut, // effective (auto ya real)
+          hours: c && c.workedMin > 0 ? fmtMins(c.workedMin) : "—",
+          outAuto: c?.isAutoClosed ?? false,
+          working: c?.working ?? false,
+          otMin: c?.otMin ?? 0,
+          dutyMin: c?.dutyMin ?? 0,
+          lateMin: c?.lateInMin ?? 0,
+          dutyRange: fmtDuty(duty),
+          workedMin: c && c.workedMin > 0 ? c.workedMin : 0,
+        });
+      }
+      return {
+        mechanic: {
+          id: mech.id,
+          name: mechName,
+          image: (mech.image_path as string) || null,
+        },
+        days,
+        fullDays,
+        halfDays,
+        absentDays,
+        // Naam ke neeche: current duty (labelBasis = aaj/month-end) — modal se match.
+        dutyLabel: fmtDuty(dutyFor(sched, labelBasis, bizDuty)),
+        // MTD total — current month me future days 0 hain to sum "aaj tak" hi hai.
+        monthMins: days.reduce((s, d) => s + d.workedMin, 0),
+      };
+    });
+    return { rows: result, pending, dutyChanges };
+  }, [month, userRole, mechanicId]);
+
+  // Har mount par naya fetch nahi — 30s tak cache-hit; pending-close/editor
+  // save ke baad refetch().
+  const {
+    data: report,
+    isPending: loading,
+    refetch,
+  } = useQuery({
+    queryKey: ["monthly-report", month, userRole, mechanicId],
+    queryFn: fetchData,
+    staleTime: 30_000,
+  });
+
+  // P3: purane din jisme check-in hai par checkout nahi → header button se close.
+  const pendingClose = report?.pending ?? [];
+  // P3: is mahine kitni duty changes hui (header note).
+  const dutyChanges = report?.dutyChanges ?? 0;
+
+  // Rows locally mutate hoti hain (attendance editor) — query sirf hydrate karti hai.
   useEffect(() => {
-    fetchData();
-  }, [fetchData, refreshKey]);
+    if (report) setMechanicsData(report.rows);
+  }, [report]);
 
   // §4.3 lazy: report kholne par purane open rows ek hi batch me auto-close
   // (non-fatal, ek baar per mount) — kuch close hua to silent refresh (bina
@@ -550,10 +551,10 @@ export default function MonthlyReport({
     lazyClosedRef.current = true;
     autoClosePrevDaysFor(mechanicsData.map((md) => md.mechanic.id))
       .then((n) => {
-        if (n > 0) fetchData(true);
+        if (n > 0) void refetch();
       })
       .catch(() => undefined);
-  }, [mechanicsData, fetchData]);
+  }, [mechanicsData, refetch]);
 
   // Tooltip: Esc se band + unmount par hover-timer cleanup.
   useEffect(() => {
@@ -686,7 +687,7 @@ export default function MonthlyReport({
         `${done} day(s) auto-closed (time_out = duty_end)`
       );
       toast.success(`${done} pending day(s) closed (auto-checkout).`);
-      setRefreshKey((k) => k + 1);
+      void refetch();
     } else {
       toast.error("Koi day close nahi hua.");
     }
@@ -1194,7 +1195,7 @@ export default function MonthlyReport({
             setModalOpen(false);
             setSelected(null);
             setTip(null);
-            setTimeout(() => setRefreshKey((k) => k + 1), 100);
+            setTimeout(() => void refetch(), 100);
           }}
         />
       )}
