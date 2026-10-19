@@ -1,5 +1,6 @@
 "use client";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
+import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
@@ -348,7 +349,18 @@ const TABLE_COLUMNS: Record<string, string[]> = {
     "changed_by",
     "changed_at",
   ],
-    activity_logs: ["id", "user_id", "action", "module", "meta_id", "details", "date_created", "geo_lat", "geo_lng", "geo_distance_m"],
+  activity_logs: [
+    "id",
+    "user_id",
+    "action",
+    "module",
+    "meta_id",
+    "details",
+    "date_created",
+    "geo_lat",
+    "geo_lng",
+    "geo_distance_m",
+  ],
   payment_reminders: [
     "id",
     "client_id",
@@ -395,8 +407,6 @@ export default function BackupPage() {
   const [restoring, setRestoring] = useState(false);
   const [progress, setProgress] = useState("");
   const [dragOver, setDragOver] = useState(false);
-  const [tableStats, setTableStats] = useState<TableStats[]>([]);
-  const [loadingStats, setLoadingStats] = useState(false);
   const [preview, setPreview] = useState<BackupPreview | null>(null);
   const [restoreReport, setRestoreReport] = useState<TableResult[]>([]);
   const [loadedBackup, setLoadedBackup] = useState<BackupData | null>(null);
@@ -404,10 +414,6 @@ export default function BackupPage() {
   const [diffLoading, setDiffLoading] = useState(false);
   const [repairing, setRepairing] = useState(false);
   const [serverBusy, setServerBusy] = useState(false);
-  const [serverFiles, setServerFiles] = useState<
-    { name: string; size: number; modified: string }[]
-  >([]);
-  const [serverCloudFiles, setServerCloudFiles] = useState<{ name: string; modified: string }[]>([]);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [downloading, setDownloading] = useState<string | null>(null);
   const [serverResult, setServerResult] = useState<{
@@ -428,8 +434,28 @@ export default function BackupPage() {
   // ── Live schema (admin API se) — backup/restore dynamic table+column use ──
   // Static lists (BACKUP_TABLES_ORDERED / TABLE_COLUMNS) sirf fallback hain.
   // Yahan se LIVE schema milta hai: saari tables, columns, PK aur generated.
-  const [schemaTables, setSchemaTables] = useState<SupabaseTableSchema[] | null>(null);
-  const [schemaError, setSchemaError] = useState("");
+  const fetchSchema = useCallback(async (): Promise<SupabaseTableSchema[]> => {
+    type SchemaResp = { ok?: boolean; tables?: SupabaseTableSchema[]; error?: string };
+    let json: SchemaResp | null = null;
+    try {
+      const res = await fetch("/api/backup/schema", { cache: "no-store" });
+      json = (await res.json()) as SchemaResp | null;
+    } catch {
+      throw new Error("Live schema load nahi ho paya");
+    }
+    if (json?.ok && Array.isArray(json.tables)) {
+      return json.tables;
+    }
+    throw new Error(json?.error || "Schema API failed");
+  }, []);
+
+  const { data: schemaTables, error: schemaQueryErr } = useQuery({
+    queryKey: ["backup-schema"],
+    queryFn: fetchSchema,
+    staleTime: 30_000,
+  });
+  const schemaError =
+    schemaQueryErr instanceof Error ? schemaQueryErr.message : schemaQueryErr ? "Load failed" : "";
 
   const schemaMap = useMemo(
     () => new Map((schemaTables ?? []).map((t) => [t.name, t])),
@@ -460,42 +486,25 @@ export default function BackupPage() {
   const pkOf = (table: string) => schemaOf(table)?.pk ?? [];
   const genOf = (table: string) => schemaOf(table)?.generated ?? [];
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const res = await fetch("/api/backup/schema", { cache: "no-store" });
-        const json = (await res.json()) as {
-          ok?: boolean;
-          tables?: SupabaseTableSchema[];
-          error?: string;
-        };
-        if (json.ok && Array.isArray(json.tables)) {
-          setSchemaTables(json.tables);
-          setSchemaError("");
-        } else {
-          setSchemaError(json.error || "Schema API failed");
-        }
-      } catch {
-        setSchemaError("Live schema load nahi ho paya");
-      }
-    })();
-  }, []);
-
   // ── Fetch live table counts ────────────────────────────────────────────────
-  const fetchTableStats = async () => {
-    setLoadingStats(true);
+  const fetchTableStats = useCallback(async (): Promise<TableStats[]> => {
     const stats: TableStats[] = [];
     for (const t of tableNames) {
       const { count } = await supabase.from(t).select("*", { count: "exact", head: true });
       stats.push({ table: t, count: count || 0 });
     }
-    setTableStats(stats);
-    setLoadingStats(false);
-  };
+    return stats;
+  }, [tableNames]);
 
-  useEffect(() => {
-    fetchTableStats();
-  }, [schemaTables]);
+  const {
+    data: tableStats = [],
+    isPending: loadingStats,
+    refetch: refetchTableStats,
+  } = useQuery({
+    queryKey: ["backup-table-stats", tableNames],
+    queryFn: fetchTableStats,
+    staleTime: 30_000,
+  });
 
   // ── REPAIR IMAGES ──────────────────────────────────────────────────────────
   // Restore (MariaDB conversion) ke baad image_path/avatar_url me dead paths
@@ -595,9 +604,7 @@ export default function BackupPage() {
           const data = await fetchAllRows(table, selectCols, orderField);
           backup[table] = data;
           // Exact count verify — silent data loss (fetch break) pakadne ke liye
-          const { count } = await supabase
-            .from(table)
-            .select("*", { count: "exact", head: true });
+          const { count } = await supabase.from(table).select("*", { count: "exact", head: true });
           if (count !== null && count !== data.length) {
             mismatches.push({ table, expected: count, got: data.length });
             console.warn(
@@ -605,7 +612,9 @@ export default function BackupPage() {
             );
           }
         } catch (error) {
-          console.warn(`${table} skip (${error instanceof Error ? error.message : "Unknown error"})`);
+          console.warn(
+            `${table} skip (${error instanceof Error ? error.message : "Unknown error"})`
+          );
           backup[table] = [];
           mismatches.push({ table, expected: -1, got: 0 });
         }
@@ -631,7 +640,7 @@ export default function BackupPage() {
           `Backup ready! ${totalRows.toLocaleString()} rows, ${tableNames.length} tables (count verified)`
         );
       }
-      fetchTableStats();
+      refetchTableStats();
     } catch (err: unknown) {
       setProgress("");
       showToast("error", err instanceof Error ? err.message : "Backup failed!");
@@ -641,19 +650,36 @@ export default function BackupPage() {
   };
 
   // ── SERVER BACKUP (scheduled-style — server ke backups/ folder me) ─────────
-  const loadServerFiles = async () => {
+  const loadServerFiles = useCallback(async () => {
+    const empty = {
+      files: [] as { name: string; size: number; modified: string }[],
+      storageFiles: [] as { name: string; modified: string }[],
+    };
     try {
       const res = await fetch("/api/backup/scheduled", { cache: "no-store" });
-      if (!res.ok) return;
+      if (!res.ok) return empty;
       const json = await res.json();
       if (json?.ok) {
-        setServerFiles((json.files ?? []) as typeof serverFiles);
-        setServerCloudFiles((json.storageFiles ?? []) as typeof serverCloudFiles);
+        return {
+          files: (json.files ?? []) as typeof empty.files,
+          storageFiles: (json.storageFiles ?? []) as typeof empty.storageFiles,
+        };
       }
+      return empty;
     } catch {
       /* ignore — sirf list, backup button phir bhi kaam karega */
+      return empty;
     }
-  };
+  }, []);
+
+  // Server backups folder ki recent files — mount par ek baar load
+  const { data: serverData, refetch: refetchServerFiles } = useQuery({
+    queryKey: ["backup-server-files"],
+    queryFn: loadServerFiles,
+    staleTime: 30_000,
+  });
+  const serverFiles = useMemo(() => serverData?.files ?? [], [serverData]);
+  const serverCloudFiles = useMemo(() => serverData?.storageFiles ?? [], [serverData]);
 
   const handleServerBackup = async () => {
     if (serverBusy) return;
@@ -673,10 +699,10 @@ export default function BackupPage() {
       showToast(
         json.incomplete ? "error" : "success",
         json.incomplete
-          ? `⚠ Server backup INCOMPLETE — ${(json.mismatch?.length ?? 0)} table(s) count mismatch`
+          ? `⚠ Server backup INCOMPLETE — ${json.mismatch?.length ?? 0} table(s) count mismatch`
           : `✅ Server backup done! ${(json.rows ?? 0).toLocaleString()} rows / ${json.tables} tables`
       );
-      await loadServerFiles();
+      await refetchServerFiles();
     } catch (err) {
       setServerResult({
         fileName: "",
@@ -704,7 +730,7 @@ export default function BackupPage() {
       const json = await res.json();
       if (!res.ok || !json?.ok) throw new Error(json?.error || "Delete fail hua.");
       showToast("success", `Deleted — ${name}`);
-      await loadServerFiles();
+      await refetchServerFiles();
     } catch (err) {
       showToast("error", err instanceof Error ? err.message : "Delete fail!");
     } finally {
@@ -737,12 +763,6 @@ export default function BackupPage() {
       setDownloading(null);
     }
   };
-
-  // Server backups folder ki recent files — mount par ek baar load
-  useEffect(() => {
-    loadServerFiles();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   // ── Tables that CANNOT be deleted (FK from other non-backup tables) ──────────
   // mechanic_list: "profiles" table ka FK constraint hai — delete nahi ho sakta
@@ -910,7 +930,9 @@ export default function BackupPage() {
           (s, { table }) => s + (backup[table]?.length || 0),
           0
         );
-        console.debug(`Dry run ok: ${rowsChecked} rows checked across ${orderedTables.length} tables`);
+        console.debug(
+          `Dry run ok: ${rowsChecked} rows checked across ${orderedTables.length} tables`
+        );
         showToast(
           "success",
           `✅ Dry run PASSED! ${totalRows.toLocaleString()} rows in ${orderedTables.length} tables ready to restore.`
@@ -1202,7 +1224,7 @@ export default function BackupPage() {
           `✅ ${totalRestored.toLocaleString()} rows 100% restored + count verified!`
         );
       }
-      fetchTableStats();
+      refetchTableStats();
     } catch (err: unknown) {
       setProgress("");
       showToast("error", err instanceof Error ? err.message : "Restore failed!");
@@ -1472,7 +1494,7 @@ export default function BackupPage() {
                 <Images size={12} className={repairing ? "animate-pulse" : ""} /> Repair Images
               </button>
               <button
-                onClick={fetchTableStats}
+                onClick={() => refetchTableStats()}
                 disabled={loadingStats}
                 className="flex items-center gap-1.5 px-3 py-1.5 bg-panel-2 border border-app-2 hover:bg-panel-2 text-muted rounded-lg text-xs font-bold transition"
               >
@@ -1544,9 +1566,7 @@ export default function BackupPage() {
         <div className="bg-panel border border-app rounded-2xl overflow-hidden">
           <div className="flex items-center gap-2.5 px-5 py-3.5 bg-gradient-to-r from-emerald-600/20 to-transparent border-b border-app">
             <Download size={14} className="text-emerald-400" />
-            <h3 className="text-xs font-black uppercase tracking-wider text-muted">
-              Backup Lena
-            </h3>
+            <h3 className="text-xs font-black uppercase tracking-wider text-muted">Backup Lena</h3>
           </div>
           <div className="p-5 space-y-4">
             <p className="text-muted text-sm leading-relaxed">
@@ -1610,8 +1630,8 @@ export default function BackupPage() {
               Download wale backup ki tarah hi, par file{" "}
               <span className="text-sky-400 font-bold">server ke backups/ folder</span> me banti
               hai. Isi ko daily schedule kar ke (Task Scheduler / cron){" "}
-              <span className="text-app-2 font-bold">free-tier automatic backup</span> banta
-              hai — browser/kholne ki zaroorat nahi.
+              <span className="text-app-2 font-bold">free-tier automatic backup</span> banta hai —
+              browser/kholne ki zaroorat nahi.
             </p>
 
             <button
@@ -1722,8 +1742,8 @@ export default function BackupPage() {
               </p>
               {serverCloudFiles.length === 0 ? (
                 <p className="text-muted-2 text-xs">
-                  Cloud copy nahi — run karne par &quot;backups&quot; bucket me private upload hoti hai
-                  (Vercel par bhi persistent).
+                  Cloud copy nahi — run karne par &quot;backups&quot; bucket me private upload hoti
+                  hai (Vercel par bhi persistent).
                 </p>
               ) : (
                 <div className="space-y-1 max-h-32 overflow-y-auto">
@@ -1770,9 +1790,7 @@ export default function BackupPage() {
 
             <p className="text-[10px] text-muted-2 leading-relaxed">
               💡 Daily schedule: Windows me Task Scheduler se{" "}
-              <code className="text-muted">
-                node scripts\supabase-json-backup.mjs --storage
-              </code>{" "}
+              <code className="text-muted">node scripts\supabase-json-backup.mjs --storage</code>{" "}
               chalate raho (local + cloud, exit 2 = incomplete). Download wala local copy weekly
               off-site (Drive) rakho. Upar wali list me file ke aage download icon se file utaaro
               aur trash icon se hatao (local + cloud dono), ya Dashboard → Storage → backups.

@@ -21,6 +21,7 @@
 // ═══════════════════════════════════════════════════════════════════
 
 import React, { useState, useEffect, useCallback, useMemo, useRef, Suspense } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import ZoomableImage from "@/components/ZoomableImage";
 import Link from "next/link";
@@ -109,6 +110,20 @@ const STATUS_WA_KEY: Record<number, string> = {
 // Sprint 3 #12: list data-layer useJobList me — type + dual-era reader wahin se
 import { useJobList, type Transaction, fetchStatusChangeLogs } from "./useJobList";
 import type { JobsPageSeed } from "./jobListQueries";
+
+type QuickClient = {
+  id: number;
+  firstname: string;
+  middlename?: string;
+  lastname: string;
+  contact: string;
+};
+type QuickMechanic = {
+  id: number;
+  firstname: string;
+  middlename?: string;
+  lastname: string;
+};
 
 // ─── Status Config ────────────────────────────────────────────────────────────
 const STATUS_MAP: Record<number, string> = Object.fromEntries(
@@ -363,15 +378,7 @@ function JobsListContent({
   // ── Stale alert: Done/Paid items jo 7+ din se spot par pade hain ──
   const [staleOpen, setStaleOpen] = useState(false);
   const [staleSeen, setStaleSeen] = useState(false);
-  const [staleItems, setStaleItems] = useState<
-    Array<{
-      id: number;
-      job_id: string;
-      item: string;
-      uniq_id: string;
-      days: number;
-    }>
-  >([]);
+
   const loadStale = useCallback(async () => {
     try {
       // NOTE: transaction_list.status_changed_at column DB me exist nahi karta —
@@ -392,8 +399,7 @@ function JobsListContent({
       if (candErr) throw candErr;
       const list = cands || [];
       if (!list.length) {
-        setStaleItems([]);
-        return;
+        return [];
       }
 
       // Har job ki LAST status-change time — dono yug parallel
@@ -412,42 +418,44 @@ function JobsListContent({
         if (!logMap.has(k)) logMap.set(k, log.date_created);
       }
 
-      setStaleItems(
-        list
-          .map((t) => {
-            const changedAt =
-              logMap.get(String(t.id)) ??
-              logMap.get(String(t.job_id)) ??
-              t.date_updated ??
-              t.date_created;
-            const ts = new Date(changedAt || "").getTime();
-            return {
-              id: t.id,
-              job_id: t.job_id,
-              item: t.item,
-              uniq_id: t.uniq_id || "",
-              ts,
-              days: Math.floor((now - ts) / 86400000),
-            };
-          })
-          .filter((it) => it.ts > 0 && now - it.ts >= 7 * 86400000)
-          .sort((a, b) => a.ts - b.ts)
-          .slice(0, 50)
-          .map((it) => ({
-            id: it.id,
-            job_id: it.job_id,
-            item: it.item,
-            uniq_id: it.uniq_id,
-            days: it.days,
-          }))
-      );
+      return list
+        .map((t) => {
+          const changedAt =
+            logMap.get(String(t.id)) ??
+            logMap.get(String(t.job_id)) ??
+            t.date_updated ??
+            t.date_created;
+          const ts = new Date(changedAt || "").getTime();
+          return {
+            id: t.id,
+            job_id: t.job_id,
+            item: t.item,
+            uniq_id: t.uniq_id || "",
+            ts,
+            days: Math.floor((now - ts) / 86400000),
+          };
+        })
+        .filter((it) => it.ts > 0 && now - it.ts >= 7 * 86400000)
+        .sort((a, b) => a.ts - b.ts)
+        .slice(0, 50)
+        .map((it) => ({
+          id: it.id,
+          job_id: it.job_id,
+          item: it.item,
+          uniq_id: it.uniq_id,
+          days: it.days,
+        }));
     } catch (err) {
       logger.error("loadStale error:", err);
+      throw err;
     }
   }, []);
-  useEffect(() => {
-    loadStale();
-  }, [loadStale]);
+
+  const { data: staleItems = [], refetch: refetchStale } = useQuery({
+    queryKey: ["jobs-stale"],
+    queryFn: loadStale,
+    staleTime: 30_000,
+  });
 
   // ── NEW: Quick Create Modal ───────────────────────────────
   const [showQuickCreate, setShowQuickCreate] = useState(false);
@@ -691,7 +699,7 @@ function JobsListContent({
       );
       fetchStats();
       loadJobSpots();
-      loadStale();
+      refetchStale();
     } else {
       toast.error("Bulk update failed: " + error.message);
     }
@@ -930,47 +938,40 @@ function JobsListContent({
     fault: "",
     mechanicId: "",
   });
-  const [quickClients, setQuickClients] = useState<
-    Array<{
-      id: number;
-      firstname: string;
-      middlename?: string;
-      lastname: string;
-      contact: string;
-    }>
-  >([]);
   const [quickClientSearch, setQuickClientSearch] = useState("");
   const [quickClientOpen, setQuickClientOpen] = useState(false);
   const [quickClientId, setQuickClientId] = useState<number | null>(null);
-  const [quickMechanics, setQuickMechanics] = useState<
-    Array<{
-      id: number;
-      firstname: string;
-      middlename?: string;
-      lastname: string;
-    }>
-  >([]);
 
-  useEffect(() => {
-    const loadClientsAndMechanics = async () => {
-      const [clientsRes, mechanicsRes] = await Promise.all([
-        supabase
-          .from("client_list")
-          .select("id, firstname, middlename, lastname, contact")
-          .eq("delete_flag", 0)
-          .order("firstname"),
-        supabase
-          .from("mechanic_list")
-          .select("id, firstname, middlename, lastname")
-          .eq("delete_flag", 0)
-          .eq("status", 1)
-          .order("firstname"),
-      ]);
-      if (clientsRes.data) setQuickClients(clientsRes.data);
-      if (mechanicsRes.data) setQuickMechanics(mechanicsRes.data);
+  const loadClientsAndMechanics = useCallback(async () => {
+    const [clientsRes, mechanicsRes] = await Promise.all([
+      supabase
+        .from("client_list")
+        .select("id, firstname, middlename, lastname, contact")
+        .eq("delete_flag", 0)
+        .order("firstname"),
+      supabase
+        .from("mechanic_list")
+        .select("id, firstname, middlename, lastname")
+        .eq("delete_flag", 0)
+        .eq("status", 1)
+        .order("firstname"),
+    ]);
+    if (clientsRes.error) throw clientsRes.error;
+    if (mechanicsRes.error) throw mechanicsRes.error;
+    return {
+      clients: (clientsRes.data || []) as QuickClient[],
+      mechanics: (mechanicsRes.data || []) as QuickMechanic[],
     };
-    if (showQuickCreate) loadClientsAndMechanics();
-  }, [showQuickCreate]);
+  }, []);
+
+  const { data: quickLookup } = useQuery({
+    queryKey: ["jobs-quick-create-lookup"],
+    queryFn: loadClientsAndMechanics,
+    enabled: showQuickCreate,
+    staleTime: 30_000,
+  });
+  const quickClients = useMemo(() => quickLookup?.clients ?? [], [quickLookup]);
+  const quickMechanics = useMemo(() => quickLookup?.mechanics ?? [], [quickLookup]);
 
   const filteredQuickClients = quickClients.filter((c) => {
     const name = `${c.firstname} ${c.middlename || ""} ${c.lastname}`.toLowerCase();

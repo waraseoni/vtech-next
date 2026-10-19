@@ -1,13 +1,18 @@
 "use client";
 
 import React, { useEffect, useState, useCallback } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import AdminPage from "@/app/components/AdminPage";
 import { supabase } from "@/lib/supabase";
 import { safeImageSrc } from "@/lib/image-utils";
-import SupplierFormModal, { SupplierRow, ContactPerson, ContactPhone } from "@/components/SupplierFormModal";
+import SupplierFormModal, {
+  SupplierRow,
+  ContactPerson,
+  ContactPhone,
+} from "@/components/SupplierFormModal";
 import Lightbox from "@/components/Lightbox";
 import {
   listSupplierPayments,
@@ -92,16 +97,12 @@ function PaymentSummary({ amount, baseDue }: { amount: number; baseDue: number }
           ) : remaining === 0 ? (
             <>
               <span className="text-muted font-black">After Payment</span>
-              <span className="text-emerald-400 font-black">
-                Cleared {fmtCurrency(0)}
-              </span>
+              <span className="text-emerald-400 font-black">Cleared {fmtCurrency(0)}</span>
             </>
           ) : (
             <>
               <span className="text-muted font-black">Overpaid (Advance)</span>
-              <span className="text-amber-400 font-black">
-                {fmtCurrency(Math.abs(remaining))}
-              </span>
+              <span className="text-amber-400 font-black">{fmtCurrency(Math.abs(remaining))}</span>
             </>
           )}
         </div>
@@ -167,18 +168,11 @@ export default function SupplierDetailPage() {
   const params = useParams();
   const id = Number(params.id);
 
-  const [loading, setLoading] = useState(true);
-  const [supplier, setSupplier] = useState<SupplierRow | null>(null);
-  const [persons, setPersons] = useState<ContactPerson[]>([]);
-  const [personNameMap, setPersonNameMap] = useState<Record<number, string>>({});
-  const [purchaseOrders, setPurchaseOrders] = useState<PurchaseOrder[]>([]);
-  const [poItemsMap, setPoItemsMap] = useState<Record<number, POItem[]>>({});
   const [expandedPO, setExpandedPO] = useState<number | null>(null);
 
   const [showModal, setShowModal] = useState(false);
   const [zoomSrc, setZoomSrc] = useState("");
 
-  const [payments, setPayments] = useState<SupplierPayment[]>([]);
   const [showPayModal, setShowPayModal] = useState(false);
   const [payTarget, setPayTarget] = useState<SupplierPayment | null>(null);
   const [payTargetReadOnly, setPayTargetReadOnly] = useState(false);
@@ -194,12 +188,7 @@ export default function SupplierDetailPage() {
   const [isMobile, setIsMobile] = useState(false);
 
   const router = useRouter();
-  const [recItems, setRecItems] = useState<RecItem[]>([]);
-  const [recLoading, setRecLoading] = useState(true);
-  const [linkedProducts, setLinkedProducts] = useState<LinkedProduct[]>([]);
-  const [linkLoading, setLinkLoading] = useState(true);
   const [linkBusy, setLinkBusy] = useState(false);
-  const [productOptions, setProductOptions] = useState<SearchableOption[]>([]);
   const [showLinkPicker, setShowLinkPicker] = useState(false);
 
   useEffect(() => {
@@ -211,12 +200,6 @@ export default function SupplierDetailPage() {
   }, []);
 
   const fetchData = useCallback(async () => {
-    if (!id || isNaN(id)) {
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
-
     const [{ data: sup }, { data: personRows }] = await Promise.all([
       supabase.from("suppliers").select("*").eq("id", id).eq("delete_flag", 0).single(),
       supabase
@@ -225,8 +208,6 @@ export default function SupplierDetailPage() {
         .eq("supplier_id", id)
         .order("is_primary", { ascending: false }),
     ]);
-
-    setSupplier(sup as SupplierRow | null);
 
     const rawPersons = (personRows || []) as Array<{
       id: number;
@@ -278,11 +259,8 @@ export default function SupplierDetailPage() {
         phones: phoneMap[p.id] || [],
       }));
     }
-    setPersons(personList);
-    setPersonNameMap(
-      Object.fromEntries(
-        personList.filter((p) => p.id != null && p.name.trim()).map((p) => [p.id as number, p.name])
-      )
+    const personNameMap = Object.fromEntries(
+      personList.filter((p) => p.id != null && p.name.trim()).map((p) => [p.id as number, p.name])
     );
 
     const { data: pos } = await supabase
@@ -292,8 +270,8 @@ export default function SupplierDetailPage() {
       .order("date_created", { ascending: false });
 
     const poList = (pos || []) as PurchaseOrder[];
-    setPurchaseOrders(poList);
 
+    let poItemsMap: Record<number, POItem[]> = {};
     if (poList.length > 0) {
       const poIds = poList.map((p) => p.id);
       const { data: items } = await supabase
@@ -306,150 +284,157 @@ export default function SupplierDetailPage() {
         if (!map[item.purchase_order_id]) map[item.purchase_order_id] = [];
         map[item.purchase_order_id].push(item);
       }
-      setPoItemsMap(map);
-    } else {
-      setPoItemsMap({});
+      poItemsMap = map;
     }
 
     const [payRows] = await Promise.all([listSupplierPayments(id)]);
-    setPayments(payRows);
 
-    setLoading(false);
+    return {
+      supplier: sup as SupplierRow | null,
+      persons: personList,
+      personNameMap,
+      purchaseOrders: poList,
+      poItemsMap,
+      payments: payRows,
+    };
   }, [id]);
 
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+  const validId = Number.isFinite(id) && id > 0;
+  const {
+    data: detail,
+    isPending,
+    refetch: refetchData,
+  } = useQuery({
+    queryKey: ["supplier-detail", id],
+    queryFn: fetchData,
+    staleTime: 30_000,
+    enabled: validId,
+  });
+  const loading = isPending && validId;
+  const supplier = detail?.supplier ?? null;
+  const persons = detail?.persons ?? [];
+  const personNameMap: Record<number, string> = detail?.personNameMap ?? {};
+  const purchaseOrders = detail?.purchaseOrders ?? [];
+  const poItemsMap: Record<number, POItem[]> = detail?.poItemsMap ?? {};
+  const payments = detail?.payments ?? [];
 
   const fetchRecommended = useCallback(async () => {
-    if (!id || isNaN(id)) {
-      setRecLoading(false);
-      return;
+    const { data: links } = await supabase
+      .from("spare_supplier")
+      .select("spare_id")
+      .eq("supplier_id", id);
+    const ids = [...new Set((links || []).map((l) => l.spare_id as number))].filter(
+      (x): x is number => !!x
+    );
+    if (ids.length === 0) return [];
+    const { data: prods } = await supabase
+      .from("product_list")
+      .select("id, name, price, alert_quantity")
+      .in("id", ids)
+      .eq("delete_flag", 0)
+      .eq("status", 1);
+    const stockMap = await fetchStockByProducts(ids);
+    const { data: poRows } = await supabase
+      .from("purchase_orders")
+      .select("id")
+      .eq("supplier_id", id)
+      .in("status", ["pending", "ordered", "partially_received"]);
+    const openPoIds = (poRows || []).map((p) => p.id);
+    const onPoByProduct: Record<number, number> = {};
+    if (openPoIds.length > 0) {
+      const { data: itemRows } = await supabase
+        .from("purchase_order_items")
+        .select("product_id, qty_ordered, qty_received")
+        .in("purchase_order_id", openPoIds)
+        .in("product_id", ids);
+      for (const it of (itemRows || []) as Array<{
+        product_id: number;
+        qty_ordered: number;
+        qty_received: number;
+      }>) {
+        const open = Math.max(0, (Number(it.qty_ordered) || 0) - (Number(it.qty_received) || 0));
+        if (open > 0) onPoByProduct[it.product_id] = (onPoByProduct[it.product_id] || 0) + open;
+      }
     }
-    try {
-      const { data: links } = await supabase
-        .from("spare_supplier")
-        .select("spare_id")
-        .eq("supplier_id", id);
-      const ids = [...new Set((links || []).map((l) => l.spare_id as number))]
-        .filter((x): x is number => !!x);
-      if (ids.length === 0) {
-        setRecItems([]);
-        setRecLoading(false);
-        return;
-      }
-      const { data: prods } = await supabase
-        .from("product_list")
-        .select("id, name, price, alert_quantity")
-        .in("id", ids)
-        .eq("delete_flag", 0)
-        .eq("status", 1);
-      const stockMap = await fetchStockByProducts(ids);
-      const { data: poRows } = await supabase
-        .from("purchase_orders")
-        .select("id")
-        .eq("supplier_id", id)
-        .in("status", ["pending", "ordered", "partially_received"]);
-      const openPoIds = (poRows || []).map((p) => p.id);
-      const onPoByProduct: Record<number, number> = {};
-      if (openPoIds.length > 0) {
-        const { data: itemRows } = await supabase
-          .from("purchase_order_items")
-          .select("product_id, qty_ordered, qty_received")
-          .in("purchase_order_id", openPoIds)
-          .in("product_id", ids);
-        for (const it of (itemRows || []) as Array<{
-          product_id: number;
-          qty_ordered: number;
-          qty_received: number;
-        }>) {
-          const open = Math.max(
-            0,
-            (Number(it.qty_ordered) || 0) - (Number(it.qty_received) || 0)
-          );
-          if (open > 0) onPoByProduct[it.product_id] = (onPoByProduct[it.product_id] || 0) + open;
-        }
-      }
-      const items = ((prods || []) as Array<{
+    const items = (
+      (prods || []) as Array<{
         id: number;
         name: string;
         price: number | null;
         alert_quantity: number | null;
-      }>)
-        .map((p) => {
-          const current = stockMap.get(p.id)?.available ?? 0;
-          const threshold = alertThreshold(p.alert_quantity);
-          const onPo = onPoByProduct[p.id] || 0;
-          return {
-            id: p.id,
-            name: p.name,
-            price: Number(p.price) || 0,
-            alert_qty: threshold,
-            current_stock: current,
-            on_po: onPo,
-            need_to_order: Math.max(0, threshold - current - onPo),
-          } satisfies RecItem;
-        })
-        .filter((i) => i.need_to_order > 0)
-        .sort((a, b) => b.need_to_order - a.need_to_order);
-      setRecItems(items);
-    } catch (e) {
-      console.error("fetchRecommended:", e);
-      setRecItems([]);
-    } finally {
-      setRecLoading(false);
-    }
+      }>
+    )
+      .map((p) => {
+        const current = stockMap.get(p.id)?.available ?? 0;
+        const threshold = alertThreshold(p.alert_quantity);
+        const onPo = onPoByProduct[p.id] || 0;
+        return {
+          id: p.id,
+          name: p.name,
+          price: Number(p.price) || 0,
+          alert_qty: threshold,
+          current_stock: current,
+          on_po: onPo,
+          need_to_order: Math.max(0, threshold - current - onPo),
+        } satisfies RecItem;
+      })
+      .filter((i) => i.need_to_order > 0)
+      .sort((a, b) => b.need_to_order - a.need_to_order);
+    return items;
   }, [id]);
 
-  useEffect(() => {
-    fetchRecommended();
-  }, [fetchRecommended]);
+  const {
+    data: recItems = [],
+    isPending: recPending,
+    refetch: refetchRecommended,
+  } = useQuery({
+    queryKey: ["supplier-recommended", id],
+    queryFn: fetchRecommended,
+    staleTime: 30_000,
+    enabled: validId,
+  });
+  const recLoading = recPending && validId;
 
   const fetchLinkedProducts = useCallback(async () => {
-    if (!id || isNaN(id)) {
-      setLinkLoading(false);
-      return;
-    }
-    try {
-      const { data: links } = await supabase
-        .from("spare_supplier")
-        .select("spare_id")
-        .eq("supplier_id", id);
-      const linkedIds = new Set(
-        (links || []).map((l) => l.spare_id as number).filter((x): x is number => !!x)
-      );
-      const { data: prods } = await supabase
-        .from("product_list")
-        .select("id, name, price")
-        .eq("delete_flag", 0)
-        .eq("status", 1)
-        .order("name");
-      const all = (prods || []) as Array<{
-        id: number;
-        name: string;
-        price: number | null;
-      }>;
-      setLinkedProducts(all.filter((p) => linkedIds.has(p.id)));
-      setProductOptions(
-        all
-          .filter((p) => !linkedIds.has(p.id))
-          .map((p) => ({
-            id: p.id,
-            label: p.name,
-            sub: p.price != null ? fmtCurrency(Number(p.price)) : undefined,
-          }))
-      );
-    } catch (e) {
-      console.error("fetchLinkedProducts:", e);
-      setLinkedProducts([]);
-    } finally {
-      setLinkLoading(false);
-    }
+    const { data: links } = await supabase
+      .from("spare_supplier")
+      .select("spare_id")
+      .eq("supplier_id", id);
+    const linkedIds = new Set(
+      (links || []).map((l) => l.spare_id as number).filter((x): x is number => !!x)
+    );
+    const { data: prods } = await supabase
+      .from("product_list")
+      .select("id, name, price")
+      .eq("delete_flag", 0)
+      .eq("status", 1)
+      .order("name");
+    const all = (prods || []) as LinkedProduct[];
+    return {
+      linkedProducts: all.filter((p) => linkedIds.has(p.id)),
+      productOptions: all
+        .filter((p) => !linkedIds.has(p.id))
+        .map((p) => ({
+          id: p.id,
+          label: p.name,
+          sub: p.price != null ? fmtCurrency(Number(p.price)) : undefined,
+        })),
+    };
   }, [id]);
 
-  useEffect(() => {
-    fetchLinkedProducts();
-  }, [fetchLinkedProducts]);
+  const {
+    data: linkData,
+    isPending: linkPending,
+    refetch: refetchLinked,
+  } = useQuery({
+    queryKey: ["supplier-linked-products", id],
+    queryFn: fetchLinkedProducts,
+    staleTime: 30_000,
+    enabled: validId,
+  });
+  const linkedProducts: LinkedProduct[] = linkData?.linkedProducts ?? [];
+  const productOptions: SearchableOption[] = linkData?.productOptions ?? [];
+  const linkLoading = linkPending && validId;
 
   const handleAddProductLink = async (productId: string) => {
     if (!productId) return;
@@ -459,8 +444,8 @@ export default function SupplierDetailPage() {
         .from("spare_supplier")
         .insert({ spare_id: Number(productId), supplier_id: id });
       if (error) throw new Error(error.message);
-      await fetchLinkedProducts();
-      await fetchRecommended();
+      await refetchLinked();
+      await refetchRecommended();
     } catch (e) {
       toast.error("Link add fail: " + (e instanceof Error ? e.message : String(e)));
     } finally {
@@ -479,8 +464,8 @@ export default function SupplierDetailPage() {
         .eq("spare_id", productId)
         .eq("supplier_id", id);
       if (error) throw new Error(error.message);
-      await fetchLinkedProducts();
-      await fetchRecommended();
+      await refetchLinked();
+      await refetchRecommended();
     } catch (e) {
       toast.error("Unlink fail: " + (e instanceof Error ? e.message : String(e)));
     } finally {
@@ -558,8 +543,7 @@ export default function SupplierDetailPage() {
         }
       }
       setShowPayModal(false);
-      const fresh = await listSupplierPayments(id);
-      setPayments(fresh);
+      refetchData();
     } catch (e) {
       setPayErr(e instanceof Error ? e.message : "Payment save nahi hua!");
     } finally {
@@ -579,8 +563,7 @@ export default function SupplierDetailPage() {
     if (!confirm(msg)) return false;
     try {
       await removeSupplierPayment(p.id, id);
-      const fresh = await listSupplierPayments(id);
-      setPayments(fresh);
+      refetchData();
       return true;
     } catch (e) {
       toast.error("Delete fail: " + (e instanceof Error ? e.message : String(e)));
@@ -705,9 +688,7 @@ export default function SupplierDetailPage() {
                             <span className="text-xs font-black text-app-2 uppercase tracking-wide">
                               {p.name || "Person"}
                             </span>
-                            {p.role && (
-                              <span className="text-[10px] text-muted">· {p.role}</span>
-                            )}
+                            {p.role && <span className="text-[10px] text-muted">· {p.role}</span>}
                           </div>
                         )}
                         {p.phones.length === 0 ? (
@@ -900,11 +881,7 @@ export default function SupplierDetailPage() {
             </p>
             <p
               className={`text-lg font-black ${
-                outstanding > 0
-                  ? "text-amber-400"
-                  : outstanding < 0
-                    ? "text-red-400"
-                    : "text-app-2"
+                outstanding > 0 ? "text-amber-400" : outstanding < 0 ? "text-red-400" : "text-app-2"
               }`}
             >
               {fmtCurrency(outstanding)}
@@ -967,9 +944,7 @@ export default function SupplierDetailPage() {
                         <td className="px-4 py-3 text-center text-muted font-semibold">
                           {item.on_po}
                         </td>
-                        <td className="px-4 py-3 text-center text-muted">
-                          {item.alert_qty}
-                        </td>
+                        <td className="px-4 py-3 text-center text-muted">{item.alert_qty}</td>
                         <td className="px-4 py-3 text-center">
                           <span className="inline-flex px-2 py-0.5 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs font-bold">
                             +{item.need_to_order}
@@ -1151,8 +1126,7 @@ export default function SupplierDetailPage() {
                                 {fmtDate(po.date_created)}
                               </td>
                               <td className="px-4 py-3.5">
-                                {po.contact_person_id &&
-                                personNameMap[po.contact_person_id] ? (
+                                {po.contact_person_id && personNameMap[po.contact_person_id] ? (
                                   <span className="inline-flex items-center gap-1 text-xs text-app-2 font-bold">
                                     {personNameMap[po.contact_person_id]}
                                   </span>
@@ -1160,9 +1134,7 @@ export default function SupplierDetailPage() {
                                   <span className="text-app text-xs">—</span>
                                 )}
                               </td>
-                              <td className="px-4 py-3.5 text-center text-muted">
-                                {items.length}
-                              </td>
+                              <td className="px-4 py-3.5 text-center text-muted">{items.length}</td>
                               <td className="px-4 py-3.5 text-right font-bold text-app-2">
                                 {fmtCurrency(po.total_amount || 0)}
                               </td>
@@ -1479,9 +1451,7 @@ export default function SupplierDetailPage() {
                               p.payment_mode}
                           </span>
                           {p.reference && (
-                            <span className="text-[11px] text-muted font-mono">
-                              {p.reference}
-                            </span>
+                            <span className="text-[11px] text-muted font-mono">{p.reference}</span>
                           )}
                         </div>
                         {p.notes && (
@@ -1704,7 +1674,8 @@ export default function SupplierDetailPage() {
                     Expense entry bhi banao
                   </p>
                   <p className="text-[10px] text-muted leading-snug mt-0.5">
-                    Expenses ledger me &quot;Spare Parts Purchase&quot; ke roop me yah payment dikhegi.
+                    Expenses ledger me &quot;Spare Parts Purchase&quot; ke roop me yah payment
+                    dikhegi.
                   </p>
                 </div>
               </div>
@@ -1740,7 +1711,7 @@ export default function SupplierDetailPage() {
           onClose={() => setPayTarget(null)}
           onSaved={() => {
             setPayTarget(null);
-            fetchData();
+            refetchData();
           }}
           onSwitchToEdit={() => setPayTargetReadOnly(false)}
           onDelete={async (p) => {
@@ -1754,7 +1725,7 @@ export default function SupplierDetailPage() {
         open={showModal}
         editing={supplier}
         onClose={() => setShowModal(false)}
-        onSaved={fetchData}
+        onSaved={() => refetchData()}
       />
 
       {zoomSrc && <Lightbox src={zoomSrc} alt="Visiting card" onClose={() => setZoomSrc("")} />}
@@ -1794,24 +1765,28 @@ function SupplierPaymentModal({
   const [notes, setNotes] = useState(payment.notes || "");
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState("");
-  const [expenseStatus, setExpenseStatus] = useState<"loading" | "none" | "exists" | "creating" | "created">("loading");
+  const [expenseOverride, setExpenseOverride] = useState<"creating" | "created" | null>(null);
 
-  useEffect(() => {
-    let cancel = false;
-    (async () => {
-      if (!payment.id) { setExpenseStatus("none"); return; }
+  const { data: expenseExists, isPending: expensePending } = useQuery({
+    queryKey: ["supplier-payment-expense", payment.id],
+    queryFn: async () => {
       const { count } = await supabase
         .from("expense_list")
         .select("id", { count: "exact", head: true })
         .eq("supplier_payment_id", payment.id);
-      if (!cancel) setExpenseStatus(count && count > 0 ? "exists" : "none");
-    })();
-    return () => { cancel = true; };
-  }, [payment.id]);
+      return (count ?? 0) > 0;
+    },
+    gcTime: 0,
+    enabled: !!payment.id,
+  });
+  const expenseStatus: "loading" | "none" | "exists" | "creating" | "created" =
+    expenseOverride ??
+    (!payment.id ? "none" : expensePending ? "loading" : expenseExists ? "exists" : "none");
 
   const handleExpense = async () => {
-    if (expenseStatus === "creating" || expenseStatus === "created" || expenseStatus === "exists") return;
-    setExpenseStatus("creating");
+    if (expenseStatus === "creating" || expenseStatus === "created" || expenseStatus === "exists")
+      return;
+    setExpenseOverride("creating");
     const res = await addExpenseFromPayment({
       paymentId: payment.id,
       supplierId: payment.supplier_id,
@@ -1820,7 +1795,7 @@ function SupplierPaymentModal({
       reference: payment.reference,
       paymentDate: payment.payment_date?.slice(0, 10),
     });
-    setExpenseStatus(res.created ? "created" : "none");
+    setExpenseOverride(res.created ? "created" : null);
     if (!res.created && res.error) toast.error(res.error);
   };
 
@@ -1904,9 +1879,7 @@ function SupplierPaymentModal({
                 </p>
               </div>
               <div className="text-right">
-                <p className="text-[10px] font-black uppercase tracking-wider text-muted">
-                  Mode
-                </p>
+                <p className="text-[10px] font-black uppercase tracking-wider text-muted">Mode</p>
                 <span className="inline-block mt-0.5 px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/5 text-app-2 border border-app">
                   {PAYMENT_MODES.find((m) => m.value === payment.payment_mode)?.label ||
                     payment.payment_mode}
@@ -2056,9 +2029,7 @@ function SupplierPaymentModal({
               className="mt-0.5 accent-emerald-500 cursor-pointer disabled:cursor-not-allowed"
             />
             <div className="min-w-0 flex-1">
-              <p className="text-xs font-bold text-app-2 leading-snug">
-                Expenses me add karein
-              </p>
+              <p className="text-xs font-bold text-app-2 leading-snug">Expenses me add karein</p>
               {expenseStatus === "loading" ? (
                 <p className="text-[10px] text-muted leading-snug mt-0.5 flex items-center gap-1">
                   <Loader2 size={9} className="animate-spin" /> Checking...
