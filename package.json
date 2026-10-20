@@ -16,6 +16,7 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "perf:check": "node scripts/perf-budget.mjs",
+    "schema:drift": "node scripts/check-schema-drift.mjs",
     "format": "prettier --write \"src/**/*.{ts,tsx,js,mjs,cjs,json,css}\" \"*.{ts,mts,js,mjs,json,css}\"",
     "format:check": "prettier --check \"src/**/*.{ts,tsx,js,mjs,cjs,json,css}\" \"*.{ts,mts,js,mjs,json,css}\"",
     "version:patch": "npm version patch -m \"chore(release): v%s [skip ci]\" && git push --follow-tags",

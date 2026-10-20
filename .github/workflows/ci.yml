@@ -43,6 +43,13 @@ jobs:
       - name: Check formatting
         run: npm run format:check
 
+      - name: Check schema drift
+        # `20260913000000_final_full_schema_idempotent.sql` ek living bootstrap
+        # file hai — har nayi migration ka DDL usme append hona chahiye. Ye
+        # check warna karta hai (misal: 20261018 passkey + 17 perf indexes ~1
+        # mahine tak silent missing rahe). Details: npm run schema:drift
+        run: npm run schema:drift
+
   build:
     name: Production Build
     runs-on: ubuntu-latest
