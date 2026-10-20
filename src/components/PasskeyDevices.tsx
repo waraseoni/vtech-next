@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { startRegistration, browserSupportsWebAuthn } from "@simplewebauthn/browser";
 import { Fingerprint, Loader2, Plus, Trash2, Pen, Check, X } from "lucide-react";
 import { toast } from "@/lib/toast";
+import { isNativeApp } from "@/lib/nativeApp";
 
 // Devices (Passkey / Fingerprint Login) — docs/plans/passkey_biometric_login_plan.md §5.2
 // /profile page me mount hota hai (sab staff khud enroll kar sakte hain; /settings admin-only hai).
@@ -33,6 +34,9 @@ export default function PasskeyDevices() {
   const [devices, setDevices] = useState<Device[]>([]);
   const [loading, setLoading] = useState(true);
   const [supported, setSupported] = useState(false);
+  // Capacitor app me enroll nahi ho sakta (WebView me platform authenticator
+  // wired hi nahi) — isliye alag message dikhana hai.
+  const [inNativeApp, setInNativeApp] = useState(false);
 
   const [showEnroll, setShowEnroll] = useState(false);
   const [password, setPassword] = useState("");
@@ -61,7 +65,13 @@ export default function PasskeyDevices() {
     // (fingerprint/Hello) alag device-specific baat hai — isliye button gate nahi
     // karte; browser available authenticator (fingerprint / Hello / security key)
     // khud offer karta hai.
-    setSupported(browserSupportsWebAuthn());
+    //
+    // Android WebView me `PublicKeyCredential` DEFINED hota hai (check true
+    // deta hai) par platform authenticator wired hi nahi — enrollment bhi wahi
+    // par atak jayegi. Isliye app me enroll button hi mat dikhao.
+    const native = isNativeApp();
+    setInNativeApp(native);
+    setSupported(!native && browserSupportsWebAuthn());
   }, []);
 
   const enroll = async () => {
@@ -216,8 +226,9 @@ export default function PasskeyDevices() {
 
       {!supported ? (
         <p className="text-[11px] text-muted-2">
-          Is browser par passkey support nahi hai. HTTPS (ya localhost) par kholein aur latest
-          Chrome/Edge/Safari use karein.
+          {inNativeApp
+            ? "App me fingerprint setup available nahi hai — Chrome browser me yahi site khol kar profile me aayein, wahan device add kar sakte hain. Yahan se naam badal / device hata sakte hain."
+            : "Is browser par passkey support nahi hai. HTTPS (ya localhost) par kholein aur latest Chrome/Edge/Safari use karein."}
         </p>
       ) : showEnroll ? (
         <div className="space-y-3 bg-panel-2 border border-app rounded-xl p-4">

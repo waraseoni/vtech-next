@@ -27,6 +27,7 @@ import {
 import { SITE } from "../site";
 import { APP_VERSION_LABEL, APP_VERSION_FULL } from "@/lib/app-version";
 import PullToRefresh from "@/components/PullToRefresh";
+import { isNativeApp } from "@/lib/nativeApp";
 
 type Tab = "staff" | "client";
 
@@ -101,6 +102,10 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [passkeyLoading, setPasskeyLoading] = useState(false);
   const [passkeyReady, setPasskeyReady] = useState(false);
+  // Capacitor Android app me passkey button dikhane ke liye false rakhte hain
+  // (WebView WebAuthn support karta nahi) — message alag dikhana hai isliye
+  // alag state.
+  const [inNativeApp, setInNativeApp] = useState(false);
   const [condNonce, setCondNonce] = useState(0);
   const [condActive, setCondActive] = useState(false);
 
@@ -125,7 +130,13 @@ export default function LoginPage() {
   useEffect(() => {
     // WebAuthn secure-context me sync check; browser khud fingerprint / Hello /
     // security key offer karta hai.
-    setPasskeyReady(browserSupportsWebAuthn());
+    //
+    // Android WebView me `PublicKeyCredential` DEFINED hota hai (isliye ye
+    // check true deta hai) par platform authenticator wired hi nahi hai — tap
+    // karne par kuch nahi hota. Isliye native app me passkey hi mat dikhao.
+    const native = isNativeApp();
+    setInNativeApp(native);
+    setPasskeyReady(!native && browserSupportsWebAuthn());
   }, []);
 
   // ── Auto-logoff reason (revoked access / idle timeout) ────────────────
@@ -509,6 +520,11 @@ export default function LoginPage() {
                       </>
                     )}
                   </button>
+                ) : inNativeApp ? (
+                  <p className="text-center text-[11px] text-muted-2">
+                    App me biometric login available nahi hai — upar wala password use karein, ya
+                    Chrome browser me yahi site khol kar fingerprint se login karein.
+                  </p>
                 ) : (
                   <p className="text-center text-[11px] text-muted-2">
                     Is browser/device par biometric login support nahi hai.
