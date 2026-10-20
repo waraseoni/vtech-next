@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## [1.68.0](https://github.com/waraseoni/vtech-next/compare/v1.67.1...v1.68.0) (2026-10-20)
+
+### Features
+
+* **nav:** show item label on hover when the sidebar is collapsed ([5cba584](https://github.com/waraseoni/vtech-next/commit/5cba584b06f312ddc1162635f7ee101a7d26d6d7))
+
+### Bug Fixes
+
+* **passkey:** hide biometric login inside the Android app ([e9e9b25](https://github.com/waraseoni/vtech-next/commit/e9e9b25bea54f53e8695d05a30e20e34b0b3a111))
+
 ## [1.67.1](https://github.com/waraseoni/vtech-next/compare/v1.67.0...v1.67.1) (2026-10-19)
 
 ### Bug Fixes
