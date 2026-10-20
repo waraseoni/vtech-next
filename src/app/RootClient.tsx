@@ -74,6 +74,7 @@ import { ThemeToggle } from "@/app/components/ui/ThemeToggle";
 import { DensityToggle } from "@/app/components/ui/DensityToggle";
 import { useDensity } from "@/hooks/useDensity";
 import { TeamOnline } from "@/app/components/ui/TeamOnline";
+import { useSidebarTooltip } from "@/components/SidebarTooltip";
 import dynamic from "next/dynamic";
 
 // NativePrintPreview sirf native print preview routes par dikhta hai (opens
@@ -194,9 +195,13 @@ function SidebarNav({
   const lk = (href: string, exact = false) =>
     exact ? pathname === href : pathname.startsWith(href);
 
+  // Collapsed (icons-only) mode me hover/focus par label tooltip — nav ke
+  // overflow se escape karne ke liye portal + fixed positioning.
+  const { navProps, tooltip } = useSidebarTooltip(collapsed);
+
   if (isClient) {
     return (
-      <nav className="flex-1 overflow-y-auto py-3 px-2">
+      <nav {...navProps} className="flex-1 overflow-y-auto py-3 px-2">
         <ul className="space-y-0.5">
           <li>
             <Link
@@ -229,12 +234,13 @@ function SidebarNav({
             </Link>
           </li>
         </ul>
+        {tooltip}
       </nav>
     );
   }
 
   return (
-    <nav className="flex-1 overflow-y-auto py-3 px-2">
+    <nav {...navProps} className="flex-1 overflow-y-auto py-3 px-2">
       <ul className="space-y-0.5">
         <li>
           <Link
@@ -1040,6 +1046,7 @@ function SidebarNav({
           </>
         )}
       </ul>
+      {tooltip}
     </nav>
   );
 }
