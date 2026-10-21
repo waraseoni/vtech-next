@@ -40,6 +40,12 @@ const eslintConfig = defineConfig([
     "backups/**",
     "mariadb dump/**",
     "comm-restore.cjs",
+    // Root par girne wale throwaway .cjs scratch (repo ke tracked .cjs sirf
+    // scripts/ me hain, wo upar already ignored hain).
+    "*.cjs",
+    // Android native project + build artifacts — pura git-ignored hai, CI me
+    // exist hi nahi karta, aur Next.js ESLint config ka target nahi hai.
+    "android/**",
   ]),
 ]);
 
