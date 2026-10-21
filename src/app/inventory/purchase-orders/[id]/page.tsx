@@ -442,7 +442,6 @@ export default function PurchaseOrderDetailPage() {
         <div className="bg-panel border border-app rounded-2xl p-4">
           <div className="flex items-center justify-between gap-1">
             {STATUS_FLOW.map((s, idx) => {
-              const meta = STATUS_META[s];
               const isActive = idx <= currentStep && po.status !== "cancelled";
               const isCurrent = idx === currentStep;
               return (

@@ -12,7 +12,6 @@ type TeamMember = { id: string; full_name: string | null; role: string | null };
 // Sidebar me compact "Team online" strip — kisi user ko messages page par laana.
 export function TeamOnline() {
   const [online, setOnline] = useState<TeamMember[]>([]);
-  const [total, setTotal] = useState(0);
 
   const refresh = async () => {
     try {
@@ -23,7 +22,6 @@ export function TeamOnline() {
       const plist = (profs || []) as TeamMember[];
       const pm: Record<string, Presence> = {};
       (pres || []).forEach((r) => (pm[r.user_id] = { status: r.status, last_seen: r.last_seen }));
-      setTotal(plist.length);
       setOnline(plist.filter((p) => isOnline(pm[p.id])));
     } catch {
       // ignore

@@ -3,14 +3,7 @@
 import { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { supabase, getCachedUser } from "@/lib/supabase";
-import {
-  Loader2,
-  ClipboardCheck,
-  CalendarDays,
-  CalendarCheck,
-  Clock,
-  Sparkles,
-} from "lucide-react";
+import { Loader2, ClipboardCheck, CalendarDays, CalendarCheck } from "lucide-react";
 import DailyAttendance from "./components/DailyAttendance";
 import MonthlyReport from "./components/MonthlyReport";
 import PageLoader from "@/components/PageLoader";

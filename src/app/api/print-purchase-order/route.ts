@@ -33,68 +33,6 @@ function fmtDate(d: string | null): string {
   }).format(new Date(d + (d.length === 10 ? "T00:00:00" : "")));
 }
 
-function inr(n: number): string {
-  return (
-    "\u20b9" + n.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-  );
-}
-
-function numberToWords(num: number): string {
-  const ones = [
-    "",
-    "One",
-    "Two",
-    "Three",
-    "Four",
-    "Five",
-    "Six",
-    "Seven",
-    "Eight",
-    "Nine",
-    "Ten",
-    "Eleven",
-    "Twelve",
-    "Thirteen",
-    "Fourteen",
-    "Fifteen",
-    "Sixteen",
-    "Seventeen",
-    "Eighteen",
-    "Nineteen",
-  ];
-  const tens = [
-    "",
-    "",
-    "Twenty",
-    "Thirty",
-    "Forty",
-    "Fifty",
-    "Sixty",
-    "Seventy",
-    "Eighty",
-    "Ninety",
-  ];
-  function helper(n: number): string {
-    if (n === 0) return "";
-    if (n < 20) return ones[n] + " ";
-    if (n < 100) return tens[Math.floor(n / 10)] + (n % 10 ? " " + ones[n % 10] : "") + " ";
-    return ones[Math.floor(n / 100)] + " Hundred " + helper(n % 100);
-  }
-  if (num === 0) return "Zero Rupees Only";
-  let w = "";
-  const cr = Math.floor(num / 10000000);
-  num %= 10000000;
-  const lk = Math.floor(num / 100000);
-  num %= 100000;
-  const th = Math.floor(num / 1000);
-  num %= 1000;
-  if (cr) w += helper(cr) + "Crore ";
-  if (lk) w += helper(lk) + "Lakh ";
-  if (th) w += helper(th) + "Thousand ";
-  w += helper(num);
-  return w.trim() + " Rupees Only";
-}
-
 // ─── STATUS MAP ───────────────────────────────────────────────────────────────
 const STATUS_LABEL: Record<string, string> = {
   pending: "Pending",
@@ -183,7 +121,6 @@ export async function GET(req: NextRequest) {
       .select("id, name, hsn")
       .in("id", pIds);
     const prodMap = new Map((prods || []).map((p) => [p.id, p.name]));
-    const hsnMap = new Map((prods || []).map((p) => [p.id, (p as { hsn?: string }).hsn || ""]));
 
     itemRows.forEach((i) => {
       items.push({
@@ -196,9 +133,7 @@ export async function GET(req: NextRequest) {
     });
   }
 
-  const subtotal = items.reduce((s, r) => s + r.total, 0);
   const totalQty = items.reduce((s, r) => s + r.qty, 0);
-  const grandTotal = po.total_amount || subtotal;
   const statusLabel = STATUS_LABEL[po.status] || po.status;
 
   // ── Build item rows ──

@@ -354,8 +354,6 @@ export default function BoxLabelsPage() {
     printBoxLabels(selectedBoxes, options, partsMap);
   }, [selectedBoxes, partsMap, options]);
 
-  const selectedBox = boxOptions.find((o) => o.id === Number(selectedBoxId)) || null;
-
   // Filtered boxes for left search list
   const filteredBoxes = useMemo(() => {
     if (!searchQuery.trim()) return boxes;

@@ -20,7 +20,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Calendar,
-  RotateCcw,
   Loader2,
   TrendingUp,
   Users,

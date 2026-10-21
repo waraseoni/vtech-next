@@ -33,7 +33,6 @@ import { exportToCSV, printTable } from "@/lib/exportUtils";
 import SearchableSelect from "@/components/SearchableSelect";
 import { toast } from "@/lib/toast";
 import { DataTable } from "@/components/ui";
-import type { Column } from "@/components/ui";
 
 type PaymentForm = {
   id: number | null;

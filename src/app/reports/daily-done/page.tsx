@@ -6,7 +6,6 @@ import AdminPage from "@/app/components/AdminPage";
 import { supabase } from "@/lib/supabase";
 import ZoomableImage from "@/components/ZoomableImage";
 import {
-  Loader2,
   Printer,
   ChevronLeft,
   ChevronRight,
@@ -18,7 +17,6 @@ import {
   ListChecks,
   IndianRupee,
   Eye,
-  FileText,
   MessageCircle,
   Phone,
 } from "lucide-react";

@@ -12,7 +12,6 @@
 // ─────────────────────────────────────────────────────────────────
 import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/lib/supabase";
-import { useViewOnly, CanWrite } from "@/lib/viewOnly";
 import ZoomableImage from "@/components/ZoomableImage";
 import {
   Calendar,
@@ -21,7 +20,6 @@ import {
   Clock,
   X,
   AlertCircle,
-  RotateCcw,
   LogIn,
   LogOut,
   Fingerprint,
@@ -52,7 +50,6 @@ import {
 } from "@/lib/attendance-derive";
 import { computeDay, fmtMins, nowIST } from "@/lib/attendance-hours";
 import { DEFAULT_DUTY, dutyFor, fmtDuty, type Duty } from "@/lib/duty";
-import { format } from "date-fns/format";
 
 interface Mechanic {
   id: number;
@@ -210,9 +207,6 @@ export default function DailyAttendance({
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
-
-  // Geofence view-only enforcement
-  const { viewOnly } = useViewOnly();
 
   // Self check-in / check-out
   const [selfAttn, setSelfAttn] = useState<SelfAttn | null>(null);

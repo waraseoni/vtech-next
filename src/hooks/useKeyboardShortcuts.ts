@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useCallback, useRef, useState } from "react";
+import { useEffect, useCallback, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 interface ShortcutAction {
@@ -20,11 +20,16 @@ export function useKeyboardShortcuts(config: ShortcutConfig) {
   const [helpOpen, setHelpOpen] = useState(false);
   const waitingForG = useRef(false);
 
-  const shortcuts: Record<string, ShortcutAction> = {};
-  if (config.dashboard) shortcuts["g d"] = { label: "Dashboard", href: config.dashboard };
-  if (config.jobs) shortcuts["g j"] = { label: "Jobs", href: config.jobs };
-  if (config.clients) shortcuts["g c"] = { label: "Clients", href: config.clients };
-  if (config.sales) shortcuts["g s"] = { label: "Sales", href: config.sales };
+  // useMemo: warna har render par nayi object → handleKeyDown identity badalti
+  // rehti thi aur keydown listener baar-baar re-attach hota tha.
+  const shortcuts = useMemo<Record<string, ShortcutAction>>(() => {
+    const map: Record<string, ShortcutAction> = {};
+    if (config.dashboard) map["g d"] = { label: "Dashboard", href: config.dashboard };
+    if (config.jobs) map["g j"] = { label: "Jobs", href: config.jobs };
+    if (config.clients) map["g c"] = { label: "Clients", href: config.clients };
+    if (config.sales) map["g s"] = { label: "Sales", href: config.sales };
+    return map;
+  }, [config.dashboard, config.jobs, config.clients, config.sales]);
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {

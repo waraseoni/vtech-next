@@ -1332,7 +1332,6 @@ function ReceiveStockModal({
   const [expenses, setExpenses] = useState(0);
 
   const totalReceiving = target.items.reduce((s, i) => s + (qtys[i.product_id] || 0), 0);
-  const totalQty = target.items.reduce((s, i) => s + i.qty_ordered, 0);
   const allFull = target.items.every(
     (i) => (qtys[i.product_id] || 0) >= i.qty_ordered - i.qty_received
   );
