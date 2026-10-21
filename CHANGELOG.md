@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.68.1](https://github.com/waraseoni/vtech-next/compare/v1.68.0...v1.68.1) (2026-10-21)
+
+### Bug Fixes
+
+* **deps:** upgrade capacitor to 8.5.3 to patch GHSA-rvm3-566m-v7fv ([d4ea776](https://github.com/waraseoni/vtech-next/commit/d4ea77642a20211f427e7b7b4f986f574895dcbb))
+
 ## [1.68.0](https://github.com/waraseoni/vtech-next/compare/v1.67.1...v1.68.0) (2026-10-20)
 
 ### Features
