@@ -1,7 +1,9 @@
 "use client";
 import { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
+import { clientDetailKey } from "@/lib/queries/client-detail";
 import {
   ArrowLeft,
   IndianRupee,
@@ -71,6 +73,7 @@ type SaleOption = { id: number; sale_code: string; total_amount: number };
 export default function AddPaymentPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
   const router = useRouter();
+  const queryClient = useQueryClient();
   const clientId = parseInt(resolvedParams.id);
 
   const [fetchingMeta, setFetchingMeta] = useState(true);
@@ -211,6 +214,15 @@ export default function AddPaymentPage({ params }: { params: Promise<{ id: strin
       toast.success("Payment save ho gayi! ✅");
       // BUG FIX 11: don't push + refresh (causes warning on unmounted component)
       // Use replace — navigates cleanly without stacking history
+      //
+      // client-detail ka staleTime 30s hai — bina invalidation ke view page
+      // mount par purana payments list serve karta tha (nayi payment gayab,
+      // refresh par hi dikhti thi). refetchType "all": view unmounted hai,
+      // sirf mark karne se fetch mount par hota aur tab tak stale flash.
+      await queryClient.invalidateQueries({
+        queryKey: clientDetailKey(clientId),
+        refetchType: "all",
+      });
       router.replace(`/clients/${clientId}/view`);
     } catch (err) {
       console.error("insert error:", err instanceof Error ? err.message : JSON.stringify(err));

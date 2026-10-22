@@ -1,7 +1,9 @@
 "use client";
 import { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
+import { clientDetailKey } from "@/lib/queries/client-detail";
 import {
   ArrowLeft,
   Banknote,
@@ -41,6 +43,7 @@ const labelCls =
 export default function GiveLoanPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
   const router = useRouter();
+  const queryClient = useQueryClient();
   const clientId = parseInt(resolvedParams.id);
 
   const [loading, setLoading] = useState(false);
@@ -152,6 +155,13 @@ export default function GiveLoanPage({ params }: { params: Promise<{ id: string 
       ]);
       if (error) throw error;
       toast.success("Loan save ho gaya! ✅");
+      // staleTime 30s ke andar view page purana cache serve karta tha.
+      // refetchType "all": view unmounted hai, fetch abhi karwa lo taaki
+      // mount par stale flash na dikhe.
+      await queryClient.invalidateQueries({
+        queryKey: clientDetailKey(clientId),
+        refetchType: "all",
+      });
       router.replace(`/clients/${clientId}/view`);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Loan save mein galti!");

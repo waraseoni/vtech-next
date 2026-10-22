@@ -1,7 +1,9 @@
 "use client";
 import { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
+import { clientDetailKey } from "@/lib/queries/client-detail";
 import {
   ArrowLeft,
   ShoppingCart,
@@ -56,6 +58,7 @@ function generateSaleCode(): string {
 export default function AddDirectSalePage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
   const router = useRouter();
+  const queryClient = useQueryClient();
   const clientId = parseInt(resolvedParams.id);
 
   const [loading, setLoading] = useState(false);
@@ -171,6 +174,14 @@ export default function AddDirectSalePage({ params }: { params: Promise<{ id: st
 
       toast.success("Sale save ho gayi! ✅");
       // BUG FIX: router.replace instead of push+refresh (avoids unmount warning)
+      //
+      // staleTime 30s ke andar view page purana cache serve karta tha.
+      // refetchType "all": view unmounted hai, fetch abhi karwa lo taaki
+      // mount par stale flash na dikhe.
+      await queryClient.invalidateQueries({
+        queryKey: clientDetailKey(clientId),
+        refetchType: "all",
+      });
       router.replace(`/clients/${clientId}/view`);
     } catch (err) {
       console.error("sale error:", err instanceof Error ? err.message : JSON.stringify(err));

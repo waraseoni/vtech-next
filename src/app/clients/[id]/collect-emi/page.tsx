@@ -1,7 +1,9 @@
 "use client";
 import { useState, useEffect, use, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
+import { clientDetailKey } from "@/lib/queries/client-detail";
 import {
   ArrowLeft,
   TrendingUp,
@@ -52,6 +54,7 @@ type ActiveLoan = {
 export default function CollectEMIPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
   const router = useRouter();
+  const queryClient = useQueryClient();
   const searchParams = useSearchParams();
   const clientId = parseInt(resolvedParams.id);
   const preselectedLoanId = searchParams.get("loan_id");
@@ -158,6 +161,13 @@ export default function CollectEMIPage({ params }: { params: Promise<{ id: strin
       const { error } = await supabase.from("client_payments").insert([paymentData]);
       if (error) throw error;
       toast.success("EMI jama ho gayi! ✅");
+      // staleTime 30s ke andar view page purana cache serve karta tha.
+      // refetchType "all": view unmounted hai, fetch abhi karwa lo taaki
+      // mount par stale flash na dikhe.
+      await queryClient.invalidateQueries({
+        queryKey: clientDetailKey(clientId),
+        refetchType: "all",
+      });
       router.replace(`/clients/${clientId}/view`);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Payment save mein galti!");

@@ -1,8 +1,10 @@
 "use client";
 import { useState, useEffect, use, useRef, useCallback } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { supabase, getCachedUser } from "@/lib/supabase";
 import { safeBack } from "@/lib/utils";
 import { useRouter, useSearchParams } from "next/navigation";
+import { jobViewKey } from "@/lib/queries/job-view";
 import {
   Save,
   ArrowLeft,
@@ -74,6 +76,7 @@ type ProductRow = {
 export default function ManageJobPage({ params }: { params: Promise<{ id?: string }> }) {
   const resolvedParams = use(params);
   const router = useRouter();
+  const queryClient = useQueryClient();
   const searchParams = useSearchParams();
 
   // jobId present → edit mode; else → new mode
@@ -708,6 +711,18 @@ export default function ManageJobPage({ params }: { params: Promise<{ id?: strin
       }
 
       toast.success(isEdit ? "Job update ho gaya! ✅" : "Naya job create ho gaya! ✅");
+      // Global staleTime 30s hai — bina invalidation ke view page mount par
+      // purana cache serve karta tha (total amount 0, refresh par hi theek).
+      // refetchType "all": view abhi unmounted hai, sirf mark karne se fetch
+      // mount par hota aur tab tak stale flash dikhta. Isliye pehle fetch.
+      // txnId edit me jobId (guaranteed), create me data.id — dono non-null,
+      // par let ka declared type number | null hai, isliye guard.
+      if (txnId !== null) {
+        await queryClient.invalidateQueries({ queryKey: jobViewKey(txnId), refetchType: "all" });
+      }
+      // Jobs list bhi stale ho gayi — par ye navigation target nahi hai, awaited
+      // mat karo (warna save ke baad extra round-trip lagti).
+      void queryClient.invalidateQueries({ queryKey: ["jobs-stale"] });
       router.replace(`/jobs/${txnId}/view`);
     } catch (e) {
       logger.error("save error:", e instanceof Error ? e.message : JSON.stringify(e));
