@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.68.2](https://github.com/waraseoni/vtech-next/compare/v1.68.1...v1.68.2) (2026-10-22)
+
+### Bug Fixes
+
+* invalidate query cache after mutation before navigation ([714783a](https://github.com/waraseoni/vtech-next/commit/714783a0abce75ed01799c5e797b163f1bc90ecd))
+
 ## [1.68.1](https://github.com/waraseoni/vtech-next/compare/v1.68.0...v1.68.1) (2026-10-21)
 
 ### Bug Fixes
