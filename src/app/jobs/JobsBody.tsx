@@ -611,6 +611,9 @@ function JobsListContent({
 
     if (!error) {
       fetchStats();
+      if (newStatus === 5 || prevTxn?.status === 5) {
+        fetchPage();
+      }
     } else {
       // Rollback: purana row wapas lao
       if (prevTxn) {
@@ -700,6 +703,7 @@ function JobsListContent({
       fetchStats();
       loadJobSpots();
       refetchStale();
+      fetchPage();
     } else {
       toast.error("Bulk update failed: " + error.message);
     }

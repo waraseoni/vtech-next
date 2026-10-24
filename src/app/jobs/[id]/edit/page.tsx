@@ -718,7 +718,7 @@ export default function ManageJobPage({ params }: { params: Promise<{ id?: strin
       // txnId edit me jobId (guaranteed), create me data.id — dono non-null,
       // par let ka declared type number | null hai, isliye guard.
       if (txnId !== null) {
-        await queryClient.invalidateQueries({ queryKey: jobViewKey(txnId), refetchType: "all" });
+        void queryClient.invalidateQueries({ queryKey: jobViewKey(txnId) });
       }
       // Jobs list bhi stale ho gayi — par ye navigation target nahi hai, awaited
       // mat karo (warna save ke baad extra round-trip lagti).
