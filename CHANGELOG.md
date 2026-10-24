@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.68.3](https://github.com/waraseoni/vtech-next/compare/v1.68.2...v1.68.3) (2026-10-24)
+
+### Bug Fixes
+
+* **jobs:** make edit redirect instant and refresh client due on status delivered ([c1001f1](https://github.com/waraseoni/vtech-next/commit/c1001f155a72dd3d60a0ae16e827d3b284d9a702))
+
 ## [1.68.2](https://github.com/waraseoni/vtech-next/compare/v1.68.1...v1.68.2) (2026-10-22)
 
 ### Bug Fixes
