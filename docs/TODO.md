@@ -35,6 +35,10 @@ Plan: `docs/plans/tech_adoption_sprint_plan.md`
 - [x] **T5** — `@google/genai` migration + native BarcodeDetector
   - T5.1 genai live function-calling verified; T5.2 native engine + html5-qrcode fallback (device matrix pending); T5.3 outdated sweep done
 - [ ] **T6** — backlog (TS7, Vitest 5, RQ completion, realtime lists)
+  - [x] Vitest 5 (+coverage-v8 5) — 417 tests green
+  - [x] realtime lists — stale item, list-polling loops nahi bache
+  - [ ] TS7 — blocked (`typescript-eslint` peer `<6.1`)
+  - [ ] RQ completion / RHF rollout — bada kaam, user decision pending
 
 ---
 

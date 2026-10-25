@@ -19,7 +19,7 @@
 | Data fetching | 158 files me `useEffect`, 81 me `fetch()` | TanStack Query abhi **45 files** |
 | Tests | 388 unit (vitest) | **e2e = 0** (Playwright nahi) |
 | State mgmt | 1 `createContext` | koi zustand/redux zaroorat nahi ✅ |
-| Realtime | Supabase realtime live (messages) | polling wale 5 files baaki |
+| Realtime | Supabase realtime live (messages, presence, notifications) | ✅ koi list-polling loop nahi (`perf_db_fetch_audit_oct14_2026.md`) |
 
 Dependency audit ka latest: `npm audit` **5 vulns (0 critical)** — dep hygiene round ho chuka hai.
 
@@ -219,9 +219,9 @@ Commit: `refactor(scan): native BarcodeDetector with html5-qrcode fallback`
 ## T6 — Backlog (is plan ke bahar, decide T3/T4 ke baad)
 
 - [ ] **TanStack Query completion** — 158 `useEffect` files me se top-20 hot routes (`npm run analyze` + `perf_db_fetch_audit_oct14_2026.md` se list)
-- [ ] **TypeScript 5.9 → 7.0** — trial branch, `tsc --noEmit` 5-10x faster (456 files ke liye). Full suite green ho tabhi merge.
+- [ ] **TypeScript 5.9 → 7.0** — **BLOCKED:** `typescript-eslint@8.72` ka peer `typescript >=4.8.4 <6.1.0`; TS7 install hi peer conflict deta hai. typescript-eslint ka TS7 support aane par retry (tab trial branch + full suite).
 - [x] **Vitest 4 → 5** — vitest 5.0.5 + coverage-v8 5.0.5, 417/417 tests + coverage report green (code change zero)
-- [ ] **Supabase Realtime for lists** — 5 `setInterval` polling files
+- [x] ~~**Supabase Realtime for lists** — 5 `setInterval` polling files~~ **stale**: oct14 audit ke hisaab se list-polling loops nahi bache; jo `setInterval` hain wo clock/heartbeat/license check hain (unhe realtime me badalne ka koi fayda nahi)
 - [ ] **MSW** — tabhi zaroori jab component tests fast chahiye (abhi Playwright cover kar lega)
 - [ ] **RHF rollout baaki 49 forms** — T3.1/T3.2 ka result dekh ke
 
