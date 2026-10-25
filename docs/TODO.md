@@ -25,7 +25,7 @@ Har kaam ke liye: plan + todo banate hain, jo complete ho jata hai use mark kart
 Plan: `docs/plans/tech_adoption_sprint_plan.md`
 
 - [x] **T0** — bundle baseline (`npm run analyze`) + React Query devtools + Sentry import deprecation fix
-- [ ] **T1** — Zod foundations (`parseBody` + schemas + tests)
+- [x] **T1** — Zod foundations (`parseBody` + schemas + tests)
 - [ ] **T2** — Zod pilot on 8 API routes
 - [ ] **T3** — React Hook Form pilot (2 forms)
 - [ ] **T4** — Playwright e2e (setup + 5 smoke tests)

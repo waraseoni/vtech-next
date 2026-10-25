@@ -52,14 +52,15 @@ Commit: `chore(perf): bundle analyze baseline + react-query devtools`
 
 Commit: `feat(validation): zod schema layer + parseBody helper`
 
-- [ ] `npm i zod` (direct dep `^4.6.7`; serwist ke liye existing `overrides` rehne do)
-- [ ] `src/lib/validation/index.ts`
+- [x] `npm i zod` (direct dep `^4.6.7`; **note:** top-level override direct dep se `EOVERRIDE` deta hai → `@serwist/*` ke andar nested override)
+- [x] `src/lib/validation/index.ts`
   - `parseBody(schema, request)` → `{ ok: true, data } | NextResponse.json({ error, issues }, { status: 400 })`
-  - `issues` shape: `{ fieldName: ["msg", ...] }` (Zod `flatten().fieldErrors`)
-- [ ] `src/lib/validation/schemas/` — pehle 2 sample schemas (`location.ts`, `bomTemplate.ts`)
-- [ ] Error messages **Hindi style me** (repo ka convention)
-- [ ] Unit tests `src/lib/validation/index.test.ts` (valid/invalid/missing-field/wrong-type/extra-key)
-- [ ] Gates
+  - `issues` shape: `{ fieldName: ["msg", ...] }` (Zod 4 `flattenError().fieldErrors`, refine errors `_form` me)
+  - extra `parseData(schema, value)` — forms/server actions ke liye
+- [x] `src/lib/validation/schemas/` — 4 schemas: `location.ts`, `bomTemplate.ts`, `geofencePermit.ts`, `messaging.ts`
+- [x] Error messages **Hindi style me** (repo ka convention)
+- [x] Unit tests `src/lib/validation/index.test.ts` (12 tests: valid/invalid/missing-field/blank/wrong-type/extra-key/invalid-JSON/refine/coerce)
+- [x] Gates (typecheck + lint + 12/12 tests)
 - **Files (new):** `src/lib/validation/**`, `src/lib/validation/index.test.ts`
 - **Risk: low** — abhi koi route nahi juda, rollback = file delete.
 

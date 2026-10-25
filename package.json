@@ -56,7 +56,8 @@
     "react-image-crop": "^11.1.2",
     "recharts": "^3.10.1",
     "sonner": "^2.0.8",
-    "web-push": "^3.6.7"
+    "web-push": "^3.6.7",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@semantic-release/changelog": "^6.0.3",
@@ -94,7 +95,12 @@
     "vitest": "^4.1.12"
   },
   "overrides": {
-    "zod": "4.6.7"
+    "@serwist/build": {
+      "zod": "4.6.7"
+    },
+    "@serwist/turbopack": {
+      "zod": "4.6.7"
+    }
   },
   "allowScripts": {
     "@firebase/util@1.15.3": true,
