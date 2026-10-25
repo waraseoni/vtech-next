@@ -1,59 +1,22 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { useRouter, useParams } from "next/navigation";
-import {
-  Save,
-  ArrowLeft,
-  UserPlus,
-  Loader2,
-  Edit3,
-  AlertTriangle,
-  CheckCircle,
-} from "lucide-react";
+import { Save, ArrowLeft, UserPlus, Loader2, Edit3, AlertTriangle, CheckCircle } from "lucide-react";
 import Link from "next/link";
+import { useForm, Controller } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { logActivity } from "@/lib/activity";
 import { safeBack } from "@/lib/utils";
 import { toast } from "@/lib/toast";
 import PageLoader from "@/components/PageLoader";
+import { clientFormSchema, emptyClientForm, type ClientFormValues } from "@/lib/validation/schemas/client";
 
 // ── DARK THEME CONSTANTS ──────────────────────────────────
 const inputCls =
   "w-full px-4 py-3 rounded-xl bg-app border border-app text-white placeholder-slate-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 outline-none transition-all text-sm font-medium";
 const labelCls = "block text-[10px] font-extrabold uppercase tracking-wider text-muted mb-1.5";
 const errCls = "text-red-400 text-xs mt-1 font-medium";
-
-type FormState = {
-  firstname: string;
-  middlename: string;
-  lastname: string;
-  contact: string;
-  email: string;
-  address: string;
-  opening_balance: string;
-};
-
-type FieldErrors = Partial<Record<keyof FormState, string>>;
-
-// ── VALIDATION ────────────────────────────────────────────
-function validate(form: FormState): FieldErrors {
-  const e: FieldErrors = {};
-  if (!form.firstname.trim()) e.firstname = "First name is required";
-  if (!form.lastname.trim()) e.lastname = "Last name is required";
-  if (!form.contact.trim()) {
-    e.contact = "Contact number is required";
-  } else if (!/^[0-9]{10}$/.test(form.contact.trim())) {
-    e.contact = "Enter valid 10-digit number";
-  }
-  if (form.email.trim()) {
-    const emailRe = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-    const mobileRe = /^[0-9]{10}$/;
-    if (!emailRe.test(form.email.trim()) && !mobileRe.test(form.email.trim()))
-      e.email = "Enter valid email or 10-digit mobile";
-  }
-  if (!form.address.trim()) e.address = "Address is required";
-  return e;
-}
 
 // ── MAIN COMPONENT ────────────────────────────────────────
 export default function ManageClientPage() {
@@ -62,22 +25,21 @@ export default function ManageClientPage() {
   const clientId = params?.id ? parseInt(params.id as string) : null;
   const isEdit = !!clientId;
 
-  const [loading, setLoading] = useState(false);
   const [fetchLoading, setFetchLoading] = useState(isEdit);
-  const [errors, setErrors] = useState<FieldErrors>({});
-  const [submitted, setSubmitted] = useState(false);
   const [duplicateClients, setDuplicateClients] = useState<
     { id: number; name: string; contact: string }[]
   >([]);
   const [checkingDup, setCheckingDup] = useState(false);
-  const [form, setForm] = useState<FormState>({
-    firstname: "",
-    middlename: "",
-    lastname: "",
-    contact: "",
-    email: "",
-    address: "",
-    opening_balance: "0.00",
+
+  const {
+    register,
+    control,
+    handleSubmit,
+    reset,
+    formState: { errors, isSubmitting },
+  } = useForm<ClientFormValues>({
+    resolver: zodResolver(clientFormSchema),
+    defaultValues: emptyClientForm,
   });
 
   // ── FETCH EXISTING CLIENT (edit mode) ──────────────────
@@ -92,7 +54,7 @@ export default function ManageClientPage() {
           .single();
         if (error) throw error;
         if (data)
-          setForm({
+          reset({
             firstname: data.firstname || "",
             middlename: data.middlename || "",
             lastname: data.lastname || "",
@@ -108,33 +70,10 @@ export default function ManageClientPage() {
         setFetchLoading(false);
       }
     })();
-  }, [clientId, isEdit, router]);
+  }, [clientId, isEdit, reset, router]);
 
-  // ── FIELD CHANGE ───────────────────────────────────────
-  const handleChange = (field: keyof FormState, value: string) => {
-    const updated = { ...form, [field]: value };
-    setForm(updated);
-    if (submitted) setErrors(validate(updated));
-
-    // Check for duplicate contact
-    if (field === "contact" && value.length === 10 && !isEdit) {
-      checkDuplicateContact(value);
-    }
-    if (field === "contact" && value.length < 10) {
-      setDuplicateClients([]);
-    }
-
-    // Check for duplicate email
-    if (field === "email" && value.trim().length > 0 && !isEdit) {
-      checkDuplicateEmail(value.trim());
-    }
-    if (field === "email" && value.trim().length === 0) {
-      setDuplicateClients([]);
-    }
-  };
-
-  // ── DUPLICATE CONTACT CHECK ───────────────────────────
-  const checkDuplicateContact = async (contact: string) => {
+  // ── DUPLICATE CHECKS ───────────────────────────────────
+  const checkDuplicateContact = useCallback(async (contact: string) => {
     setCheckingDup(true);
     try {
       const { data, error } = await supabase
@@ -160,10 +99,9 @@ export default function ManageClientPage() {
     } finally {
       setCheckingDup(false);
     }
-  };
+  }, []);
 
-  // ── DUPLICATE EMAIL CHECK ───────────────────────────
-  const checkDuplicateEmail = async (email: string) => {
+  const checkDuplicateEmail = useCallback(async (email: string) => {
     setCheckingDup(true);
     try {
       const { data, error } = await supabase
@@ -189,27 +127,23 @@ export default function ManageClientPage() {
     } finally {
       setCheckingDup(false);
     }
-  };
+  }, []);
+
+  // Purana behaviour preserve: contact 10 digit hote hi check, email type karte
+  // waqt check (edit mode me nahi). RHF ka `watch()` subscription React Compiler
+  // ke saath incompatible hai, isliye field-level onChange se trigger karte hain.
 
   // ── SUBMIT ─────────────────────────────────────────────
-  const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSubmitted(true);
-    const fieldErrors = validate(form);
-    if (Object.keys(fieldErrors).length > 0) {
-      setErrors(fieldErrors);
-      return;
-    }
-    setLoading(true);
+  const onSubmit = handleSubmit(async (values) => {
     try {
       const payload = {
-        firstname: form.firstname.trim(),
-        middlename: form.middlename.trim() || null,
-        lastname: form.lastname.trim(),
-        contact: form.contact.trim(),
-        email: form.email.trim() || null,
-        address: form.address.trim(),
-        opening_balance: parseFloat(form.opening_balance) || 0,
+        firstname: values.firstname.trim(),
+        middlename: values.middlename.trim() || null,
+        lastname: values.lastname.trim(),
+        contact: values.contact.trim(),
+        email: values.email.trim() || null,
+        address: values.address.trim(),
+        opening_balance: parseFloat(values.opening_balance) || 0,
       };
       const clientName = [payload.firstname, payload.lastname].filter(Boolean).join(" ");
       if (isEdit) {
@@ -231,10 +165,8 @@ export default function ManageClientPage() {
       router.replace("/clients");
     } catch (err) {
       toast.error("Error: " + (err instanceof Error ? err.message : String(err)));
-    } finally {
-      setLoading(false);
     }
-  };
+  });
 
   // ── LOADING ────────────────────────────────────────────
   if (fetchLoading) return <PageLoader icon={UserPlus} label="loading client..." tone="cyan" />;
@@ -283,7 +215,7 @@ export default function ManageClientPage() {
           </div>
 
           {/* Form Body */}
-          <form onSubmit={handleSave} noValidate className="p-6 space-y-5">
+          <form onSubmit={onSubmit} noValidate className="p-6 space-y-5">
             {/* First Name + Middle Name */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
@@ -293,11 +225,10 @@ export default function ManageClientPage() {
                 <input
                   type="text"
                   placeholder="Enter first name"
-                  value={form.firstname}
-                  onChange={(e) => handleChange("firstname", e.target.value)}
+                  {...register("firstname")}
                   className={`${inputCls} ${errors.firstname ? "border-red-500" : ""}`}
                 />
-                {errors.firstname && <p className={errCls}>{errors.firstname}</p>}
+                {errors.firstname && <p className={errCls}>{errors.firstname.message}</p>}
               </div>
               <div>
                 <label className={labelCls}>
@@ -309,8 +240,7 @@ export default function ManageClientPage() {
                 <input
                   type="text"
                   placeholder="Enter middle name"
-                  value={form.middlename}
-                  onChange={(e) => handleChange("middlename", e.target.value)}
+                  {...register("middlename")}
                   className={inputCls}
                 />
               </div>
@@ -325,11 +255,10 @@ export default function ManageClientPage() {
                 <input
                   type="text"
                   placeholder="Enter last name"
-                  value={form.lastname}
-                  onChange={(e) => handleChange("lastname", e.target.value)}
+                  {...register("lastname")}
                   className={`${inputCls} ${errors.lastname ? "border-red-500" : ""}`}
                 />
-                {errors.lastname && <p className={errCls}>{errors.lastname}</p>}
+                {errors.lastname && <p className={errCls}>{errors.lastname.message}</p>}
               </div>
               <div>
                 <label className={labelCls}>Opening Balance</label>
@@ -337,8 +266,7 @@ export default function ManageClientPage() {
                   type="number"
                   step="0.01"
                   placeholder="0.00"
-                  value={form.opening_balance}
-                  onChange={(e) => handleChange("opening_balance", e.target.value)}
+                  {...register("opening_balance")}
                   className={`${inputCls} text-right`}
                 />
                 <p className="text-[9px] text-muted-2 mt-1">
@@ -353,13 +281,26 @@ export default function ManageClientPage() {
                 WhatsApp / Contact <span className="text-red-500">*</span>
               </label>
               <div className="relative">
-                <input
-                  type="tel"
-                  placeholder="10-digit mobile number"
-                  maxLength={10}
-                  value={form.contact}
-                  onChange={(e) => handleChange("contact", e.target.value.replace(/\D/g, ""))}
-                  className={`${inputCls} ${errors.contact ? "border-red-500" : duplicateClients.length > 0 ? "border-amber-500" : ""}`}
+                <Controller
+                  name="contact"
+                  control={control}
+                  render={({ field }) => (
+                    <input
+                      type="tel"
+                      placeholder="10-digit mobile number"
+                      maxLength={10}
+                      value={field.value}
+                      onChange={(e) => {
+                        const v = e.target.value.replace(/\D/g, "");
+                        field.onChange(v);
+                        if (v.length === 10 && !isEdit) void checkDuplicateContact(v);
+                        if (v.length < 10) setDuplicateClients([]);
+                      }}
+                      onBlur={field.onBlur}
+                      ref={field.ref}
+                      className={`${inputCls} ${errors.contact ? "border-red-500" : duplicateClients.length > 0 ? "border-amber-500" : ""}`}
+                    />
+                  )}
                 />
                 {checkingDup && (
                   <div className="absolute right-3 top-1/2 -translate-y-1/2">
@@ -367,7 +308,7 @@ export default function ManageClientPage() {
                   </div>
                 )}
               </div>
-              {errors.contact && <p className={errCls}>{errors.contact}</p>}
+              {errors.contact && <p className={errCls}>{errors.contact.message}</p>}
               {duplicateClients.length > 0 && (
                 <div className="mt-2 p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl space-y-2">
                   <div className="flex items-center gap-2 text-amber-400 text-xs font-bold">
@@ -420,11 +361,16 @@ export default function ManageClientPage() {
               <input
                 type="text"
                 placeholder="example@gmail.com or 98xxxxxxxx"
-                value={form.email}
-                onChange={(e) => handleChange("email", e.target.value)}
+                {...register("email", {
+                  onChange: (e) => {
+                    const v = String(e.target.value ?? "").trim();
+                    if (v.length > 0 && !isEdit) void checkDuplicateEmail(v);
+                    if (v.length === 0) setDuplicateClients([]);
+                  },
+                })}
                 className={`${inputCls} ${errors.email ? "border-red-500" : ""}`}
               />
-              {errors.email && <p className={errCls}>{errors.email}</p>}
+              {errors.email && <p className={errCls}>{errors.email.message}</p>}
             </div>
 
             {/* Address */}
@@ -435,11 +381,10 @@ export default function ManageClientPage() {
               <textarea
                 rows={3}
                 placeholder="Complete address..."
-                value={form.address}
-                onChange={(e) => handleChange("address", e.target.value)}
+                {...register("address")}
                 className={`${inputCls} resize-none ${errors.address ? "border-red-500" : ""}`}
               />
-              {errors.address && <p className={errCls}>{errors.address}</p>}
+              {errors.address && <p className={errCls}>{errors.address.message}</p>}
             </div>
 
             {/* Divider */}
@@ -449,14 +394,14 @@ export default function ManageClientPage() {
             <div className="flex flex-col sm:flex-row gap-3">
               <button
                 type="submit"
-                disabled={loading}
+                disabled={isSubmitting}
                 className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed shadow-lg ${
                   isEdit
                     ? "bg-amber-500 hover:bg-amber-600 text-white shadow-amber-500/20"
                     : "bg-blue-600 hover:bg-blue-700 text-white shadow-blue-500/20"
                 }`}
               >
-                {loading ? (
+                {isSubmitting ? (
                   <>
                     <Loader2 className="animate-spin" size={16} /> Saving...
                   </>

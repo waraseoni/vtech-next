@@ -107,14 +107,16 @@ Commits:
 
 ### Sprint T3.1 — `clients/new` (chhota, safe)
 
-- [ ] `npm i react-hook-form @hookform/resolvers` (`^5`, zod v4 support chahiye)
-- [ ] `src/app/clients/new/page.tsx` → `useForm` + `zodResolver(ClientSchema)`
-- [ ] `Controller` se inputs wrap — **visual/layout change zero**
-- [ ] Inline field errors (`formState.errors`) → `alert()`/manual errors hatao
-- [ ] Submit payload diff-check: purana vs naya (JSON compare) — identical hona chahiye
-- [ ] Gates + manual smoke
+- [x] `npm i react-hook-form @hookform/resolvers` (`^5` — **note:** v6 ka `effect@4` peerOptional conflict deta hai, isliye `@hookform/resolvers@5.9.2`)
+- [x] `src/app/clients/new/page.tsx` → `useForm` + `zodResolver(clientFormSchema)` (`src/lib/validation/schemas/client.ts`)
+- [x] `Controller` se contact input wrap (digit-only filter) — **visual/layout change zero**
+- [x] Inline field errors (`formState.errors`) — purana `validate()` + `submitted` state delete
+- [x] Submit payload diff-check: same keys/transform (`parseFloat || 0`, trim→null) — identical
+- [x] Gates: typecheck + lint **0 warnings** + 408/408 tests + `next build` pass
+- [ ] **USER ACTION:** local manual smoke (new client save + edit load + duplicate contact/email warning)
+- **Note:** RHF ka `watch()` subscription React Compiler ko skip karwa deta hai (lint warning) — isliye duplicate checks field-level `onChange` (Controller/register) se trigger kiye.
 
-### Sprint T3.2 — `jobs/new` (sabse bada fayda, 927 lines)
+### Sprint T3.2 — `jobs/new` (NEXT, alag commit)
 
 - [ ] 2-step wizard + Quick Save intact rakho (RHF `mode: "onBlur"` + per-step `trigger()`)
 - [ ] Existing field-level validation (pichhle round me dala tha) → schema me move
