@@ -72,14 +72,17 @@ Commit: `feat(validation): zod pilots on 8 high-traffic API routes`
 
 Routes (bina naye business logic ke, sirf parse swap):
 
-- [ ] `api/locations/assign/route.ts` (existing `body as {...}` + `!product_id` check hatao)
-- [ ] `api/locations/manage/route.ts`
-- [ ] `api/locations/route.ts`
-- [ ] `api/admin/geofence-permit/route.ts`
-- [ ] `api/bom-templates/route.ts`
-- [ ] `api/bom-templates/[id]/route.ts`
-- [ ] `api/messages/push/route.ts`
-- [ ] `api/media/delete/route.ts`
+- [x] `api/locations/assign/route.ts` (existing `body as {...}` + `!product_id` check hatao)
+- [x] `api/locations/manage/route.ts` (POST/PUT/PATCH + `Entity` type ab schema se derived)
+- [x] `api/locations/route.ts` (POST/PUT/PATCH)
+- [x] `api/admin/geofence-permit/route.ts` (POST + DELETE query coerce)
+- [x] `api/bom-templates/route.ts` (local `normalizeItems`/`sanitize*` helpers delete)
+- [x] `api/bom-templates/[id]/route.ts` (PUT partial + refine)
+- [x] `api/messages/push/route.ts` (geo-exempt write)
+- [x] `api/media/delete/route.ts` (geo-exempt write)
+
+**Result:** 8 routes me `as {...}` type-assertion khatam; 6 manual validators/helpers delete;
+400/400 tests (12 naye), lint clean, `next build` pass.
 
 Per-route checklist:
 

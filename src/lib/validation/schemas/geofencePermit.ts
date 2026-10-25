@@ -9,7 +9,7 @@ export const geofencePermitCreateSchema = z.object({
   user_id: z.string().uuid("user_id valid UUID chahiye"),
   mechanic_id: z.number().int().positive().nullable().optional(),
   minutes: z.number().int().min(5).max(4320).default(60),
-  reason: z.string().trim().max(500).optional().nullable(),
+  reason: z.string().trim().max(200).optional().nullable(),
 });
 export type GeofencePermitCreatePayload = z.infer<typeof geofencePermitCreateSchema>;
 

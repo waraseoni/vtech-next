@@ -2,6 +2,8 @@ import { getAdminSupabase } from "@/lib/admin-supabase";
 import { NextRequest, NextResponse } from "next/server";
 
 import { requireStaffWriter } from "@/lib/api-auth";
+import { parseBody } from "@/lib/validation";
+import { locationAssignSchema } from "@/lib/validation/schemas/location";
 
 const sb = getAdminSupabase();
 
@@ -26,21 +28,14 @@ export async function POST(request: NextRequest) {
     const user = session.user;
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const body = await request.json();
-    const { product_id, zone, rack, bin, box } = body as {
-      product_id?: number;
-      zone?: string;
-      rack?: string;
-      bin?: string;
-      box?: string;
-    };
+    const parsed = await parseBody(locationAssignSchema, request);
+    if (!parsed.ok) return parsed.response;
+    const { product_id, zone, rack, bin, box } = parsed.data;
 
-    if (!product_id) return NextResponse.json({ error: "product_id required" }, { status: 400 });
-
-    const z = (zone || "").trim();
-    const r = (rack || "").trim();
-    const b = (bin || "").trim();
-    const bx = (box || "").trim();
+    const z = zone || "";
+    const r = rack || "";
+    const b = bin || "";
+    const bx = box || "";
     const anySet = !!(z || r || b || bx);
 
     let locationId: number | null = null;

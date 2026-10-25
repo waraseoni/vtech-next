@@ -7,6 +7,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAdminSupabase } from "@/lib/admin-supabase";
 import { requireAdmin } from "@/lib/api-auth";
 import { logActivity } from "@/lib/activity";
+import { parseBody, parseData } from "@/lib/validation";
+import {
+  geofencePermitCreateSchema,
+  geofencePermitDeleteQuerySchema,
+} from "@/lib/validation/schemas/geofencePermit";
 
 const supabaseAdmin = getAdminSupabase();
 
@@ -32,17 +37,10 @@ export async function POST(req: NextRequest) {
   const admin = await requireAdmin();
   if (!admin)
     return NextResponse.json({ error: "Sirf Admin permit de sakta hai" }, { status: 403 });
-  const body = (await req.json()) as {
-    user_id?: string;
-    mechanic_id?: number | null;
-    minutes?: number;
-    reason?: string;
-  };
-  if (!body.user_id) return NextResponse.json({ error: "user_id zaroori hai" }, { status: 400 });
-  const minutes = Number(body.minutes) || 60;
-  if (!Number.isFinite(minutes) || minutes < 5 || minutes > 4320) {
-    return NextResponse.json({ error: "Duration 5 min – 3 din ke beech ho" }, { status: 400 });
-  }
+  const parsed = await parseBody(geofencePermitCreateSchema, req);
+  if (!parsed.ok) return parsed.response;
+  const { user_id, mechanic_id, minutes, reason } = parsed.data;
+
   if (!PRESETS.includes(minutes) && minutes % 5 !== 0) {
     return NextResponse.json({ error: "Duration 5-min multiple me do" }, { status: 400 });
   }
@@ -50,9 +48,9 @@ export async function POST(req: NextRequest) {
   const { data, error } = await supabaseAdmin
     .from("staff_geofence_permit")
     .insert({
-      user_id: body.user_id,
-      mechanic_id: body.mechanic_id ?? null,
-      reason: (body.reason ?? "").slice(0, 200),
+      user_id,
+      mechanic_id: mechanic_id ?? null,
+      reason: reason ?? "",
       granted_by: admin.user.id,
       expires_at: expires,
     })
@@ -73,8 +71,8 @@ export async function POST(req: NextRequest) {
   await logActivity(
     "Granted Outside-Work Permit",
     "Staff",
-    body.user_id,
-    `${minutes} min — ${(body.reason ?? "").slice(0, 120)}`
+    user_id,
+    `${minutes} min — ${(reason ?? "").slice(0, 120)}`
   );
   return NextResponse.json({ ok: true, permit: data });
 }
@@ -84,10 +82,14 @@ export async function DELETE(req: NextRequest) {
   if (!admin)
     return NextResponse.json({ error: "Sirf Admin revoke kar sakta hai" }, { status: 403 });
   const { searchParams } = new URL(req.url);
-  const id = searchParams.get("id");
-  if (!id) return NextResponse.json({ error: "id zaroori hai" }, { status: 400 });
-  const { error } = await supabaseAdmin.from("staff_geofence_permit").delete().eq("id", Number(id));
+  const parsed = parseData(geofencePermitDeleteQuerySchema, {
+    id: searchParams.get("id") ?? undefined,
+  });
+  if (!parsed.ok) return parsed.response;
+  const { id } = parsed.data;
+
+  const { error } = await supabaseAdmin.from("staff_geofence_permit").delete().eq("id", id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  await logActivity("Revoked Outside-Work Permit", "Staff", id, "admin revoke");
+  await logActivity("Revoked Outside-Work Permit", "Staff", String(id), "admin revoke");
   return NextResponse.json({ ok: true });
 }

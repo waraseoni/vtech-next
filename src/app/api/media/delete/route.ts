@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireStaffWriter } from "@/lib/api-auth";
+import { parseBody } from "@/lib/validation";
+import { mediaDeleteSchema } from "@/lib/validation/schemas/messaging";
 import { getAdminSupabase } from "@/lib/admin-supabase";
 
 /**
@@ -25,14 +27,9 @@ export async function POST(req: NextRequest) {
     }
     const me = auth.user.id;
 
-    const body = (await req.json().catch(() => ({}))) as { paths?: unknown };
-    if (!Array.isArray(body.paths) || body.paths.length === 0) {
-      return NextResponse.json({ error: "paths required" }, { status: 400 });
-    }
-    const paths = body.paths.filter((p): p is string => typeof p === "string" && p.length > 0);
-    if (paths.length === 0) {
-      return NextResponse.json({ error: "paths required" }, { status: 400 });
-    }
+    const parsed = await parseBody(mediaDeleteSchema, req);
+    if (!parsed.ok) return parsed.response;
+    const { paths } = parsed.data;
 
     const admin = getAdminSupabase();
     const isAdminDev = auth.role === "admin" || auth.role === "developer";

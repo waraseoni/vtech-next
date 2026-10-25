@@ -2,6 +2,13 @@ import { getAdminSupabase } from "@/lib/admin-supabase";
 import { NextRequest, NextResponse } from "next/server";
 
 import { requireStaff, requireStaffWriter } from "@/lib/api-auth";
+import { parseBody } from "@/lib/validation";
+import {
+  locationManageCreateSchema,
+  locationManagePatchSchema,
+  locationManageUpdateSchema,
+  type LocationEntity,
+} from "@/lib/validation/schemas/location";
 
 const sb = getAdminSupabase();
 
@@ -11,7 +18,7 @@ function errMsg(e: unknown): string {
   return "Unknown error — server logs check karein";
 }
 
-type Entity = "zones" | "racks" | "bins" | "boxes";
+type Entity = LocationEntity;
 const TABLE: Record<Entity, string> = {
   zones: "location_zones",
   racks: "location_racks",
@@ -203,13 +210,11 @@ export async function POST(request: NextRequest) {
     const user = session.user;
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const body = await request.json();
-    const { tab, name, parent_id } = body as { tab: Entity; name: string; parent_id?: number };
+    const parsed = await parseBody(locationManageCreateSchema, request);
+    if (!parsed.ok) return parsed.response;
+    const { tab, name, parent_id } = parsed.data;
 
-    if (!tab || !TABLE[tab]) return NextResponse.json({ error: "Invalid tab" }, { status: 400 });
-    if (!name?.trim()) return NextResponse.json({ error: "Name required" }, { status: 400 });
-
-    const row: Record<string, unknown> = { name: name.trim(), status: 1, delete_flag: 0 };
+    const row: Record<string, unknown> = { name, status: 1, delete_flag: 0 };
     const fk = PARENT_FK[tab];
     if (fk) {
       if (!parent_id)
@@ -244,18 +249,11 @@ export async function PUT(request: NextRequest) {
     const user = session.user;
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const body = await request.json();
-    const { tab, id, name, parent_id } = body as {
-      tab: Entity;
-      id: number;
-      name: string;
-      parent_id?: number | null;
-    };
+    const parsed = await parseBody(locationManageUpdateSchema, request);
+    if (!parsed.ok) return parsed.response;
+    const { tab, id, name, parent_id } = parsed.data;
 
-    if (!tab || !TABLE[tab] || !id)
-      return NextResponse.json({ error: "Invalid params" }, { status: 400 });
-
-    const patch: Record<string, unknown> = { name: name.trim() };
+    const patch: Record<string, unknown> = { name };
     // Reparent support: parent_id bheja ho to FK update (child move karne ke liye).
     const fk = PARENT_FK[tab];
     if (fk && parent_id !== undefined) {
@@ -285,16 +283,9 @@ export async function PATCH(request: NextRequest) {
     const user = session.user;
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const body = await request.json();
-    const { tab, id, delete_flag, status } = body as {
-      tab: Entity;
-      id: number;
-      delete_flag?: number;
-      status?: number;
-    };
-
-    if (!tab || !TABLE[tab] || !id)
-      return NextResponse.json({ error: "Invalid params" }, { status: 400 });
+    const parsed = await parseBody(locationManagePatchSchema, request);
+    if (!parsed.ok) return parsed.response;
+    const { tab, id, delete_flag, status } = parsed.data;
 
     const patch: Record<string, unknown> = {};
     if (delete_flag !== undefined) patch.delete_flag = delete_flag;

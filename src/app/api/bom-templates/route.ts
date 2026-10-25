@@ -1,40 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSupabase, requireStaffWithRole, enforceApiGeoGate } from "@/lib/api-auth";
-
-export type BomTemplateItemInput = {
-  product_id: number | null;
-  name: string;
-  qty: number;
-  notes?: string;
-};
-
-/** Server-side validation mirror — lib/bomTemplates.ts me client types alag hain. */
-function normalizeItems(raw: unknown): { items: BomTemplateItemInput[]; error: string | null } {
-  if (!Array.isArray(raw)) return { items: [], error: "items array hona chahiye" };
-  if (raw.length === 0) return { items: [], error: "Koi component line nahi hai" };
-  const items: BomTemplateItemInput[] = [];
-  for (const it of raw) {
-    const obj = (typeof it === "object" && it !== null ? it : {}) as Record<string, unknown>;
-    const name = typeof obj.name === "string" ? obj.name.trim() : "";
-    const qty = typeof obj.qty === "number" ? obj.qty : NaN;
-    if (!name) return { items: [], error: "Har line ka component naam chahiye" };
-    if (!Number.isInteger(qty) || qty < 1)
-      return { items: [], error: "Har line ki qty positive integer chahiye" };
-    const product_id =
-      typeof obj.product_id === "number" && Number.isInteger(obj.product_id)
-        ? obj.product_id
-        : null;
-    const notes = typeof obj.notes === "string" ? obj.notes.trim() : "";
-    items.push({ product_id, name, qty, ...(notes ? { notes } : {}) });
-  }
-  return { items, error: null };
-}
-
-const sanitizeName = (raw: unknown): string =>
-  typeof raw === "string" ? raw.trim().slice(0, 120) : "";
-
-const sanitizeDesc = (raw: unknown): string =>
-  typeof raw === "string" ? raw.trim().slice(0, 500) : "";
+import { parseBody } from "@/lib/validation";
+import {
+  bomTemplateCreateSchema,
+  toBomItemRow,
+} from "@/lib/validation/schemas/bomTemplate";
 
 /** single round-trip: cookie supabase + staff check. */
 async function authed() {
@@ -72,19 +42,16 @@ export async function POST(req: NextRequest) {
   if (geo) return geo;
   const { supabase, session } = auth;
 
-  const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
-  const name = sanitizeName(body.name);
-  if (!name) return NextResponse.json({ error: "Template ka naam chahiye" }, { status: 400 });
-  const description = sanitizeDesc(body.description);
-  const { items, error: itemsErr } = normalizeItems(body.items);
-  if (itemsErr) return NextResponse.json({ error: itemsErr }, { status: 400 });
+  const parsed = await parseBody(bomTemplateCreateSchema, req);
+  if (!parsed.ok) return parsed.response;
+  const { name, description, items } = parsed.data;
 
   const { data, error } = await supabase
     .from("bom_templates")
     .insert({
       name,
-      description,
-      items: items as unknown as Record<string, unknown>[],
+      description: description ?? "",
+      items: items.map(toBomItemRow) as unknown as Record<string, unknown>[],
       created_by: session.user.id,
     })
     .select("id, name, description, items, created_by, date_created, date_updated")

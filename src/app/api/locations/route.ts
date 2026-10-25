@@ -2,6 +2,12 @@ import { getAdminSupabase } from "@/lib/admin-supabase";
 import { NextRequest, NextResponse } from "next/server";
 
 import { requireStaff, requireStaffWriter } from "@/lib/api-auth";
+import { parseBody } from "@/lib/validation";
+import {
+  locationCreateSchema,
+  locationPatchSchema,
+  locationUpdateSchema,
+} from "@/lib/validation/schemas/location";
 
 const supabase = getAdminSupabase();
 
@@ -45,8 +51,9 @@ export async function POST(request: NextRequest) {
     if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     if (session instanceof NextResponse) return session;
 
-    const body = await request.json();
-    const { zone, rack, bin, box, label, zone_id, rack_id, bin_id, box_id } = body;
+    const parsed = await parseBody(locationCreateSchema, request);
+    if (!parsed.ok) return parsed.response;
+    const { zone, rack, bin, box, label, zone_id, rack_id, bin_id, box_id } = parsed.data;
 
     const ids = {
       zone_id: zone_id || undefined,
@@ -84,9 +91,9 @@ export async function PUT(request: NextRequest) {
     if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     if (session instanceof NextResponse) return session;
 
-    const body = await request.json();
-    const { id, zone, rack, bin, box, label, zone_id, rack_id, bin_id, box_id } = body;
-    if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
+    const parsed = await parseBody(locationUpdateSchema, request);
+    if (!parsed.ok) return parsed.response;
+    const { id, zone, rack, bin, box, label, zone_id, rack_id, bin_id, box_id } = parsed.data;
 
     const ids = {
       zone_id: zone_id || undefined,
@@ -122,9 +129,9 @@ export async function PATCH(request: NextRequest) {
     if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     if (session instanceof NextResponse) return session;
 
-    const body = await request.json();
-    const { id, delete_flag, status } = body;
-    if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
+    const parsed = await parseBody(locationPatchSchema, request);
+    if (!parsed.ok) return parsed.response;
+    const { id, delete_flag, status } = parsed.data;
 
     const patch: Record<string, unknown> = {};
     if (delete_flag !== undefined) patch.delete_flag = delete_flag;

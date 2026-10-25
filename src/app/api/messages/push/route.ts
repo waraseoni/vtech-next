@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireStaffWriter } from "@/lib/api-auth";
+import { parseBody } from "@/lib/validation";
+import { messagePushSchema } from "@/lib/validation/schemas/messaging";
 import { isPushConfigured, sendPushToUser } from "@/lib/push-send";
 
 /**
@@ -22,18 +24,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
-    const recipientId = typeof body.recipientId === "string" ? body.recipientId : "";
-    const senderName =
-      typeof body.senderName === "string" && body.senderName.trim()
-        ? body.senderName.trim()
-        : "Team";
-    const content =
-      typeof body.content === "string" && body.content.trim() ? body.content.trim() : "";
-
-    if (!recipientId || !content) {
-      return NextResponse.json({ error: "recipientId aur content zaroori hai" }, { status: 400 });
-    }
+    const parsed = await parseBody(messagePushSchema, req);
+    if (!parsed.ok) return parsed.response;
+    const { recipientId, content } = parsed.data;
+    const senderName = parsed.data.senderName?.trim() || "Team";
 
     if (!isPushConfigured()) {
       return NextResponse.json({ ok: true, sent: 0, skipped: "no-vapid" });
