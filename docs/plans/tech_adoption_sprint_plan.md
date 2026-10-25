@@ -220,7 +220,7 @@ Commit: `refactor(scan): native BarcodeDetector with html5-qrcode fallback`
 
 - [ ] **TanStack Query completion** — 158 `useEffect` files me se top-20 hot routes (`npm run analyze` + `perf_db_fetch_audit_oct14_2026.md` se list)
 - [ ] **TypeScript 5.9 → 7.0** — trial branch, `tsc --noEmit` 5-10x faster (456 files ke liye). Full suite green ho tabhi merge.
-- [ ] **Vitest 4 → 5** — T4 (e2e) ke baad, taaki regression pakda ja sake
+- [x] **Vitest 4 → 5** — vitest 5.0.5 + coverage-v8 5.0.5, 417/417 tests + coverage report green (code change zero)
 - [ ] **Supabase Realtime for lists** — 5 `setInterval` polling files
 - [ ] **MSW** — tabhi zaroori jab component tests fast chahiye (abhi Playwright cover kar lega)
 - [ ] **RHF rollout baaki 49 forms** — T3.1/T3.2 ka result dekh ke

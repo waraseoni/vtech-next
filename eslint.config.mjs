@@ -51,6 +51,8 @@ const eslintConfig = defineConfig([
     "test-results/**",
     "blob-report/**",
     "e2e/.auth/**",
+    // `npm run test:coverage` ka HTML report (gitignored, generated JS).
+    "coverage/**",
   ]),
 ]);
 
