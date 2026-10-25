@@ -20,6 +20,20 @@ Har kaam ke liye: plan + todo banate hain, jo complete ho jata hai use mark kart
 
 ---
 
+## Project: New Tech Adoption (Oct 2026)
+
+Plan: `docs/plans/tech_adoption_sprint_plan.md`
+
+- [x] **T0** — bundle baseline (`npm run analyze`) + React Query devtools + Sentry import deprecation fix
+- [ ] **T1** — Zod foundations (`parseBody` + schemas + tests)
+- [ ] **T2** — Zod pilot on 8 API routes
+- [ ] **T3** — React Hook Form pilot (2 forms)
+- [ ] **T4** — Playwright e2e (setup + 5 smoke tests)
+- [ ] **T5** — `@google/genai` migration + native BarcodeDetector
+- [ ] **T6** — backlog (TS7, Vitest 5, RQ completion, realtime lists)
+
+---
+
 ## Project: Staff Messenger v2 (1-on-1 chat)
 
 ### Plan

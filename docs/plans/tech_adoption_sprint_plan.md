@@ -40,9 +40,9 @@ Dependency audit ka latest: `npm audit` **5 vulns (0 critical)** — dep hygiene
 
 Commit: `chore(perf): bundle analyze baseline + react-query devtools`
 
-- [ ] `npm run analyze` → top-10 bundle offenders is doc me record karo (neeche "Bundle baseline" section)
-- [ ] `npm i -D @tanstack/react-query-devtools` → `src/app/Providers.tsx` me conditional render (sirf `NODE_ENV === "development"`)
-- [ ] Gates
+- [x] `npm run analyze` → top-10 bundle offenders is doc me record karo (neeche "Bundle baseline" section)
+- [x] `npm i -D @tanstack/react-query-devtools` → `src/app/Providers.tsx` me conditional render (sirf `NODE_ENV === "development"`, prod bundle me dead-code)
+- [x] Gates (typecheck + eslint touched files)
 - **Files:** `src/app/Providers.tsx`, `package.json`
 - **Why:** aage har dependency ka size justification isi baseline se hoga (over-engineering rokne ke liye).
 
@@ -241,6 +241,27 @@ Commit: `refactor(scan): native BarcodeDetector with html5-qrcode fallback`
 
 ---
 
-## Bundle baseline (T0 ke baad yahan bharo)
+## Bundle baseline (T0 — 26 Oct 2026)
 
-_TBD_
+`next experimental-analyze --output` → `.next/diagnostics/analyze/data/route-summaries.json`
+(per-route client JS+CSS, compressed):
+
+| Route | Client (KB) | Total (KB) |
+|---|---|---|
+| `/reports/cash-flow` | 762.8 | 2229.3 |
+| `/dashboard` | 648.5 | 2267.4 |
+| `/reports/monthly-profit` | 633.4 | 2105.4 |
+| `/inventory` | 629.8 | 2382.0 |
+| `/clients` | 627.3 | 2214.7 |
+| `/products` | 587.5 | 2189.9 |
+| `/inventory/locate` | 575.2 | 2183.7 |
+| `/inventory/[id]` | 500.9 | 2018.5 |
+| `/jobs/[id]/view` | 491.5 | 1997.2 |
+| `/clients/[id]/view` | 490.5 | 1994.7 |
+
+**Rule:** is table se ~50 KB+ badhne wale koi bhi naye dep ko justify karna hoga.
+**Baseline dates:** 26 Oct 2026 (v1.68.3 + dep hygiene round).
+
+Analyze run me mila: `withSentryConfig` import deprecation (v11 me break hoga) — T0 me
+`@sentry/nextjs/config` se import kar diya.
+

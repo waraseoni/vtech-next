@@ -1,6 +1,6 @@
 import type { NextConfig } from "next";
 import { withSerwist } from "@serwist/turbopack";
-import { withSentryConfig } from "@sentry/nextjs";
+import { withSentryConfig } from "@sentry/nextjs/config";
 import { readFileSync } from "node:fs";
 import { execSync } from "node:child_process";
 import { join } from "node:path";
