@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 
-import { clientFormSchema, emptyClientForm } from "./client";
+import { clientFormSchema, emptyClientForm, quickClientFormSchema } from "./client";
 
 /** Valid base — har test sirf apna field badalta hai. */
 const base = {
@@ -65,5 +65,38 @@ describe("clientFormSchema", () => {
   it("opening_balance sirf string pass-through hai (legacy parseFloat || 0)", () => {
     expect(clientFormSchema.safeParse({ ...base, opening_balance: "" }).success).toBe(true);
     expect(clientFormSchema.safeParse({ ...base, opening_balance: "-500.50" }).success).toBe(true);
+  });
+});
+
+describe("quickClientFormSchema (jobs/new modal)", () => {
+  const quickBase = {
+    firstname: "Ramesh",
+    middlename: "",
+    lastname: "Kumar",
+    contact: "9876543210",
+    email: "",
+    address: "",
+  };
+
+  it("address optional hai (purana modal blank allow karta tha)", () => {
+    expect(quickClientFormSchema.safeParse({ ...quickBase, address: "" }).success).toBe(true);
+  });
+
+  it("firstname / lastname / contact required hain", () => {
+    const res = quickClientFormSchema.safeParse({
+      ...quickBase,
+      firstname: "",
+      contact: "",
+    });
+    expect(res.success).toBe(false);
+    if (res.success) return;
+    const errs = res.error.flatten().fieldErrors;
+    expect(errs.firstname).toContain("First name is required");
+    expect(errs.contact).toContain("Contact number is required");
+  });
+
+  it("email rule client form se shared hai", () => {
+    expect(quickClientFormSchema.safeParse({ ...quickBase, email: "a@b.com" }).success).toBe(true);
+    expect(quickClientFormSchema.safeParse({ ...quickBase, email: "bad" }).success).toBe(false);
   });
 });

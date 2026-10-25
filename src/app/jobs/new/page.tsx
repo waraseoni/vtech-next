@@ -24,6 +24,8 @@ import {
   Briefcase,
   Plus,
 } from "lucide-react";
+import { useForm, Controller, useWatch } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import PageLoader from "@/components/PageLoader";
 import { logActivity } from "@/lib/activity";
 import { fetchClientDue, dueLabel } from "@/lib/client-due";
@@ -32,6 +34,12 @@ import SearchableSelect from "@/components/SearchableSelect";
 import JobSpotPicker from "@/components/JobSpotPicker";
 import { logger } from "@/lib/logger";
 import { toast } from "@/lib/toast";
+import { emptyJobForm, jobFormSchema, type JobFormValues } from "@/lib/validation/schemas/job";
+import {
+  emptyQuickClientForm,
+  quickClientFormSchema,
+  type QuickClientFormValues,
+} from "@/lib/validation/schemas/client";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // STYLES
@@ -43,6 +51,8 @@ const inputCls =
 
 const labelCls =
   "flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-muted mb-1.5";
+
+const errCls = "text-red-400 text-[11px] mt-1 font-medium";
 
 const inr = (n: number) => "₹" + (n || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 });
 
@@ -99,7 +109,7 @@ function ManageJobPageInner({ params }: { params: Promise<{ id?: string }> }) {
   const [fetchLoading, setFetchLoading] = useState(isEdit);
   const [saving, setSaving] = useState(false);
   // Re-entrancy guard — double click / Enter double submit par duplicate row
-  // nahi banegaa (handleSave in-flight ho to doosra call ignore hota hai).
+  // nahi banegaa (submitJob in-flight ho to doosra call ignore hota hai).
   const savingRef = useRef(false);
   const [currentUserId, setCurrentUserId] = useState<number>(0); // numeric user id from profiles
 
@@ -109,26 +119,43 @@ function ManageJobPageInner({ params }: { params: Promise<{ id?: string }> }) {
   const [services, setServices] = useState<Service[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
 
-  // Form fields
+  // ── FORM (react-hook-form) ────────────────────────────────────────────
+  // transaction_list row me jaane wale scalar fields ek hi schema se validate
+  // hote hain; service/product rows local state me hain (schema file ka scope
+  // note dekho).
+  const {
+    register,
+    control,
+    handleSubmit,
+    reset,
+    trigger,
+    setValue,
+    clearErrors,
+    formState: { errors },
+  } = useForm<JobFormValues>({
+    resolver: zodResolver(jobFormSchema),
+    defaultValues: emptyJobForm,
+  });
+
+  // `watch()` na use karo — React Compiler us hook ko skip kar deta hai
+  // (lint: react-hooks/incompatible-library). `useWatch` value deta hai.
+  const clientId = useWatch({ control, name: "client_id" });
+  const mechanicId = useWatch({ control, name: "mechanic_id" });
+  const itemValue = useWatch({ control, name: "item" });
+  const faultValue = useWatch({ control, name: "fault" });
+
+  // Form fields (object/derived state)
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [clientBalance, setClientBalance] = useState<{
     amount: number;
     label: string;
     type: "due" | "advance" | "settled";
   } | null>(null);
-  const [selectedMechanic, setSelectedMechanic] = useState<string>("");
   const [userRole, setUserRole] = useState<string>("staff");
   const [jobCode, setJobCode] = useState<string>(""); // job_id column
   const [txnCode, setTxnCode] = useState<string>(""); // code column (YYYYMMDD+seq)
-  const [item, setItem] = useState("");
-  const [fault, setFault] = useState("");
-  const [uniqId, setUniqId] = useState(""); // legacy free-text (bina location_id wale rows ka fallback)
-  const [locId, setLocId] = useState<number | null>(null); // locations.id (kind='job')
-  const [locName, setLocName] = useState(""); // selected spot ka naam (dual-write -> uniq_id)
-  const [remark, setRemark] = useState("");
   const [serviceRows, setServiceRows] = useState<ServiceRow[]>([]);
   const [productRows, setProductRows] = useState<ProductRow[]>([]);
-  const [commissionAmt, setCommissionAmt] = useState<string>("0");
   const tempIdRef = useRef(0);
 
   // Custom (non-inventory) spare
@@ -138,17 +165,18 @@ function ManageJobPageInner({ params }: { params: Promise<{ id?: string }> }) {
   const [customName, setCustomName] = useState("");
   const [customPrice, setCustomPrice] = useState("");
 
-  // Add New Client Modal
+  // Add New Client Modal — alag chhota form (job form se independent).
   const [showAddClientModal, setShowAddClientModal] = useState(false);
-  const [newClientForm, setNewClientForm] = useState({
-    firstname: "",
-    middlename: "",
-    lastname: "",
-    contact: "",
-    email: "",
-    address: "",
+  const {
+    register: registerClient,
+    control: clientControl,
+    handleSubmit: handleClientSubmit,
+    reset: resetClientForm,
+    formState: { errors: clientErrors, isSubmitting: savingClient },
+  } = useForm<QuickClientFormValues>({
+    resolver: zodResolver(quickClientFormSchema),
+    defaultValues: emptyQuickClientForm,
   });
-  const [savingClient, setSavingClient] = useState(false);
 
   // ── CLIENT BALANCE ────────────────────────────────────────────────────
   // Canonical PHP formula (SalesTrait::get_client_balance): opening + delivered
@@ -157,6 +185,17 @@ function ManageJobPageInner({ params }: { params: Promise<{ id?: string }> }) {
     const d = await fetchClientDue(supabase, cid);
     setClientBalance(dueLabel(d.netBalance));
   }, []);
+
+  /** Client select karne ka single entry point — object state + form value sync. */
+  const pickClient = useCallback(
+    (c: Client) => {
+      setSelectedClient(c);
+      setValue("client_id", c.id);
+      clearErrors("client_id");
+      fetchClientBalance(c.id);
+    },
+    [setValue, clearErrors, fetchClientBalance]
+  );
 
   // ── FETCH MASTER DATA ─────────────────────────────────────────────────
   useEffect(() => {
@@ -197,8 +236,7 @@ function ManageJobPageInner({ params }: { params: Promise<{ id?: string }> }) {
       if (presetClientId && !isEdit) {
         const found = mapped.find((c) => c.id === presetClientId);
         if (found) {
-          setSelectedClient(found);
-          fetchClientBalance(found.id);
+          pickClient(found);
         }
       }
 
@@ -282,7 +320,7 @@ function ManageJobPageInner({ params }: { params: Promise<{ id?: string }> }) {
       setProducts(withStock);
     };
     loadMaster();
-  }, [presetClientId, isEdit, fetchClientBalance]);
+  }, [presetClientId, isEdit, pickClient]);
 
   // ── FETCH JOB (edit mode) ─────────────────────────────────────────────
   useEffect(() => {
@@ -298,14 +336,18 @@ function ManageJobPageInner({ params }: { params: Promise<{ id?: string }> }) {
 
         setJobCode(data.job_id || "");
         setTxnCode(data.code || "");
-        setItem(data.item || "");
-        setFault(data.fault || "");
-        setUniqId(data.uniq_id || "");
-        setLocId(data.location_id ?? null);
-        setLocName(data.location_id ? data.uniq_id || "" : ""); // dual-write: naam = uniq_id
-        setRemark(data.remark || "");
-        setCommissionAmt(String(data.mechanic_commission_amount || 0));
-        setSelectedMechanic(String(data.mechanic_id || ""));
+        // Scalar fields ek saath reset — client object alag se (neeche) load hota hai.
+        reset({
+          client_id: null,
+          mechanic_id: String(data.mechanic_id || ""),
+          item: data.item || "",
+          fault: data.fault || "",
+          location_id: data.location_id ?? null,
+          location_name: data.location_id ? data.uniq_id || "" : "", // dual-write: naam = uniq_id
+          legacy_uniq_id: data.uniq_id || "",
+          remark: data.remark || "",
+          commission_amount: String(data.mechanic_commission_amount || 0),
+        });
 
         // Load client
         if (data.client_name) {
@@ -321,8 +363,7 @@ function ManageJobPageInner({ params }: { params: Promise<{ id?: string }> }) {
                 .filter(Boolean)
                 .join(" "),
             };
-            setSelectedClient(cl);
-            fetchClientBalance(cl.id);
+            pickClient(cl);
           }
         }
 
@@ -363,35 +404,20 @@ function ManageJobPageInner({ params }: { params: Promise<{ id?: string }> }) {
       }
     };
     loadJob();
-  }, [jobId, isEdit, fetchClientBalance, router]);
+  }, [jobId, isEdit, pickClient, reset, router]);
 
   // ── ADD NEW CLIENT ─────────────────────────────────────────────────────
-  const handleSaveNewClient = async () => {
-    const { firstname, lastname, contact, address } = newClientForm;
-    if (!firstname.trim()) {
-      toast.error("First name zaroori hai!");
-      return;
-    }
-    if (!lastname.trim()) {
-      toast.error("Last name zaroori hai!");
-      return;
-    }
-    if (!contact.trim()) {
-      toast.error("Contact number zaroori hai!");
-      return;
-    }
-
-    setSavingClient(true);
+  const saveNewClient = handleClientSubmit(async (values) => {
     try {
       const { data, error } = await supabase
         .from("client_list")
         .insert({
-          firstname: firstname.trim(),
-          middlename: newClientForm.middlename.trim() || null,
-          lastname: lastname.trim(),
-          contact: contact.trim(),
-          email: newClientForm.email.trim() || null,
-          address: address.trim() || "",
+          firstname: values.firstname,
+          middlename: values.middlename || null,
+          lastname: values.lastname,
+          contact: values.contact,
+          email: values.email || null,
+          address: values.address,
           opening_balance: 0,
           delete_flag: 0,
         })
@@ -406,8 +432,7 @@ function ManageJobPageInner({ params }: { params: Promise<{ id?: string }> }) {
       };
 
       setClients((prev) => [...prev, newClient]);
-      setSelectedClient(newClient);
-      fetchClientBalance(newClient.id);
+      pickClient(newClient);
       setShowAddClientModal(false);
       await logActivity(
         "Created Client (from Job)",
@@ -415,22 +440,13 @@ function ManageJobPageInner({ params }: { params: Promise<{ id?: string }> }) {
         newClient.id,
         `Name: ${newClient.fullname}`
       );
-      setNewClientForm({
-        firstname: "",
-        middlename: "",
-        lastname: "",
-        contact: "",
-        email: "",
-        address: "",
-      });
+      resetClientForm(emptyQuickClientForm);
       toast.success("Naya client add ho gaya! ✅");
     } catch (e) {
       logger.error("save client error:", e instanceof Error ? e.message : e);
       toast.error("Client save nahi hua: " + (e instanceof Error ? e.message : "Unknown error"));
-    } finally {
-      setSavingClient(false);
     }
-  };
+  });
 
   // ── AUTO JOB CODE (new mode) ──────────────────────────────────────────
   // PHP format: code = YYYYMMDD + 2-digit daily sequence (e.g. "2025102401")
@@ -559,49 +575,19 @@ function ManageJobPageInner({ params }: { params: Promise<{ id?: string }> }) {
     );
 
   // ── WIZARD (Sprint 3 #15, create mode) ───────────────────────────────────
-  // Step 1 gate: wahi 3 checks jo handleSave karta hai — Next aur Quick Save
-  // dono isi se guzarte hain (koi dheel nahi, billing optional hai).
-  const validateStep1 = () => {
-    if (!selectedClient) {
-      toast.error("Client select karo!");
-      return false;
-    }
-    if (!fault.trim()) {
-      toast.error("Fault description zaroori hai!");
-      return false;
-    }
-    if (!selectedMechanic) {
-      toast.error("Mechanic select karo!");
-      return false;
-    }
-    return true;
-  };
-  const goNext = () => {
-    if (!validateStep1()) return;
+  // Step 1 gate: wahi 3 checks jo schema me hain (client / fault / mechanic).
+  // Next aur Quick Save dono isi validation se guzarte hain — billing optional.
+  const goNext = async () => {
+    const ok = await trigger(["client_id", "fault", "mechanic_id"]);
+    if (!ok) return;
     setStep(2);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
-  // Quick Save: billing skip karke Pending job banao (amount 0) —
-  // naye client ki billing aksar kaam ke baad hoti hai, job view se bill hoga.
-  const quickSave = () => {
-    if (!validateStep1()) return;
-    handleSave();
-  };
 
-  const handleSave = async () => {
+  const submitJob = async (values: JobFormValues) => {
     if (savingRef.current) return;
-    if (!selectedClient) {
-      toast.error("Client select karo!");
-      return;
-    }
-    if (!fault.trim()) {
-      toast.error("Fault description zaroori hai!");
-      return;
-    }
-    if (!selectedMechanic) {
-      toast.error("Mechanic select karo!");
-      return;
-    }
+    // Resolver ne already validate kar diya — ye sirf TypeScript narrowing hai.
+    if (values.client_id == null || !selectedClient) return;
 
     // NOTE: No hard stock validation — out-of-stock products can still be sold.
     // Shortfall is shown as an amber warning in the product rows.
@@ -610,10 +596,10 @@ function ManageJobPageInner({ params }: { params: Promise<{ id?: string }> }) {
     setSaving(true);
     try {
       // Auto-calculate commission for staff (they can't see the input)
-      let finalCommission = parseFloat(commissionAmt) || 0;
-      if (userRole !== "admin" && userRole !== "developer" && selectedMechanic) {
+      let finalCommission = parseFloat(values.commission_amount) || 0;
+      if (userRole !== "admin" && userRole !== "developer" && values.mechanic_id) {
         const svcTotal = serviceRows.reduce((sum, r) => sum + (r.price || 0), 0);
-        const mech = mechanics.find((m) => m.id === parseInt(selectedMechanic));
+        const mech = mechanics.find((m) => m.id === parseInt(values.mechanic_id));
         if (mech && mech.commission_percent > 0) {
           finalCommission = Math.round((svcTotal * mech.commission_percent) / 100);
         }
@@ -631,15 +617,16 @@ function ManageJobPageInner({ params }: { params: Promise<{ id?: string }> }) {
       const payload = {
         // user_id = logged-in user's numeric id (profiles.mechanic_id → old PHP users.id)
         user_id: currentUserId,
-        client_name: String(selectedClient.id),
-        mechanic_id: parseInt(selectedMechanic),
+        client_name: String(values.client_id),
+        mechanic_id: parseInt(values.mechanic_id),
         code: txnCode, // YYYYMMDD+seq e.g. "2025102401"
         job_id: finalJobCode, // global seq e.g. "27270
-        item: item.trim(),
-        fault: fault.trim(),
-        uniq_id: (locId ? locName : uniqId).trim() || "", // dual-write: location ho to spot naam, warna legacy text
-        location_id: locId,
-        remark: remark.trim() || "", // NOT NULL in DB — empty string safe
+        item: values.item,
+        fault: values.fault,
+        // dual-write: location ho to spot naam, warna legacy text
+        uniq_id: (values.location_id ? values.location_name : values.legacy_uniq_id) || "",
+        location_id: values.location_id,
+        remark: values.remark || "", // NOT NULL in DB — empty string safe
         amount: grandTotal,
         mechanic_commission_amount: finalCommission,
         status: 0, // Pending
@@ -758,7 +745,7 @@ function ManageJobPageInner({ params }: { params: Promise<{ id?: string }> }) {
           "Updated Job Details",
           "Jobs",
           jobId,
-          `Job #${jobCode} — ${item || "No item"} | ${serviceRows.length} service(s), ${productRows.length} product(s)`
+          `Job #${jobCode} — ${values.item || "No item"} | ${serviceRows.length} service(s), ${productRows.length} product(s)`
         );
       }
 
@@ -775,6 +762,16 @@ function ManageJobPageInner({ params }: { params: Promise<{ id?: string }> }) {
       setSaving(false);
     }
   };
+
+  // RHF submit wrapper — schema validation + submit flow ek jagah.
+  // `handleSubmit(...)` ko render me directly call nahi karte — React Compiler
+  // use ref-read maan kar error deta hai; wrapper event handler me call karta hai.
+  const saveJob = () => {
+    void handleSubmit(submitJob)();
+  };
+  // Quick Save: billing skip karke Pending job banao (amount 0) —
+  // naye client ki billing aksar kaam ke baad hoti hai, job view se bill hoga.
+  const quickSave = saveJob;
 
   // ── COMPUTED TOTALS ───────────────────────────────────────────────────
   const serviceTotal = serviceRows.reduce((sum, r) => sum + (r.price || 0), 0);
@@ -823,20 +820,19 @@ function ManageJobPageInner({ params }: { params: Promise<{ id?: string }> }) {
                   </label>
                   <input
                     type="text"
-                    value={newClientForm.firstname}
-                    onChange={(e) => setNewClientForm((p) => ({ ...p, firstname: e.target.value }))}
+                    {...registerClient("firstname")}
                     placeholder="Vikram"
                     className={inputCls}
                   />
+                  {clientErrors.firstname && (
+                    <p className={errCls}>{clientErrors.firstname.message}</p>
+                  )}
                 </div>
                 <div>
                   <label className={labelCls}>Middle Name</label>
                   <input
                     type="text"
-                    value={newClientForm.middlename}
-                    onChange={(e) =>
-                      setNewClientForm((p) => ({ ...p, middlename: e.target.value }))
-                    }
+                    {...registerClient("middlename")}
                     placeholder="Jain"
                     className={inputCls}
                   />
@@ -848,39 +844,52 @@ function ManageJobPageInner({ params }: { params: Promise<{ id?: string }> }) {
                 </label>
                 <input
                   type="text"
-                  value={newClientForm.lastname}
-                  onChange={(e) => setNewClientForm((p) => ({ ...p, lastname: e.target.value }))}
+                  {...registerClient("lastname")}
                   placeholder="Jain"
                   className={inputCls}
                 />
+                {clientErrors.lastname && (
+                  <p className={errCls}>{clientErrors.lastname.message}</p>
+                )}
               </div>
               <div>
                 <label className={labelCls}>
                   Contact Number <span className="text-red-400">*</span>
                 </label>
-                <input
-                  type="tel"
-                  value={newClientForm.contact}
-                  onChange={(e) => setNewClientForm((p) => ({ ...p, contact: e.target.value }))}
-                  placeholder="9876543210"
-                  className={inputCls}
+                <Controller
+                  name="contact"
+                  control={clientControl}
+                  render={({ field }) => (
+                    <input
+                      type="tel"
+                      placeholder="9876543210"
+                      maxLength={10}
+                      value={field.value}
+                      onChange={(e) => field.onChange(e.target.value.replace(/\D/g, ""))}
+                      onBlur={field.onBlur}
+                      ref={field.ref}
+                      className={inputCls}
+                    />
+                  )}
                 />
+                {clientErrors.contact && (
+                  <p className={errCls}>{clientErrors.contact.message}</p>
+                )}
               </div>
               <div>
                 <label className={labelCls}>Email</label>
                 <input
                   type="email"
-                  value={newClientForm.email}
-                  onChange={(e) => setNewClientForm((p) => ({ ...p, email: e.target.value }))}
+                  {...registerClient("email")}
                   placeholder="client@email.com"
                   className={inputCls}
                 />
+                {clientErrors.email && <p className={errCls}>{clientErrors.email.message}</p>}
               </div>
               <div>
                 <label className={labelCls}>Address</label>
                 <textarea
-                  value={newClientForm.address}
-                  onChange={(e) => setNewClientForm((p) => ({ ...p, address: e.target.value }))}
+                  {...registerClient("address")}
                   placeholder="Customer address..."
                   rows={2}
                   className={`${inputCls} resize-none`}
@@ -891,7 +900,7 @@ function ManageJobPageInner({ params }: { params: Promise<{ id?: string }> }) {
             {/* Modal Footer */}
             <div className="flex items-center gap-3 p-5 border-t border-app">
               <button
-                onClick={handleSaveNewClient}
+                onClick={saveNewClient}
                 disabled={savingClient}
                 className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-500 disabled:bg-blue-800 disabled:opacity-50 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all"
               >
@@ -1020,14 +1029,11 @@ function ManageJobPageInner({ params }: { params: Promise<{ id?: string }> }) {
                     </button>
                   </div>
                   <SearchableSelect
-                    value={selectedClient?.id ?? null}
+                    value={clientId ?? null}
                     options={clients.map((c) => ({ id: c.id, label: c.fullname, sub: c.contact }))}
                     onSelect={(id) => {
                       const c = clients.find((x) => String(x.id) === id);
-                      if (c) {
-                        setSelectedClient(c);
-                        fetchClientBalance(c.id);
-                      }
+                      if (c) pickClient(c);
                     }}
                     placeholder="Search client (name/contact)…"
                     searchPlaceholder="Name ya contact se search karo…"
@@ -1039,6 +1045,7 @@ function ManageJobPageInner({ params }: { params: Promise<{ id?: string }> }) {
                       </div>
                     )}
                   />
+                  {errors.client_id && <p className={errCls}>{errors.client_id.message}</p>}
 
                   {/* Client balance chip */}
                   {clientBalance && (
@@ -1077,7 +1084,7 @@ function ManageJobPageInner({ params }: { params: Promise<{ id?: string }> }) {
                     Mechanic <span className="text-red-400">*</span>
                   </label>
                   <SearchableSelect
-                    value={selectedMechanic || null}
+                    value={mechanicId || null}
                     options={mechanics.map((m) => ({
                       id: m.id,
                       label: m.fullname,
@@ -1087,11 +1094,15 @@ function ManageJobPageInner({ params }: { params: Promise<{ id?: string }> }) {
                           ? `${m.commission_percent}% commission`
                           : undefined,
                     }))}
-                    onSelect={(id) => setSelectedMechanic(id)}
+                    onSelect={(id) => {
+                      setValue("mechanic_id", id);
+                      clearErrors("mechanic_id");
+                    }}
                     placeholder="— Select Mechanic —"
                     searchPlaceholder="Mechanic ka naam type karo…"
                     emptyText="Koi mechanic nahi mila"
                   />
+                  {errors.mechanic_id && <p className={errCls}>{errors.mechanic_id.message}</p>}
                 </div>
               </div>
             </div>
@@ -1108,8 +1119,7 @@ function ManageJobPageInner({ params }: { params: Promise<{ id?: string }> }) {
                     Item / Model <span className="text-red-400">*</span>
                   </label>
                   <input
-                    value={item}
-                    onChange={(e) => setItem(e.target.value)}
+                    {...register("item")}
                     placeholder="e.g. iPhone 15 Pro, Samsung S24"
                     className={inputCls}
                   />
@@ -1120,23 +1130,29 @@ function ManageJobPageInner({ params }: { params: Promise<{ id?: string }> }) {
                     Fault Reported <span className="text-red-400">*</span>
                   </label>
                   <input
-                    value={fault}
-                    onChange={(e) => setFault(e.target.value)}
+                    {...register("fault")}
                     placeholder="e.g. Screen broken, Not charging"
-                    className={inputCls}
+                    className={`${inputCls} ${errors.fault ? "border-red-500/60" : ""}`}
                   />
+                  {errors.fault && <p className={errCls}>{errors.fault.message}</p>}
                 </div>
                 <div>
                   <label className={labelCls}>
                     <MapPin size={13} className="text-amber-400" />
                     Location / Spot
                   </label>
-                  <JobSpotPicker
-                    value={locId}
-                    onSelect={(id, spot) => {
-                      setLocId(id);
-                      setLocName(spot?.name || "");
-                    }}
+                  <Controller
+                    name="location_id"
+                    control={control}
+                    render={({ field }) => (
+                      <JobSpotPicker
+                        value={field.value}
+                        onSelect={(id, spot) => {
+                          field.onChange(id);
+                          setValue("location_name", spot?.name || "");
+                        }}
+                      />
+                    )}
                   />
                 </div>
                 <div>
@@ -1145,8 +1161,7 @@ function ManageJobPageInner({ params }: { params: Promise<{ id?: string }> }) {
                     Remarks
                   </label>
                   <input
-                    value={remark}
-                    onChange={(e) => setRemark(e.target.value)}
+                    {...register("remark")}
                     placeholder="Any additional notes…"
                     className={inputCls}
                   />
@@ -1413,14 +1428,13 @@ function ManageJobPageInner({ params }: { params: Promise<{ id?: string }> }) {
                         type="number"
                         step="0.01"
                         min="0"
-                        value={commissionAmt}
-                        onChange={(e) => setCommissionAmt(e.target.value)}
+                        {...register("commission_amount")}
                         className={inputCls}
                         placeholder="0.00"
                       />
                       {(() => {
-                        const mech = mechanics.find((m) => m.id === parseInt(selectedMechanic));
-                        return selectedMechanic && mech && mech.commission_percent > 0 ? (
+                        const mech = mechanics.find((m) => m.id === parseInt(mechanicId));
+                        return mechanicId && mech && mech.commission_percent > 0 ? (
                           <p className="text-[9px] text-muted-2 mt-1">
                             Auto: {mech.commission_percent}% of services total
                           </p>
@@ -1455,7 +1469,7 @@ function ManageJobPageInner({ params }: { params: Promise<{ id?: string }> }) {
             </Link>
             <div className="flex-1 text-xs text-muted-2 font-bold hidden lg:block truncate text-right">
               {selectedClient ? `Client: ${selectedClient.fullname}` : "Client select karo"} ·{" "}
-              {item || "Item?"} · {fault || "Fault?"}
+              {itemValue || "Item?"} · {faultValue || "Fault?"}
             </div>
             <button
               type="button"
@@ -1483,7 +1497,7 @@ function ManageJobPageInner({ params }: { params: Promise<{ id?: string }> }) {
               </button>
             )}
             <button
-              onClick={handleSave}
+              onClick={saveJob}
               disabled={saving}
               className={`flex-1 md:flex-none md:px-16 py-3.5 text-white rounded-2xl font-black flex items-center justify-center gap-2 transition-all shadow-lg text-sm uppercase tracking-wide active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed ${
                 isEdit

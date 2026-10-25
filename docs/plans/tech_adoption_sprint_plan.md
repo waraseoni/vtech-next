@@ -116,12 +116,21 @@ Commits:
 - [ ] **USER ACTION:** local manual smoke (new client save + edit load + duplicate contact/email warning)
 - **Note:** RHF ka `watch()` subscription React Compiler ko skip karwa deta hai (lint warning) — isliye duplicate checks field-level `onChange` (Controller/register) se trigger kiye.
 
-### Sprint T3.2 — `jobs/new` (NEXT, alag commit)
+### Sprint T3.2 — `jobs/new` (1517 lines, alag commit)
 
-- [ ] 2-step wizard + Quick Save intact rakho (RHF `mode: "onBlur"` + per-step `trigger()`)
-- [ ] Existing field-level validation (pichhle round me dala tha) → schema me move
-- [ ] **Rerender verify:** Profiler me keystroke par re-render count — before/after record
-- [ ] Gates + build + manual smoke (naya job save/edit/delete, bulk edit untouched)
+- [x] 2-step wizard + Quick Save intact: `goNext` = `trigger(["client_id","fault","mechanic_id"])`, save dono jagah `handleSubmit` se
+- [x] Existing field-level validation → `jobFormSchema` (`src/lib/validation/schemas/job.ts`)
+  - client / fault / mechanic required (wahi 3 checks jo `validateStep1` + `handleSave` karte the)
+  - `item` yahan bhi optional — purana code use validate nahi karta tha (label par `*` hai, follow-up backlog)
+  - `legacy_uniq_id` form field me — edit mode ka purana `uniq_id` fallback safe
+- [x] Client / Mechanic / JobSpotPicker → `useWatch` + `setValue` (RHF `watch()` nahi; React Compiler safe)
+- [x] "Add New Client" modal → alag `quickClientFormSchema` (address optional; contact 10-digit + email rule client form se shared); manual 3 toasts delete
+- [x] Service/Product rows local state hi rakhe — unka tempId + duplicate-guard flow schema me daalne ka fayda nahi tha
+- [x] Submit payload diff-check: same keys, same transforms (`parseInt(mechanic_id)`, location/legacy fallback, `|| ""` remark) — identical
+- [x] Gates: typecheck + lint **0 problems** + 417/417 tests + `next build` pass
+- [ ] **USER ACTION:** local manual smoke (naya job step-1 → Quick Save, step-2 → Create, edit load/save, custom spare)
+- [ ] **USER ACTION:** Profiler rerender count before/after (browser-only step; code side pending nahi)
+- **Note:** `handleSubmit(...)` ko render me direct call karna React Compiler lint deta hai (`react-hooks/refs`) — wrapper `saveJob()` event handler me call karta hai.
 
 - **Files:** `src/app/clients/new/page.tsx`, `src/app/jobs/new/page.tsx`, `src/lib/validation/schemas/{client,job}.ts`
 - **Risk: medium (form regression)** → isliye **sirf 2 forms**. Rollback = revert commit, UI layout same hai.
