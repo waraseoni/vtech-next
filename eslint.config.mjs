@@ -46,6 +46,11 @@ const eslintConfig = defineConfig([
     // Android native project + build artifacts — pura git-ignored hai, CI me
     // exist hi nahi karta, aur Next.js ESLint config ka target nahi hai.
     "android/**",
+    // Playwright output artifacts (e2e config/specs lint hote hain).
+    "playwright-report/**",
+    "test-results/**",
+    "blob-report/**",
+    "e2e/.auth/**",
   ]),
 ]);
 

@@ -30,7 +30,8 @@ Plan: `docs/plans/tech_adoption_sprint_plan.md`
 - [x] **T3** — React Hook Form pilot (2 forms)
   - [x] T3.1 — `clients/new` (RHF + zodResolver + 8 schema tests)
   - [x] T3.2 — `jobs/new` (wizard + Quick Save + quick-add client modal; 417 tests)
-- [ ] **T4** — Playwright e2e (setup + 5 smoke tests)
+- [x] **T4** — Playwright e2e (setup + 5 smoke tests)
+  - config/specs/CI ready; `npm run e2e` = 7 skipped cleanly (creds nahi). Real run + `workflow_dispatch` green pending.
 - [ ] **T5** — `@google/genai` migration + native BarcodeDetector
 - [ ] **T6** — backlog (TS7, Vitest 5, RQ completion, realtime lists)
 

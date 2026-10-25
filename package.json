@@ -15,6 +15,9 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
+    "e2e": "playwright test",
+    "e2e:ui": "playwright test --ui",
+    "e2e:install": "playwright install chromium",
     "perf:check": "node scripts/perf-budget.mjs",
     "schema:drift": "node scripts/check-schema-drift.mjs",
     "format": "prettier --write \"src/**/*.{ts,tsx,js,mjs,cjs,json,css}\" \"*.{ts,mts,js,mjs,json,css}\"",
@@ -62,6 +65,7 @@
     "zod": "^4.6.7"
   },
   "devDependencies": {
+    "@playwright/test": "^1.64.1",
     "@semantic-release/changelog": "^6.0.3",
     "@semantic-release/git": "^10.0.1",
     "@semantic-release/github": "^12.0.9",

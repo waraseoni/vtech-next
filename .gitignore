@@ -84,6 +84,12 @@ test_data2.js
 test_revenue.js
 scratch/
 
+# 10b. Playwright (e2e) artifacts + saved login state (credentials!)
+test-results/
+playwright-report/
+blob-report/
+e2e/.auth/
+
 # 11. PHP Reference & Legacy Code (do not push)
 php-ref/
 vtech-rsms-php/

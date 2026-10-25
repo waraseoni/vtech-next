@@ -144,34 +144,42 @@ Commit: `test(e2e): playwright setup + 5 critical-path smoke tests`
 
 ### Setup
 
-- [ ] `npm i -D @playwright/test` + `npx playwright install chromium`
-- [ ] `playwright.config.ts` — `webServer: { command: "npm run dev", port: 3000 }`, `trace: "on-first-retry"`, CI me chromium-only project
-- [ ] npm scripts: `"e2e": "playwright test"`, `"e2e:ui": "playwright test --ui"`
-- [ ] `.gitignore` += `test-results/`, `playwright-report/`
-- [ ] `.gitignore`/`eslint ignore` me `playwright-report` + `test-results` add
+- [x] `npm i -D @playwright/test@1.64.1` + `npx playwright install chromium`
+- [x] `playwright.config.ts` — `webServer: { command: "npm run dev -- -p <PORT>" }`, `trace: "on-first-retry"`, chromium-only project; `@next/env` se `.env.local` load (Next jaisa hi)
+- [x] npm scripts: `"e2e": "playwright test"`, `"e2e:ui": "playwright test --ui"`, `"e2e:install": "playwright install chromium"`
+- [x] `.gitignore` += `test-results/`, `playwright-report/`, `blob-report/`, `e2e/.auth/` (saved session = credentials)
+- [x] `eslint.config.mjs` `globalIgnores` me wahi artifacts — specs/config khud lint hote hain
 
 ### 5 smoke tests (`e2e/smoke/`)
 
-- [ ] `login.spec.ts` — password login → dashboard loads
-- [ ] `job-create.spec.ts` — `/jobs/new` → save → redirect + list me dikhe (T3 ke baad = RHF safety net)
-- [ ] `direct-sale.spec.ts` — save → RPC `save_direct_sale` success (pichhle round ka atomic fix)
-- [ ] `inventory.spec.ts` — list load + filter/search
-- [ ] `attendance.spec.ts` — page load + modal open
+- [x] `login.spec.ts` — password login → dashboard (clean storageState)
+- [x] `job-create.spec.ts` — `/jobs/new` → Quick Save → job view (T3/RHF safety net)
+- [x] `direct-sale.spec.ts` — Create Sale → RPC `save_direct_sale` success (atomic fix ka guard); oversell confirm click handle
+- [x] `inventory.spec.ts` — list load + search empty-state + out-of-stock filter pill
+- [x] `attendance.spec.ts` — hub load + daily↔monthly tab switch + admin day cell → modal
 
 ### Auth + fixtures (sabse bada setup point)
 
-- [ ] `e2e/auth.setup.ts` — storage-state reuse (login once, share across specs)
-- [ ] `e2e/seed.sql` — minimal test data (1 client, 1 product) → **staging/dev project par**, kabhi prod par nahi
-- [ ] **Geofence trap:** staff user bahar ho to write-gate block karega (`viewOnly`/`writeGuard`) → test user **admin/permit wala** ho, warna 2-4 spec false-fail honge
-- [ ] Env: `NEXT_PUBLIC_SUPABASE_URL/ANON_KEY` + app port → `.env.test` / CI secrets (repo me `ci.yml` ka fail-fast pattern already hai)
+- [x] `e2e/auth.setup.ts` — storage-state reuse (login once, share across specs)
+- [x] `e2e/seed.sql` **skip** — pehle-option picking (`e2e/utils.ts`) + data-dependent `test.skip` se kaam chal raha hai; seed.sql staging-only hai aur is sprint me zaroorat nahi padi
+- [x] **Geofence trap:** documented + enforced — docs/specs admin/permit user maangte hain; non-admin par specs skip
+- [x] Env: `NEXT_PUBLIC_SUPABASE_URL/ANON_KEY` + `E2E_ADMIN_EMAIL/PASSWORD` + optional `E2E_ALLOW_WRITES=1` → `.env.example` me documented, CI me secrets
+- [x] **Write-gate:** job-create/direct-sale real rows banati hain → `E2E_ALLOW_WRITES=1` ke bina skip (prod DB safe)
+- [x] `hasAdminCreds` na ho to setup + authed specs skip (conditional `storageState` inline empty state) — `npm run e2e` bina creds ke bhi clean rehta hai
 
 ### CI
 
-- [ ] `.github/workflows/e2e.yml` — `workflow_dispatch` + push par main; Playwright cache; artifact upload on failure
-- [ ] Pehle **manual run** (`workflow_dispatch`) se green karwa ke hi push-trigger enable karo
+- [x] `.github/workflows/e2e.yml` — `workflow_dispatch` only (jab manual run green ho tab push-trigger enable karna), missing-secret fail-fast, failure par report artifact
+- [ ] **USER ACTION:** `workflow_dispatch` manual run green karwao, phir `push: branches: [main]` enable karo
 
-- **Files (new):** `playwright.config.ts`, `e2e/**`, `.github/workflows/e2e.yml`, `package.json`
-- **Risk: low** — existing code touch hi nahi. Setup time sabse zyada.
+### Verification (code side)
+
+- [x] `npx playwright test` → **7 skipped cleanly** (creds nahi hain — koi red nahi)
+- [x] Gates: `typecheck` + `eslint` 0 problems + `prettier --check` + `next build` pass
+- [ ] **USER ACTION:** `.env.local` me `E2E_ADMIN_EMAIL/PASSWORD` + `E2E_ALLOW_WRITES=1` daal ke real run (dev/staging DB par hi)
+
+- **Files (new):** `playwright.config.ts`, `e2e/{auth.setup.ts,utils.ts,smoke/*.spec.ts}`, `.github/workflows/e2e.yml`, `package.json`
+- **Risk: low** — existing app code touch hi nahi. Setup time sabse zyada.
 
 ---
 

@@ -1,0 +1,74 @@
+name: E2E (Playwright)
+
+# Pehle sirf manual. Jab ek baar manual run green ho jaye, tab hi
+# `push: branches: [main]` add karo (plan T4 ka rule).
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    name: Smoke (chromium)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright (chromium)
+        run: npx playwright install --with-deps chromium
+
+      - name: Verify e2e secrets
+        # ci.yml jaisa fail-fast: missing secret = GitHub empty string deta hai,
+        # warna error "supabaseUrl is required" jaisa confusing aata hai.
+        # Values kabhi print nahi hoti.
+        run: |
+          missing=""
+          for v in NEXT_PUBLIC_SUPABASE_URL NEXT_PUBLIC_SUPABASE_ANON_KEY \
+                   SUPABASE_SERVICE_ROLE_KEY E2E_ADMIN_EMAIL E2E_ADMIN_PASSWORD; do
+            eval "val=\${$v}"
+            if [ -z "$val" ]; then missing="$missing $v"; fi
+          done
+          if [ -n "$missing" ]; then
+            {
+              echo "::error title=Missing e2e secrets::Ye secrets chahiye:$missing"
+              echo "::error::Repo → Settings → Secrets and variables → Actions me add karo."
+            }
+            exit 1
+          fi
+          echo "all e2e secrets present"
+
+      - name: Run smoke tests
+        # Write specs (job/direct-sale) tabhi chalti hain jab repo variable
+        # E2E_ALLOW_WRITES=1 ho — taaki galti se prod DB me rows na banein.
+        run: npm run e2e
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
+          E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
+          E2E_ALLOW_WRITES: ${{ vars.E2E_ALLOW_WRITES }}
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+          if-no-files-found: ignore
+          retention-days: 7
