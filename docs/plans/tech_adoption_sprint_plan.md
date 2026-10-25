@@ -189,24 +189,30 @@ Commit: `test(e2e): playwright setup + 5 critical-path smoke tests`
 
 Commit: `chore(ai): migrate @google/generative-ai → @google/genai`
 
-- [ ] `npm i @google/genai` + `npm rm @google/generative-ai`
-- [ ] `src/lib/gemini.ts` — `GoogleGenerativeAI` → `GoogleGenAI` client, function-calling/response-schema API naya
-- [ ] Verify: `/ai` page + `api/chat` route (groq path untouched)
-- [ ] Gates + build + live 1 chat call
+- [x] `npm i @google/genai@2.31.0` + `npm rm @google/generative-ai@0.24.1`
+- [x] `src/lib/gemini.ts` — `GoogleGenAI` client + `ai.chats.create({ model, history, config })`
+  - tools ab `parametersJsonSchema` se jaate hain (plain JSON schema) — `gemini-tools.ts` ka shape waisa hi, Groq path untouched
+  - `response.functionCalls` (getter) → `call.name` optional hai, isliye guard; `functionResponse` wahi shape
+  - `response.text` ab `string | undefined` — fallback message add kiya
+- [x] Verify: `api/chat` route compile + build pass (`/ai` page code untouched)
+- [x] Gates + build + **live Gemini call** (function calling round-trip: `get_business_summary` → tool response → final text)
+- [ ] **USER ACTION:** `/ai` page par ek real chat (model selector se Gemini) — UI se confirm
 
 ### T5.2 — Barcode
 
 Commit: `refactor(scan): native BarcodeDetector with html5-qrcode fallback`
 
-- [ ] `src/lib/scanner.ts` — `"BarcodeDetector" in window` capability detect + format list (`code128`, `qr`, `ean13`...)
-- [ ] `BarcodeCameraScanner.tsx` + `QuickScanModal.tsx` → native par native, warna `html5-qrcode` (fallback **mandatory** — WebView support variable)
-- [ ] Device matrix: Android Chrome/WebView + desktop (loop wale test) — inventory scan + box-labels
-- [ ] html5-qrcode **mat hatao** jab tak device matrix green na ho (wo unmaintained hai par fallback kaam karta hai)
+- [x] `src/lib/barcode-scanner.ts` — `BarcodeDetector` capability detect + `getSupportedFormats()` se format list filter (`qr_code`, `code_128`, `code_39`, `ean_13`, `ean_8`, `upc_a`, `upc_e`)
+- [x] Native path: `getUserMedia` + apna `<video>` + 120ms detect loop (ek waqt me ek detect call)
+- [x] `BarcodeCameraScanner.tsx` + `QuickScanModal.tsx` → native par native, warna `html5-qrcode` (fallback **mandatory** — WebView support variable)
+- [x] html5-qrcode **hataya nahi** — dependency waisi hi, sirf jab native na ho tab lazy import hota hai (native path par ~250KB chunk load hi nahi hota)
+- [x] First-scan par scanner khud band, phir `onScan` — dono components ka purana behaviour same
+- [ ] **USER ACTION:** Device matrix — Android Chrome/WebView + desktop (loop wale test), inventory scan + box-labels dono
 
 ### T5.3 — Dead weight sweep
 
-- [ ] `npm outdated` re-run → jo in-range patches aaye wo `chore(deps)` commit me
-- [ ] `docs/plans/codebase_audit_sep06_2026.md` ke pending checkbox (autoprefixer) mark done
+- [x] `npm outdated` re-run → in-range patches pending nahi (T0 ke `npm update` me ho gaya); jo bacha hai wo major hi hai (TS7/Vitest5/Sentry11/@hookform-resolvers6) = T6/skip list
+- [x] `docs/plans/codebase_audit_sep06_2026.md` ke `autoprefixer` checkbox done mark (dep T0 me remove ho chuki hai)
 
 ---
 

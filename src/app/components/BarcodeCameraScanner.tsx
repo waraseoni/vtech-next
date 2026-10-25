@@ -6,21 +6,21 @@ import {
   cameraUnsupportedReason,
   cameraErrorMessage,
 } from "@/lib/cameraSupport";
-
-let scannerIdCounter = 0;
+import { startBarcodeScanner, type ScannerHandle } from "@/lib/barcode-scanner";
 
 /**
  * Inline phone-camera barcode scanner box.
  * Mount karo to camera start, unmount to stop. First successful read → onScan(text).
  * Parent visibility control karta hai (conditional render).
+ *
+ * Engine: native `BarcodeDetector` pehle, warna html5-qrcode fallback
+ * (`src/lib/barcode-scanner.ts`).
  */
 export default function BarcodeCameraScanner({ onScan }: { onScan: (text: string) => void }) {
   const [camErr, setCamErr] = useState<string | null>(null);
   const [starting, setStarting] = useState(true);
   const boxRef = useRef<HTMLDivElement>(null);
-  const scannerRef = useRef<{ stop: () => Promise<void>; clear: () => void } | null>(null);
-  const didScan = useRef(false);
-  const [elementId] = useState(() => `barcode-scanner-${++scannerIdCounter}`);
+  const scannerRef = useRef<ScannerHandle | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -31,40 +31,21 @@ export default function BarcodeCameraScanner({ onScan }: { onScan: (text: string
           setCamErr(cameraUnsupportedReason());
           return;
         }
-        const { Html5Qrcode, Html5QrcodeSupportedFormats } = await import("html5-qrcode");
-        if (cancelled) return;
-        const scanner = new Html5Qrcode(elementId, {
-          formatsToSupport: [
-            Html5QrcodeSupportedFormats.QR_CODE,
-            Html5QrcodeSupportedFormats.CODE_128,
-            Html5QrcodeSupportedFormats.CODE_39,
-            Html5QrcodeSupportedFormats.EAN_13,
-            Html5QrcodeSupportedFormats.EAN_8,
-            Html5QrcodeSupportedFormats.UPC_A,
-            Html5QrcodeSupportedFormats.UPC_E,
-          ],
-          verbose: false,
+        const container = boxRef.current;
+        if (!container) return;
+
+        const handle = await startBarcodeScanner({
+          container,
+          qrbox: { width: 220, height: 140 },
+          onScan,
         });
-        scannerRef.current = scanner;
+        // Unmount race: camera start hone se pehle hi component gaya.
+        if (cancelled) {
+          await handle.stop();
+          return;
+        }
+        scannerRef.current = handle;
         setStarting(false);
-        await scanner.start(
-          { facingMode: "environment" },
-          { fps: 10, qrbox: { width: 220, height: 140 } },
-          async (text) => {
-            if (didScan.current) return;
-            didScan.current = true;
-            try {
-              await scanner.stop();
-            } catch {
-              /* ignore */
-            }
-            scanner.clear();
-            onScan(text);
-          },
-          () => {
-            /* frame miss */
-          }
-        );
       } catch (err) {
         if (cancelled) return;
         setStarting(false);
@@ -75,24 +56,14 @@ export default function BarcodeCameraScanner({ onScan }: { onScan: (text: string
     return () => {
       cancelled = true;
       const s = scannerRef.current;
-      if (s) {
-        try {
-          void s.stop().catch(() => {});
-        } catch {
-          /* ignore */
-        }
-        try {
-          s.clear();
-        } catch {
-          /* ignore */
-        }
-      }
+      scannerRef.current = null;
+      if (s) void s.stop().catch(() => {});
     };
-  }, [elementId, onScan]);
+  }, [onScan]);
 
   return (
     <div className="rounded-xl overflow-hidden border border-app bg-black relative">
-      <div id={elementId} ref={boxRef} className="w-full" />
+      <div ref={boxRef} className="w-full" />
       {starting && (
         <div className="absolute inset-0 flex items-center justify-center bg-black/60">
           <Loader2 size={22} className="animate-spin text-muted" />

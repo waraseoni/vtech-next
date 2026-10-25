@@ -25,6 +25,7 @@ import {
   cameraUnsupportedReason,
   cameraErrorMessage,
 } from "@/lib/cameraSupport";
+import { startBarcodeScanner, type ScannerHandle } from "@/lib/barcode-scanner";
 
 interface QuickScanProps {
   onClose: () => void;
@@ -39,8 +40,6 @@ interface MatchedProduct {
   alert_quantity: number;
   available: number;
 }
-
-type Html5QrcodeRef = import("html5-qrcode").Html5Qrcode;
 
 export default function QuickScanModal({ onClose, onSaved }: QuickScanProps) {
   const [code, setCode] = useState("");
@@ -57,7 +56,7 @@ export default function QuickScanModal({ onClose, onSaved }: QuickScanProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
   const cameraBoxRef = useRef<HTMLDivElement>(null);
-  const scannerRef = useRef<Html5QrcodeRef | null>(null);
+  const scannerRef = useRef<ScannerHandle | null>(null);
   const scanOnce = useRef(false);
   const today = todayIST();
 
@@ -83,15 +82,9 @@ export default function QuickScanModal({ onClose, onSaved }: QuickScanProps) {
   const stopCamera = async () => {
     scanOnce.current = true;
     setCameraOn(false);
-    if (scannerRef.current) {
-      try {
-        if (scannerRef.current.isScanning) await scannerRef.current.stop();
-      } catch {
-        /* already stopped */
-      }
-      scannerRef.current.clear();
-      scannerRef.current = null;
-    }
+    const handle = scannerRef.current;
+    scannerRef.current = null;
+    if (handle) await handle.stop().catch(() => undefined);
   };
 
   // Stop camera + cleanup on unmount
@@ -112,35 +105,28 @@ export default function QuickScanModal({ onClose, onSaved }: QuickScanProps) {
         setCamErr(cameraUnsupportedReason());
         return;
       }
-      const { Html5Qrcode, Html5QrcodeSupportedFormats } = await import("html5-qrcode");
-      if (!cameraBoxRef.current) return;
-      const scanner = new Html5Qrcode("quickscan-camera", {
-        formatsToSupport: [
-          Html5QrcodeSupportedFormats.QR_CODE,
-          Html5QrcodeSupportedFormats.CODE_128,
-          Html5QrcodeSupportedFormats.CODE_39,
-          Html5QrcodeSupportedFormats.EAN_13,
-          Html5QrcodeSupportedFormats.EAN_8,
-          Html5QrcodeSupportedFormats.UPC_A,
-          Html5QrcodeSupportedFormats.UPC_E,
-        ],
-        verbose: false,
-      });
-      scannerRef.current = scanner;
-      await scanner.start(
-        { facingMode: "environment" },
-        { fps: 10, qrbox: { width: 230, height: 150 } },
-        async (text) => {
+      const container = cameraBoxRef.current;
+      if (!container) return;
+
+      const handle = await startBarcodeScanner({
+        container,
+        qrbox: { width: 230, height: 150 },
+        onScan: (text) => {
           if (scanOnce.current) return;
           scanOnce.current = true;
-          await stopCamera();
           setCode(text);
-          await lookup(text);
+          void stopCamera();
+          void lookup(text);
         },
-        () => {
-          /* frame miss — ignore */
-        }
-      );
+      });
+
+      // Scan start hone se pehle hi band ho gaya (user ne toggle kiya) — handle
+      // store mat karo, warna stale scanner padega.
+      if (scanOnce.current) {
+        await handle.stop().catch(() => undefined);
+        return;
+      }
+      scannerRef.current = handle;
     } catch (err) {
       setCameraOn(false);
       setCamErr(cameraErrorMessage(err));

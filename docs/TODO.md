@@ -32,7 +32,8 @@ Plan: `docs/plans/tech_adoption_sprint_plan.md`
   - [x] T3.2 — `jobs/new` (wizard + Quick Save + quick-add client modal; 417 tests)
 - [x] **T4** — Playwright e2e (setup + 5 smoke tests)
   - config/specs/CI ready; `npm run e2e` = 7 skipped cleanly (creds nahi). Real run + `workflow_dispatch` green pending.
-- [ ] **T5** — `@google/genai` migration + native BarcodeDetector
+- [x] **T5** — `@google/genai` migration + native BarcodeDetector
+  - T5.1 genai live function-calling verified; T5.2 native engine + html5-qrcode fallback (device matrix pending); T5.3 outdated sweep done
 - [ ] **T6** — backlog (TS7, Vitest 5, RQ completion, realtime lists)
 
 ---

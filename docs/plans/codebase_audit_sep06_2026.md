@@ -42,7 +42,7 @@
 - [ ] `src/lib/notify.ts` — 115 lines, **0 imports**, koi call nahi karta.
 - [ ] `src/app/salary/page.tsx` + `src/app/salary/[id]/ledger/page.tsx` — `next.config.ts:55-60` permanent redirect ke peeche **unreachable** (copy `mechanics/salary` + `mechanics/[id]/ledger` me hai).
 - [ ] `package.json` scripts `version:patch/minor/major` — semantic-release hi versioner hai, kabhi use nahi hote.
-- [ ] `autoprefixer` dependency — Tailwind v4 khud prefixing karta hai.
+- [x] `autoprefixer` dependency — Tailwind v4 khud prefixing karta hai. **(T0 me remove ho gaya)**
 
 ### B2. Repo hygiene (disk junk ~80MB; sab gitignored, git clean)
 - [ ] `vtech_backup_converted.json`, `vtech_backup_converted_090826.json`, `vtech_backup_restore.json` (~24MB each)
@@ -71,7 +71,7 @@
 
 ### Phase 1 — Safe cleanup (chhota + low risk)
 - [ ] Delete `src/lib/notify.ts`
-- [ ] Remove `autoprefixer` dep
+- [x] Remove `autoprefixer` dep **(T0 me ho gaya)**
 - [ ] Prune `version:patch/minor/major` scripts (ya `deprecated:` note likho)
 - [ ] `.gitignore` stale rules cleanup + root junk delete (~80MB)
 - [ ] `backups/env store/` secrets kisi password manager me shift + delete
