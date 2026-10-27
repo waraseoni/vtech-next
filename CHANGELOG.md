@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## [1.71.0](https://github.com/waraseoni/vtech-next/compare/v1.70.1...v1.71.0) (2026-10-27)
+
+### Features
+
+* **ai:** multi-provider keys (encrypted), auto-failover, per-session selector ([3de9ca0](https://github.com/waraseoni/vtech-next/commit/3de9ca09e3f19f7779f62da1e657a38de2cecc95))
+
+### Bug Fixes
+
+* **ai:** light-theme contrast, mobile bottom bar, drawer refresh + outside-click minimise ([54ce5ed](https://github.com/waraseoni/vtech-next/commit/54ce5eda2fe7332c7c6cfddac79680fbec283e2f)), closes [#fff](https://github.com/waraseoni/vtech-next/issues/fff)
+
 ## [1.70.1](https://github.com/waraseoni/vtech-next/compare/v1.70.0...v1.70.1) (2026-10-27)
 
 ### Bug Fixes
