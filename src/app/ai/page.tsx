@@ -1,14 +1,18 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import Link from "next/link";
+import { toast } from "@/lib/toast";
+import { providerLabel, providerShortLabel, type AiProviderId } from "@/lib/ai-provider-catalog";
+import type { AiProviderPublic } from "@/lib/ai-settings";
 import {
   Loader2,
   Send,
   Sparkles,
   Bot,
   User,
-  Trash2,
+  RefreshCw,
+  ArrowLeft,
   Cpu,
   Zap,
   Activity,
@@ -93,7 +97,7 @@ function FormattedMessage({ content }: { content: string }) {
             const text = line.replace(/^#{1,3}\s/, "");
             const Tag = `h${level}` as React.ElementType;
             const sizes = {
-              1: "text-2xl font-black mt-8 mb-4 text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500",
+              1: "text-2xl font-black mt-8 mb-4 ai-gradient-text",
               2: "text-xl font-bold mt-6 mb-3 text-app-2",
               3: "text-lg font-bold mt-5 mb-2 text-app-2",
             };
@@ -155,7 +159,7 @@ function parseInline(text: string) {
             href={href}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-blue-500 hover:text-blue-400 underline underline-offset-2 font-semibold"
+            className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 underline underline-offset-2 font-semibold"
           >
             {label}
           </a>
@@ -165,7 +169,7 @@ function parseInline(text: string) {
         <Link
           key={i}
           href={href}
-          className="text-blue-500 hover:text-blue-400 underline underline-offset-2 font-semibold"
+          className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 underline underline-offset-2 font-semibold"
         >
           {label}
         </Link>
@@ -189,7 +193,7 @@ function parseInline(text: string) {
       return (
         <code
           key={i}
-          className="bg-panel-2 text-blue-500 px-1.5 py-0.5 rounded leading-none font-mono text-[13px] border border-app-2 mx-0.5"
+          className="bg-panel-2 text-blue-600 dark:text-blue-400 px-1.5 py-0.5 rounded leading-none font-mono text-[13px] border border-app mx-0.5"
         >
           {part.slice(1, -1)}
         </code>
@@ -201,6 +205,9 @@ function parseInline(text: string) {
 
 const INIT_MESSAGE =
   "Namaste! 🙏\n\nMain **V-Technologies** ka AI Assistant hoon. Aap mujhe business ke baare mein kuch bhi poochh sakte hain:\n\n* **Profits & Loss:** Is month ka total profit kya hai?\n* **Clients:** Kaunsa customer sabse zyada balance ka hai?\n* **Workload:** Is week kitne jobs huye?\n* **Staff:** Staff ka performance kaisa hai?\n\nAapka sawaal likhein, aur main turant data analyse karke bataunga!";
+
+/** Staff ka provider selection sirf is browser me (global active provider admin badalta hai). */
+const SESSION_PROVIDER_KEY = "vtech.ai.sessionProvider";
 
 export default function AIChatPage() {
   const [messages, setMessages] = useState<Message[]>([
@@ -214,29 +221,139 @@ export default function AIChatPage() {
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const [aiProvider, setAiProvider] = useState("groq");
+  /**
+   * `aiProvider` = aakhri jawab dene wala provider (display ke liye).
+   * `sessionProvider` = staff ka apna selection ("auto" = Settings ka active).
+   * Ye sirf is browser me lagta hai — global active provider admin hi badalta hai.
+   */
+  const [aiProvider, setAiProvider] = useState("");
+  const [providerOptions, setProviderOptions] = useState<AiProviderPublic[]>([]);
+  const [sessionProvider, setSessionProvider] = useState<"auto" | AiProviderId>("auto");
   const [role, setRole] = useState<string>("");
   const [notifs, setNotifs] = useState<AlertsResponse | null>(null);
-  const [showNotifs, setShowNotifs] = useState(true);
+  /**
+   * Alerts banner default collapsed: chat surface hai — 300px+ ka banner
+   * messages ke liye jagah kha jata tha (mobile par to header hi bachta tha).
+   * Header row me count dikhta hai, ek click par khul jata hai.
+   */
+  const [showNotifs, setShowNotifs] = useState(false);
+  /** Drawer (iframe) me chal raha hai? Wahan X/refresh parent header me hai. */
+  const [embedded, setEmbedded] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const messagesBoxRef = useRef<HTMLDivElement>(null);
+  /** Chal rahi request ko reset par cancel karne ke liye. */
+  const abortRef = useRef<AbortController | null>(null);
+  /** Reset ke baad purani request ka jawab message list me na aaye. */
+  const runIdRef = useRef(0);
 
-  useEffect(() => {
-    fetch("/api/ai/alerts")
-      .then((r) => r.json())
-      .then((data) => {
-        if (data?.role) setRole(data.role);
-        if (data?.alerts?.alerts) setNotifs(data.alerts);
-      })
-      .catch(() => {});
+  const loadAlerts = useCallback(async () => {
+    try {
+      const res = await fetch("/api/ai/alerts", { cache: "no-store" });
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data?.role) setRole(data.role);
+      if (data?.alerts?.alerts) setNotifs(data.alerts);
+    } catch {
+      /* network issue — banner purana hi rahega */
+    }
   }, []);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
+  const loadProviders = useCallback(async () => {
+    try {
+      const res = await fetch("/api/ai/providers", { cache: "no-store" });
+      if (!res.ok) return;
+      const data = await res.json();
+      const list: AiProviderPublic[] = data?.providers ?? [];
+      setProviderOptions(list);
+      const active = list.find((p) => p.isActive);
+      if (active) setAiProvider(active.provider);
+    } catch {
+      /* ignore */
+    }
+  }, []);
 
   useEffect(() => {
-    scrollToBottom();
+    const isEmbedded = window.self !== window.top;
+    setEmbedded(isEmbedded);
+    // Drawer (parent) ko batao ki reset messages receive kar sakte hain
+    if (isEmbedded) {
+      window.parent.postMessage({ type: "vtech:ai-ready" }, window.location.origin);
+    }
+    // Mobile/drawer me alerts banner collapsed — warna chat ke liye jagah nahi
+    // bachti (banner khud 300px+ le leta tha).
+    loadAlerts();
+    loadProviders();
+
+    // is browser ka saved provider selection
+    try {
+      const saved = localStorage.getItem(SESSION_PROVIDER_KEY);
+      if (saved === "groq" || saved === "gemini") setSessionProvider(saved);
+    } catch {
+      /* localStorage blocked — auto hi rahega */
+    }
+  }, [loadAlerts, loadProviders]);
+
+  /** Session selection badlo (sirf is browser ke liye). */
+  const changeSessionProvider = (value: string) => {
+    const next: "auto" | AiProviderId = value === "groq" || value === "gemini" ? value : "auto";
+    setSessionProvider(next);
+    try {
+      if (next === "auto") localStorage.removeItem(SESSION_PROVIDER_KEY);
+      else localStorage.setItem(SESSION_PROVIDER_KEY, next);
+    } catch {
+      /* ignore */
+    }
+  };
+
+  const scrollToBottom = () => {
+    const box = messagesBoxRef.current;
+    // `scrollIntoView` document ko bhi scroll kar deta tha (drawer/iframe me
+    // header upar chhup jata tha) — isliye sirf messages container scroll karo.
+    if (box) box.scrollTo({ top: box.scrollHeight, behavior: "smooth" });
+  };
+
+  /**
+   * Nayi chat — conversation reset + chal rahi request cancel + fresh data.
+   * Drawer ka refresh button isi ko `postMessage` se trigger karta hai, isliye
+   * logic yahan ek jagah hai (do copy nahi).
+   */
+  const resetChat = useCallback(() => {
+    runIdRef.current += 1; // purani request ka jawab ignore
+    abortRef.current?.abort();
+    abortRef.current = null;
+    setMessages([
+      {
+        id: "1",
+        role: "assistant",
+        content: INIT_MESSAGE,
+        timestamp: new Date(),
+        isNew: true,
+      },
+    ]);
+    setInput("");
+    setLoading(false);
+    if (messagesBoxRef.current) messagesBoxRef.current.scrollTop = 0;
+    loadAlerts();
+    loadProviders();
+    requestAnimationFrame(() => textareaRef.current?.focus());
+  }, [loadAlerts, loadProviders]);
+
+  // Drawer (RootClient) se reset trigger — `postMessage` same-origin check ke saath
+  useEffect(() => {
+    const onMessage = (event: MessageEvent) => {
+      if (event.origin !== window.location.origin) return;
+      if (event.data?.type !== "vtech:ai-reset") return;
+      resetChat();
+    };
+    window.addEventListener("message", onMessage);
+    return () => window.removeEventListener("message", onMessage);
+  }, [resetChat]);
+
+  useEffect(() => {
+    // Pehla (welcome) message par scroll nahi — warna chhoti screen / drawer
+    // me intro ka upar wala hissa kat jata tha.
+    if (messages.length > 1) scrollToBottom();
   }, [messages]);
 
   // Make textarea auto-resize
@@ -250,6 +367,7 @@ export default function AIChatPage() {
   const handleSend = async () => {
     if (!input.trim() || loading) return;
 
+    const runId = ++runIdRef.current;
     const userMessage: Message = {
       id: Date.now().toString(),
       role: "user",
@@ -265,6 +383,7 @@ export default function AIChatPage() {
     try {
       const allMessages = [...messages, userMessage];
       const controller = new AbortController();
+      abortRef.current = controller;
       const timeoutId = setTimeout(() => controller.abort(), 120000);
 
       let response: Response;
@@ -276,7 +395,8 @@ export default function AIChatPage() {
             message: input.trim(),
             messages: allMessages,
             type: "chat",
-            provider: aiProvider,
+            // "auto" par kuch nahi bhejte — server Settings ka active provider le lega
+            ...(sessionProvider !== "auto" ? { provider: sessionProvider } : {}),
           }),
           signal: controller.signal,
         });
@@ -285,7 +405,13 @@ export default function AIChatPage() {
       }
 
       const text = await response.text();
-      let data: { response?: string; error?: string; details?: string } = {};
+      let data: {
+        response?: string;
+        error?: string;
+        details?: string;
+        provider?: string;
+        failoverFrom?: string;
+      } = {};
       if (text) {
         try {
           data = JSON.parse(text);
@@ -294,6 +420,13 @@ export default function AIChatPage() {
         }
       }
 
+      // Server ne kaunsa provider jawab diya (failover ho sakta hai)
+      if (data.provider) setAiProvider(data.provider);
+      if (data.failoverFrom && data.provider) {
+        toast.info(
+          `${providerLabel(data.failoverFrom)} se jawab nahi aaya — ${providerLabel(data.provider)} se aa gaya.`
+        );
+      }
       let content: string;
       if (!response.ok) {
         content = data.error
@@ -313,8 +446,11 @@ export default function AIChatPage() {
         isNew: true,
       };
 
+      // Reset ho gaya to purana jawab list me na aaye
+      if (runId !== runIdRef.current) return;
       setMessages((prev) => [...prev, assistantMessage]);
     } catch (err) {
+      if (runId !== runIdRef.current) return;
       const isAbort = err instanceof DOMException && err.name === "AbortError";
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
@@ -327,21 +463,23 @@ export default function AIChatPage() {
       };
       setMessages((prev) => [...prev, errorMessage]);
     } finally {
-      setLoading(false);
+      if (runId === runIdRef.current) {
+        setLoading(false);
+        abortRef.current = null;
+      }
     }
   };
 
-  const clearChat = () => {
-    setMessages([
-      {
-        id: "1",
-        role: "assistant",
-        content: INIT_MESSAGE,
-        timestamp: new Date(),
-        isNew: true,
-      },
-    ]);
-  };
+  useEffect(() => {
+    // Bottom tab bar /ai par nahi hai, par `globals.css` body ko mobile par
+    // 56px padding deta hai — usse page 100vh se lamba ho kar scroll ho jata tha
+    // (drawer ke andar header upar chhup jata tha). Sirf is page par reset.
+    const prev = document.body.style.paddingBottom;
+    document.body.style.paddingBottom = "0px";
+    return () => {
+      document.body.style.paddingBottom = prev;
+    };
+  }, []);
 
   const quickQuestions = [
     {
@@ -363,9 +501,10 @@ export default function AIChatPage() {
   ];
 
   return (
-    // pb: mobile bottom tab-bar (~76px) composer ko na dabe — border-box me
-    // content box ghatta hai, scroll nahi badhta
-    <div className="min-h-screen bg-app flex flex-col font-sans overflow-hidden pattern-bg pb-[76px] md:pb-0">
+    // h-[100dvh]: mobile browser ki address bar ke saath bhi composer screen ke
+    // andar rahe. Pehle `min-h-screen` + 76px padding tha → page scroll hota tha
+    // aur sticky header upar chhup jata tha (drawer/iframe me).
+    <div className="h-[100dvh] bg-app flex flex-col font-sans overflow-hidden pattern-bg">
       <style
         dangerouslySetInnerHTML={{
           __html: `
@@ -405,55 +544,111 @@ export default function AIChatPage() {
       />
 
       {/* Header */}
-      <div className="glass-panel border-b border-app/50 px-6 py-4 sticky top-0 z-20">
-        <div className="flex items-center justify-between max-w-5xl mx-auto">
-          <div className="flex items-center gap-4">
-            <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-br from-purple-500 to-blue-500 rounded-xl blur-[10px] opacity-50"></div>
-              <div className="relative w-11 h-11 rounded-xl bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center border border-white/20 shadow-lg">
-                <Sparkles className="text-white" size={22} strokeWidth={2.5} />
+      <div className="glass-panel border-b border-app/50 px-3 sm:px-6 py-2.5 sm:py-4 sticky top-0 z-20">
+        <div className="flex items-center justify-between gap-2 sm:gap-3 max-w-5xl mx-auto">
+          <div className="flex items-center gap-2 sm:gap-4 min-w-0">
+            {/* Full-page AI par app ka topbar nahi hota — back affordance zaroori.
+                Drawer (iframe) me parent header ka X kaafi hai. */}
+            {!embedded && (
+              <Link
+                href="/dashboard"
+                aria-label="Back to dashboard"
+                title="Back"
+                className="w-8 h-8 sm:w-9 sm:h-9 shrink-0 rounded-xl bg-app border border-app flex items-center justify-center text-muted hover:text-app-2 transition-colors"
+              >
+                <ArrowLeft size={15} />
+              </Link>
+            )}
+            {!embedded && (
+              <div className="relative shrink-0">
+                {/* Light theme me glow halka — warna title ke peeche bhi dhundhla lagta hai */}
+                <div className="absolute inset-0 bg-gradient-to-br from-purple-500 to-blue-500 rounded-xl blur-[10px] opacity-30 dark:opacity-50"></div>
+                <div className="relative w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center border border-white/20 shadow-lg">
+                  <Sparkles className="text-white" size={20} strokeWidth={2.5} />
+                </div>
               </div>
-            </div>
-            <div>
-              <h1 className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500">
-                V-Tech Copilot
-              </h1>
-              <div className="flex items-center mt-0.5 gap-2">
-                <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-app/80 border border-app shadow-inner">
-                  <Cpu size={10} className="text-purple-400" />
-                  <select
-                    value={aiProvider}
-                    onChange={(e) => setAiProvider(e.target.value)}
-                    className="text-[10px] font-bold uppercase tracking-widest text-app-2 bg-transparent outline-none appearance-none cursor-pointer"
-                    title="Select AI Engine"
-                  >
-                    <option value="groq">Groq Engine</option>
-                    <option value="gemini">Gemini Pro</option>
-                  </select>
+            )}
+            <div className="min-w-0">
+              {/*
+                Drawer me brand duplicate na ho — parent header me "AI Assistant"
+                already hai, isliye wahan sirf provider/badge row rehti hai.
+                `bg-gradient-to-r` + `bg-clip-text` use nahi kiya — legacy CSS
+                `[class*="bg-grad-"] { color: #fff !important }` use match karke
+                light theme me white-on-white kar deta tha (`.ai-gradient-text`).
+              */}
+              {!embedded && (
+                <h1 className="text-base sm:text-xl font-black ai-gradient-text truncate">
+                  V-Tech Copilot
+                </h1>
+              )}
+              <div className="flex items-center mt-0.5 gap-1.5 sm:gap-2 flex-nowrap min-w-0">
+                <div className="flex items-center gap-1 pl-1.5 sm:pl-2 pr-1 sm:pr-1.5 py-0.5 rounded-md bg-app/80 border border-app shadow-inner min-w-0">
+                  <Cpu
+                    size={10}
+                    className="text-purple-500 dark:text-purple-400 shrink-0 hidden sm:block"
+                  />
+                  <div className="relative flex items-center min-w-0">
+                    <select
+                      value={sessionProvider}
+                      onChange={(e) => changeSessionProvider(e.target.value)}
+                      className="ai-provider-select font-bold text-app-2 bg-transparent outline-none appearance-none cursor-pointer w-[7.25rem] sm:w-auto sm:max-w-none truncate"
+                      title="Sirf is browser ke liye — default provider Settings page se admin set karta hai"
+                    >
+                      <option value="auto">
+                        Auto{aiProvider ? ` (${providerShortLabel(aiProvider)})` : ""}
+                      </option>
+                      {providerOptions
+                        .filter((p) => p.hasKey)
+                        .map((p) => (
+                          <option key={p.provider} value={p.provider}>
+                            {p.label}
+                          </option>
+                        ))}
+                    </select>
+                    <ChevronDown
+                      size={10}
+                      className="pointer-events-none absolute right-0 text-muted"
+                    />
+                  </div>
                 </div>
                 <div className="flex items-center gap-1">
                   {role && (
                     <span
-                      className={`px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-widest border ${role === "admin" ? "bg-amber-500/10 text-amber-500 border-amber-500/30" : "bg-sky-500/10 text-sky-500 border-sky-500/30"}`}
+                      // amber-500/sky-500 light theme me washed out the — 700 shade
+                      // light ke liye, purana shade dark ke liye.
+                      className={`px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-widest border ${
+                        role === "admin"
+                          ? "bg-amber-500/10 text-amber-700 border-amber-500/40 dark:text-amber-400"
+                          : "bg-sky-500/10 text-sky-700 border-sky-500/40 dark:text-sky-400"
+                      }`}
                     >
                       {role === "admin" ? "Admin" : "Staff"}
                     </span>
                   )}
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></span>
-                  <span className="text-[10px] font-bold text-muted uppercase tracking-widest">
+                  {/* Mobile par sirf dot — text jagah kha raha tha */}
+                  <span className="hidden sm:inline text-[10px] font-bold text-muted uppercase tracking-widest">
                     Online
                   </span>
                 </div>
               </div>
             </div>
           </div>
-          <button
-            onClick={clearChat}
-            className="p-2.5 rounded-xl bg-app border border-app hover:bg-panel-2 hover:border-red-500/30 text-muted hover:text-red-400 transition-all shadow-sm group"
-            title="Clear Conversation"
-          >
-            <Trash2 size={18} className="group-hover:scale-110 transition-transform" />
-          </button>
+          {/* Drawer (iframe) me ye actions parent header me hain — duplicate na ho */}
+          {!embedded && (
+            <button
+              onClick={resetChat}
+              disabled={loading}
+              className="p-2.5 shrink-0 rounded-xl bg-app border border-app hover:bg-panel-2 hover:border-purple-500/40 text-muted hover:text-purple-500 dark:hover:text-purple-400 transition-all shadow-sm group disabled:opacity-50"
+              title="Nayi chat (conversation reset)"
+              aria-label="Reset conversation"
+            >
+              <RefreshCw
+                size={18}
+                className={`transition-transform ${loading ? "animate-spin" : "group-hover:rotate-90"}`}
+              />
+            </button>
+          )}
         </div>
       </div>
 
@@ -465,7 +660,7 @@ export default function AIChatPage() {
           >
             <button
               onClick={() => setShowNotifs((v) => !v)}
-              className="w-full flex items-center justify-between px-5 py-3.5 hover:bg-white/[0.03] transition-colors"
+              className="w-full flex items-center justify-between px-5 py-3.5 hover:bg-app-hover transition-colors"
             >
               <div className="flex items-center gap-3">
                 <div className="relative">
@@ -486,7 +681,7 @@ export default function AIChatPage() {
             </button>
 
             {showNotifs && (
-              <div className="px-5 pb-4 space-y-3 max-h-80 overflow-y-auto scrollbar-thin scrollbar-thumb-[#21293d]">
+              <div className="px-5 pb-4 space-y-3 max-h-48 sm:max-h-80 overflow-y-auto scrollbar-thin scrollbar-thumb-[#21293d]">
                 {notifs.alerts.map((group, gi) => {
                   const isWarn = group.severity === "warning";
                   const Icon =
@@ -557,7 +752,7 @@ export default function AIChatPage() {
       )}
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 md:p-6 scroll-smooth">
+      <div ref={messagesBoxRef} className="flex-1 min-h-0 overflow-y-auto p-4 md:p-6 scroll-smooth">
         <div className="max-w-4xl mx-auto space-y-8 pb-10">
           {messages.map((msg, i) => (
             <div
@@ -588,7 +783,7 @@ export default function AIChatPage() {
                   <FormattedMessage content={msg.content} />
                 )}
                 <div
-                  className={`flex items-center gap-2 mt-3 pt-2 border-t text-[10px] uppercase font-bold tracking-widest ${msg.role === "user" ? "text-blue-300/80 border-blue-500/30 font-medium" : "text-muted border-white/5"}`}
+                  className={`flex items-center gap-2 mt-3 pt-2 border-t text-[10px] uppercase font-bold tracking-widest ${msg.role === "user" ? "text-blue-100/90 border-blue-400/30 font-medium" : "text-muted border-app"}`}
                 >
                   <span>
                     {msg.timestamp.toLocaleTimeString("en-IN", {
@@ -601,7 +796,7 @@ export default function AIChatPage() {
                       <span>•</span>
                       <span className="flex items-center gap-1">
                         <Zap size={10} className="text-amber-500/70" /> Generated by{" "}
-                        {aiProvider.toUpperCase()}
+                        {aiProvider ? aiProvider.toUpperCase() : "AI"}
                       </span>
                     </>
                   )}
@@ -643,7 +838,7 @@ export default function AIChatPage() {
       </div>
 
       {/* Input Area */}
-      <div className="glass-panel border-t border-app/50 p-4 shrink-0 relative z-20">
+      <div className="glass-panel border-t border-app/50 px-4 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] shrink-0 relative z-20">
         <div className="max-w-4xl mx-auto">
           {/* Quick Questions Chips */}
           {messages.length <= 1 && (

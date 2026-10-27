@@ -2854,3 +2854,49 @@ html[data-density="compact"] .space-y-3 > :not([hidden]) ~ :not([hidden]) {
     display: block;
   }
 }
+
+/* ============================================
+   AI COPILOT HEADER (light theme)
+   ============================================ */
+
+/*
+ * `bg-gradient-to-r` + `bg-clip-text` yahan kaam nahi karta: neeche wala legacy
+ * rule `[class*="bg-grad-"] { color: #fff !important }` gradient class ko match
+ * kar leta hai aur title white-on-white ho jata hai (light theme me "V-Tech
+ * Copilot" invisible). Dedicated class — koi `bg-grad-*` match nahi.
+ */
+.ai-gradient-text {
+  background-image: linear-gradient(90deg, #1d4ed8 0%, #7c3aed 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+}
+html[data-theme="dark"] .ai-gradient-text {
+  background-image: linear-gradient(90deg, #60a5fa 0%, #a855f7 100%);
+}
+
+/*
+ * Header ka provider chip: global `html[data-theme="light"] select` rule har
+ * select par border + custom arrow lagata hai (padding-right 2.5rem). Chip ke
+ * andar wo double border / double chevron banata tha.
+ */
+/* Specificity note: `html[data-theme="light"] select` (0,1,2) hai, isliye
+   override bhi `html[data-theme] ...` (0,2,1) se — warna border !important
+   ke bawajood lag jata hai. */
+html[data-theme] select.ai-provider-select {
+  background-image: none !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  /* Light-theme rule `padding-right: 2.5rem` + mobile 16px font-floor (iOS zoom
+     guard) chip ko bahut bada kar dete the. Select hai, text-type nahi — zoom
+     ka risk nahi, isliye exception. */
+  padding: 0 1rem 0 0 !important;
+  font-size: 11px;
+  line-height: 1.5;
+  height: auto;
+  min-height: 0;
+}
+html[data-theme] select.ai-provider-select {
+  background-color: transparent !important;
+}

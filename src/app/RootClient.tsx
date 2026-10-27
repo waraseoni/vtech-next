@@ -1061,6 +1061,12 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
   // route (≈540KB JS + dobara auth boot) load hota tha. Ab iframe ka src sirf
   // first open par set hota hai — pehle load par koi /ai fetch nahi hota.
   const [aiOpenedOnce, setAiOpenedOnce] = useState(false);
+  /** Drawer header ka refresh — iframe ke andar chat reset karne ke liye. */
+  const aiFrameRef = useRef<HTMLIFrameElement>(null);
+  const [aiFrameKey, setAiFrameKey] = useState(0);
+  /** /ai page ne `vtech:ai-ready` bheja? Tab hi postMessage reset kaam karega. */
+  const aiFrameReadyRef = useRef(false);
+  const [aiResetting, setAiResetting] = useState(false);
 
   // Mobile drawer ka heavy nav bhi sirf pehli open ke baad mount karo (perf):
   // har mobile page load par ~90 nav elements DOM me bina zaroorat pade the.
@@ -1103,6 +1109,50 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
   useEffect(() => {
     if (drawerOpen) setDrawerOpenedOnce(true);
   }, [drawerOpen]);
+
+  // AI drawer: Escape se band + background scroll lock (mobile par peeche ka
+  // page scroll ho jata tha jab drawer khula ho). Cleanup par purani value wapas.
+  useEffect(() => {
+    if (!aiDrawerOpen) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setAiDrawerOpen(false);
+    };
+    document.addEventListener("keydown", onKey);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [aiDrawerOpen, setAiDrawerOpen]);
+
+  /**
+   * Drawer header ka refresh — andar ka `/ai` page apna conversation reset
+   * karta hai (same-origin postMessage). Page ne ready signal nahi diya to
+   * iframe reload (hard refresh).
+   */
+  useEffect(() => {
+    const onMessage = (event: MessageEvent) => {
+      if (event.origin !== window.location.origin) return;
+      if (event.data?.type === "vtech:ai-ready") aiFrameReadyRef.current = true;
+    };
+    window.addEventListener("message", onMessage);
+    return () => window.removeEventListener("message", onMessage);
+  }, []);
+  const resetAiDrawerChat = useCallback(() => {
+    setAiResetting(true);
+    window.setTimeout(() => setAiResetting(false), 800);
+    if (aiFrameReadyRef.current) {
+      aiFrameRef.current?.contentWindow?.postMessage(
+        { type: "vtech:ai-reset" },
+        window.location.origin
+      );
+      return;
+    }
+    // Page ne ready signal nahi diya (abhi load ho raha / error) → hard reload
+    aiFrameReadyRef.current = false;
+    setAiFrameKey((k) => k + 1);
+  }, []);
 
   // Keyboard shortcuts (g-prefix + ? help + Escape)
   const { helpOpen, setHelpOpen } = useKeyboardShortcuts(SHORTCUT_ROUTES);
@@ -1872,31 +1922,55 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
             </div>
           )}
 
-          {/* Right Drawer */}
+          {/* Right Drawer
+              Mobile: 92% width — 8% strip se bahar tap karke band hota hai
+              (pehle w-full tha, isliye "bahar click" ka koi area hi nahi tha). */}
           <div
-            className={`fixed top-0 right-0 h-full w-full sm:w-[420px] glass border-l z-[100] transition-transform duration-300 ease-out ${aiDrawerOpen ? "translate-x-0" : "translate-x-full"}`}
+            role="dialog"
+            aria-modal="true"
+            aria-label="AI Assistant"
+            className={`fixed top-0 right-0 h-full w-[92%] max-w-[420px] sm:w-[420px] glass border-l border-app z-[100] transition-transform duration-300 ease-out ${aiDrawerOpen ? "translate-x-0" : "translate-x-full"}`}
           >
             <div className="flex flex-col h-full">
               {/* Drawer Header */}
-              <div className="flex items-center justify-between px-4 py-3 border-b glass">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-blue-500 rounded-lg flex items-center justify-center">
+              <div className="flex items-center justify-between gap-2 px-4 py-3 border-b border-app glass">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-8 h-8 shrink-0 bg-gradient-to-r from-purple-500 to-blue-500 rounded-lg flex items-center justify-center">
                     <Sparkles size={16} className="text-white" />
                   </div>
-                  <span className="text-sm font-bold text-white">AI Assistant</span>
+                  {/* text-white light theme me glass par invisible tha */}
+                  <span className="text-sm font-bold text-app-2 truncate">AI Assistant</span>
                 </div>
-                <button
-                  onClick={() => setAiDrawerOpen(false)}
-                  className="w-8 h-8 flex items-center justify-center glass border rounded-lg text-muted hover:text-white hover:border-red-500/40 transition-all"
-                >
-                  <X size={16} />
-                </button>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <button
+                    onClick={resetAiDrawerChat}
+                    className="w-8 h-8 flex items-center justify-center glass border border-app rounded-lg text-muted hover:text-purple-500 dark:hover:text-purple-400 hover:border-purple-500/40 transition-all"
+                    title="Nayi chat (conversation reset)"
+                    aria-label="Reset AI conversation"
+                  >
+                    <RefreshCw size={16} className={aiResetting ? "animate-spin" : ""} />
+                  </button>
+                  <button
+                    onClick={() => setAiDrawerOpen(false)}
+                    className="w-8 h-8 flex items-center justify-center glass border border-app rounded-lg text-muted hover:text-red-500 hover:border-red-500/40 transition-all"
+                    title="Band karein (Esc)"
+                    aria-label="Close AI Assistant"
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
               </div>
 
               {/* Iframe for AI Page */}
-              <div className="flex-1">
+              <div className="flex-1 min-h-0">
                 {aiOpenedOnce && (
-                  <iframe src="/ai" className="w-full h-full border-0" title="AI Assistant" />
+                  <iframe
+                    key={aiFrameKey}
+                    ref={aiFrameRef}
+                    src="/ai"
+                    className="w-full h-full border-0"
+                    title="AI Assistant"
+                  />
                 )}
               </div>
             </div>

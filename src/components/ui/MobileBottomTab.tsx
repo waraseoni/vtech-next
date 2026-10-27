@@ -8,6 +8,11 @@ import { MOBILE_TABS } from "@/config/nav.config";
 export function MobileBottomTab({ onMore, onBack }: { onMore?: () => void; onBack?: () => void }) {
   const pathname = usePathname();
 
+  // AI full-screen surface: composer screen ke bottom par hota hai, tab bar
+  // uske upar aa kar send button / FAQ chips ko daba deta tha. Isliye /ai par
+  // bar nahi (page ke header me back + drawer me X available hai).
+  if (pathname === "/ai") return null;
+
   return (
     // data-mobile-tabbar: /messages jaise full-height layouts isko measure kar
     // ke apni height adjust karte hain (composer bottom bar ke peeche na chhupe).
