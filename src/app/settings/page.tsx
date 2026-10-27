@@ -8,6 +8,8 @@ import Link from "next/link";
 import { APP_VERSION_FULL } from "@/lib/app-version";
 import { useQueryClient } from "@tanstack/react-query";
 import { systemInfoKey } from "@/lib/queries/system-info";
+import { AI_PROVIDER_CATALOG, providerLabel, type AiProviderId } from "@/lib/ai-provider-catalog";
+import type { AiProviderPublic } from "@/lib/ai-settings";
 import {
   Settings2,
   Settings,
@@ -47,6 +49,9 @@ const fieldsets = "bg-panel border border-app rounded-2xl overflow-hidden";
 const fHdr = "flex items-center gap-2.5 px-5 py-3.5 bg-gradient-to-r border-b border-app";
 
 type SysInfo = Record<string, string>;
+
+/** AI card ka per-provider editable state (key input kabhi pre-filled nahi). */
+type AiProviderDraft = { model: string; apiKey: string; showKey: boolean };
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -110,18 +115,12 @@ export default function SettingsPage() {
   const coverRef = useRef<HTMLInputElement>(null);
   const coverCamRef = useRef<HTMLInputElement>(null);
 
-  // AI
-  const [aiProvider, setAiProvider] = useState("gemini");
-  const [aiApiKey, setAiApiKey] = useState("");
-  const [aiKeyConfigured, setAiKeyConfigured] = useState(false);
-  const [aiModel, setAiModel] = useState("gemini-2.5-flash");
-  const [showAiKey, setShowAiKey] = useState(false);
-  const [aiTesting, setAiTesting] = useState(false);
-  const [aiTestResult, setAiTestResult] = useState("");
-
-  // Groq ne purane llama-3.3/mixtral models retire kar diye — current production list
-  const groqModels = ["openai/gpt-oss-120b", "openai/gpt-oss-20b", "qwen/qwen3.6-27b"];
-  const geminiModels = ["gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-2.5-pro"];
+  // AI — multi-provider: har provider ki apni key + model, ek active
+  const [aiProviders, setAiProviders] = useState<AiProviderPublic[]>([]);
+  const [aiDrafts, setAiDrafts] = useState<Record<string, AiProviderDraft>>({});
+  const [aiBusy, setAiBusy] = useState<string | null>(null);
+  const [aiTestResult, setAiTestResult] = useState<Record<string, string>>({});
+  const [aiReady, setAiReady] = useState(true);
 
   // License
   const [license, setLicense] = useState<{
@@ -209,11 +208,26 @@ export default function SettingsPage() {
       const c = info.cover || "";
       setCover(c.startsWith("uploads/") ? "" : c);
 
-      // AI Settings (key value kabhi client par render nahi karte)
-      setAiProvider(info.ai_provider || "gemini");
-      setAiKeyConfigured(!!info.ai_api_key);
-      setAiApiKey("");
-      setAiModel(info.ai_model || "gemini-2.5-flash");
+      // AI providers — keys server par encrypted, browser ko sirf masked hint
+      try {
+        const aiRes = await fetch("/api/ai/providers", { cache: "no-store" });
+        if (aiRes.ok) {
+          const aiJson = (await aiRes.json()) as {
+            providers?: AiProviderPublic[];
+            ready?: boolean;
+          };
+          const list = aiJson.providers ?? [];
+          setAiProviders(list);
+          setAiReady(aiJson.ready !== false);
+          setAiDrafts(
+            Object.fromEntries(
+              list.map((p) => [p.provider, { model: p.model, apiKey: "", showKey: false }])
+            )
+          );
+        }
+      } catch {
+        /* AI settings load fail ho to baaki settings page block na ho */
+      }
 
       setLoading(false);
 
@@ -305,23 +319,115 @@ export default function SettingsPage() {
     }
   };
 
-  // ── Save AI settings ─────────────────────────────────
-  const handleSaveAi = async () => {
-    setSaving(true);
+  // ── AI providers (multi-provider) ────────────────────
+  const aiDraftFor = (provider: AiProviderPublic): AiProviderDraft =>
+    aiDrafts[provider.provider] ?? { model: provider.model, apiKey: "", showKey: false };
+
+  const patchAiDraft = (provider: string, patch: Partial<AiProviderDraft>) => {
+    setAiDrafts((prev) => ({
+      ...prev,
+      [provider]: {
+        model: prev[provider]?.model ?? "",
+        apiKey: prev[provider]?.apiKey ?? "",
+        showKey: prev[provider]?.showKey ?? false,
+        ...patch,
+      },
+    }));
+  };
+
+  /** Server response se list refresh — key input ko clear karke (plaintext kabhi hold na karo). */
+  const applyAiProviders = (providers: AiProviderPublic[] | undefined) => {
+    if (!providers) return;
+    setAiProviders(providers);
+    setAiDrafts((prev) =>
+      Object.fromEntries(
+        providers.map((p) => [
+          p.provider,
+          { model: p.model, apiKey: "", showKey: prev[p.provider]?.showKey ?? false },
+        ])
+      )
+    );
+  };
+
+  const saveAiProviderSettings = async (provider: AiProviderId, makeActive = false) => {
+    const draft = aiDrafts[provider];
+    setAiBusy(provider);
     try {
-      await upsertField("ai_provider", aiProvider);
-      // Naya key type kiya ho to hi update karte hain (existing key kabhi read-back nahi karte)
-      if (aiApiKey.trim()) {
-        await upsertField("ai_api_key", aiApiKey.trim());
-        setAiApiKey("");
-        setAiKeyConfigured(true);
-      }
-      await upsertField("ai_model", aiModel);
-      toast.success("AI settings saved ✅");
-    } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : "Failed");
+      const res = await fetch("/api/ai/providers", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          provider,
+          model: draft?.model || undefined,
+          apiKey: draft?.apiKey.trim() || undefined,
+          isActive: makeActive || undefined,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Save failed");
+      applyAiProviders(json.providers);
+      toast.success(
+        makeActive
+          ? `${providerLabel(provider)} ab active hai ✅`
+          : `${providerLabel(provider)} settings save ✅`
+      );
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "AI settings save failed");
     } finally {
-      setSaving(false);
+      setAiBusy(null);
+    }
+  };
+
+  const clearAiProviderKey = async (provider: AiProviderId) => {
+    setAiBusy(provider);
+    try {
+      const res = await fetch("/api/ai/providers", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ provider, clearKey: true }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Delete failed");
+      applyAiProviders(json.providers);
+      toast.success(`${providerLabel(provider)} ka API key hata diya`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Key delete failed");
+    } finally {
+      setAiBusy(null);
+    }
+  };
+
+  const testAiProvider = async (provider: AiProviderId) => {
+    const draft = aiDrafts[provider];
+    setAiBusy(`test:${provider}`);
+    setAiTestResult((prev) => ({ ...prev, [provider]: "Testing..." }));
+    try {
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: [{ role: "user", content: "Sirf 'OK' likho aur kuch mat likho" }],
+          type: "chat",
+          provider,
+          // `test: true` → server failover band rakhta hai (asli failure dikhe)
+          test: true,
+          // Unsaved key test ho sake; khaali ho to saved/env key server par lega
+          apiKey: draft?.apiKey.trim() || undefined,
+          model: draft?.model || undefined,
+        }),
+      });
+      const json = await res.json();
+      const ok = typeof json.response === "string" && json.response.includes("OK");
+      setAiTestResult((prev) => ({ ...prev, [provider]: ok ? "✅ Working" : "❌ Failed" }));
+      if (ok) {
+        toast.success(`${providerLabel(provider)} API working (${draft?.model})`);
+      } else {
+        toast.error(json.details || json.error || "API test failed");
+      }
+    } catch {
+      setAiTestResult((prev) => ({ ...prev, [provider]: "❌ Connection error" }));
+    } finally {
+      setAiBusy(null);
     }
   };
 
@@ -645,40 +751,6 @@ export default function SettingsPage() {
       toast.error(err instanceof Error ? err.message : "Cover edit fail");
     }
   };
-
-  // ── Test AI API ──────────────────────────────────────
-  const testAiApi = async () => {
-    setAiTesting(true);
-    setAiTestResult("Testing...");
-    try {
-      const res = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          messages: [{ role: "user", content: "Sirf 'OK' likho aur kuch mat likho" }],
-          type: "chat",
-          provider: aiProvider,
-          apiKey: aiApiKey,
-          model: aiModel,
-        }),
-      });
-      const json = await res.json();
-      if (json.response?.includes("OK")) {
-        setAiTestResult("✅ Working!");
-        toast.success(`AI API working with ${aiModel}`);
-      } else {
-        setAiTestResult("❌ Failed");
-        toast.error(json.error || "API test failed");
-      }
-    } catch {
-      setAiTestResult("❌ Connection error");
-      toast.error("AI API connection failed");
-    } finally {
-      setAiTesting(false);
-    }
-  };
-
-  const availableModels = aiProvider === "groq" ? groqModels : geminiModels;
 
   // ── License activation ────────────────────────────────────
   const handleActivateLicense = async (e?: React.SyntheticEvent) => {
@@ -1558,15 +1630,15 @@ export default function SettingsPage() {
             <div className="p-5 space-y-4">
               <div className="bg-blue-500/5 border border-blue-500/20 rounded-xl p-3 text-xs text-muted">
                 <p>
-                  <strong>Groq</strong> (recommended — free, no billing) ya{" "}
-                  <strong>Google Gemini</strong> select karein.
+                  Har provider ki API key alag save hoti hai, switch karne par purani key delete
+                  nahi hoti. Jo provider <strong>Active</strong> hai wahi AI assistant use karta
+                  hai.
                 </p>
                 <p className="mt-1">
-                  🔹 Groq API key:{" "}
+                  🔹 Groq (recommended — free, no billing):{" "}
                   <a href="https://console.groq.com/keys" target="_blank" className="text-blue-400">
                     console.groq.com/keys
-                  </a>{" "}
-                  (free)
+                  </a>
                 </p>
                 <p>
                   🔹 Gemini API key:{" "}
@@ -1580,81 +1652,143 @@ export default function SettingsPage() {
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div>
-                  <label className={labelCls}>Provider</label>
-                  <select
-                    value={aiProvider}
-                    onChange={(e) => {
-                      setAiProvider(e.target.value);
-                      setAiModel(
-                        e.target.value === "groq" ? "openai/gpt-oss-120b" : "gemini-2.5-flash"
-                      );
-                    }}
-                    className={inputCls}
-                  >
-                    <option value="groq">Groq (Free)</option>
-                    <option value="gemini">Gemini</option>
-                  </select>
+              {!aiReady && (
+                <div className="bg-amber-500/10 border border-amber-500/25 rounded-xl p-3 text-xs text-amber-300">
+                  Multi-provider table abhi DB me nahi hai — nayi migration apply karein. Tab tak
+                  purani single-key setting fallback par chal rahi hai.
                 </div>
-                <div>
-                  <label className={labelCls}>API Key</label>
-                  <div className="relative">
-                    <input
-                      type={showAiKey ? "text" : "password"}
-                      value={aiApiKey}
-                      onChange={(e) => setAiApiKey(e.target.value)}
-                      className={`${inputCls} pr-9`}
-                      placeholder={
-                        aiKeyConfigured
-                          ? "•••••••••• (key set hai — naya daalne ke liye type karein)"
-                          : "Enter API key"
-                      }
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowAiKey(!showAiKey)}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 text-muted hover:text-app-2"
-                    >
-                      {showAiKey ? <EyeOff size={16} /> : <Eye size={16} />}
-                    </button>
-                  </div>
-                </div>
-                <div>
-                  <label className={labelCls}>Model</label>
-                  <select
-                    value={aiModel}
-                    onChange={(e) => setAiModel(e.target.value)}
-                    className={inputCls}
-                  >
-                    {availableModels.map((m) => (
-                      <option key={m} value={m}>
-                        {m}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
+              )}
 
-              <div className="flex items-center gap-3">
-                <button
-                  type="button"
-                  onClick={testAiApi}
-                  disabled={aiTesting}
-                  className="text-xs bg-fuchsia-600/20 text-fuchsia-400 border border-fuchsia-600/30 px-3 py-1.5 rounded-lg hover:bg-fuchsia-600/30"
-                >
-                  {aiTesting ? "Testing..." : "Test API"}
-                </button>
-                {aiTestResult && <span className="text-xs text-muted">{aiTestResult}</span>}
-                <button
-                  type="button"
-                  onClick={handleSaveAi}
-                  disabled={saving}
-                  className="ml-auto text-xs bg-blue-600 text-white px-3 py-1.5 rounded-lg"
-                >
-                  Save AI Settings
-                </button>
-              </div>
+              {aiProviders.length === 0 && (
+                <p className="text-xs text-muted">
+                  AI providers load nahi ho paye — page refresh karein.
+                </p>
+              )}
+
+              {aiProviders.map((provider) => {
+                const draft = aiDraftFor(provider);
+                const models = AI_PROVIDER_CATALOG[provider.provider]?.models ?? [draft.model];
+                const busy = aiBusy === provider.provider;
+                const testing = aiBusy === `test:${provider.provider}`;
+
+                return (
+                  <div
+                    key={provider.provider}
+                    className={`rounded-xl border p-4 space-y-3 ${
+                      provider.isActive
+                        ? "border-emerald-500/40 bg-emerald-500/5"
+                        : "border-app bg-app/40"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-sm font-bold text-white">{provider.label}</span>
+                      {provider.isActive && (
+                        <span className="text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                          Active
+                        </span>
+                      )}
+                      <span
+                        className={`text-[10px] ${provider.hasKey ? "text-emerald-400" : "text-amber-400"}`}
+                      >
+                        {provider.hasKey
+                          ? `Key set ${provider.keyHint ?? ""} (${provider.keySource})`
+                          : "Key nahi hai"}
+                      </span>
+                      {!provider.isActive && (
+                        <button
+                          type="button"
+                          onClick={() => saveAiProviderSettings(provider.provider, true)}
+                          disabled={busy}
+                          className="ml-auto text-[10px] px-2 py-1 rounded-lg border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10 disabled:opacity-50"
+                        >
+                          {busy ? "..." : "Isse use karo"}
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className={labelCls}>Model</label>
+                        <select
+                          value={draft.model}
+                          onChange={(e) =>
+                            patchAiDraft(provider.provider, { model: e.target.value })
+                          }
+                          className={inputCls}
+                        >
+                          {models.map((m) => (
+                            <option key={m} value={m}>
+                              {m}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className={labelCls}>API Key</label>
+                        <div className="relative">
+                          <input
+                            type={draft.showKey ? "text" : "password"}
+                            value={draft.apiKey}
+                            onChange={(e) =>
+                              patchAiDraft(provider.provider, { apiKey: e.target.value })
+                            }
+                            className={`${inputCls} pr-9`}
+                            placeholder={
+                              provider.hasKey
+                                ? "Key set hai — naya daalne ke liye type karein"
+                                : "Enter API key"
+                            }
+                            autoComplete="off"
+                          />
+                          <button
+                            type="button"
+                            onClick={() =>
+                              patchAiDraft(provider.provider, { showKey: !draft.showKey })
+                            }
+                            className="absolute right-2 top-1/2 -translate-y-1/2 text-muted hover:text-app-2"
+                          >
+                            {draft.showKey ? <EyeOff size={16} /> : <Eye size={16} />}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <button
+                        type="button"
+                        onClick={() => saveAiProviderSettings(provider.provider)}
+                        disabled={busy}
+                        className="text-xs bg-blue-600 text-white px-3 py-1.5 rounded-lg disabled:opacity-50"
+                      >
+                        {busy ? "Saving..." : "Save"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => testAiProvider(provider.provider)}
+                        disabled={testing || busy}
+                        className="text-xs bg-fuchsia-600/20 text-fuchsia-400 border border-fuchsia-600/30 px-3 py-1.5 rounded-lg hover:bg-fuchsia-600/30 disabled:opacity-50"
+                      >
+                        {testing ? "Testing..." : "Test API"}
+                      </button>
+                      {provider.hasKey && provider.keySource !== "env" && (
+                        <button
+                          type="button"
+                          onClick={() => clearAiProviderKey(provider.provider)}
+                          disabled={busy}
+                          className="text-xs text-red-400 border border-red-500/30 px-3 py-1.5 rounded-lg hover:bg-red-500/10 disabled:opacity-50"
+                        >
+                          Key hatao
+                        </button>
+                      )}
+                      {aiTestResult[provider.provider] && (
+                        <span className="text-xs text-muted">
+                          {aiTestResult[provider.provider]}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
 

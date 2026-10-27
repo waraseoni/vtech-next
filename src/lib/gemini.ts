@@ -116,7 +116,7 @@ export async function getChatResponse(
       const match = errorMessage.match(/retry in ([\d\.]+)s/);
       const retryHint = match ? `${Math.ceil(parseFloat(match[1]))} seconds` : "1-2 minute";
 
-      return `Gemini system abhi busy hai (Rate Limit). Kripya ${retryHint} baad try karein ya Model Selector se 'Groq' choose karein. ⏳\n\nNote: Gemini 2.0 free tier is currently overloaded.`;
+      return `Gemini system abhi busy hai (Rate Limit). Kripya ${retryHint} baad try karein. ⏳\n\nNote: Gemini free tier abhi overloaded hai — dusra provider try karne par jawab turant aa sakta hai.`;
     }
 
     // Return the actual raw error message so the user can debug what exactly failed.
