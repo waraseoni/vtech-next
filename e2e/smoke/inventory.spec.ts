@@ -8,7 +8,7 @@ test("inventory: list load + search + out-of-stock filter", async ({ page }) => 
   await page.goto("/inventory");
 
   const search = page.getByPlaceholder("Search products, descriptions, barcode...");
-  await expect(search).toBeVisible({ timeout: 30_000 });
+  await expect(search).toBeVisible({ timeout: 60_000 });
 
   // Koi bhi aisa term jo match na kare → empty state dikhna chahiye.
   await search.fill("zzz-e2e-no-such-product");

@@ -33,6 +33,20 @@ setup("admin login → storage state", async ({ page }) => {
   await page.waitForURL("**/dashboard", { timeout: 45_000 });
   await expect(page).toHaveURL(/\/dashboard/);
 
+  // Kuch routes (inventory/attendance/jobs/new/direct-sales/new) dev mode me
+  // pehli baar hit par compile hote hain. Wo compile setup me hi karwa lete hain,
+  // warna parallel specs 30s timeout par compile ke liye fail ho jaati hain.
+  for (const route of [
+    "/dashboard",
+    "/inventory",
+    "/attendance",
+    "/attendance?view=report",
+    "/direct-sales/new",
+    "/jobs/new",
+  ]) {
+    await page.goto(route, { waitUntil: "domcontentloaded", timeout: 120_000 });
+  }
+
   fs.mkdirSync(path.dirname(authFile), { recursive: true });
   await page.context().storageState({ path: authFile });
 });

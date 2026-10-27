@@ -2,16 +2,21 @@ import { test, expect } from "@playwright/test";
 
 import { allowWrites, hasAdminCreds, pickFromSearchable, searchableHasOptions } from "../utils";
 
+// `/jobs/new` par master data 4-5 sequential Supabase queries se aata hai (537
+// clients + mechanics + services + stock) — isliye options ke liye extra wait.
+const MASTER_TIMEOUT = 90_000;
+
 test("job create: wizard step-1 → Quick Save → job view", async ({ page }) => {
   test.skip(!hasAdminCreds, "E2E_ADMIN_EMAIL / E2E_ADMIN_PASSWORD missing");
   test.skip(!allowWrites, "E2E_ALLOW_WRITES=1 nahi hai (ye test DB me job row banata hai)");
 
   await page.goto("/jobs/new");
-  await expect(page.getByRole("heading", { name: /New Job/i })).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByRole("heading", { name: /New Job/i })).toBeVisible({ timeout: 60_000 });
 
   const clientPick = {
     trigger: /^Search client/i,
     search: /Name ya contact se search karo/,
+    timeout: MASTER_TIMEOUT,
   };
   test.skip(
     !(await searchableHasOptions(page, clientPick)),
@@ -23,6 +28,7 @@ test("job create: wizard step-1 → Quick Save → job view", async ({ page }) =
   const mechanicPick = {
     trigger: /Select Mechanic/i,
     search: /Mechanic ka naam type karo/,
+    timeout: MASTER_TIMEOUT,
   };
   test.skip(
     !(await searchableHasOptions(page, mechanicPick)),
@@ -37,5 +43,5 @@ test("job create: wizard step-1 → Quick Save → job view", async ({ page }) =
   await page.getByRole("button", { name: /Quick Save/i }).click();
 
   // Quick Save = billing skip, Pending job → view page.
-  await expect(page).toHaveURL(/\/jobs\/\d+\/view/, { timeout: 45_000 });
+  await expect(page).toHaveURL(/\/jobs\/\d+\/view/, { timeout: 60_000 });
 });

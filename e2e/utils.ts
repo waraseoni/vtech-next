@@ -1,4 +1,4 @@
-import { expect, type Page } from "@playwright/test";
+import { expect, type Locator, type Page } from "@playwright/test";
 
 /** Write specs (job create / direct sale) DB me real rows banate hain. */
 export const allowWrites = process.env.E2E_ALLOW_WRITES === "1";
@@ -6,34 +6,76 @@ export const allowWrites = process.env.E2E_ALLOW_WRITES === "1";
 /** Login creds — inke bina authed specs skip hoti hain. */
 export const hasAdminCreds = Boolean(process.env.E2E_ADMIN_EMAIL && process.env.E2E_ADMIN_PASSWORD);
 
-/** SearchableSelect ka trigger → menu → first enabled option. */
+/**
+ * SearchableSelect ka trigger → menu → first real option.
+ *
+ * Note: menu ke top par optional "clear" row hoti hai (jab `clearLabel` diya ho)
+ * jo `cursor-pointer` bhi hai — usse skip karna zaroori hai, warna selection
+ * clear ho jaati hai. Real option row ke andar `div.min-w-0` hota hai.
+ */
+const OPTION_ROW = "div.cursor-pointer:has(> div.min-w-0)";
+
+/**
+ * Options master data se aate hain (query async). Dev server par pehla load
+ * slow hota hai — isliye instant `count()` nahi, bounded wait. `/jobs/new` par
+ * 4-5 sequential Supabase queries chalti hain, parallel suite load me 20s se
+ * zyada lag sakta hai — isliye caller apna timeout de sakta hai.
+ */
+const OPTIONS_TIMEOUT = 20_000;
+
+async function openMenu(page: Page, trigger: RegExp, search: RegExp) {
+  await page.getByRole("button", { name: trigger }).first().click();
+  const searchInput = page.getByPlaceholder(search);
+  await expect(searchInput).toBeVisible({ timeout: 15_000 });
+  // Desktop menu: searchBox ka parent = menu panel.
+  return searchInput.locator("xpath=../..");
+}
+
+/** SearchableSelect me select karne layak option hai ya nahi (empty master data → skip). */
+export async function searchableHasOptions(
+  page: Page,
+  opts: { trigger: RegExp; search: RegExp; filter?: RegExp; timeout?: number }
+): Promise<boolean> {
+  const menu = await openMenu(page, opts.trigger, opts.search);
+  const options = opts.filter
+    ? menu.locator(OPTION_ROW).filter({ hasText: opts.filter })
+    : menu.locator(OPTION_ROW);
+  const has = await options
+    .first()
+    .waitFor({ state: "visible", timeout: opts.timeout ?? OPTIONS_TIMEOUT })
+    .then(() => true)
+    .catch(() => false);
+  await page.keyboard.press("Escape");
+  return has;
+}
+
+/** SearchableSelect ka trigger → menu → pehla matching option. */
 export async function pickFromSearchable(
   page: Page,
-  opts: { trigger: RegExp; search: RegExp }
+  opts: { trigger: RegExp; search: RegExp; filter?: RegExp; timeout?: number }
 ): Promise<void> {
-  await page.getByRole("button", { name: opts.trigger }).first().click();
-
-  const searchInput = page.getByPlaceholder(opts.search);
-  await expect(searchInput).toBeVisible();
-
-  // Desktop menu: searchBox ka parent = menu panel, uske andar option rows.
-  // (Mobile sheet bhi same structure use karta hai.)
-  const menu = searchInput.locator("xpath=../..");
-  const options = menu.locator("div.cursor-pointer");
-  await expect(options.first()).toBeVisible();
+  const menu = await openMenu(page, opts.trigger, opts.search);
+  const options = opts.filter
+    ? menu.locator(OPTION_ROW).filter({ hasText: opts.filter })
+    : menu.locator(OPTION_ROW);
+  await expect(options.first()).toBeVisible({ timeout: opts.timeout ?? OPTIONS_TIMEOUT });
   await options.first().click();
 }
 
-/** SearchableSelect me koi option hai ya nahi (empty master data → skip). */
-export async function searchableHasOptions(
+/**
+ * Dev mode me pehli paint SSR se aati hai, React hydration uske kuch der baad
+ * hoti hai. Us window me click "kho" jaata hai (listener attach hi nahi hua) —
+ * isliye click repeat karte hain jab tak URL effect na dikhe. Buttons
+ * idempotent hone chahiye (tab switch jaisa).
+ */
+export async function clickUntilUrl(
   page: Page,
-  opts: { trigger: RegExp; search: RegExp }
-): Promise<boolean> {
-  await page.getByRole("button", { name: opts.trigger }).first().click();
-  const searchInput = page.getByPlaceholder(opts.search);
-  await expect(searchInput).toBeVisible();
-  const menu = searchInput.locator("xpath=../..");
-  const count = await menu.locator("div.cursor-pointer").count();
-  await page.keyboard.press("Escape");
-  return count > 0;
+  button: Locator,
+  urlPattern: RegExp,
+  timeout = 45_000
+): Promise<void> {
+  await expect(async () => {
+    if (!urlPattern.test(page.url())) await button.click();
+    expect(page.url()).toMatch(urlPattern);
+  }).toPass({ timeout, intervals: [500, 1_000, 2_000] });
 }

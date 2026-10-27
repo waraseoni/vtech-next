@@ -7,7 +7,11 @@ import { defineConfig, devices } from "@playwright/test";
 loadEnvConfig(process.cwd());
 
 const PORT = Number(process.env.E2E_PORT ?? 3000);
-const baseURL = process.env.E2E_BASE_URL ?? `http://127.0.0.1:${PORT}`;
+// `localhost` hi use karo, `127.0.0.1` nahi: `npm run dev` `-H 0.0.0.0` par
+// chalta hai aur Next dev 127.0.0.1 origin ke dev resources (HMR/chunks) block
+// kar deta hai -> client JS load nahi hota -> form native submit ho jaata hai.
+// Isi wajah se login `?` par reload hota tha aur dashboard tak pahunchta hi nahi.
+const baseURL = process.env.E2E_BASE_URL ?? `http://localhost:${PORT}`;
 
 // Credentials na ho to storageState path ki jagah empty state do — warna
 // dependent specs ENOENT se fail hoti hain (setup skip hone par bhi Playwright
@@ -34,7 +38,11 @@ export default defineConfig({
   reporter: process.env.CI
     ? [["github"], ["html", { open: "never" }]]
     : [["list"], ["html", { open: "never" }]],
-  timeout: 60_000,
+  // Dev server par pehli hit par route compile hota hai (jaise /jobs/new par
+  // 537 clients + mechanics + stock queries). Parallel suite me 60s default kam
+  // padta tha — isliye global timeout badhaya. Assertions ke apne timeouts
+  // alag hain, ye sirf poore test ka upper bound hai.
+  timeout: 180_000,
   expect: { timeout: 10_000 },
   use: {
     baseURL,
