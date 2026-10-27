@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.69.1](https://github.com/waraseoni/vtech-next/compare/v1.69.0...v1.69.1) (2026-10-27)
+
+### Bug Fixes
+
+* **ci:** e2e verify step ko secrets env se pass karo ([23d397b](https://github.com/waraseoni/vtech-next/commit/23d397bf746d4ca677bfbdb50127650191356905))
+
 ## [1.69.0](https://github.com/waraseoni/vtech-next/compare/v1.68.3...v1.69.0) (2026-10-27)
 
 ### Features
