@@ -82,8 +82,12 @@ jobs:
           E2E_ALLOW_WRITES: ${{ github.event_name == 'workflow_dispatch' && vars.E2E_ALLOW_WRITES || '' }}
 
       - name: Upload Playwright report
-        if: failure()
-        uses: actions/upload-artifact@v4
+        # v7 = Node 24 runtime (v4 ka Node 20 deprecated tha). Report failure
+        # par hi chahiye, isliye `if: failure()`.
+        # TEMP-VERIFY: agli push par v7 ek baar always chalega (proof), phir
+        # turant `if: failure()` wapas.
+        if: always()
+        uses: actions/upload-artifact@v7
         with:
           name: playwright-report
           path: |
