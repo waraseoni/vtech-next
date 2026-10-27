@@ -34,6 +34,11 @@ jobs:
         # ci.yml jaisa fail-fast: missing secret = GitHub empty string deta hai,
         # warna error "supabaseUrl is required" jaisa confusing aata hai.
         # Values kabhi print nahi hoti.
+        #
+        # ZAROORI: `run:` step ko `secrets.*` apne aap nahi milte — `env:` se
+        # pass karna padta hai. Pehle yahan env block missing tha, isliye loop
+        # ko hamesha paanchon khaali milte the aur error galat tarike se
+        # "saare secrets missing" dikhata tha (secret maujood hone par bhi).
         run: |
           missing=""
           for v in NEXT_PUBLIC_SUPABASE_URL NEXT_PUBLIC_SUPABASE_ANON_KEY \
@@ -43,12 +48,18 @@ jobs:
           done
           if [ -n "$missing" ]; then
             {
-              echo "::error title=Missing e2e secrets::Ye secrets chahiye:$missing"
-              echo "::error::Repo → Settings → Secrets and variables → Actions me add karo."
+              echo "::error title=Missing e2e secrets::Ye repository secrets missing hain:$missing"
+              echo "::error::Repo → Settings → Secrets and variables → Actions → tab 'Secrets' (Variables/Environments nahi) → New repository secret."
             }
             exit 1
           fi
           echo "all e2e secrets present"
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
+          E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
 
       - name: Run smoke tests
         # Write specs (job/direct-sale) tabhi chalti hain jab repo variable
