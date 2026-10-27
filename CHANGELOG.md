@@ -1,5 +1,14 @@
 # CHANGELOG
 
+## [1.69.0](https://github.com/waraseoni/vtech-next/compare/v1.68.3...v1.69.0) (2026-10-27)
+
+### Features
+
+* **forms:** jobs/new wizard on react-hook-form ([6389fa5](https://github.com/waraseoni/vtech-next/commit/6389fa550c8030473e128f370178fcef0e40ac78))
+* **forms:** react-hook-form + zod resolver pilots clients/new ([7f7074e](https://github.com/waraseoni/vtech-next/commit/7f7074ea2cb6a38c7d156d6d812ec84e38849cbb))
+* **validation:** zod pilots on 8 high-traffic API routes ([3fc5961](https://github.com/waraseoni/vtech-next/commit/3fc5961eaba0dce2c9f09631dd91ecb53349203d))
+* **validation:** zod schema layer + parseBody helper ([465947c](https://github.com/waraseoni/vtech-next/commit/465947c95004a9e9bbab1a227065290f398ac793))
+
 ## [1.68.3](https://github.com/waraseoni/vtech-next/compare/v1.68.2...v1.68.3) (2026-10-24)
 
 ### Bug Fixes
