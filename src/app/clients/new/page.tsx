@@ -2,7 +2,15 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { useRouter, useParams } from "next/navigation";
-import { Save, ArrowLeft, UserPlus, Loader2, Edit3, AlertTriangle, CheckCircle } from "lucide-react";
+import {
+  Save,
+  ArrowLeft,
+  UserPlus,
+  Loader2,
+  Edit3,
+  AlertTriangle,
+  CheckCircle,
+} from "lucide-react";
 import Link from "next/link";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -10,7 +18,11 @@ import { logActivity } from "@/lib/activity";
 import { safeBack } from "@/lib/utils";
 import { toast } from "@/lib/toast";
 import PageLoader from "@/components/PageLoader";
-import { clientFormSchema, emptyClientForm, type ClientFormValues } from "@/lib/validation/schemas/client";
+import {
+  clientFormSchema,
+  emptyClientForm,
+  type ClientFormValues,
+} from "@/lib/validation/schemas/client";
 
 // ── DARK THEME CONSTANTS ──────────────────────────────────
 const inputCls =

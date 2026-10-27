@@ -1,10 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSupabase, requireStaffWithRole, enforceApiGeoGate } from "@/lib/api-auth";
 import { parseBody } from "@/lib/validation";
-import {
-  bomTemplateCreateSchema,
-  toBomItemRow,
-} from "@/lib/validation/schemas/bomTemplate";
+import { bomTemplateCreateSchema, toBomItemRow } from "@/lib/validation/schemas/bomTemplate";
 
 /** single round-trip: cookie supabase + staff check. */
 async function authed() {

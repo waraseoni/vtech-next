@@ -848,9 +848,7 @@ function ManageJobPageInner({ params }: { params: Promise<{ id?: string }> }) {
                   placeholder="Jain"
                   className={inputCls}
                 />
-                {clientErrors.lastname && (
-                  <p className={errCls}>{clientErrors.lastname.message}</p>
-                )}
+                {clientErrors.lastname && <p className={errCls}>{clientErrors.lastname.message}</p>}
               </div>
               <div>
                 <label className={labelCls}>
@@ -872,9 +870,7 @@ function ManageJobPageInner({ params }: { params: Promise<{ id?: string }> }) {
                     />
                   )}
                 />
-                {clientErrors.contact && (
-                  <p className={errCls}>{clientErrors.contact.message}</p>
-                )}
+                {clientErrors.contact && <p className={errCls}>{clientErrors.contact.message}</p>}
               </div>
               <div>
                 <label className={labelCls}>Email</label>
