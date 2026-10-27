@@ -83,10 +83,9 @@ jobs:
 
       - name: Upload Playwright report
         # v7 = Node 24 runtime (v4 ka Node 20 deprecated tha). Report failure
-        # par hi chahiye, isliye `if: failure()`.
-        # TEMP-VERIFY: agli push par v7 ek baar always chalega (proof), phir
-        # turant `if: failure()` wapas.
-        if: always()
+        # par hi chahiye, isliye `if: failure()`. v7 ka upload ek green run par
+        # verify ho chuka hai (run 40554702080, artifact 202 KB).
+        if: failure()
         uses: actions/upload-artifact@v7
         with:
           name: playwright-report
