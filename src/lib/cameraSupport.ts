@@ -10,30 +10,60 @@ export function cameraUnsupportedReason(): string {
   return "Browser me camera support nahi mila. Modern Chrome/Safari/Edge aur secure (HTTPS/localhost) connection use karein.";
 }
 
+/** Ek DOMException `name` -> user-friendly Hindi message. Unknown name -> null. */
+function messageForName(name: string): string | null {
+  if (name === "NotAllowedError" || name === "PermissionDeniedError") {
+    return "Camera permission denied — browser ke address bar se camera allow karein.";
+  }
+  if (name === "NotFoundError" || name === "DevicesNotFoundError") {
+    return "Camera nahi mili — external scanner ya manual barcode entry use karein.";
+  }
+  if (name === "NotReadableError" || name === "TrackStartError") {
+    return "Camera kisi aur app me already use ho raha hai — wo band karke try karein.";
+  }
+  if (name === "OverconstrainedError" || name === "ConstraintNotSatisfiedError") {
+    return "Camera required video settings support nahi karti.";
+  }
+  return null;
+}
+
+/**
+ * Fallback engine (html5-qrcode) apna error plain `Error` ke roop me deta hai —
+ * `err.name` "Error" hota hai, asli wajah message ke andar hoti hai. Jaise:
+ * `Error getting userMedia, error = NotAllowedError: Permission denied`.
+ * Isliye message me embedded DOMException name bhi dhoondhte hain, warna user
+ * ko kachcha technical text dikhta hai.
+ */
+const EMBEDDED_ERROR_NAME_RE =
+  /(NotAllowedError|PermissionDeniedError|NotFoundError|DevicesNotFoundError|NotReadableError|TrackStartError|OverconstrainedError|ConstraintNotSatisfiedError)/;
+
+function friendlyFromText(text: string): string | null {
+  const embedded = text.match(EMBEDDED_ERROR_NAME_RE);
+  return embedded ? messageForName(embedded[1]) : null;
+}
+
 export function cameraErrorMessage(err: unknown): string {
   if (err instanceof Error) {
-    const name = (err as DOMException).name;
-    if (name === "NotAllowedError" || name === "PermissionDeniedError") {
-      return "Camera permission denied — browser ke address bar se camera allow karein.";
-    }
-    if (name === "NotFoundError") {
-      return "Camera nahi mili — external scanner ya manual barcode entry use karein.";
-    }
-    if (name === "NotReadableError") {
-      return "Camera kisi aur app me already use ho raha hai — wo band karke try karein.";
-    }
-    if (name === "OverconstrainedError") {
-      return "Camera required video settings support nahi karti.";
-    }
+    const direct = messageForName((err as DOMException).name);
+    if (direct) return direct;
+
+    const embedded = friendlyFromText(err.message);
+    if (embedded) return embedded;
+
     const m = err.message.toLowerCase();
     if (m.includes("mediadevices") || m.includes("camera streaming")) {
       return cameraUnsupportedReason();
     }
     return err.message;
   }
-  const msg = String(err).toLowerCase();
+
+  const text = String(err);
+  const embedded = friendlyFromText(text);
+  if (embedded) return embedded;
+
+  const msg = text.toLowerCase();
   if (msg.includes("mediadevices") || msg.includes("camera streaming")) {
     return cameraUnsupportedReason();
   }
-  return String(err);
+  return text;
 }

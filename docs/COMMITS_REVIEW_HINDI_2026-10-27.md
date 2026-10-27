@@ -268,8 +268,8 @@ npx playwright show-report
 
 ### महत्व
 
-- **~250 KB bundle बचत** Chrome/Edge/Android WebView पर, क्योंकि html5-qrcode load ही नहीं होता। Mobile users के लिए यह सीधा speed फ़ायदा है।
-- Safari/iOS/Firefox पर पुराना fallback चलता है — कार्यक्षमता कम नहीं होती।
+- **~250 KB bundle बचत** — असल में **सिर्फ़ Android Chrome/WebView** पर (28 Oct 2026 को headed Chrome/Edge/Playwright probe से पुष्टि: Windows desktop Chrome/Edge में `BarcodeDetector` मौजूद ही नहीं है)। Mobile-Android users के लिए यह सीधा speed फ़ायदा है।
+- **सुधार (28 Oct):** पहले यहाँ "Chrome/Edge" लिखा था, जो गलत था — desktop पर fallback ही चलता है। iOS Safari/Firefox पर भी fallback — कार्यक्षमता कम नहीं होती।
 - Native detector ज़्यादा तेज़ और कम battery लेता है।
 
 ### उपयोग

@@ -220,6 +220,8 @@ Commit: `refactor(scan): native BarcodeDetector with html5-qrcode fallback`
 - [x] Native path: `getUserMedia` + apna `<video>` + 120ms detect loop (ek waqt me ek detect call)
 - [x] `BarcodeCameraScanner.tsx` + `QuickScanModal.tsx` → native par native, warna `html5-qrcode` (fallback **mandatory** — WebView support variable)
 - [x] html5-qrcode **hataya nahi** — dependency waisi hi, sirf jab native na ho tab lazy import hota hai (native path par ~250KB chunk load hi nahi hota)
+- [x] **Platform reality check (28 Oct, headed Chrome + Edge + Playwright chromium par probe):** native `BarcodeDetector` **sirf Android Chrome/WebView** me milta hai. **Windows desktop Chrome/Edge me `BarcodeDetector` hai hi nahi** (isliye wahan fallback hi chalta hai), aur iOS Safari/Firefox me bhi nahi. Yani ~250KB bachat ka faayda mobile-Android par hai — desktop par nahi. Fallback isliye mandatory hai, "optional" nahi.
+- [x] `cameraSupport.ts` fix: fallback engine ka raw `Error` (`Error getting userMedia, error = NotAllowedError: ...`) bhi ab friendly message me map hota hai (pehle user ko kachcha technical text dikhta tha) + 11 unit tests
 - [x] First-scan par scanner khud band, phir `onScan` — dono components ka purana behaviour same
 - [ ] **USER ACTION:** Device matrix — Android Chrome/WebView + desktop (loop wale test), inventory scan + box-labels dono
 
