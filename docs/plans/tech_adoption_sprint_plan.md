@@ -169,15 +169,16 @@ Commit: `test(e2e): playwright setup + 5 critical-path smoke tests`
 
 ### CI
 
-- [x] `.github/workflows/e2e.yml` — `workflow_dispatch` only (jab manual run green ho tab push-trigger enable karna), missing-secret fail-fast, failure par report artifact
-- [ ] **USER ACTION:** `workflow_dispatch` manual run green karwao, phir `push: branches: [main]` enable karo
+- [x] `.github/workflows/e2e.yml` — `workflow_dispatch` + `push: branches: [main]` (manual run green hone ke baad enable), missing-secret fail-fast, failure par report artifact
+- [x] **Push trigger enabled (27 Oct):** manual run `40553212498` green → `push` trigger on. Push par `E2E_ALLOW_WRITES` hamesha khaali (read-only specs), writes sirf manual dispatch par
+- [x] **Secret/verify bug fix:** verify step me `env:` block missing tha → step secrets ko khaali dekh kar hamesha fail hota tha (`23d397b`)
 
 ### Verification
 
 - [x] `npx playwright test` (creds nahi) → **7 skipped cleanly** — koi red nahi
 - [x] Real run (creds + `E2E_ALLOW_WRITES=0`) → **4 passed, 3 skipped** (2 write specs + attendance day-cell ka master-data guard)
 - [x] Gates: `typecheck` 0 errors + `eslint` 0 problems + prettier (`e2e/**` + `playwright.config.ts`) clean
-- [ ] **USER ACTION:** `workflow_dispatch` run (staging secrets) → green → phir `push: branches: [main]` enable
+- [x] **USER ACTION:** `workflow_dispatch` run green (run `40553212498`, secrets set) → `push: branches: [main]` enable ho gaya
 
 ### Real-run debugging (26–27 Oct) — jo sirf actual run me mila
 

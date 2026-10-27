@@ -1,9 +1,15 @@
 name: E2E (Playwright)
 
-# Pehle sirf manual. Jab ek baar manual run green ho jaye, tab hi
-# `push: branches: [main]` add karo (plan T4 ka rule).
+# Manual run pehle green ho gaya (run 40553212498, 27 Oct 2026), isliye ab
+# push par bhi chalta hai (plan T4 ka rule pura hua).
+#
+# DB writes ka niyam: `E2E_ALLOW_WRITES` sirf MANUAL run par lagta hai.
+# Push par wo hamesha khaali jaata hai -> job-create/direct-sale skip ->
+# koi bhi commit galti se prod/staging DB me rows nahi bana sakta.
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -64,6 +70,8 @@ jobs:
       - name: Run smoke tests
         # Write specs (job/direct-sale) tabhi chalti hain jab repo variable
         # E2E_ALLOW_WRITES=1 ho — taaki galti se prod DB me rows na banein.
+        # Push par hamesha khaali: sirf read-only specs, DB bilkul chhui nahi
+        # jaati. Poora write-suite sirf manual dispatch par.
         run: npm run e2e
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
@@ -71,7 +79,7 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
           E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
-          E2E_ALLOW_WRITES: ${{ vars.E2E_ALLOW_WRITES }}
+          E2E_ALLOW_WRITES: ${{ github.event_name == 'workflow_dispatch' && vars.E2E_ALLOW_WRITES || '' }}
 
       - name: Upload Playwright report
         if: failure()
