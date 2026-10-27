@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.70.1](https://github.com/waraseoni/vtech-next/compare/v1.70.0...v1.70.1) (2026-10-27)
+
+### Bug Fixes
+
+* **scan:** fallback engine ke raw error ko friendly message me map karo ([e59964f](https://github.com/waraseoni/vtech-next/commit/e59964f74e529af67c1ebde181a3f68abfd94e81))
+
 ## [1.70.0](https://github.com/waraseoni/vtech-next/compare/v1.69.1...v1.70.0) (2026-10-27)
 
 ### Features
