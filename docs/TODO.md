@@ -30,8 +30,10 @@ Plan: `docs/plans/tech_adoption_sprint_plan.md`
 - [x] **T3** — React Hook Form pilot (2 forms)
   - [x] T3.1 — `clients/new` (RHF + zodResolver + 8 schema tests)
   - [x] T3.2 — `jobs/new` (wizard + Quick Save + quick-add client modal; 417 tests)
-- [x] **T4** — Playwright e2e (setup + 5 smoke tests)
-  - config/specs/CI ready; `npm run e2e` = 7 skipped cleanly (creds nahi). Real run + `workflow_dispatch` green pending.
+- [x] **T4** - Playwright e2e (setup + 5 smoke tests + real run)
+  - Real run green: **4 passed / 3 skipped** (writes off; 2 write specs + attendance day-cell guard). Fixes: `localhost` baseURL (127.0.0.1 par hydration block), SearchableSelect clear-row, async master-data waits, hydration click-retry, dev-compile timeouts.
+  - ⚠️ 26 Oct ke write-run ne **live DB** me 46 test rows bana diye — audit + cleanup SQL: `docs/DB_CHANGES_E2E_AUDIT_2026-10-26.md`. Aage writes sirf **staging** project par.
+  - Pending: `workflow_dispatch` green (staging secrets) → phir `push: branches: [main]` enable.
 - [x] **T5** — `@google/genai` migration + native BarcodeDetector
   - T5.1 genai live function-calling verified; T5.2 native engine + html5-qrcode fallback (device matrix pending); T5.3 outdated sweep done
 - [ ] **T6** — backlog (TS7, Vitest 5, RQ completion, realtime lists)

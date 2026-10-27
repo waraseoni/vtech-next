@@ -172,13 +172,26 @@ Commit: `test(e2e): playwright setup + 5 critical-path smoke tests`
 - [x] `.github/workflows/e2e.yml` — `workflow_dispatch` only (jab manual run green ho tab push-trigger enable karna), missing-secret fail-fast, failure par report artifact
 - [ ] **USER ACTION:** `workflow_dispatch` manual run green karwao, phir `push: branches: [main]` enable karo
 
-### Verification (code side)
+### Verification
 
-- [x] `npx playwright test` → **7 skipped cleanly** (creds nahi hain — koi red nahi)
-- [x] Gates: `typecheck` + `eslint` 0 problems + `prettier --check` + `next build` pass
-- [ ] **USER ACTION:** `.env.local` me `E2E_ADMIN_EMAIL/PASSWORD` + `E2E_ALLOW_WRITES=1` daal ke real run (dev/staging DB par hi)
+- [x] `npx playwright test` (creds nahi) → **7 skipped cleanly** — koi red nahi
+- [x] Real run (creds + `E2E_ALLOW_WRITES=0`) → **4 passed, 3 skipped** (2 write specs + attendance day-cell ka master-data guard)
+- [x] Gates: `typecheck` 0 errors + `eslint` 0 problems + prettier (`e2e/**` + `playwright.config.ts`) clean
+- [ ] **USER ACTION:** `workflow_dispatch` run (staging secrets) → green → phir `push: branches: [main]` enable
 
-- **Files (new):** `playwright.config.ts`, `e2e/{auth.setup.ts,utils.ts,smoke/*.spec.ts}`, `.github/workflows/e2e.yml`, `package.json`
+### Real-run debugging (26–27 Oct) — jo sirf actual run me mila
+
+- [x] **`baseURL` = `localhost`, `127.0.0.1` NAHI.** `npm run dev` `-H 0.0.0.0` par chalta hai; Next dev `127.0.0.1` origin ke dev resources (chunks/HMR) block kar deta hai → client JS load nahi hota → React hydrate nahi hota → login form **native submit** ho kar `/login?` par reload. (Symptom: `waitForURL("**/dashboard")` timeout, page snapshot me `reactKeys: []`.) Fix `playwright.config.ts` me comment ke saath documented.
+- [x] **Setup me route warm-up:** `auth.setup.ts` login ke baad `/dashboard`, `/inventory`, `/attendance`, `/attendance?view=report`, `/direct-sales/new`, `/jobs/new` visit karta hai — dev-mode compile parallel specs ke 30s timeout par fail hone se bachta hai.
+- [x] **`SearchableSelect` clear-row bug:** menu ke top ki optional clear row bhi `div.cursor-pointer` hai → `options.first()` galti se selection **clear** kar deta tha. Naya selector: `div.cursor-pointer:has(> div.min-w-0)` (`e2e/utils.ts`).
+- [x] **Options async aate hain:** instant `count()` race karta tha (job form par 537 clients + mechanics 4-5 sequential queries me aate hain) → bounded wait + per-call `timeout` (job/direct-sale me `MASTER_TIMEOUT = 90_000`).
+- [x] **Direct sale me `Add` click zaroori:** product select sirf dropdown bharta hai; `Add` ke bina `items.length === 0` → Create Sale disabled. Saath hi **in-stock product prefer** kiya — out-of-stock par oversell confirm (double submit) load me flaky tha.
+- [x] **Hydration se pehle ka click kho jaata hai:** attendance tab switch pehli baar URL change nahi karta tha → `clickUntilUrl()` helper (idempotent button click retry, `toPass`).
+- [x] **Global `timeout: 180_000`:** dev compile + parallel load me 60s default kam padta tha.
+
+> ⚠️ **Live DB warning (26 Oct):** `.env.local` **live/production** Supabase project par point karta hai, aur us waqt `E2E_ALLOW_WRITES=1` set tha — write specs ne live DB me 46 test rows bana diye. Poora audit + cleanup SQL: **`docs/DB_CHANGES_E2E_AUDIT_2026-10-26.md`**. Aage: writes sirf **staging project** par, ya `E2E_ALLOW_WRITES` off.
+
+- **Files (new):** `playwright.config.ts`, `e2e/{auth.setup.ts,utils.ts,smoke/*.spec.ts}`, `.github/workflows/e2e.yml`, `package.json`, `docs/DB_CHANGES_E2E_AUDIT_2026-10-26.md` (live-DB audit)
 - **Risk: low** — existing app code touch hi nahi. Setup time sabse zyada.
 
 ---
@@ -263,8 +276,8 @@ Commit: `refactor(scan): native BarcodeDetector with html5-qrcode fallback`
 
 ## USER ACTION (code ke bahar)
 
-- [ ] T4: staging/dev Supabase par `e2e/seed.sql` apply
-- [ ] T4: CI secrets set (Supabase URL/keys)
+- [ ] T4: writes sirf **staging** Supabase par (`E2E_ALLOW_WRITES=1` wahan); live DB par `E2E_ALLOW_WRITES=0`
+- [ ] T4: CI secrets set (Supabase URL/keys — staging project)
 - [ ] T5.2: real device par barcode matrix sign-off
 - [ ] Plan end: push ka final approval
 
