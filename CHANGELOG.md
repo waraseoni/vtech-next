@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.70.0](https://github.com/waraseoni/vtech-next/compare/v1.69.1...v1.70.0) (2026-10-27)
+
+### Features
+
+* **ci:** e2e push trigger + push par read-only writes ([5498d21](https://github.com/waraseoni/vtech-next/commit/5498d21c24852941a330ce9224728f29c67fff1e))
+
 ## [1.69.1](https://github.com/waraseoni/vtech-next/compare/v1.69.0...v1.69.1) (2026-10-27)
 
 ### Bug Fixes
