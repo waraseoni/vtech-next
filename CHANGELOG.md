@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.71.3](https://github.com/waraseoni/vtech-next/compare/v1.71.2...v1.71.3) (2026-10-28)
+
+### Bug Fixes
+
+* **security:** require proof for bill details and harden caches ([527b59c](https://github.com/waraseoni/vtech-next/commit/527b59c17afaa6e579eba3c70a3799c890350911))
+
 ## [1.71.2](https://github.com/waraseoni/vtech-next/compare/v1.71.1...v1.71.2) (2026-10-28)
 
 ### Bug Fixes
