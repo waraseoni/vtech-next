@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.71.2](https://github.com/waraseoni/vtech-next/compare/v1.71.1...v1.71.2) (2026-10-28)
+
+### Bug Fixes
+
+* **security:** harden tracking, print previews, uploads and setup ([867a3c8](https://github.com/waraseoni/vtech-next/commit/867a3c8be6e527f2cc2854a89c84535e3ba274d3))
+
 ## [1.71.1](https://github.com/waraseoni/vtech-next/compare/v1.71.0...v1.71.1) (2026-10-28)
 
 ### Bug Fixes
