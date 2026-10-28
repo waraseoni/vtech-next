@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.72.0](https://github.com/waraseoni/vtech-next/compare/v1.71.4...v1.72.0) (2026-10-28)
+
+### Features
+
+* **health:** expose rollout and feature env flags ([654fae6](https://github.com/waraseoni/vtech-next/commit/654fae603a5da18acdb7ffb55f104cac509d35ea))
+
 ## [1.71.4](https://github.com/waraseoni/vtech-next/compare/v1.71.3...v1.71.4) (2026-10-28)
 
 ### Bug Fixes
