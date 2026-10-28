@@ -2,6 +2,8 @@ import { getAdminSupabase } from "@/lib/admin-supabase";
 import { NextRequest, NextResponse } from "next/server";
 
 import { requireStaffWriter } from "@/lib/api-auth";
+import { isValidSignatureDataUrl, validateImageBuffer } from "@/lib/image-upload";
+import { logger } from "@/lib/logger";
 
 // Service-role: system_info ab RLS se closed hai, isliye staff-guarded route
 // ko service-role key chahiye (session token anon hai, RLS select/insert/update
@@ -40,12 +42,15 @@ export async function POST(request: NextRequest) {
     }
 
     if (file) {
-      const ext = file.name.split(".").pop()?.toLowerCase() || "png";
       const buffer = Buffer.from(await file.arrayBuffer());
-      const fileName = `signature.${ext}`;
+      const check = validateImageBuffer(buffer, 500 * 1024);
+      if (!check.ok) {
+        return NextResponse.json({ status: "failed", msg: check.error }, { status: 400 });
+      }
+      const fileName = `signature.${check.ext}`;
       const { error: uploadError } = await supabase.storage
         .from("signatures")
-        .upload(fileName, buffer, { upsert: true, contentType: file.type });
+        .upload(fileName, buffer, { upsert: true, contentType: check.mime });
       if (uploadError) throw new Error(uploadError.message);
       const { data: urlData } = supabase.storage.from("signatures").getPublicUrl(fileName);
       await upsertField("signature", urlData.publicUrl);
@@ -53,6 +58,12 @@ export async function POST(request: NextRequest) {
     }
 
     if (canvasData) {
+      if (!isValidSignatureDataUrl(canvasData)) {
+        return NextResponse.json(
+          { status: "failed", msg: "Signature image invalid hai — dobara draw karein" },
+          { status: 400 }
+        );
+      }
       await upsertField("signature", canvasData);
       return NextResponse.json({ status: "success", url: canvasData });
     }
@@ -62,7 +73,10 @@ export async function POST(request: NextRequest) {
       { status: 400 }
     );
   } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : "Unknown error";
-    return NextResponse.json({ status: "failed", msg }, { status: 500 });
+    logger.error("signature save failed:", err);
+    return NextResponse.json(
+      { status: "failed", msg: "Signature save nahi hua — dobara try karein" },
+      { status: 500 }
+    );
   }
 }

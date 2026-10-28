@@ -6,6 +6,7 @@ import {
   createLicense,
   type LicenseInput,
 } from "@/lib/license-admin";
+import { logger } from "@/lib/logger";
 
 export async function GET() {
   if (!isLicenseAdminConfigured()) {
@@ -22,8 +23,9 @@ export async function GET() {
     const rows = await listLicenses();
     return NextResponse.json(rows);
   } catch (err: unknown) {
+    logger.error("seller/licenses list failed:", err);
     return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Server error" },
+      { error: "Licenses load nahi ho payi. Dobara try karein." },
       { status: 500 }
     );
   }
@@ -99,8 +101,9 @@ export async function POST(req: NextRequest) {
     const created = await createLicense(input);
     return NextResponse.json(created, { status: 201 });
   } catch (err: unknown) {
+    logger.error("seller/licenses create failed:", err);
     return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Server error" },
+      { error: "License create nahi ho payi. Input check karke dobara try karein." },
       { status: 500 }
     );
   }

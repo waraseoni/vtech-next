@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Loader2,
   Search,
@@ -31,17 +31,45 @@ type JobData = {
   date_created: string;
 };
 
-type RecentJob = {
-  id: number;
+type RecentLookup = {
   job_id: string;
   code: string;
   item: string;
   status: number;
-  date_created: string;
+  token: string | null;
+  ts: number;
 };
 
 type Service = { service_name: string; price: number };
 type Product = { product_name: string; qty: number; price: number; total: number };
+
+const RECENT_KEY = "vtech.job-status.recent.v1";
+const RECENT_MAX = 5;
+
+function readRecent(): RecentLookup[] {
+  try {
+    const parsed = JSON.parse(window.localStorage.getItem(RECENT_KEY) || "[]");
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .filter((r): r is RecentLookup => Boolean(r) && typeof r.job_id === "string")
+      .slice(0, RECENT_MAX);
+  } catch {
+    return [];
+  }
+}
+
+function rememberLookup(entry: RecentLookup): RecentLookup[] {
+  const next = [entry, ...readRecent().filter((r) => r.job_id !== entry.job_id)].slice(
+    0,
+    RECENT_MAX
+  );
+  try {
+    window.localStorage.setItem(RECENT_KEY, JSON.stringify(next));
+  } catch {
+    // storage full / disabled — recent list is a convenience only
+  }
+  return next;
+}
 
 const STATUS_CONFIG = Object.fromEntries(
   Object.entries(JOB_STATUS_INLINE).map(([k, v]) => [
@@ -82,70 +110,106 @@ export default function JobStatusPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [error, setError] = useState("");
   const [view, setView] = useState<"detailed" | "compact" | "timeline">("detailed");
-  const [recentJobs, setRecentJobs] = useState<RecentJob[]>([]);
-  const [recentLoading, setRecentLoading] = useState(true);
+  const [recentJobs, setRecentJobs] = useState<RecentLookup[]>([]);
+  const [token, setToken] = useState<string | null>(null);
+  const [limited, setLimited] = useState(false);
+  const initialized = useRef(false);
+
+  const runSearch = useCallback(
+    async (type: "job_id" | "code", raw: string, tokenValue: string | null) => {
+      const value = raw.trim();
+      if (!value) {
+        setError("Job ID ya Code daalo!");
+        return;
+      }
+
+      setLoading(true);
+      setError("");
+      setJob(null);
+      setLimited(false);
+
+      try {
+        const qs = new URLSearchParams({ [type]: value });
+        if (tokenValue) qs.set("token", tokenValue);
+
+        const res = await fetch(`/api/public/job-status?${qs.toString()}`);
+        const data = await res.json();
+
+        if (!res.ok) {
+          setError("Error: " + (data.error || res.status));
+          return;
+        }
+
+        const txn = data.job;
+        if (!txn) {
+          setError("Job nahi mila! Sahi Job ID ya Code daalo.");
+          return;
+        }
+
+        const isLimited = Boolean(data.limited);
+        const nextJob: JobData = {
+          id: txn.id,
+          job_id: txn.job_id,
+          code: txn.code,
+          item: txn.item,
+          fault: txn.fault,
+          remark: txn.remark ?? "",
+          status: txn.status,
+          amount: txn.amount ?? 0,
+          date_created: txn.date_created,
+        };
+
+        setJob(nextJob);
+        setServices(data.services || []);
+        setProducts(data.products || []);
+        setLimited(isLimited);
+        setToken(tokenValue);
+        setRecentJobs(
+          rememberLookup({
+            job_id: txn.job_id,
+            code: txn.code,
+            item: txn.item,
+            status: txn.status,
+            token: tokenValue,
+            ts: Date.now(),
+          })
+        );
+      } catch (e) {
+        setError((e instanceof Error && e.message ? e.message : "") || "Search mein error aayi!");
+      } finally {
+        setLoading(false);
+      }
+    },
+    []
+  );
 
   useEffect(() => {
-    fetch("/api/public/job-status?recent=1")
-      .then((r) => r.json())
-      .then((d) => {
-        setRecentJobs(d.recent || []);
-        setRecentLoading(false);
-      })
-      .catch(() => setRecentLoading(false));
-  }, []);
+    setRecentJobs(readRecent());
+    if (initialized.current) return;
+    initialized.current = true;
+
+    const params = new URLSearchParams(window.location.search);
+    const urlToken = params.get("token");
+    const urlJobId = params.get("job_id")?.trim();
+    const urlCode = params.get("code")?.trim();
+
+    // Printed QR / WhatsApp links carry these params — open straight to the job.
+    if (urlJobId) {
+      setSearch(urlJobId);
+      setSearchType("job_id");
+      void runSearch("job_id", urlJobId, urlToken);
+    } else if (urlCode) {
+      setSearch(urlCode);
+      setSearchType("code");
+      void runSearch("code", urlCode, urlToken);
+    }
+  }, [runSearch]);
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!search.trim()) {
-      setError("Job ID ya Code daalo!");
-      return;
-    }
-
-    setLoading(true);
-    setError("");
-    setJob(null);
-
-    try {
-      const qs = new URLSearchParams();
-      if (searchType === "job_id") qs.set("job_id", search.trim());
-      else qs.set("code", search.trim());
-
-      const res = await fetch(`/api/public/job-status?${qs.toString()}`);
-      const data = await res.json();
-
-      if (!res.ok) {
-        setError("Error: " + (data.error || res.status));
-        setLoading(false);
-        return;
-      }
-
-      const txn = data.job;
-      if (!txn) {
-        setError("Job nahi mila! Sahi Job ID ya Code daalo.");
-        setLoading(false);
-        return;
-      }
-
-      setJob({
-        id: txn.id,
-        job_id: txn.job_id,
-        code: txn.code,
-        item: txn.item,
-        fault: txn.fault,
-        remark: txn.remark,
-        status: txn.status,
-        amount: txn.amount,
-        date_created: txn.date_created,
-      });
-
-      setServices(data.services || []);
-      setProducts(data.products || []);
-    } catch (e) {
-      setError((e instanceof Error && e.message ? e.message : "") || "Search mein error aayi!");
-    } finally {
-      setLoading(false);
-    }
+    // Manual search has no proof of ownership — never carry a token from a
+    // previously viewed job (it would fail verification anyway).
+    await runSearch(searchType, search, null);
   };
 
   const statusInfo = job
@@ -175,7 +239,7 @@ export default function JobStatusPage() {
             </span>
           </h1>
           <p className="mt-4 text-[14px] sm:text-base text-muted max-w-2xl">
-            Apna Job ID ya Repair Code daalkar turant status, amount aur timeline check karein.
+            Apna Job ID ya Repair Code daalkar turant status aur timeline check karein.
           </p>
         </div>
       </section>
@@ -291,18 +355,21 @@ export default function JobStatusPage() {
               </div>
             </div>
 
-            {/* Recent Jobs for reference */}
-            {!recentLoading && recentJobs.length > 0 && (
+            {/* Recent lookups on this device only */}
+            {recentJobs.length > 0 && (
               <div className="mt-8">
-                <h3 className="text-sm font-bold mb-3 text-muted">Recent Jobs (for reference)</h3>
+                <h3 className="text-sm font-bold mb-3 text-muted">
+                  Recent lookups (is device par)
+                </h3>
                 <div className="rounded-3xl overflow-hidden bg-white/[0.03] border border-white/[0.08]">
                   {recentJobs.map((j) => (
                     <button
-                      key={j.id}
+                      key={j.job_id}
                       onClick={() => {
                         setSearch(j.job_id);
                         setSearchType("job_id");
                         setError("");
+                        void runSearch("job_id", j.job_id, j.token);
                       }}
                       className="w-full flex items-center justify-between px-4 py-3.5 hover:bg-white/5 transition text-left border-b border-white/[0.05] last:border-b-0"
                     >
@@ -339,13 +406,19 @@ export default function JobStatusPage() {
                   setError("");
                   setServices([]);
                   setProducts([]);
+                  setToken(null);
+                  setLimited(false);
                 }}
                 className="flex items-center gap-2 text-sm font-bold px-4 py-2.5 rounded-xl text-blue-400 bg-blue-500/10 border border-blue-500/30 hover:bg-blue-500/20 active:scale-95 transition-all"
               >
                 <RotateCcw size={15} /> Search Again
               </button>
               <button
-                onClick={() => window.open(`/api/print-job-status?job_id=${job.job_id}`, "_blank")}
+                onClick={() => {
+                  const qs = new URLSearchParams({ job_id: job.job_id });
+                  if (token) qs.set("token", token);
+                  window.open(`/api/print-job-status?${qs.toString()}`, "_blank");
+                }}
                 className="flex items-center gap-2 text-sm font-bold px-4 py-2.5 rounded-xl bg-white/[0.06] border border-white/10 hover:bg-white/10 active:scale-95 transition-all"
               >
                 <Printer size={14} /> Print
@@ -483,15 +556,27 @@ export default function JobStatusPage() {
                     )}
 
                     {/* Amount */}
-                    <div className="text-center p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-emerald-500/10 to-emerald-500/5 border-2 border-emerald-500/40">
-                      <p className="text-xs font-black uppercase tracking-wider text-muted mb-2">
-                        Total Payable Amount
-                      </p>
-                      <p className="font-display text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-300">
-                        ₹{job.amount.toLocaleString("en-IN")}
-                      </p>
-                      <p className="text-xs mt-2 text-muted">Includes all services and products</p>
-                    </div>
+                    {limited ? (
+                      <div className="text-center p-5 rounded-3xl bg-amber-500/[0.07] border border-amber-500/30">
+                        <p className="text-sm font-black text-amber-300">Bill details hidden</p>
+                        <p className="text-xs mt-1.5 text-muted">
+                          Amount aur bill ki details dekhne ke liye apne printed bill ka QR scan
+                          karein.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="text-center p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-emerald-500/10 to-emerald-500/5 border-2 border-emerald-500/40">
+                        <p className="text-xs font-black uppercase tracking-wider text-muted mb-2">
+                          Total Payable Amount
+                        </p>
+                        <p className="font-display text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-300">
+                          ₹{job.amount.toLocaleString("en-IN")}
+                        </p>
+                        <p className="text-xs mt-2 text-muted">
+                          Includes all services and products
+                        </p>
+                      </div>
+                    )}
 
                     {/* Remarks */}
                     {job.remark && (
@@ -561,9 +646,15 @@ export default function JobStatusPage() {
                       </p>
                       <div className="mt-4 pt-4 border-t border-white/10">
                         <p className="text-xs text-muted">Total Amount</p>
-                        <p className="text-xl font-black text-emerald-400 mt-0.5">
-                          ₹{job.amount.toLocaleString("en-IN")}
-                        </p>
+                        {limited ? (
+                          <p className="text-[11px] font-bold text-amber-300 mt-1">
+                            Print bill ka QR scan karein
+                          </p>
+                        ) : (
+                          <p className="text-xl font-black text-emerald-400 mt-0.5">
+                            ₹{job.amount.toLocaleString("en-IN")}
+                          </p>
+                        )}
                       </div>
                     </div>
                   </div>

@@ -8,6 +8,7 @@ import {
   checkRemoteLicense,
   type LicenseStatus,
 } from "@/lib/license";
+import { logger } from "@/lib/logger";
 
 const supabaseAdmin = getAdminSupabase();
 
@@ -191,8 +192,9 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json(status);
   } catch (err: unknown) {
+    logger.error("license/status failed:", err);
     return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Server error" },
+      { error: "License status check nahi ho paya. Dobara try karein." },
       { status: 500 }
     );
   }

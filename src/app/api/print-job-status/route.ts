@@ -2,16 +2,23 @@ import { getAdminSupabase } from "@/lib/admin-supabase";
 import { NextRequest, NextResponse } from "next/server";
 
 import { JOB_STATUS_INLINE } from "@/lib/status-colors";
+import { logger } from "@/lib/logger";
+import { getPrintShop } from "@/lib/print-shop";
+import { clientIpFromHeaders, rateLimit } from "@/lib/rate-limit";
+import { isTrackingEnforced, verifyTrackingToken } from "@/lib/tracking-token";
+import { printHtmlResponse } from "@/lib/print-html";
 
 const supabase = getAdminSupabase();
 
-const SHOP = {
-  name: "V-Technologies",
-  address: "F4, Hotel Plaza (Now Madhushala), Beside Jayanti Complex, Marhatal, Jabalpur – 482002",
-  mobile: "9179105875",
-};
-
 const STATUS_CONFIG = JOB_STATUS_INLINE;
+
+function esc(value: unknown): string {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
 
 function fmtDate(iso: string | null): string {
   if (!iso) return "—";
@@ -41,9 +48,20 @@ function inr(n: number) {
 }
 
 export async function GET(request: NextRequest) {
+  const ip = clientIpFromHeaders(request.headers);
+  const limit = rateLimit(`print-job-status:${ip}`, 30, 60_000);
+  if (!limit.ok) {
+    return new NextResponse("Bahut zyada requests — thodi der baad try karein.", {
+      status: 429,
+      headers: { "Retry-After": String(limit.retryAfter), "Cache-Control": "no-store" },
+    });
+  }
+
   const url = new URL(request.url);
   const jobId = url.searchParams.get("job_id");
   const code = url.searchParams.get("code");
+  const token = url.searchParams.get("token");
+  const shop = await getPrintShop();
 
   if (!jobId && !code) {
     return NextResponse.json({ error: "job_id or code required" }, { status: 400 });
@@ -59,6 +77,8 @@ export async function GET(request: NextRequest) {
 
   const { data: txnData, error: txnErr } = await query;
 
+  if (txnErr) logger.error("print-job-status lookup failed:", txnErr.message);
+
   if (txnErr || !txnData || txnData.length === 0) {
     return new NextResponse(
       `<!DOCTYPE html><html><body style="font-family:Arial;padding:40px;text-align:center">
@@ -66,11 +86,15 @@ export async function GET(request: NextRequest) {
         <p style="color:#666">The requested job ID or code was not found.</p>
         <button onclick="window.close()" style="margin-top:20px;padding:10px 24px;background:#6c757d;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:14px">Close</button>
       </body></html>`,
-      { status: 200, headers: { "Content-Type": "text/html; charset=utf-8" } }
+      {
+        status: 200,
+        headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" },
+      }
     );
   }
 
   const txn = txnData[0];
+  const full = !isTrackingEnforced() || verifyTrackingToken(txn.job_id, txn.code, token);
   const statusInfo = STATUS_CONFIG[txn.status] || {
     label: "Unknown",
     color: "#6b7280",
@@ -78,53 +102,58 @@ export async function GET(request: NextRequest) {
     desc: "Status unknown",
   };
 
-  const { data: svcData } = await supabase
-    .from("transaction_services")
-    .select("service_id, price")
-    .eq("transaction_id", txn.id);
+  let services: Array<{ service_name: string; price: number }> = [];
+  let products: Array<{ product_name: string; qty: number; price: number; total: number }> = [];
 
-  const serviceIds = (svcData || []).map((s) => s.service_id).filter(Boolean);
-  const serviceNames: Record<number, string> = {};
-  if (serviceIds.length > 0) {
-    const { data: services } = await supabase
-      .from("service_list")
-      .select("id, name")
-      .in("id", serviceIds);
-    if (services)
-      services.forEach((s) => {
-        serviceNames[s.id] = s.name;
-      });
+  if (full) {
+    const { data: svcData } = await supabase
+      .from("transaction_services")
+      .select("service_id, price")
+      .eq("transaction_id", txn.id);
+
+    const serviceIds = (svcData || []).map((s) => s.service_id).filter(Boolean);
+    const serviceNames: Record<number, string> = {};
+    if (serviceIds.length > 0) {
+      const { data: rows } = await supabase
+        .from("service_list")
+        .select("id, name")
+        .in("id", serviceIds);
+      if (rows)
+        rows.forEach((s) => {
+          serviceNames[s.id] = s.name;
+        });
+    }
+
+    services = (svcData || []).map((s) => ({
+      service_name: serviceNames[s.service_id] || "Unknown",
+      price: s.price,
+    }));
+
+    const { data: prodData } = await supabase
+      .from("transaction_products")
+      .select("product_id, product_name, qty, price")
+      .eq("transaction_id", txn.id);
+
+    const productIds = (prodData || []).map((p) => p.product_id).filter(Boolean);
+    const productNames: Record<number, string> = {};
+    if (productIds.length > 0) {
+      const { data: rows } = await supabase
+        .from("product_list")
+        .select("id, name")
+        .in("id", productIds);
+      if (rows)
+        rows.forEach((p) => {
+          productNames[p.id] = p.name;
+        });
+    }
+
+    products = (prodData || []).map((p) => ({
+      product_name: p.product_name || productNames[p.product_id] || "Unknown",
+      qty: p.qty,
+      price: p.price,
+      total: p.qty * p.price,
+    }));
   }
-
-  const services = (svcData || []).map((s) => ({
-    service_name: serviceNames[s.service_id] || "Unknown",
-    price: s.price,
-  }));
-
-  const { data: prodData } = await supabase
-    .from("transaction_products")
-    .select("product_id, product_name, qty, price")
-    .eq("transaction_id", txn.id);
-
-  const productIds = (prodData || []).map((p) => p.product_id).filter(Boolean);
-  const productNames: Record<number, string> = {};
-  if (productIds.length > 0) {
-    const { data: products } = await supabase
-      .from("product_list")
-      .select("id, name")
-      .in("id", productIds);
-    if (products)
-      products.forEach((p) => {
-        productNames[p.id] = p.name;
-      });
-  }
-
-  const products = (prodData || []).map((p) => ({
-    product_name: p.product_name || productNames[p.product_id] || "Unknown",
-    qty: p.qty,
-    price: p.price,
-    total: p.qty * p.price,
-  }));
 
   const totalServices = services.reduce((s, sv) => s + sv.price, 0);
   const totalProducts = products.reduce((s, p) => s + p.total, 0);
@@ -135,7 +164,7 @@ export async function GET(request: NextRequest) {
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Job Status — ${txn.job_id}</title>
+  <title>Job Status — ${esc(txn.job_id)}</title>
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
     body{font-family:Arial,sans-serif;font-size:13px;background:#f0f2f5;padding:20px;color:#212529}
@@ -171,16 +200,16 @@ export async function GET(request: NextRequest) {
 <div class="wrap">
   <div class="card">
     <div class="hdr">
-      <h1>📋 ${SHOP.name} — Job Status</h1>
-      <p>Generated: ${fmtDateTime(new Date().toISOString())} | ${SHOP.mobile}</p>
+      <h1>📋 ${esc(shop.name)} — Job Status</h1>
+      <p>Generated: ${fmtDateTime(new Date().toISOString())}${shop.mobile ? ` | ${esc(shop.mobile)}` : ""}</p>
     </div>
     <div class="job-info">
-      <div class="job-row"><span class="job-label">Job ID</span><span class="job-value">#${txn.job_id}</span></div>
-      ${txn.code ? `<div class="job-row"><span class="job-label">Code</span><span class="job-value">${txn.code}</span></div>` : ""}
-      <div class="job-row"><span class="job-label">Item</span><span class="job-value">${txn.item || "—"}</span></div>
-      <div class="job-row"><span class="job-label">Fault</span><span class="job-value">${txn.fault || "—"}</span></div>
+      <div class="job-row"><span class="job-label">Job ID</span><span class="job-value">#${esc(txn.job_id)}</span></div>
+      ${txn.code ? `<div class="job-row"><span class="job-label">Code</span><span class="job-value">${esc(txn.code)}</span></div>` : ""}
+      <div class="job-row"><span class="job-label">Item</span><span class="job-value">${esc(txn.item) || "—"}</span></div>
+      <div class="job-row"><span class="job-label">Fault</span><span class="job-value">${esc(txn.fault) || "—"}</span></div>
       <div class="job-row"><span class="job-label">Created</span><span class="job-value">${fmtDate(txn.date_created)}</span></div>
-      <div><span class="job-label">Status</span><br><span class="status-badge" style="background:${statusInfo.bg};color:${statusInfo.color};border:2px solid ${statusInfo.color}">${statusInfo.label}</span></div>
+      <div><span class="job-label">Status</span><br><span class="status-badge" style="background:${statusInfo.bg};color:${statusInfo.color};border:2px solid ${statusInfo.color}">${esc(statusInfo.label)}</span></div>
     </div>
     ${
       services.length > 0
@@ -208,13 +237,17 @@ export async function GET(request: NextRequest) {
     </table>`
         : ""
     }
-    <div class="grand-total">Grand Total: ${inr(total)}</div>
+    ${
+      full
+        ? `<div class="grand-total">Grand Total: ${inr(total)}</div>`
+        : `<div class="grand-total">Full bill ke liye printed QR scan karein</div>`
+    }
     <div class="actions">
       <button onclick="window.print()" class="btn btn-print">🖨 Print</button>
       <button onclick="window.close()" class="btn btn-close">✕ Close</button>
     </div>
   </div>
-  <div class="footer">${SHOP.name} | ${SHOP.address} | ${SHOP.mobile}</div>
+  <div class="footer">${esc(shop.name)}${shop.address ? ` | ${esc(shop.address)}` : ""}${shop.mobile ? ` | ${esc(shop.mobile)}` : ""}</div>
 </div>
 <script>
 document.addEventListener("keydown", e => {
@@ -225,8 +258,5 @@ document.addEventListener("keydown", e => {
 </body>
 </html>`;
 
-  return new NextResponse(html, {
-    status: 200,
-    headers: { "Content-Type": "text/html; charset=utf-8" },
-  });
+  return printHtmlResponse(html, { "X-Robots-Tag": "noindex" });
 }

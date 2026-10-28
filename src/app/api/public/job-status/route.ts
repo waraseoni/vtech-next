@@ -1,27 +1,55 @@
 import { getAdminSupabase } from "@/lib/admin-supabase";
 import { NextRequest, NextResponse } from "next/server";
+import { logger } from "@/lib/logger";
+import { clientIpFromHeaders, rateLimit } from "@/lib/rate-limit";
+import { isTrackingEnforced, verifyTrackingToken } from "@/lib/tracking-token";
 
 const supabase = getAdminSupabase();
 
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+const RATE_LIMIT = 60;
+const RATE_WINDOW_MS = 60_000;
+const ID_RE = /^[A-Za-z0-9-]{1,64}$/;
+
+const RESPONSE_HEADERS = {
+  "Cache-Control": "no-store",
+  "X-Robots-Tag": "noindex",
+};
+
+function json(body: unknown, status = 200, extra?: Record<string, string>) {
+  return NextResponse.json(body, {
+    status,
+    headers: { ...RESPONSE_HEADERS, ...extra },
+  });
+}
+
 export async function GET(request: NextRequest) {
+  const ip = clientIpFromHeaders(request.headers);
+  const limit = rateLimit(`tracking:${ip}`, RATE_LIMIT, RATE_WINDOW_MS);
+  if (!limit.ok) {
+    return json({ error: "Bahut zyada requests — thodi der baad try karein." }, 429, {
+      "Retry-After": String(limit.retryAfter),
+    });
+  }
+
   const url = new URL(request.url);
   const jobId = url.searchParams.get("job_id")?.trim();
   const code = url.searchParams.get("code")?.trim();
-  const recent = url.searchParams.get("recent");
+  const token = url.searchParams.get("token")?.trim() || null;
 
-  if (recent === "1") {
-    const { data, error } = await supabase
-      .from("transaction_list")
-      .select("id, job_id, code, item, status, date_created")
-      .order("id", { ascending: false })
-      .limit(10);
-
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-    return NextResponse.json({ recent: data || [] });
+  // Global "recent jobs" list was a cross-customer leak. The page now keeps
+  // lookups in localStorage instead.
+  if (url.searchParams.get("recent")) {
+    return json({ error: "Recent list hata diya gaya hai." }, 410);
   }
 
   if (!jobId && !code) {
-    return NextResponse.json({ error: "job_id ya code required" }, { status: 400 });
+    return json({ error: "job_id ya code required" }, 400);
+  }
+  if ((jobId && !ID_RE.test(jobId)) || (code && !ID_RE.test(code))) {
+    return json({ error: "Invalid job_id ya code" }, 400);
   }
 
   let query = supabase
@@ -34,12 +62,34 @@ export async function GET(request: NextRequest) {
 
   const { data: txnData, error: txnErr } = await query;
 
-  if (txnErr) return NextResponse.json({ error: txnErr.message }, { status: 500 });
+  if (txnErr) {
+    logger.error("public/job-status lookup failed:", txnErr.message);
+    return json({ error: "Job status fetch nahi ho paya." }, 500);
+  }
   if (!txnData || txnData.length === 0) {
-    return NextResponse.json({ job: null, services: [], products: [] });
+    return json({ job: null, services: [], products: [], limited: false });
   }
 
   const txn = txnData[0];
+  const tokenOk = verifyTrackingToken(txn.job_id, txn.code, token);
+  const full = !isTrackingEnforced() || tokenOk;
+
+  if (!full) {
+    return json({
+      job: {
+        id: txn.id,
+        job_id: txn.job_id,
+        code: txn.code,
+        item: txn.item,
+        fault: txn.fault,
+        status: txn.status,
+        date_created: txn.date_created,
+      },
+      services: [],
+      products: [],
+      limited: true,
+    });
+  }
 
   const { data: svcData } = await supabase
     .from("transaction_services")
@@ -89,5 +139,5 @@ export async function GET(request: NextRequest) {
     total: p.qty * p.price,
   }));
 
-  return NextResponse.json({ job: txn, services, products });
+  return json({ job: txn, services, products, limited: false });
 }

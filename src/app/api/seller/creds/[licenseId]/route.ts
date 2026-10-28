@@ -5,6 +5,7 @@ import {
   upsertClientCredentials,
   deleteClientCredentials,
 } from "@/lib/client-creds";
+import { logger } from "@/lib/logger";
 
 type Ctx = { params: Promise<{ licenseId: string }> };
 
@@ -34,8 +35,9 @@ export async function GET(_req: NextRequest, ctx: Ctx) {
     // Row nahi mili → empty template return (204 nahi — client ko form khali chahiye).
     return NextResponse.json(row ?? { license_id: id });
   } catch (err: unknown) {
+    logger.error("seller/creds GET failed:", err);
     return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Server error" },
+      { error: "Credentials load nahi ho paye. Dobara try karein." },
       { status: 500 }
     );
   }
@@ -79,8 +81,9 @@ export async function PUT(req: NextRequest, ctx: Ctx) {
     });
     return NextResponse.json(row);
   } catch (err: unknown) {
+    logger.error("seller/creds PUT failed:", err);
     return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Server error" },
+      { error: "Credentials save nahi ho paye. Dobara try karein." },
       { status: 500 }
     );
   }
@@ -96,8 +99,9 @@ export async function DELETE(_req: NextRequest, ctx: Ctx) {
     await deleteClientCredentials(id);
     return NextResponse.json({ ok: true });
   } catch (err: unknown) {
+    logger.error("seller/creds DELETE failed:", err);
     return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Server error" },
+      { error: "Credentials delete nahi ho paye. Dobara try karein." },
       { status: 500 }
     );
   }

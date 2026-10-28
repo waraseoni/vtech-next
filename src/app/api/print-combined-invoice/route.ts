@@ -2,29 +2,12 @@ import { getAdminSupabase } from "@/lib/admin-supabase";
 import { NextRequest, NextResponse } from "next/server";
 
 import { requireStaff } from "@/lib/api-auth";
+import { getPrintShop, getSiteBaseUrl, qrDataUrl } from "@/lib/print-shop";
+import { signTrackingToken } from "@/lib/tracking-token";
+import { printHtmlResponse } from "@/lib/print-html";
 
 // ─── Supabase (server-side) ──────────────────────────────────────────────────
 const supabase = getAdminSupabase();
-
-// ─── Helper: fetch system info ────────────────────────────────────────────────
-async function fetchShopInfo() {
-  const { data } = await supabase.from("system_info").select("meta_field, meta_value");
-  const info: Record<string, string> = {};
-  (data || []).forEach((r) => {
-    info[r.meta_field] = r.meta_value;
-  });
-  return {
-    name: info.name || "V-Technologies",
-    tagline: "Power Supply & Stage Light Repair Solutions",
-    address: info.address || "F4, Hotel Plaza, Beside Jayanti Complex, Marhatal, Jabalpur – 482002",
-    mobile: info.contact || "9179105875",
-    email: info.email || "vtech.jbp@gmail.com",
-    gstin: info.gst_no || info.gstin || "",
-    upiId: info.upi_id || "",
-    signature: info.signature || "",
-    logo: info.logo || "",
-  };
-}
 
 const CGST_RATE = 9;
 const SGST_RATE = 9;
@@ -159,7 +142,7 @@ export async function GET(req: NextRequest) {
   }
 
   // ── Fetch dynamic shop info ──────────────────────────────────────────────
-  const SHOP = await fetchShopInfo();
+  const SHOP = await getPrintShop();
 
   // ── Fetch transactions ─────────────────────────────────────────────────────
   const { data: txns, error: txnErr } = await supabase
@@ -376,20 +359,21 @@ export async function GET(req: NextRequest) {
     )
     .join("");
 
-  // ── Fetch UPI ID from system_info ──────────────────────────────────────────
-  const { data: upiRow } = await supabase
-    .from("system_info")
-    .select("meta_value")
-    .eq("meta_field", "upi_id")
-    .single();
-  const upiId = upiRow?.meta_value || SHOP.mobile + "@ybl";
+  // ── QR codes (generated locally; no third-party image service) ─────────────
+  const upiId = SHOP.upiId || (SHOP.mobile ? `${SHOP.mobile}@ybl` : "");
 
-  function qrUrl(data: string, size = 130): string {
-    return `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(data)}`;
-  }
+  const trackTxn = txns[0];
+  const trackToken = signTrackingToken(trackTxn.job_id, trackTxn.code);
+  const trackParams = new URLSearchParams({ job_id: String(trackTxn.job_id) });
+  if (trackTxn.code) trackParams.set("code", trackTxn.code);
+  if (trackToken) trackParams.set("token", trackToken);
+  const trackUrl = `${getSiteBaseUrl(req.url)}/job-status?${trackParams.toString()}`;
+
   const upiUri = `upi://pay?pa=${encodeURIComponent(upiId)}&pn=${encodeURIComponent(SHOP.name)}&am=${encodeURIComponent(grandTotal)}&cu=INR&tn=${encodeURIComponent("Payment for Invoice " + jobIds.join(","))}`;
-  const upiQrImg = qrUrl(upiUri, 130);
-  const trackingQrImg = qrUrl(`https://vtech-rsms/job-status?job_id=${jobIds[0]}`, 130);
+  const [upiQrImg, trackingQrImg] = await Promise.all([
+    upiId ? qrDataUrl(upiUri, 130) : Promise.resolve(""),
+    qrDataUrl(trackUrl, 130),
+  ]);
 
   // ── Final HTML ────────────────────────────────────────────────────────────
   const html = `<!DOCTYPE html>
@@ -578,11 +562,15 @@ export async function GET(req: NextRequest) {
       <img src="${trackingQrImg}" alt="Track QR" width="95" height="95" style="border:1px solid #ddd;border-radius:4px;" />
       <div style="font-size:11px;color:#666;margin-top:6px;font-weight:600;">Scan to Track</div>
     </div>
-    <div style="text-align:center;">
+    ${
+      upiId
+        ? `<div style="text-align:center;">
       <img src="${upiQrImg}" alt="UPI QR Code" width="95" height="95" style="border:1px solid #ddd;border-radius:4px;" />
       <div style="font-size:11px;color:#1a7a3a;margin-top:6px;font-weight:700;">Scan to Pay UPI</div>
       <div style="font-size:10px;color:#999;">${upiId}</div>
-    </div>
+    </div>`
+        : ""
+    }
   </div>
   <div style="text-align:center;margin-bottom:10px;">
     <button onclick="toggleTrackQR()" style="font-size:11px;padding:4px 12px;border:1px solid #ccc;border-radius:3px;cursor:pointer;background:#fff;color:#666;">👁 Toggle Track QR</button>
@@ -641,8 +629,5 @@ document.addEventListener("keydown", e => {
 </body>
 </html>`;
 
-  return new NextResponse(html, {
-    status: 200,
-    headers: { "Content-Type": "text/html; charset=utf-8" },
-  });
+  return printHtmlResponse(html);
 }

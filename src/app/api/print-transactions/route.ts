@@ -2,7 +2,9 @@ import { getAdminSupabase } from "@/lib/admin-supabase";
 import { NextRequest, NextResponse } from "next/server";
 
 import { requireStaff } from "@/lib/api-auth";
+import { getPrintShop } from "@/lib/print-shop";
 import { fetchAll, fetchAllIn } from "@/lib/fetch-all";
+import { printHtmlResponse } from "@/lib/print-html";
 
 const supabase = getAdminSupabase();
 
@@ -22,13 +24,6 @@ const STATUS_COLOR: Record<number, string> = {
   4: "#fa5252",
   5: "#7950f2",
 };
-const SHOP = {
-  name: "V-Technologies",
-  address: "F4, Hotel Plaza (Now Madhushala), Beside Jayanti Complex, Marhatal, Jabalpur – 482002",
-  mobile: "9179105875",
-  email: "vtech.jbp@gmail.com",
-};
-
 function fmtDate(iso: string | null): string {
   if (!iso) return "—";
   return new Intl.DateTimeFormat("en-IN", {
@@ -149,6 +144,8 @@ export async function GET(req: NextRequest) {
     </tr>`;
     })
     .join("");
+
+  const SHOP = await getPrintShop();
 
   const html = `<!DOCTYPE html>
 <html lang="en">
@@ -271,8 +268,5 @@ document.addEventListener("keydown", e => {
 </body>
 </html>`;
 
-  return new NextResponse(html, {
-    status: 200,
-    headers: { "Content-Type": "text/html; charset=utf-8" },
-  });
+  return printHtmlResponse(html);
 }

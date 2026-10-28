@@ -2,6 +2,13 @@ import { getAdminSupabase } from "@/lib/admin-supabase";
 import { NextRequest, NextResponse } from "next/server";
 
 import { timingSafeEqual } from "crypto";
+import { logger } from "@/lib/logger";
+import { clientIpFromHeaders, rateLimit } from "@/lib/rate-limit";
+
+// Per-instance single-flight: do concurrent setup requests dono admin check
+// pass karke double admin bana sakte hain. Serverless me har instance alag hota
+// hai, par yahi request window sabse common case hai.
+let setupInFlight = false;
 
 // POST /api/setup — one-time first-run admin creation (client package ka setup page).
 // Guards:
@@ -9,6 +16,21 @@ import { timingSafeEqual } from "crypto";
 //   - SETUP_TOKEN env set hai to body.token ka match zaroori (package-specific key).
 //   - Email/password validation + email confirm on (bina OTP ke login ho sake).
 export async function POST(req: NextRequest) {
+  const ip = clientIpFromHeaders(req.headers);
+  const limit = rateLimit(`setup:${ip}`, 10, 60 * 60_000);
+  if (!limit.ok) {
+    return NextResponse.json(
+      { error: "Bahut zyada setup attempts — thodi der baad try karein." },
+      { status: 429, headers: { "Retry-After": String(limit.retryAfter) } }
+    );
+  }
+  if (setupInFlight) {
+    return NextResponse.json(
+      { error: "Setup already chal raha hai — thodi der baad try karein." },
+      { status: 409 }
+    );
+  }
+  setupInFlight = true;
   try {
     const { email, fullName, password, token } = (await req.json()) as {
       email?: string;
@@ -66,7 +88,11 @@ export async function POST(req: NextRequest) {
       user_metadata: { full_name: fullName.trim() },
     });
     if (createErr) {
-      return NextResponse.json({ error: createErr.message }, { status: 400 });
+      logger.error("setup: createUser failed:", createErr.message);
+      return NextResponse.json(
+        { error: "Admin account create nahi ho paya. Server logs check karein." },
+        { status: 400 }
+      );
     }
 
     // Profile insert — fail ho to user delete (consistent state).
@@ -74,9 +100,10 @@ export async function POST(req: NextRequest) {
       .from("profiles")
       .insert({ id: newUser.user.id, full_name: fullName.trim(), role: "admin" });
     if (profileErr) {
+      logger.error("setup: profile insert failed:", profileErr.message);
       await adminClient.auth.admin.deleteUser(newUser.user.id);
       return NextResponse.json(
-        { error: "Profile save nahi hua: " + profileErr.message },
+        { error: "Admin profile save nahi hua. Server logs check karein." },
         { status: 400 }
       );
     }
@@ -86,9 +113,12 @@ export async function POST(req: NextRequest) {
       message: "Admin setup complete — ab login karein.",
     });
   } catch (err: unknown) {
+    logger.error("setup: unexpected error:", err instanceof Error ? err.message : String(err));
     return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Server error" },
+      { error: "Setup complete nahi ho paya. Server logs check karein." },
       { status: 500 }
     );
+  } finally {
+    setupInFlight = false;
   }
 }

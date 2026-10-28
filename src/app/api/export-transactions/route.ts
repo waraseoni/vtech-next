@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { requireStaff } from "@/lib/api-auth";
 import { fetchAll, fetchAllIn } from "@/lib/fetch-all";
+import { escHtml, getPrintShop } from "@/lib/print-shop";
 
 const supabase = getAdminSupabase();
 
@@ -107,6 +108,7 @@ export async function GET(req: NextRequest) {
   // EXCEL (XLS via HTML table — opens directly in Excel)
   // ══════════════════════════════════════════════════════════════════════════
   if (format !== "csv") {
+    const SHOP = await getPrintShop();
     const xls = `<?xml version="1.0" encoding="UTF-8"?>
 <?mso-application progid="Excel.Sheet"?>
 <Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
@@ -114,7 +116,7 @@ export async function GET(req: NextRequest) {
   xmlns:x="urn:schemas-microsoft-com:office:excel"
   xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
   <DocumentProperties xmlns="urn:schemas-microsoft-com:office:office">
-    <Title>V-Technologies Transactions</Title>
+    <Title>${escHtml(SHOP.name)} Transactions</Title>
     <Author>V-Tech System</Author>
     <Created>${new Date().toISOString()}</Created>
   </DocumentProperties>

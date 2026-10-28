@@ -2,7 +2,9 @@ import { getAdminSupabase } from "@/lib/admin-supabase";
 import { NextRequest, NextResponse } from "next/server";
 
 import { requireAdmin } from "@/lib/api-auth";
+import { escHtml, getPrintShop } from "@/lib/print-shop";
 import { fetchAll } from "@/lib/fetch-all";
+import { printHtmlResponse } from "@/lib/print-html";
 
 const supabase = getAdminSupabase();
 
@@ -97,6 +99,8 @@ export async function GET(request: NextRequest) {
     year: "numeric",
   });
 
+  const SHOP = await getPrintShop();
+
   const html = `<!DOCTYPE html>
 <html>
 <head>
@@ -134,9 +138,9 @@ export async function GET(request: NextRequest) {
 </head>
 <body>
   <div class="header">
-    <div class="shop-name">V-Technologies</div>
-    <div class="shop-address">F4, Hotel Plaza (Now Madhushala), Beside Jayanti Complex, Marhatal, Jabalpur – 482002</div>
-    <div class="shop-contact">Mobile: 9179105875</div>
+    <div class="shop-name">${escHtml(SHOP.name)}</div>
+    <div class="shop-address">${escHtml(SHOP.address)}</div>
+    <div class="shop-contact">Mobile: ${escHtml(SHOP.mobile)}</div>
     <h1>Loan Report</h1>
     <div class="subtitle">Month: ${monthLabel} | Date: ${formatDate(new Date().toISOString())}</div>
   </div>
@@ -217,5 +221,5 @@ export async function GET(request: NextRequest) {
 </body>
 </html>`;
 
-  return new NextResponse(html, { headers: { "Content-Type": "text/html" } });
+  return printHtmlResponse(html);
 }

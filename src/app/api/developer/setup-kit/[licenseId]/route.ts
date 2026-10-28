@@ -3,6 +3,7 @@ import { requireDev } from "@/lib/portal-auth";
 import { isLicenseAdminConfigured, getLicense } from "@/lib/license-admin";
 import { getClientCredentials, patchClientCredentials } from "@/lib/client-creds";
 import { buildSetupKitZip, deriveSetupToken, slugify } from "@/lib/setup-kit";
+import { logger } from "@/lib/logger";
 
 type Ctx = { params: Promise<{ licenseId: string }> };
 
@@ -39,8 +40,9 @@ export async function GET(_req: NextRequest, ctx: Ctx) {
       setupToken: deriveSetupToken(id),
     });
   } catch (err: unknown) {
+    logger.error("developer/setup-kit GET failed:", err);
     return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Server error" },
+      { error: "Setup kit data load nahi ho paya. Dobara try karein." },
       { status: 500 }
     );
   }
@@ -140,8 +142,9 @@ export async function POST(req: NextRequest, ctx: Ctx) {
       },
     });
   } catch (err: unknown) {
+    logger.error("developer/setup-kit zip failed:", err);
     return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Server error" },
+      { error: "Setup kit generate nahi ho paya. Dobara try karein." },
       { status: 500 }
     );
   }

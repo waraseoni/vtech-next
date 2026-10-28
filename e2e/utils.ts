@@ -1,7 +1,22 @@
 import { expect, type Locator, type Page } from "@playwright/test";
 
-/** Write specs (job create / direct sale) DB me real rows banate hain. */
-export const allowWrites = process.env.E2E_ALLOW_WRITES === "1";
+/**
+ * Write specs (job create / direct sale) DB me real rows banate hain.
+ *
+ * Double guard: flag ke saath `E2E_WRITE_HOST` bhi match karna chahiye.
+ * Warna CI/prod URL par galti se flag lagne se live data me rows ban sakti hain.
+ * Local writes ke liye bhi `E2E_WRITE_HOST=localhost` explicitly set karein.
+ */
+const writeFlag = process.env.E2E_ALLOW_WRITES === "1";
+const writeHost = (() => {
+  try {
+    return new URL(process.env.E2E_BASE_URL || "http://localhost:3000").hostname;
+  } catch {
+    return "";
+  }
+})();
+export const allowWrites =
+  writeFlag && Boolean(process.env.E2E_WRITE_HOST) && writeHost === process.env.E2E_WRITE_HOST;
 
 /** Login creds — inke bina authed specs skip hoti hain. */
 export const hasAdminCreds = Boolean(process.env.E2E_ADMIN_EMAIL && process.env.E2E_ADMIN_PASSWORD);

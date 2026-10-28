@@ -69,7 +69,7 @@ jobs:
 
       - name: Run smoke tests
         # Write specs (job/direct-sale) tabhi chalti hain jab repo variable
-        # E2E_ALLOW_WRITES=1 ho — taaki galti se prod DB me rows na banein.
+        # E2E_ALLOW_WRITES=1 ho AUR E2E_WRITE_HOST target host se match kare.
         # Push par hamesha khaali: sirf read-only specs, DB bilkul chhui nahi
         # jaati. Poora write-suite sirf manual dispatch par.
         run: npm run e2e
@@ -80,6 +80,7 @@ jobs:
           E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
           E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
           E2E_ALLOW_WRITES: ${{ github.event_name == 'workflow_dispatch' && vars.E2E_ALLOW_WRITES || '' }}
+          E2E_WRITE_HOST: ${{ github.event_name == 'workflow_dispatch' && vars.E2E_WRITE_HOST || '' }}
 
       - name: Upload Playwright report
         # v7 = Node 24 runtime (v4 ka Node 20 deprecated tha). Report failure

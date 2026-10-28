@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireDev } from "@/lib/portal-auth";
 import { isLicenseAdminConfigured, getDevStats } from "@/lib/license-admin";
+import { logger } from "@/lib/logger";
 
 export async function GET() {
   if (!isLicenseAdminConfigured()) {
@@ -17,8 +18,9 @@ export async function GET() {
     const stats = await getDevStats();
     return NextResponse.json(stats);
   } catch (err: unknown) {
+    logger.error("developer/stats failed:", err);
     return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Server error" },
+      { error: "Stats load nahi ho paye. Dobara try karein." },
       { status: 500 }
     );
   }

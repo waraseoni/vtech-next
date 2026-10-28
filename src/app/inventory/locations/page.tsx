@@ -85,6 +85,13 @@ const toParts = (r: {
   box: r.box ?? undefined,
 });
 
+// Local QR generation — inventory labels must not depend on a third-party
+// image service (offline printing, no location tokens leaving the browser).
+async function makeQr(data: string): Promise<string> {
+  const QR = (await import("qrcode")).default;
+  return QR.toDataURL(data, { width: 200, margin: 1, errorCorrectionLevel: "M" });
+}
+
 const genCode = (ids: {
   zone_id?: number | null;
   rack_id?: number | null;
@@ -120,6 +127,7 @@ export default function LocationsPage() {
   const [formErr, setFormErr] = useState("");
 
   const [qrModalLoc, setQrModalLoc] = useState<LocationWithCount | null>(null);
+  const [qrData, setQrData] = useState("");
   const [expandedId, setExpandedId] = useState<number | null>(null);
 
   /* ─── role check ────────────────────────────────────────────────────── */
@@ -333,22 +341,48 @@ export default function LocationsPage() {
   /* ─── QR helpers ────────────────────────────────────────────────────── */
 
   const qrToken = (loc: Partial<LocationParts>) => encodeLocationToken(loc);
-  const qrUrl = (loc: Partial<LocationParts>) =>
-    `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrToken(loc))}`;
 
-  const printQR = () => {
+  useEffect(() => {
+    if (!qrModalLoc) {
+      setQrData("");
+      return;
+    }
+    let cancelled = false;
+    makeQr(encodeLocationToken(toParts(qrModalLoc)))
+      .then((url) => {
+        if (!cancelled) setQrData(url);
+      })
+      .catch(() => {
+        if (!cancelled) setQrData("");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [qrModalLoc]);
+
+  const printQR = async () => {
+    if (!qrModalLoc) return;
     const win = window.open("", "_blank", "width=400,height=500");
-    if (!win || !qrModalLoc) return;
+    if (!win) return;
     const parts = toParts(qrModalLoc);
     const token = qrToken(parts);
     const path = locPath(parts);
+    let dataUrl = qrData;
+    if (!dataUrl) {
+      try {
+        dataUrl = await makeQr(token);
+      } catch {
+        win.close();
+        return;
+      }
+    }
     win.document.write(`
       <html><head><title>QR - ${path}</title>
       <style>body{font-family:sans-serif;text-align:center;padding:30px;}
       img{margin:10px auto;} h2{margin-top:16px;font-size:14px;}
       p{font-size:12px;color:#666;word-break:break-all;}</style></head>
       <body>
-        <img src="${qrUrl(parts)}" width="200" height="200" />
+        <img src="${dataUrl}" width="200" height="200" />
         <h2>${path}</h2>
         <p>${token}</p>
         <script>window.onload=function(){window.print();window.close();}<\/script>
@@ -699,15 +733,20 @@ export default function LocationsPage() {
               </button>
             </div>
             <div className="p-6 flex flex-col items-center gap-4">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={qrUrl(toParts(qrModalLoc))}
-                alt="Location QR"
-                width={200}
-                height={200}
-                className="rounded-xl bg-white p-2"
-                onDoubleClick={undefined}
-              />
+              {qrData ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={qrData}
+                  alt="Location QR"
+                  width={200}
+                  height={200}
+                  className="rounded-xl bg-white p-2"
+                />
+              ) : (
+                <div className="w-[200px] h-[200px] rounded-xl bg-white flex items-center justify-center">
+                  <Loader2 size={24} className="animate-spin text-slate-400" />
+                </div>
+              )}
               <div className="text-center">
                 {qrModalLoc.code && (
                   <p className="text-xs font-mono font-bold text-blue-400 mb-1">

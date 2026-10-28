@@ -1,28 +1,12 @@
 import { getAdminSupabase } from "@/lib/admin-supabase";
 import { NextRequest, NextResponse } from "next/server";
 import { requireStaff } from "@/lib/api-auth";
+import { getPrintShop } from "@/lib/print-shop";
+import { printHtmlResponse } from "@/lib/print-html";
 
 const supabase = getAdminSupabase();
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-async function fetchShopInfo() {
-  const { data } = await supabase.from("system_info").select("meta_field, meta_value");
-  const info: Record<string, string> = {};
-  (data || []).forEach((r: { meta_field: string; meta_value: string }) => {
-    info[r.meta_field] = r.meta_value;
-  });
-  return {
-    name: info.name || "V-Technologies",
-    tagline: info.tagline || "Power Supply & Stage Light Repair Solutions",
-    address: info.address || "",
-    mobile: info.contact || "",
-    email: info.email || "",
-    gstin: info.gst_no || "",
-    logo: info.logo || "",
-    signature: info.signature || "",
-  };
-}
-
 function fmtDate(d: string | null): string {
   if (!d) return "—";
   return new Intl.DateTimeFormat("en-IN", {
@@ -54,7 +38,7 @@ export async function GET(req: NextRequest) {
     return new NextResponse("po_id parameter required", { status: 400 });
   }
 
-  const SHOP = await fetchShopInfo();
+  const SHOP = await getPrintShop();
 
   // ── Fetch PO header ──
   const { data: po } = await supabase
@@ -373,8 +357,5 @@ document.addEventListener("keydown",e=>{
 </body>
 </html>`;
 
-  return new NextResponse(html, {
-    status: 200,
-    headers: { "Content-Type": "text/html; charset=utf-8" },
-  });
+  return printHtmlResponse(html);
 }

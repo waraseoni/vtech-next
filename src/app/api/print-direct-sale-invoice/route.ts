@@ -2,28 +2,10 @@ import { getAdminSupabase } from "@/lib/admin-supabase";
 import { NextRequest, NextResponse } from "next/server";
 
 import { requireStaff } from "@/lib/api-auth";
+import { getPrintShop, qrDataUrl } from "@/lib/print-shop";
+import { printHtmlResponse } from "@/lib/print-html";
 
 const supabase = getAdminSupabase();
-
-// ─── Helper: fetch system info (dynamic firm details) ────────────────────────
-async function fetchShopInfo() {
-  const { data } = await supabase.from("system_info").select("meta_field, meta_value");
-  const info: Record<string, string> = {};
-  (data || []).forEach((r) => {
-    info[r.meta_field] = r.meta_value;
-  });
-  return {
-    name: info.name || "V-Technologies",
-    address:
-      info.address ||
-      "F4, Hotel Plaza (Now Madhushala), Beside Jayanti Complex, Marhatal, Jabalpur – 482002",
-    mobile: info.contact || "9179105875",
-    email: info.email || "",
-    gstin: info.gst_no || info.gstin || "",
-    upiId: info.upi_id || "",
-    logo: info.logo || "",
-  };
-}
 
 const CGST_RATE = 9;
 const SGST_RATE = 9;
@@ -127,7 +109,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Missing sale id" }, { status: 400 });
   }
 
-  const SHOP = await fetchShopInfo();
+  const SHOP = await getPrintShop();
 
   const { data: sale, error } = await supabase
     .from("direct_sales")
@@ -193,17 +175,10 @@ export async function GET(request: NextRequest) {
   const sgstAmt = isGST ? Math.round(subtotal * (SGST_RATE / 100) * 100) / 100 : 0;
   const grandTotal = isGST ? subtotal + cgstAmt + sgstAmt : sale.total_amount;
 
-  // ── Fetch UPI ID from system_info ──────────────────────────────────────────
-  const upiId = SHOP.upiId || SHOP.mobile + "@ybl";
-
-  function qrUrl(data: string, size = 130): string {
-    return `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(data)}`;
-  }
-  function upiQrUrl(amount: number): string {
-    const upiUri = `upi://pay?pa=${encodeURIComponent(upiId)}&pn=${encodeURIComponent(SHOP.name)}&am=${encodeURIComponent(amount)}&cu=INR&tn=${encodeURIComponent("Payment for " + sale.sale_code)}`;
-    return qrUrl(upiUri, 130);
-  }
-  const upiQrImg = upiQrUrl(grandTotal);
+  // ── UPI QR (generated locally; no third-party image service) ───────────────
+  const upiId = SHOP.upiId || (SHOP.mobile ? `${SHOP.mobile}@ybl` : "");
+  const upiUri = `upi://pay?pa=${encodeURIComponent(upiId)}&pn=${encodeURIComponent(SHOP.name)}&am=${encodeURIComponent(grandTotal)}&cu=INR&tn=${encodeURIComponent("Payment for " + sale.sale_code)}`;
+  const upiQrImg = upiId ? await qrDataUrl(upiUri, 130) : "";
 
   const html = `<!DOCTYPE html>
 <html lang="en">
@@ -323,13 +298,17 @@ export async function GET(request: NextRequest) {
   
   ${sale.remarks ? `<div class="remarks"><b>Remarks:</b> ${sale.remarks}</div>` : ""}
   
-  <div style="display:flex;justify-content:center;gap:24px;margin:20px 0;padding:16px;background:#f8f9fa;border:1px solid #dee2e6;border-radius:6px;">
+  ${
+    upiId
+      ? `<div style="display:flex;justify-content:center;gap:24px;margin:20px 0;padding:16px;background:#f8f9fa;border:1px solid #dee2e6;border-radius:6px;">
     <div style="text-align:center;">
       <img src="${upiQrImg}" alt="UPI QR Code" width="120" height="120" style="border:1px solid #ddd;border-radius:4px;" />
       <div style="font-size:11px;color:#1a7a3a;margin-top:6px;font-weight:700;">Scan to Pay UPI</div>
       <div style="font-size:10px;color:#999;">${upiId}</div>
     </div>
-  </div>
+  </div>`
+      : ""
+  }
   
   <div class="footer">Goods sold are not returnable. Thank you for your business! — ${SHOP.name}</div>
   
@@ -350,8 +329,5 @@ export async function GET(request: NextRequest) {
 </body>
 </html>`;
 
-  return new NextResponse(html, {
-    status: 200,
-    headers: { "Content-Type": "text/html; charset=utf-8" },
-  });
+  return printHtmlResponse(html);
 }

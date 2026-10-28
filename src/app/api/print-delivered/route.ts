@@ -2,15 +2,11 @@ import { getAdminSupabase } from "@/lib/admin-supabase";
 import { NextRequest, NextResponse } from "next/server";
 
 import { requireStaff } from "@/lib/api-auth";
+import { getPrintShop } from "@/lib/print-shop";
 import { fetchAll, fetchAllIn } from "@/lib/fetch-all";
+import { printHtmlResponse } from "@/lib/print-html";
 
 const supabase = getAdminSupabase();
-
-const SHOP = {
-  name: "V-Technologies",
-  address: "F4, Hotel Plaza (Now Madhushala), Beside Jayanti Complex, Marhatal, Jabalpur – 482002",
-  mobile: "9179105875",
-};
 
 const inr = (n: number) =>
   "₹" + (n || 0).toLocaleString("en-IN", { minimumFractionDigits: 0, maximumFractionDigits: 2 });
@@ -134,6 +130,8 @@ export async function GET(request: NextRequest) {
     })
     .join("");
 
+  const SHOP = await getPrintShop();
+
   const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -230,5 +228,5 @@ document.addEventListener("keydown", e => {
 </body>
 </html>`;
 
-  return new NextResponse(html, { headers: { "Content-Type": "text/html; charset=utf-8" } });
+  return printHtmlResponse(html);
 }

@@ -2,6 +2,7 @@ import { getAdminSupabase } from "@/lib/admin-supabase";
 import { NextResponse } from "next/server";
 
 import { requireClient } from "@/lib/api-auth";
+import { logger } from "@/lib/logger";
 
 const supabaseAdmin = getAdminSupabase();
 
@@ -17,7 +18,13 @@ export async function GET() {
     .order("payment_date", { ascending: false })
     .limit(200);
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) {
+    logger.error("client/payments lookup failed:", error.message);
+    return NextResponse.json(
+      { error: "Payments fetch nahi ho paye. Dobara try karein." },
+      { status: 500 }
+    );
+  }
 
   return NextResponse.json({ payments: data || [] });
 }

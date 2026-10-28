@@ -19,12 +19,15 @@ export async function proxy(request: NextRequest) {
 
   const path = request.nextUrl.pathname;
 
-  if (
-    path.startsWith("/_next") ||
-    path.includes("favicon") ||
-    path.startsWith("/api") ||
-    /\.[a-zA-Z0-9]+$/.test(path)
-  ) {
+  // API responses me customer data hota hai — browser/CDN heuristic caching se
+  // bachne ke liye default no-store. Route apna header set kare to wahi final
+  // response me chalta hai.
+  if (path.startsWith("/api")) {
+    response.headers.set("Cache-Control", "private, no-store");
+    return response;
+  }
+
+  if (path.startsWith("/_next") || path.includes("favicon") || /\.[a-zA-Z0-9]+$/.test(path)) {
     return response;
   }
 

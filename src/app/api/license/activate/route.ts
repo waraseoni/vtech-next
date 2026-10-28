@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { requireAdmin } from "@/lib/api-auth";
 import { isValidLicenseKey, makeActivationId, activateRemoteLicense } from "@/lib/license";
+import { logger } from "@/lib/logger";
 
 const supabaseAdmin = getAdminSupabase();
 
@@ -93,8 +94,9 @@ export async function POST(req: NextRequest) {
       expiresAt: res.expiresAt ?? null,
     });
   } catch (err: unknown) {
+    logger.error("license/activate failed:", err);
     return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Server error" },
+      { error: "License activate nahi ho payi. Key check karke dobara try karein." },
       { status: 500 }
     );
   }

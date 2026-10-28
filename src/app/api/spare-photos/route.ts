@@ -2,6 +2,8 @@ import { getAdminSupabase } from "@/lib/admin-supabase";
 import { NextRequest, NextResponse } from "next/server";
 
 import { requireStaffWriter } from "@/lib/api-auth";
+import { validateImageBuffer } from "@/lib/image-upload";
+import { logger } from "@/lib/logger";
 
 // ─── Supabase Admin Client (service_role) ────────────────────────────────────
 const supabase = getAdminSupabase();
@@ -38,22 +40,26 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ status: "failed", msg: "No file provided" }, { status: 400 });
 
     const buffer = Buffer.from(await file.arrayBuffer());
-    if (buffer.byteLength > 200 * 1024) {
+    const check = validateImageBuffer(buffer);
+    if (!check.ok) {
       return NextResponse.json(
-        { status: "failed", msg: `${file.name} > 200KB — compress karke dobara try karein` },
+        { status: "failed", msg: `${file.name}: ${check.error}` },
         { status: 400 }
       );
     }
-    const fileName = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${file.name.split(".").pop() || "jpg"}`;
+    const fileName = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${check.ext}`;
     const { error: upErr } = await supabase.storage
       .from(BUCKET)
-      .upload(fileName, buffer, { upsert: true, contentType: file.type });
+      .upload(fileName, buffer, { upsert: true, contentType: check.mime });
     if (upErr) throw new Error(upErr.message);
 
     const { data: urlData } = supabase.storage.from(BUCKET).getPublicUrl(fileName);
     return NextResponse.json({ status: "success", url: urlData.publicUrl });
   } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : "Unknown error";
-    return NextResponse.json({ status: "failed", msg }, { status: 500 });
+    logger.error("spare-photos upload failed:", err);
+    return NextResponse.json(
+      { status: "failed", msg: "Photo upload fail hua — dobara try karein" },
+      { status: 500 }
+    );
   }
 }

@@ -4,6 +4,7 @@ import { isLicenseAdminConfigured, getLicense } from "@/lib/license-admin";
 import { patchClientCredentials } from "@/lib/client-creds";
 import { deriveSetupToken } from "@/lib/setup-kit";
 import { pushEnvToVercel, triggerVercelDeploy, addDomainToVercel } from "@/lib/vercel-push";
+import { logger } from "@/lib/logger";
 
 type Ctx = { params: Promise<{ licenseId: string }> };
 
@@ -146,8 +147,9 @@ export async function POST(req: NextRequest, ctx: Ctx) {
         `Deploy log: https://vercel.com/dashboard`,
     });
   } catch (err: unknown) {
+    logger.error("developer/setup-kit push failed:", err);
     return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Server error" },
+      { error: "Push fail hua — credentials/keys check karein ya server logs dekhein." },
       { status: 500 }
     );
   }

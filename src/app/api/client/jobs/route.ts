@@ -2,6 +2,7 @@ import { getAdminSupabase } from "@/lib/admin-supabase";
 import { NextRequest, NextResponse } from "next/server";
 
 import { requireClient } from "@/lib/api-auth";
+import { logger } from "@/lib/logger";
 
 const supabaseAdmin = getAdminSupabase();
 
@@ -26,7 +27,13 @@ export async function GET(request: NextRequest) {
 
   const { data, error } = await query;
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) {
+    logger.error("client/jobs lookup failed:", error.message);
+    return NextResponse.json(
+      { error: "Jobs fetch nahi ho paye. Dobara try karein." },
+      { status: 500 }
+    );
+  }
 
   return NextResponse.json({ jobs: data || [] });
 }

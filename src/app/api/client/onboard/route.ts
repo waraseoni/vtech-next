@@ -2,6 +2,7 @@ import { getAdminSupabase } from "@/lib/admin-supabase";
 import { NextResponse } from "next/server";
 
 import { requireUser } from "@/lib/api-auth";
+import { logger } from "@/lib/logger";
 
 const supabaseAdmin = getAdminSupabase();
 
@@ -53,7 +54,11 @@ export async function POST() {
     .maybeSingle();
 
   if (clientErr) {
-    return NextResponse.json({ error: clientErr.message }, { status: 500 });
+    logger.error("client/onboard client lookup failed:", clientErr.message);
+    return NextResponse.json(
+      { error: "Account check nahi ho paya. Dobara try karein." },
+      { status: 500 }
+    );
   }
 
   if (!client) {
@@ -90,8 +95,9 @@ export async function POST() {
     .upsert({ id: user.id, full_name: fullName, role: "client", client_id: client.id });
 
   if (upsertErr) {
+    logger.error("client/onboard profile upsert failed:", upsertErr.message);
     return NextResponse.json(
-      { error: "Profile save nahi hua: " + upsertErr.message },
+      { error: "Profile save nahi hua. Dobara try karein." },
       { status: 500 }
     );
   }

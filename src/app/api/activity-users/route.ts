@@ -1,6 +1,7 @@
 import { getAdminSupabase } from "@/lib/admin-supabase";
 import { NextResponse } from "next/server";
 
+import { requireStaff } from "@/lib/api-auth";
 import { logger } from "@/lib/logger";
 
 // Resolves activity log user_id → display name.
@@ -12,6 +13,11 @@ import { logger } from "@/lib/logger";
 
 export async function GET(request: Request) {
   try {
+    const user = await requireStaff();
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const url = new URL(request.url);
     const idsParam = url.searchParams.get("ids") || "";
     const ids = [

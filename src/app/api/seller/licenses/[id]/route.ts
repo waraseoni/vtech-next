@@ -7,6 +7,7 @@ import {
   deleteLicense,
   type LicenseInput,
 } from "@/lib/license-admin";
+import { logger } from "@/lib/logger";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -43,8 +44,9 @@ export async function GET(_req: NextRequest, ctx: Ctx) {
     if (!row) return NextResponse.json({ error: "Not found" }, { status: 404 });
     return NextResponse.json(row);
   } catch (err: unknown) {
+    logger.error("seller/licenses GET failed:", err);
     return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Server error" },
+      { error: "License load nahi ho payi. Dobara try karein." },
       { status: 500 }
     );
   }
@@ -112,8 +114,9 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
     const row = await updateLicense(id, input);
     return NextResponse.json(row);
   } catch (err: unknown) {
+    logger.error("seller/licenses update failed:", err);
     return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Server error" },
+      { error: "License update nahi ho payi. Input check karke dobara try karein." },
       { status: 500 }
     );
   }
@@ -132,8 +135,9 @@ export async function DELETE(_req: NextRequest, ctx: Ctx) {
     await deleteLicense(id);
     return NextResponse.json({ ok: true });
   } catch (err: unknown) {
+    logger.error("seller/licenses delete failed:", err);
     return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Server error" },
+      { error: "License delete nahi ho payi. Dobara try karein." },
       { status: 500 }
     );
   }

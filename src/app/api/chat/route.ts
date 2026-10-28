@@ -8,6 +8,7 @@ import { isKnownAiProvider } from "@/lib/ai-provider-catalog";
 import { requireStaff, getSessionRole } from "@/lib/api-auth";
 import { getLiveContext, type AiRole } from "@/lib/gemini-tools";
 import { logger } from "@/lib/logger";
+import { rateLimit } from "@/lib/rate-limit";
 
 /**
  * Chat / WhatsApp AI route.
@@ -27,6 +28,14 @@ export async function POST(request: NextRequest) {
   try {
     const user = await requireStaff();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+    const limit = rateLimit(`chat:${user.id}`, 20, 60_000);
+    if (!limit.ok) {
+      return NextResponse.json(
+        { error: "Bahut zyada AI requests — thodi der baad try karein." },
+        { status: 429, headers: { "Retry-After": String(limit.retryAfter) } }
+      );
+    }
 
     const sessionRole = await getSessionRole();
     const role: AiRole = sessionRole === "admin" ? "admin" : "staff";
