@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.71.4](https://github.com/waraseoni/vtech-next/compare/v1.71.3...v1.71.4) (2026-10-28)
+
+### Bug Fixes
+
+* **geofence:** allow geolocation in Permissions-Policy header ([aa7bfb5](https://github.com/waraseoni/vtech-next/commit/aa7bfb541207d5dff7d21e9d8eac8bc54222403d))
+
 ## [1.71.3](https://github.com/waraseoni/vtech-next/compare/v1.71.2...v1.71.3) (2026-10-28)
 
 ### Bug Fixes
