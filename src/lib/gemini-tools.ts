@@ -413,36 +413,44 @@ export async function executeGeminiTool(
     }
 
     if (name === "get_job_statistics") {
+      const startDate = args?.start_date || args?.from;
+      const endDate = args?.end_date || args?.to;
+
       let countQuery = supabase
         .from("transaction_list")
         .select("*", { count: "exact", head: true })
         .eq("del_status", 0);
 
-      if (args?.start_date) {
-        countQuery = countQuery.gte("date_created", `${args.start_date}T00:00:00+05:30`);
+      if (startDate) {
+        countQuery = countQuery.gte("date_created", `${startDate}T00:00:00+05:30`);
       }
-      if (args?.end_date) {
-        countQuery = countQuery.lte("date_created", `${args.end_date}T23:59:59+05:30`);
+      if (endDate) {
+        countQuery = countQuery.lte("date_created", `${endDate}T23:59:59+05:30`);
       }
 
       const { count: jobsCount } = await countQuery;
 
       // Revenue calculation - filter by completion date (status 5 ONLY for Ledger revenue)
-      const { data: revData } = await pageAll(
-        supabase
-          .from("transaction_list")
-          .select("amount, status, date_completed, date_updated")
-          .eq("status", 5)
-          .eq("del_status", 0)
-          .gte("date_completed", `${args.start_date}T00:00:00+05:30`)
-          .lte("date_completed", `${args.end_date}T23:59:59+05:30`)
-      );
+      let revQuery = supabase
+        .from("transaction_list")
+        .select("amount, status, date_completed, date_updated")
+        .eq("status", 5)
+        .eq("del_status", 0);
+
+      if (startDate) {
+        revQuery = revQuery.gte("date_completed", `${startDate}T00:00:00+05:30`);
+      }
+      if (endDate) {
+        revQuery = revQuery.lte("date_completed", `${endDate}T23:59:59+05:30`);
+      }
+
+      const { data: revData } = await pageAll(revQuery);
 
       const totalRevenue = revData?.reduce((sum, job) => sum + (Number(job.amount) || 0), 0) || 0;
 
       return {
-        start_date_filtered: args?.start_date || "beginning of time",
-        end_date_filtered: args?.end_date || "today",
+        start_date_filtered: startDate || "beginning of time",
+        end_date_filtered: endDate || "today",
         total_jobs_created_in_period: jobsCount,
         revenue_from_delivered_paid_jobs: totalRevenue,
       };

@@ -52,6 +52,8 @@ const RETRYABLE_PATTERNS: RegExp[] = [
   /\b5\d{2}\b/,
   /koi text response nahi mila/i,
   /failed to generate final response/i,
+  /tool_use_failed/i,
+  /failed to recover/i,
 ];
 
 /** Non-retryable: request hi galat hai — dusra provider bhi fail karega. */
@@ -61,7 +63,8 @@ const NON_RETRYABLE_PATTERNS: RegExp[] = [
   /content policy/i,
   /invalid argument/i,
   /malformed/i,
-  /\b400\b/,
+  // 400 with tool_use_failed is retryable on alternative provider, so exclude tool_use_failed
+  /(?<!tool_use_failed.*)\b400\b(?!.*tool_use_failed)/,
 ];
 
 /** Response known error signature se shuru hota hai? */

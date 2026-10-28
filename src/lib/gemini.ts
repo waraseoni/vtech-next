@@ -72,30 +72,36 @@ export async function getChatResponse(
     // 1. Send the actual user message
     let response = await chat.sendMessage({ message: initialPrompt });
 
-    // 2. Check if the model wants to call any functions/tools
-    const functionCalls = response.functionCalls;
+    // 2. Multi-turn Tool Loop (up to 3 turns)
+    let turns = 0;
+    while (turns < 3) {
+      const functionCalls = response.functionCalls;
+      if (!functionCalls || functionCalls.length === 0) {
+        break;
+      }
 
-    if (functionCalls && functionCalls.length > 0) {
-      // We only handle the first function call for simplicity
-      const call = functionCalls[0];
-      const callName = call.name;
-      if (!callName) throw new Error("Gemini ne function call bheja par name missing tha");
+      turns++;
+      // Execute all returned function calls
+      const toolResponses = [];
+      for (const call of functionCalls) {
+        const callName = call.name;
+        if (!callName) continue;
 
-      logger.debug(`Gemini requested tool: ${callName}`, call.args);
-
-      // Execute our internal function
-      const apiResponse = await executeGeminiTool({ name: callName, args: call.args }, role);
-
-      // 3. Send the API response back to the model so it can answer the user
-      response = await chat.sendMessage({
-        message: [
-          {
-            functionResponse: {
-              name: callName,
-              response: apiResponse,
-            },
+        logger.debug(`Gemini requested tool: ${callName}`, call.args);
+        const apiResponse = await executeGeminiTool({ name: callName, args: call.args }, role);
+        toolResponses.push({
+          functionResponse: {
+            name: callName,
+            response: apiResponse,
           },
-        ],
+        });
+      }
+
+      if (toolResponses.length === 0) break;
+
+      // Send the tool response(s) back to Gemini
+      response = await chat.sendMessage({
+        message: toolResponses,
       });
     }
 

@@ -48,6 +48,11 @@ describe("isRetryableAiError", () => {
     expect(isRetryableAiError("API Error: models/gemini-9 not found")).toBe(true);
     expect(isRetryableAiError("API Error: 503 Service Unavailable")).toBe(true);
     expect(isRetryableAiError("API Error: request timed out")).toBe(true);
+    expect(
+      isRetryableAiError(
+        'Groq API Error: 400 {"error":{"message":"Tool choice is none, but model called a tool","type":"invalid_request_error","code":"tool_use_failed"}}'
+      )
+    ).toBe(true);
   });
 
   it("content safety / invalid request retryable NAHI", () => {

@@ -1,4 +1,4 @@
-﻿import Groq from "groq-sdk";
+import Groq from "groq-sdk";
 import type { ChatCompletionMessageParam } from "groq-sdk/resources/chat/completions";
 import { geminiTools, executeGeminiTool, buildSystemPrompt, type AiRole } from "./gemini-tools";
 import { logger } from "@/lib/logger";
@@ -84,13 +84,53 @@ export async function getGroqChatResponse(
         });
       }
 
-      // Get final response from Groq
+      // Get final response from Groq. Allow subsequent tool calls if the model needs more data.
       const finalResponse = await groq.chat.completions.create({
         model: modelId,
         messages: formattedHistory as unknown as ChatCompletionMessageParam[],
+        tools: groqTools,
+        tool_choice: "auto",
       });
 
-      return finalResponse.choices[0]?.message?.content || "No response generated.";
+      const secondMessage = finalResponse.choices[0]?.message;
+      const secondToolCalls = secondMessage?.tool_calls;
+
+      if (secondToolCalls && secondToolCalls.length > 0) {
+        formattedHistory.push(secondMessage);
+        for (const toolCall of secondToolCalls) {
+          logger.debug(`Groq follow-up tool request: ${toolCall.function.name}`);
+          let functionArgs = {};
+          try {
+            functionArgs = JSON.parse(toolCall.function.arguments);
+          } catch (e) {
+            logger.error("Arg parse error:", e);
+          }
+
+          const apiResponse = await executeGeminiTool(
+            {
+              name: toolCall.function.name,
+              args: functionArgs,
+            },
+            role
+          );
+
+          formattedHistory.push({
+            role: "tool",
+            tool_call_id: toolCall.id,
+            name: toolCall.function.name,
+            content: JSON.stringify(apiResponse),
+          });
+        }
+
+        const thirdResponse = await groq.chat.completions.create({
+          model: modelId,
+          messages: formattedHistory as unknown as ChatCompletionMessageParam[],
+        });
+
+        return thirdResponse.choices[0]?.message?.content || "No response generated.";
+      }
+
+      return secondMessage?.content || "No response generated.";
     }
 
     // --- FALLBACK: Handle Textual Tool Calls (<function=...>) safely ---
@@ -145,16 +185,48 @@ export async function getGroqChatResponse(
         if (failedGenStr) {
           logger.debug("Intercepted Groq 400 Error failed_generation:", failedGenStr);
 
-          const nameMatch = failedGenStr.match(/<function=([\w_]+)/);
-          const argsMatch = failedGenStr.match(/{[\s\S]*}/); // Extract JSON args
+          let name = "";
+          let args: Record<string, unknown> = {};
 
-          if (nameMatch && argsMatch) {
-            const name = nameMatch[1];
-            let args = {};
-            try {
-              args = JSON.parse(argsMatch[0]);
-            } catch {}
+          // 1. Case: Groq returns JSON in failed_generation: {"name": "...", "arguments": {...}}
+          try {
+            const parsedGen = JSON.parse(failedGenStr);
+            if (parsedGen && typeof parsedGen === "object") {
+              if (parsedGen.name || parsedGen.function) {
+                name = parsedGen.name || parsedGen.function;
+                const rawArgs = parsedGen.arguments ?? parsedGen.parameters ?? {};
+                if (typeof rawArgs === "string") {
+                  try {
+                    args = JSON.parse(rawArgs);
+                  } catch {
+                    args = {};
+                  }
+                } else if (typeof rawArgs === "object" && rawArgs !== null) {
+                  args = rawArgs as Record<string, unknown>;
+                }
+              }
+            }
+          } catch {
+            // Not valid JSON, will fallback to regex
+          }
 
+          // 2. Case: Groq returns XML-like tag in failed_generation: <function=name>{...}</function>
+          if (!name) {
+            const nameMatch = failedGenStr.match(/<function=([\w_]+)/);
+            const argsMatch = failedGenStr.match(/{[\s\S]*}/); // Extract JSON args
+            if (nameMatch) {
+              name = nameMatch[1];
+              if (argsMatch) {
+                try {
+                  args = JSON.parse(argsMatch[0]);
+                } catch {
+                  args = {};
+                }
+              }
+            }
+          }
+
+          if (name) {
             const apiResponse = await executeGeminiTool({ name, args }, role);
 
             const fallbackHistory = [...formattedHistory];
