@@ -47,6 +47,8 @@ const CSP_REPORT_ONLY = [
   "base-uri 'self'",
   "form-action 'self'",
   "object-src 'none'",
+  "report-uri /api/csp-report",
+  "report-to csp-endpoint",
 ].join("; ");
 
 const nextConfig: NextConfig = {
@@ -101,6 +103,7 @@ const nextConfig: NextConfig = {
         source: "/:path*",
         headers: [
           { key: "Content-Security-Policy-Report-Only", value: CSP_REPORT_ONLY },
+          { key: "Reporting-Endpoints", value: 'csp-endpoint="/api/csp-report"' },
           { key: "X-Content-Type-Options", value: "nosniff" },
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
           { key: "X-Frame-Options", value: "SAMEORIGIN" },

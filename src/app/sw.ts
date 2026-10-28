@@ -76,9 +76,16 @@ const CUSTOM_CACHE: RuntimeCaching[] = [
       ],
     }),
   },
-  // ✅ Images — hashed URLs, StaleWhileRevalidate safe
+  // ✅ Images — sirf same-origin static assets. Supabase storage URLs
+  //    (client/job photos) cross-origin hote hain aur public bucket hone ke
+  //    baad bhi shared device par logout ke baad Cache Storage me 30 din
+  //    reh jate hain — unhe kabhi cache nahi karte. `/api/` bhi excluded
+  //    (auth images network se aayen).
   {
-    matcher: /\.(?:jpg|jpeg|gif|png|svg|ico|webp)$/i,
+    matcher: ({ url, sameOrigin }) =>
+      sameOrigin &&
+      !url.pathname.startsWith("/api/") &&
+      /\.(?:jpg|jpeg|gif|png|svg|ico|webp)$/i.test(url.pathname),
     handler: new StaleWhileRevalidate({
       cacheName: "static-image-assets",
       plugins: [

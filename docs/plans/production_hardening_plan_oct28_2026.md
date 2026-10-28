@@ -111,7 +111,7 @@ Goal: feature wahi rahe, par koi doosre ka data na dekh sake aur scrape na ho.
 |---|---|
 | `job_id` + `code` + valid `token` | Full: item, fault, status, dates, amount, service/product lines |
 | `job_id` + `code`, **no/invalid token** | Limited: job_id, code, item, fault, status, dates. **No amount, no prices, no remark** |
-| `phone` (last 4) match with client record | Full (legacy slips ke liye escape hatch) |
+| `phone` (last 4) match with client record | Full (legacy slips ke liye escape hatch; **implemented**, 10 attempts / 10 min / IP) |
 | `recent=1` | **Removed** — 410/`[]` |
 | > N requests/min/IP | `429` with `Retry-After` |
 
@@ -370,7 +370,7 @@ e2e write test na likho.
 |---|---|---|
 | `PUBLIC_TRACKING_SECRET` | server | HMAC for tracking token (32+ bytes) |
 | `NEXT_PUBLIC_SITE_URL` | public | QR + tracking link base |
-| `PUBLIC_TRACKING_ENFORCE` | server | `0` limited-only rollout, `1` full enforcement |
+| `PUBLIC_TRACKING_ENFORCE` | server | **`1` recommended** (secret set hone ke baad). `1` = token/phone valid → full, warna limited. Unset/`0` = purana full-view behaviour |
 | `UPSTASH_REDIS_REST_URL/TOKEN` | server | rate limiting (or Vercel KV) |
 | `SENTRY_DSN` / `NEXT_PUBLIC_SENTRY_DSN` | server/public | error monitoring |
 | `R2_*` / `BACKUP_AGE_PUBLIC_KEY` | CI | offsite encrypted backup |
@@ -385,7 +385,9 @@ Koi secret code/repo me nahi. `.env.example` me sirf placeholders.
    Recommendation: manual Job ID + Code par limited; full only token/phone-verified.
    **Abhi:** `PUBLIC_TRACKING_ENFORCE` unset → purana behaviour (full). Production me
    token rollout ke baad `1` karna hai.
-2. **Phone last-4 fallback chahiye?** (purane slips ke liye recommended) — **pending**
+2. **Phone last-4 fallback chahiye?** — **done:** `src/lib/phone-last4.ts` +
+   `/api/public/job-status?phone=1234` (10 attempts / 10 min / IP). Page par
+   limited view me "Unlock" input hai.
 3. **`recent` list:** remove + browser-local recents — **done** (server list 410).
 4. **Rate limit:** Upstash free vs Vercel KV? — **pending** (in-memory fallback live)
 5. **Offsite backup:** Cloudflare R2 vs S3 vs Google Drive (rclone)? — **pending**
@@ -397,7 +399,11 @@ Koi secret code/repo me nahi. `.env.example` me sirf placeholders.
 ## 13. Definition of Done
 
 - [x] `recent=1` se koi global job list nahi milti
-- [x] Sequential job IDs se amount/remark scrape nahi ho sakte (token + rate limit; phone fallback pending)
+- [~] Sequential job IDs se amount/remark scrape nahi ho sakte — **ENFORCE=1 par
+  hi true hai**. Abhi (`PUBLIC_TRACKING_ENFORCE` unset) token ke bina bhi full
+  view milta hai; rate limit 60/min/IP enumeration slow karta hai, rokta nahi.
+  Secret + enforce tabhi jab phone-fallback decision ho jaye.
+- [x] Legacy slip phone-last-4 fallback (token ke bina full view, 10 attempts/10min/IP)
 - [x] Printed bill ka QR valid URL + token ke saath scan hota hai; QR internet ke bina render
 - [x] Har client ke print par uski branding (koi hardcoded V-Technologies nahi)
 - [x] `activity-users` 401 without session
@@ -445,8 +451,9 @@ rollback script. Bina in steps ke kuch nahi.
 
 ## 16. Status, Benefits & Remaining Work (2026-10-28)
 
-**State:** Phase 1 + WS-A/WS-B/WS-C code complete; **deploy pending**. DB untouched.
-Typecheck/lint clean, Vitest **515/515**, read-only smoke pass (dev).
+**State:** Phase 1 + WS-A/WS-B/WS-C code complete aur **production par live**
+(`1.71.2`, commit `7e40d44`). DB untouched. Typecheck/lint clean, Vitest
+**532/532**, read-only smoke pass (dev).
 
 ### 16.1 Benefits delivered
 
@@ -458,18 +465,17 @@ Typecheck/lint clean, Vitest **515/515**, read-only smoke pass (dev).
 | Print XSS | Client/item/remark text HTML me raw | 23 print routes par nonce-CSP, inline handlers data-attrs | Injected script se staff session safe |
 | Uploads | Client MIME/extension trust; SVG/HTML possible | Magic-byte JPEG/PNG/WebP; extension/content-type server-decided; signature data URL restricted | Storage abuse + stored XSS blocked |
 | Auth/enumeration | `activity-users` open; setup double-admin race | Staff guard 401; setup single-flight + 10/h/IP | Staff names enumerate nahi hote, setup race band |
-| Headers/cache | No CSP/HSTS/referrer policy; API cache ambiguous | Baseline headers + CSP Report-Only; `/api/*` `private, no-store` | Browser hardening, customer data cache me nahi |
+| Headers/cache | No CSP/HSTS/referrer policy; API cache ambiguous | Baseline headers + CSP Report-Only + `/api/csp-report` sink; `/api/*` `private, no-store` | Browser hardening, customer data cache me nahi, CSP enforce ka data available |
 | Ops | Koi health/uptime endpoint nahi | `/api/health` (read-only probe, 200/503, version/commit) | Monitoring/alerting possible |
 | E2E safety | Write tests prod DB ke against chal sakte the | `E2E_ALLOW_WRITES` + `E2E_WRITE_HOST` double gate | Koi accidental test row nahi |
-| Tests | In features ke tests nahi | 57 naye tests (tracking token, rate limit, print shop, image upload, print HTML, health) | Regression safety |
+| Tests | In features ke tests nahi | 74 naye tests (tracking token, rate limit, print shop, image upload, print HTML, health, CSP report, phone last-4, public tracking matrix) | Regression safety |
 
 ### 16.2 Remaining work + estimates
 
 | Item | Dependency | Effort | Risk |
 |---|---|---|---|
-| Prod par limited/full view verify + `PUBLIC_TRACKING_ENFORCE=1` | Deploy + phone-fallback decision | 0.5 din | Medium (legacy slips limited ho jayenge) |
-| Phone last-4 fallback (legacy slips) | Aapka design decision | 1–1.5 din | Low |
-| CSP ko Report-Only se enforce karna | 3–5 din prod console observation | 0.5 din | Low |
+| Prod env set + `PUBLIC_TRACKING_ENFORCE=1` | Vercel me `PUBLIC_TRACKING_SECRET` add | 15 min | Low (phone fallback ready) |
+| CSP ko Report-Only se enforce karna | 3–5 din prod logs me `[csp-report]` observation | 0.5 din | Low |
 | Distributed rate limit (Upstash ya Vercel KV) | Provider choice | 0.5 din | Low |
 | WS-D: server-computed totals, compensating rollback, Zod top-5, `useMutation` | **Staging Supabase project** | 5–7 din | Medium |
 | WS-E: staging project + read-only e2e coverage | Staging project | 2–3 din | Low |
@@ -479,4 +485,30 @@ Typecheck/lint clean, Vitest **515/515**, read-only smoke pass (dev).
 
 **Near-term total (WS-G ke bina):** ~2–3 hafte, jisme se pehla 1–2 din sirf
 deploy + prod verify + enforcement decision hai.
+
+### 16.3 Production verification & follow-ups (2026-10-28)
+
+- `/api/health` prod par **200**: `db: ok`, `siteUrl: true`, `Cache-Control: no-store`.
+- ⚠️ `checks.trackingSecret: false` — Vercel production me `PUBLIC_TRACKING_SECRET`
+  set nahi hai (local `.env.local` me hai). Enforcement off hai isliye tracking
+  abhi full view deta hai aur QR links token ke bina bante hain (koi leak nahi —
+  fallback safe hai). Enforce karne se **pehle** ye env var add karna zaroori
+  hai, warna saare links limited view par chale jayenge.
+- Public tracking read-only checks: no params → 400, `recent=1` → 410, unknown
+  job → `job: null`, injected `<script>` id → 400.
+- Service worker audit (`src/app/sw.ts`): API routes aur RSC pehle se
+  `NetworkOnly` the, par image matcher sirf file extension dekhta tha —
+  cross-origin Supabase storage (client/job photos) 30 din Cache Storage me
+  reh sakti thin. Ab images sirf same-origin + non-`/api/` cache hoti hain.
+- CSP observation ab actionable: `report-uri` + `report-to` `/api/csp-report`
+  par set hain. Endpoint fire-and-forget (hamesha 204, 60/min/IP, 8KB cap) hai
+  aur sirf sanitized fields (directive, blocked origin, document pathname —
+  query string strip) prod function logs me likhta hai. 3–5 din me
+  `[csp-report]` noise dekh kar enforce decision liya ja sakta hai.
+- Legacy slip escape hatch **implemented**: `?phone=<last4>` (client record se
+  match, 10 attempts / 10 min / IP, sirf enforced mode me) + limited view par
+  "Unlock" input. `client_name` (internal client id) ab full response me bhi
+  strip hota hai.
+- Remaining prod check: `/job-status?job_id=…&code=…&token=…` limited/full matrix
+  (ENFORCE=0 hone se abhi full view expected hai).
 

@@ -113,13 +113,23 @@ export default function JobStatusPage() {
   const [recentJobs, setRecentJobs] = useState<RecentLookup[]>([]);
   const [token, setToken] = useState<string | null>(null);
   const [limited, setLimited] = useState(false);
+  const [phone, setPhone] = useState("");
   const initialized = useRef(false);
 
   const runSearch = useCallback(
-    async (type: "job_id" | "code", raw: string, tokenValue: string | null) => {
+    async (
+      type: "job_id" | "code",
+      raw: string,
+      tokenValue: string | null,
+      phoneValue: string | null = null
+    ) => {
       const value = raw.trim();
       if (!value) {
         setError("Job ID ya Code daalo!");
+        return;
+      }
+      if (phoneValue && !/^\d{4}$/.test(phoneValue)) {
+        setError("Phone ke sirf last 4 digits daalein.");
         return;
       }
 
@@ -131,6 +141,7 @@ export default function JobStatusPage() {
       try {
         const qs = new URLSearchParams({ [type]: value });
         if (tokenValue) qs.set("token", tokenValue);
+        if (phoneValue) qs.set("phone", phoneValue);
 
         const res = await fetch(`/api/public/job-status?${qs.toString()}`);
         const data = await res.json();
@@ -210,6 +221,12 @@ export default function JobStatusPage() {
     // Manual search has no proof of ownership — never carry a token from a
     // previously viewed job (it would fail verification anyway).
     await runSearch(searchType, search, null);
+  };
+
+  const handlePhoneUnlock = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!job) return;
+    await runSearch("job_id", job.job_id, token, phone.trim());
   };
 
   const statusInfo = job
@@ -563,6 +580,30 @@ export default function JobStatusPage() {
                           Amount aur bill ki details dekhne ke liye apne printed bill ka QR scan
                           karein.
                         </p>
+                        <p className="text-[11px] text-muted-2 mt-3">
+                          Purana bill hai? Registered phone ke last 4 digits daalein:
+                        </p>
+                        <form onSubmit={handlePhoneUnlock} className="flex gap-2 mt-3">
+                          <input
+                            type="text"
+                            inputMode="numeric"
+                            autoComplete="off"
+                            maxLength={4}
+                            value={phone}
+                            onChange={(e) =>
+                              setPhone(e.target.value.replace(/\D/g, "").slice(0, 4))
+                            }
+                            placeholder="1234"
+                            className="flex-1 min-w-0 px-3 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.1] text-sm text-white font-medium placeholder:text-muted-2 outline-none focus:border-amber-500/60 transition-all"
+                          />
+                          <button
+                            type="submit"
+                            disabled={loading || phone.length !== 4}
+                            className="shrink-0 px-4 py-2.5 rounded-xl bg-amber-500/20 border border-amber-500/40 text-amber-200 text-xs font-black disabled:opacity-50 transition-all"
+                          >
+                            {loading ? <Loader2 size={14} className="animate-spin" /> : "Unlock"}
+                          </button>
+                        </form>
                       </div>
                     ) : (
                       <div className="text-center p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-emerald-500/10 to-emerald-500/5 border-2 border-emerald-500/40">

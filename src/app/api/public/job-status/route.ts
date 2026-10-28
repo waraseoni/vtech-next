@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { logger } from "@/lib/logger";
 import { clientIpFromHeaders, rateLimit } from "@/lib/rate-limit";
 import { isTrackingEnforced, verifyTrackingToken } from "@/lib/tracking-token";
+import { PHONE_LAST4_RE, phoneLast4Matches } from "@/lib/phone-last4";
 
 const supabase = getAdminSupabase();
 
@@ -38,6 +39,7 @@ export async function GET(request: NextRequest) {
   const jobId = url.searchParams.get("job_id")?.trim();
   const code = url.searchParams.get("code")?.trim();
   const token = url.searchParams.get("token")?.trim() || null;
+  const phone = url.searchParams.get("phone")?.trim() || null;
 
   // Global "recent jobs" list was a cross-customer leak. The page now keeps
   // lookups in localStorage instead.
@@ -51,10 +53,23 @@ export async function GET(request: NextRequest) {
   if ((jobId && !ID_RE.test(jobId)) || (code && !ID_RE.test(code))) {
     return json({ error: "Invalid job_id ya code" }, 400);
   }
+  if (phone && !PHONE_LAST4_RE.test(phone)) {
+    return json({ error: "Phone ke sirf last 4 digits daalein." }, 400);
+  }
+  // Last-4 verification is a low-entropy factor — strict budget per IP so it
+  // cannot be brute-forced alongside guessable sequential job IDs.
+  if (phone) {
+    const phoneLimit = rateLimit(`tracking-phone:${ip}`, 10, 10 * 60_000);
+    if (!phoneLimit.ok) {
+      return json({ error: "Bahut zyada phone attempts — thodi der baad try karein." }, 429, {
+        "Retry-After": String(phoneLimit.retryAfter),
+      });
+    }
+  }
 
   let query = supabase
     .from("transaction_list")
-    .select("id, job_id, code, item, fault, remark, status, amount, date_created")
+    .select("id, job_id, code, client_name, item, fault, remark, status, amount, date_created")
     .limit(1);
 
   if (jobId) query = query.eq("job_id", jobId);
@@ -71,8 +86,22 @@ export async function GET(request: NextRequest) {
   }
 
   const txn = txnData[0];
+  const enforced = isTrackingEnforced();
   const tokenOk = verifyTrackingToken(txn.job_id, txn.code, token);
-  const full = !isTrackingEnforced() || tokenOk;
+
+  // Legacy slip escape hatch: last 4 digits of the client's registered phone.
+  // Sirf enforced mode me, token ke bina, aur client record mile to hi check.
+  let phoneOk = false;
+  if (enforced && !tokenOk && phone && txn.client_name) {
+    const { data: clientRow } = await supabase
+      .from("client_list")
+      .select("contact")
+      .eq("id", txn.client_name)
+      .maybeSingle();
+    phoneOk = phoneLast4Matches(clientRow?.contact, phone);
+  }
+
+  const full = !enforced || tokenOk || phoneOk;
 
   if (!full) {
     return json({
@@ -139,5 +168,9 @@ export async function GET(request: NextRequest) {
     total: p.qty * p.price,
   }));
 
-  return json({ job: txn, services, products, limited: false });
+  // client_name (internal client id) kabhi response me nahi — sirf phone check ke liye padha.
+  const jobSafe: Record<string, unknown> = { ...txn };
+  delete jobSafe.client_name;
+
+  return json({ job: jobSafe, services, products, limited: false });
 }
