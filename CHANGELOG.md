@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.71.1](https://github.com/waraseoni/vtech-next/compare/v1.71.0...v1.71.1) (2026-10-28)
+
+### Bug Fixes
+
+* **ai:** enhance tool resilience, multi-turn calling, and add free providers plan ([774a61d](https://github.com/waraseoni/vtech-next/commit/774a61d7b0576b294fad75022718b19c2d49d90a))
+
 ## [1.71.0](https://github.com/waraseoni/vtech-next/compare/v1.70.1...v1.71.0) (2026-10-27)
 
 ### Features
