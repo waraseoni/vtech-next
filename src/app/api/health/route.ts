@@ -2,6 +2,7 @@ import { getAdminSupabase } from "@/lib/admin-supabase";
 import { NextResponse } from "next/server";
 import { logger } from "@/lib/logger";
 import { clientIpFromHeaders, rateLimit } from "@/lib/rate-limit";
+import { isTrackingEnforced } from "@/lib/tracking-token";
 
 // Public liveness/readiness probe. No writes, no secrets — sirf status,
 // version/commit aur env presence booleans (uptime monitor isse hit karta hai).
@@ -45,7 +46,20 @@ export async function GET(request: Request) {
       commit: COMMIT,
       checks: {
         trackingSecret: Boolean(process.env.PUBLIC_TRACKING_SECRET?.trim()),
+        // Rollout verification: env change ke baad redeploy hua ya nahi, ek curl se pata chale.
+        trackingEnforce: isTrackingEnforced(),
         siteUrl: Boolean(process.env.NEXT_PUBLIC_SITE_URL?.trim()),
+        // VAPID_EMAIL optional hai (push-send.ts default use karta hai).
+        push: Boolean(
+          process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY?.trim() && process.env.VAPID_PRIVATE_KEY?.trim()
+        ),
+        // signer: WEBAUTHN_SECRET → SUPABASE_SERVICE_ROLE_KEY fallback (passkeys.ts).
+        passkey: Boolean(
+          process.env.WEBAUTHN_SECRET?.trim() || process.env.SUPABASE_SERVICE_ROLE_KEY?.trim()
+        ),
+        license: Boolean(
+          process.env.LICENSE_SERVICE_URL?.trim() && process.env.LICENSE_SERVICE_ANON_KEY?.trim()
+        ),
       },
       time: new Date().toISOString(),
     },

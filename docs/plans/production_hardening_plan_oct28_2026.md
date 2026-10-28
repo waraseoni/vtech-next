@@ -411,7 +411,7 @@ Koi secret code/repo me nahi. `.env.example` me sirf placeholders.
 - [x] Public tracking page `noindex`; setup route single-flight + throttled, errors generic
 - [x] Print pages nonce-CSP; stored text injection se script execution blocked (verified runtime header/body)
 - [x] Portal/license/upload APIs raw DB errors expose nahi karte; `/api/*` default `private, no-store`
-- [x] `/api/health` live (read-only DB probe + version/commit, 200/503)
+- [x] `/api/health` live (read-only DB probe + version/commit, 200/503) + rollout/env presence booleans (`trackingEnforce`, `push`, `passkey`, `license`)
 - [x] Baseline security headers + CSP Report-Only live (verified on `/job-status`)
 - [~] Public/print/AI routes rate-limited (public, print-job-status, chat, setup done; remaining
   authenticated print routes intentionally deferred — batch printing break na ho); 429 verified
@@ -453,7 +453,7 @@ rollback script. Bina in steps ke kuch nahi.
 
 **State:** Phase 1 + WS-A/WS-B/WS-C code complete aur **production par live**
 (`1.71.2`, commit `7e40d44`). DB untouched. Typecheck/lint clean, Vitest
-**532/532**, read-only smoke pass (dev).
+**533/533**, read-only smoke pass (dev).
 
 ### 16.1 Benefits delivered
 
@@ -468,7 +468,7 @@ rollback script. Bina in steps ke kuch nahi.
 | Headers/cache | No CSP/HSTS/referrer policy; API cache ambiguous | Baseline headers + CSP Report-Only + `/api/csp-report` sink; `/api/*` `private, no-store` | Browser hardening, customer data cache me nahi, CSP enforce ka data available |
 | Ops | Koi health/uptime endpoint nahi | `/api/health` (read-only probe, 200/503, version/commit) | Monitoring/alerting possible |
 | E2E safety | Write tests prod DB ke against chal sakte the | `E2E_ALLOW_WRITES` + `E2E_WRITE_HOST` double gate | Koi accidental test row nahi |
-| Tests | In features ke tests nahi | 74 naye tests (tracking token, rate limit, print shop, image upload, print HTML, health, CSP report, phone last-4, public tracking matrix) | Regression safety |
+| Tests | In features ke tests nahi | 75 naye tests (tracking token, rate limit, print shop, image upload, print HTML, health, CSP report, phone last-4, public tracking matrix) | Regression safety |
 
 ### 16.2 Remaining work + estimates
 
@@ -488,12 +488,13 @@ deploy + prod verify + enforcement decision hai.
 
 ### 16.3 Production verification & follow-ups (2026-10-28)
 
-- `/api/health` prod par **200**: `db: ok`, `siteUrl: true`, `Cache-Control: no-store`.
-- ⚠️ `checks.trackingSecret: false` — Vercel production me `PUBLIC_TRACKING_SECRET`
-  set nahi hai (local `.env.local` me hai). Enforcement off hai isliye tracking
-  abhi full view deta hai aur QR links token ke bina bante hain (koi leak nahi —
-  fallback safe hai). Enforce karne se **pehle** ye env var add karna zaroori
-  hai, warna saare links limited view par chale jayenge.
+- `/api/health` prod par **200**: `db: ok`, `siteUrl: true`, `trackingSecret: true`
+  (Vercel me secret ab set hai), `Cache-Control: no-store`.
+- `PUBLIC_TRACKING_ENFORCE=1` Vercel production me set hai. **Env change ke baad
+  redeploy zaroori** hai — Vercel deployment purana env snapshot use karta hai.
+  `/api/health` ab `checks.trackingEnforce` bhi deta hai, isliye redeploy ke baad
+  ek curl se confirm ho jayega (plus `push`/`passkey`/`license` env presence
+  booleans — koi value expose nahi hoti).
 - Public tracking read-only checks: no params → 400, `recent=1` → 410, unknown
   job → `job: null`, injected `<script>` id → 400.
 - Service worker audit (`src/app/sw.ts`): API routes aur RSC pehle se
@@ -509,6 +510,22 @@ deploy + prod verify + enforcement decision hai.
   match, 10 attempts / 10 min / IP, sirf enforced mode me) + limited view par
   "Unlock" input. `client_name` (internal client id) ab full response me bhi
   strip hota hai.
-- Remaining prod check: `/job-status?job_id=…&code=…&token=…` limited/full matrix
-  (ENFORCE=0 hone se abhi full view expected hai).
+- Remaining prod check (redeploy ke baad): `/job-status?job_id=…&code=…&token=…`
+  limited/full matrix — token → full, bina token → limited + phone unlock.
+
+### 16.4 Vercel Production env checklist
+
+| Feature | Vars (Production scope) | Notes |
+|---|---|---|
+| Core DB/Auth | `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` | Service role server-only; `NEXT_PUBLIC_*` build-time embedded → change = redeploy |
+| Tracking rollout | `PUBLIC_TRACKING_SECRET`, `PUBLIC_TRACKING_ENFORCE=1`, `NEXT_PUBLIC_SITE_URL` | Secret **rotate na karein** (printed QR invalid); health me `trackingSecret`/`trackingEnforce` se verify |
+| Push | `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` (+ `VAPID_EMAIL` optional), `FIREBASE_SERVICE_ACCOUNT` (Android) | Health flag: `push` |
+| Passkeys | `WEBAUTHN_SECRET` (fallback: service-role), `WEBAUTHN_ORIGIN`/`RP_ID` optional | Health flag: `passkey` |
+| License | `LICENSE_SERVICE_URL`, `LICENSE_SERVICE_ANON_KEY` | Health flag: `license` |
+| Seller-only deployment | `LICENSE_SERVICE_SERVICE_ROLE_KEY`, `SELLER_PORTAL_PASSWORD`, `DEV_PORTAL_PASSWORD`, `SELLER_CREDS_ENCRYPTION_KEY` | Customer deployments par **kabhi nahi** |
+| Optional | `SENTRY_DSN`/`NEXT_PUBLIC_SENTRY_DSN`, `UPSTASH_REDIS_REST_URL/TOKEN` | Monitoring/distributed rate limit |
+| Never in Production | `E2E_ALLOW_WRITES`, `E2E_WRITE_HOST`, E2E test creds | Write specs live DB me rows bana sakte hain |
+
+Sab server secrets Vercel me **Sensitive** mark karein; `SETUP_TOKEN`/AI keys par
+"Needs Attention" aaye to rotate karke dobara set karein.
 

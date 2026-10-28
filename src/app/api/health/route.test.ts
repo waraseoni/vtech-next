@@ -43,7 +43,17 @@ describe("GET /api/health", () => {
     expect(typeof body.time).toBe("string");
     expect(body.checks).toEqual({
       trackingSecret: Boolean(process.env.PUBLIC_TRACKING_SECRET?.trim()),
+      trackingEnforce: process.env.PUBLIC_TRACKING_ENFORCE === "1",
       siteUrl: Boolean(process.env.NEXT_PUBLIC_SITE_URL?.trim()),
+      push: Boolean(
+        process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY?.trim() && process.env.VAPID_PRIVATE_KEY?.trim()
+      ),
+      passkey: Boolean(
+        process.env.WEBAUTHN_SECRET?.trim() || process.env.SUPABASE_SERVICE_ROLE_KEY?.trim()
+      ),
+      license: Boolean(
+        process.env.LICENSE_SERVICE_URL?.trim() && process.env.LICENSE_SERVICE_ANON_KEY?.trim()
+      ),
     });
     // Local env values must never be echoed.
     expect(JSON.stringify(body)).not.toContain(process.env.PUBLIC_TRACKING_SECRET || "@@none@@");
@@ -64,5 +74,39 @@ describe("GET /api/health", () => {
     const res = await GET(healthReq("203.0.113.11"));
     expect(res.status).toBe(503);
     expect((await res.json()).db).toBe("error");
+  });
+
+  it("reflects rollout flags without leaking secret values", async () => {
+    const previous = process.env.PUBLIC_TRACKING_ENFORCE;
+    process.env.PUBLIC_TRACKING_ENFORCE = "1";
+    try {
+      const res = await GET(healthReq("203.0.113.12"));
+      const body = await res.json();
+      expect(body.checks.trackingEnforce).toBe(true);
+
+      for (const key of [
+        "trackingSecret",
+        "trackingEnforce",
+        "siteUrl",
+        "push",
+        "passkey",
+        "license",
+      ]) {
+        expect(typeof body.checks[key]).toBe("boolean");
+      }
+
+      const json = JSON.stringify(body);
+      for (const secret of [
+        process.env.PUBLIC_TRACKING_SECRET,
+        process.env.SUPABASE_SERVICE_ROLE_KEY,
+        process.env.WEBAUTHN_SECRET,
+        process.env.VAPID_PRIVATE_KEY,
+      ]) {
+        if (secret?.trim()) expect(json).not.toContain(secret);
+      }
+    } finally {
+      if (previous === undefined) delete process.env.PUBLIC_TRACKING_ENFORCE;
+      else process.env.PUBLIC_TRACKING_ENFORCE = previous;
+    }
   });
 });
