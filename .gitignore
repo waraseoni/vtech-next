@@ -45,6 +45,7 @@ public/swe-worker*
 
 # 5b. Commission-rule scratch helpers + PII DB-rollback snapshots (NEVER push)
 *.cjs
+backup_comm_*.json
 backup_comm_hist_*.json
 
 # 6. Logs & Debugging
