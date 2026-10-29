@@ -3,6 +3,12 @@
 import { queryOptions } from "@tanstack/react-query";
 import { supabase, getCachedUser } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
+import {
+  JOB_STATUS_DELIVERED,
+  LOAN_STATUS_ACTIVE,
+  balanceFromMaps,
+  buildDueMaps,
+} from "@/lib/client-due";
 
 export interface JobDetail {
   id: number;
@@ -34,6 +40,7 @@ export interface Client {
   contact: string;
   email: string;
   address: string;
+  opening_balance?: number;
 }
 
 export interface Mechanic {
@@ -75,6 +82,8 @@ export interface JobViewSnapshot {
   prevJob: { id: number; job_id: string } | null;
   nextJob: { id: number; job_id: string } | null;
   client: Client | null;
+  /** Client ka total outstanding (net due) — jobs list ke badge jaisa hi formula. */
+  clientDue: number;
   mechanic: Mechanic | null;
   images: TransactionImage[];
   products: TransactionProduct[];
@@ -126,33 +135,64 @@ export async function fetchJobView(numId: number): Promise<JobViewSnapshot> {
   ]);
 
   const clientId = Number(jobData.client_name);
-  const [clientRes, mechRes, prodRes, svcRes, imgRes] = await Promise.all([
-    supabase
-      .from("client_list")
-      .select("id, firstname, middlename, lastname, contact, email, address")
-      .eq("id", clientId)
-      .single(),
-    jobData.mechanic_id
-      ? supabase
-          .from("mechanic_list")
-          .select("id, firstname, middlename, lastname, designation, contact")
-          .eq("id", jobData.mechanic_id)
-          .single()
-      : Promise.resolve({ data: null }),
-    supabase
-      .from("transaction_products")
-      .select("transaction_id, product_id, product_name, qty, price")
-      .eq("transaction_id", numId),
-    supabase
-      .from("transaction_services")
-      .select("transaction_id, service_id, service_name, price")
-      .eq("transaction_id", numId),
-    supabase
-      .from("transaction_images")
-      .select("id, transaction_id, image_path, date_created")
-      .eq("transaction_id", numId)
-      .order("date_created", { ascending: false }),
-  ]);
+  // Due inputs — enrichJobRows (jobs list) ke EXACT filters: sirf Delivered (5)
+  // aur non-deleted jobs bill hue maane jaate hain (PHP formula).
+  const [clientRes, mechRes, prodRes, svcRes, imgRes, billedRes, paidRes, salesRes, loansRes] =
+    await Promise.all([
+      supabase
+        .from("client_list")
+        .select("id, firstname, middlename, lastname, contact, email, address, opening_balance")
+        .eq("id", clientId)
+        .single(),
+      jobData.mechanic_id
+        ? supabase
+            .from("mechanic_list")
+            .select("id, firstname, middlename, lastname, designation, contact")
+            .eq("id", jobData.mechanic_id)
+            .single()
+        : Promise.resolve({ data: null }),
+      supabase
+        .from("transaction_products")
+        .select("transaction_id, product_id, product_name, qty, price")
+        .eq("transaction_id", numId),
+      supabase
+        .from("transaction_services")
+        .select("transaction_id, service_id, service_name, price")
+        .eq("transaction_id", numId),
+      supabase
+        .from("transaction_images")
+        .select("id, transaction_id, image_path, date_created")
+        .eq("transaction_id", numId)
+        .order("date_created", { ascending: false }),
+      supabase
+        .from("transaction_list")
+        .select("client_name, amount")
+        .eq("status", JOB_STATUS_DELIVERED)
+        .neq("del_status", 1)
+        .eq("client_name", String(clientId)),
+      supabase
+        .from("client_payments")
+        .select("client_id, amount, discount, loan_id")
+        .eq("client_id", clientId),
+      supabase.from("direct_sales").select("client_id, total_amount").eq("client_id", clientId),
+      supabase
+        .from("client_loans")
+        .select("id, client_id, total_payable")
+        .eq("status", LOAN_STATUS_ACTIVE)
+        .eq("client_id", clientId),
+    ]);
+
+  const dueMaps = buildDueMaps({
+    repairs: billedRes.data,
+    directSales: salesRes.data,
+    payments: paidRes.data,
+    loans: loansRes.data,
+  });
+  const clientDue = balanceFromMaps(
+    dueMaps,
+    clientId,
+    (clientRes.data as { opening_balance?: number } | null)?.opening_balance
+  );
 
   if (prodRes.error || svcRes.error || imgRes.error) {
     // Column-projection typo yahan chup-chup empty lists nahi dega (regression 29457)
@@ -186,6 +226,7 @@ export async function fetchJobView(numId: number): Promise<JobViewSnapshot> {
     prevJob: (prevRes.data?.[0] as { id: number; job_id: string } | null) ?? null,
     nextJob: (nextRes.data?.[0] as { id: number; job_id: string } | null) ?? null,
     client: clientRes.data ? (clientRes.data as Client) : null,
+    clientDue,
     mechanic: mechRes.data ? (mechRes.data as Mechanic) : null,
     images: (imgRes.data || []) as TransactionImage[],
     products: prods.map((p) => ({

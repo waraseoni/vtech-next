@@ -49,6 +49,7 @@ import JobSpotPicker from "@/components/JobSpotPicker";
 import JobRequiredParts from "@/components/JobRequiredParts";
 import WaitingPartsBadge from "@/components/WaitingPartsBadge";
 import { fetchOpenPartCounts } from "@/lib/requiredParts";
+import { dueLabel } from "@/lib/client-due";
 import { logActivity } from "@/lib/activity";
 import { substituteTemplate, firmVars, resolveTemplate } from "@/lib/whatsapp";
 import { compressImage } from "@/lib/imageCompression";
@@ -788,6 +789,14 @@ ${svcHtml}${prodHtml}
   const clientName = client
     ? [client.firstname, client.middlename, client.lastname].filter(Boolean).join(" ")
     : `Client #${job.client_name}`;
+  // Client ka poora outstanding — jobs list ke badge jaisa hi calculation
+  const clientDue = dueLabel(snap?.clientDue ?? 0);
+  const clientDueCls =
+    clientDue.type === "due"
+      ? "bg-red-500/15 text-red-400 border-red-500/30"
+      : clientDue.type === "advance"
+        ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
+        : "bg-slate-700/50 text-muted border-muted/30";
   const mechName = mechanic
     ? [mechanic.firstname, mechanic.middlename, mechanic.lastname].filter(Boolean).join(" ")
     : null;
@@ -873,12 +882,24 @@ ${svcHtml}${prodHtml}
                       <InfoRow
                         label="Name"
                         value={
-                          <Link
-                            href={`/clients/${job.client_name}/view`}
-                            className="text-blue-400 font-semibold hover:underline"
-                          >
-                            {clientName}
-                          </Link>
+                          <span className="inline-flex flex-wrap items-center gap-2">
+                            <Link
+                              href={`/clients/${job.client_name}/view`}
+                              className="text-blue-400 font-semibold hover:underline"
+                            >
+                              {clientName}
+                            </Link>
+                            <span
+                              className={`border px-1.5 py-0.5 rounded-full text-[9px] font-bold ${clientDueCls}`}
+                              title="Client ka total outstanding balance (jobs + direct sales + loans − payments)"
+                            >
+                              {clientDue.type === "due"
+                                ? `Due ₹${clientDue.amount.toFixed(0)}`
+                                : clientDue.type === "advance"
+                                  ? `Adv ₹${clientDue.amount.toFixed(0)}`
+                                  : "Bal 0"}
+                            </span>
+                          </span>
                         }
                       />
                       {client?.contact && (
