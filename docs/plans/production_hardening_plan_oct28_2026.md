@@ -340,7 +340,10 @@ saath khulta hai; internet off hone par bhi bill me QR image embedded.
 
 ## 9. WS-H — Repo Hygiene (DB impact: None)
 
-- `git rm --cached backup_comm_20260912*.json` (4 files) — history rewrite decision alag.
+- `[x]` `backup_comm_20260912*.json` (4 files, 1526 rows each) untracked
+  (`git rm --cached`, local copies intact) + `.gitignore` me `backup_comm_*.json`.
+  Commit pending. **History rewrite decision alag** (force-push + filter-repo
+  chahiye; tabhi jab repo shared/public ho).
 - Root artifacts (`vtech_backup_*.json`, `.apk`, `mariadb dump/`) delete/archive outside repo;
   sab already gitignored, sirf disk hygiene.
 - `.next` (596MB) clean; `backups/` 15MB archive.
@@ -453,7 +456,7 @@ rollback script. Bina in steps ke kuch nahi.
 
 **State:** Phase 1 + WS-A/WS-B/WS-C code complete aur **production par live**
 (`1.71.2`, commit `7e40d44`). DB untouched. Typecheck/lint clean, Vitest
-**533/533**, read-only smoke pass (dev).
+**537/537**, read-only smoke pass (dev).
 
 ### 16.1 Benefits delivered
 
@@ -468,7 +471,7 @@ rollback script. Bina in steps ke kuch nahi.
 | Headers/cache | No CSP/HSTS/referrer policy; API cache ambiguous | Baseline headers + CSP Report-Only + `/api/csp-report` sink; `/api/*` `private, no-store` | Browser hardening, customer data cache me nahi, CSP enforce ka data available |
 | Ops | Koi health/uptime endpoint nahi | `/api/health` (read-only probe, 200/503, version/commit) | Monitoring/alerting possible |
 | E2E safety | Write tests prod DB ke against chal sakte the | `E2E_ALLOW_WRITES` + `E2E_WRITE_HOST` double gate | Koi accidental test row nahi |
-| Tests | In features ke tests nahi | 75 naye tests (tracking token, rate limit, print shop, image upload, print HTML, health, CSP report, phone last-4, public tracking matrix) | Regression safety |
+| Tests | In features ke tests nahi | 79 naye tests (tracking token, rate limit, print shop, image upload, print HTML, health, CSP report, phone last-4, public tracking matrix) | Regression safety |
 
 ### 16.2 Remaining work + estimates
 
@@ -476,7 +479,7 @@ rollback script. Bina in steps ke kuch nahi.
 |---|---|---|---|
 | Prod env set + `PUBLIC_TRACKING_ENFORCE=1` | Vercel me `PUBLIC_TRACKING_SECRET` add | 15 min | Low (phone fallback ready) |
 | CSP ko Report-Only se enforce karna | 3–5 din prod logs me `[csp-report]` observation | 0.5 din | Low |
-| Distributed rate limit (Upstash ya Vercel KV) | Provider choice | 0.5 din | Low |
+| Distributed rate limit (Upstash REST) | Code done; **Upstash env + redeploy** | 10 min (env only) | Low (memory fallback) |
 | WS-D: server-computed totals, compensating rollback, Zod top-5, `useMutation` | **Staging Supabase project** | 5–7 din | Medium |
 | WS-E: staging project + read-only e2e coverage | Staging project | 2–3 din | Low |
 | WS-F: offsite encrypted backup + restore drill + Sentry/uptime alerts | R2/S3/Drive choice | 2–3 din | Low |
@@ -486,17 +489,18 @@ rollback script. Bina in steps ke kuch nahi.
 **Near-term total (WS-G ke bina):** ~2–3 hafte, jisme se pehla 1–2 din sirf
 deploy + prod verify + enforcement decision hai.
 
-### 16.3 Production verification & follow-ups (2026-10-28)
+### 16.3 Production verification & follow-ups (2026-10-28, re-verified 2026-10-29)
 
-- `/api/health` prod par **200**: `db: ok`, `siteUrl: true`, `trackingSecret: true`
-  (Vercel me secret ab set hai), `Cache-Control: no-store`.
-- `PUBLIC_TRACKING_ENFORCE=1` Vercel production me set hai. **Env change ke baad
-  redeploy zaroori** hai — Vercel deployment purana env snapshot use karta hai.
-  `/api/health` ab `checks.trackingEnforce` bhi deta hai, isliye redeploy ke baad
-  ek curl se confirm ho jayega (plus `push`/`passkey`/`license` env presence
-  booleans — koi value expose nahi hoti).
-- Public tracking read-only checks: no params → 400, `recent=1` → 410, unknown
-  job → `job: null`, injected `<script>` id → 400.
+- **Deploy verified (2026-10-29):** prod `version: 1.72.0`, commit `d3c5e38`,
+  `/api/health` **200**, `db: ok`, `Cache-Control: no-store`.
+- `/api/health` checks (2026-10-29): `trackingSecret: true`, `trackingEnforce: true`,
+  `siteUrl: true`, `push: true`, `passkey: true`, `license: true`; koi secret
+  value response me nahi. `PUBLIC_TRACKING_ENFORCE=1` ab live hai.
+- CSP Report-Only header + `Reporting-Endpoints` prod par present; `/api/csp-report`
+  par empty POST → **204** (sink reachable).
+- Public tracking read-only checks (2026-10-29): no params → 400, `recent=1` → 410,
+  unknown job/code → `job: null`, injected `<script>` id → 400, malformed
+  `phone` → 400, API headers `no-store` + `noindex`.
 - Service worker audit (`src/app/sw.ts`): API routes aur RSC pehle se
   `NetworkOnly` the, par image matcher sirf file extension dekhta tha —
   cross-origin Supabase storage (client/job photos) 30 din Cache Storage me
@@ -510,8 +514,22 @@ deploy + prod verify + enforcement decision hai.
   match, 10 attempts / 10 min / IP, sirf enforced mode me) + limited view par
   "Unlock" input. `client_name` (internal client id) ab full response me bhi
   strip hota hai.
-- Remaining prod check (redeploy ke baad): `/job-status?job_id=…&code=…&token=…`
-  limited/full matrix — token → full, bina token → limited + phone unlock.
+- **QR limited/full matrix verified (2026-10-29, real job, read-only):** printed QR
+  (local decode, job_id `29539`) → with token: `limited: false`, amount/remark +
+  services present, `client_name` absent; without token: `limited: true`, sirf
+  id/job_id/code/item/fault/status/date, amount/remark absent; wrong token:
+  limited; wrong last-4: limited (koi error oracle nahi); malformed phone: 400.
+  Sab responses `no-store` + `noindex`.
+- Phone unlock ka **positive** path (sahi last-4) owner ke ek test se verify karna
+  bacha hai — code path same hai, isliye risk low.
+- **Distributed rate limit implemented (2026-10-29):** `rateLimit()` ab async hai.
+  `UPSTASH_REDIS_REST_URL/TOKEN` set hon to fixed window Redis pipeline
+  (`INCR` + `PEXPIRE`) se shared chalti hai; env na ho ya Redis fail/timeout
+  (1s) ho to per-instance memory fallback (throttled warn ke saath) — request
+  block nahi hoti. `/api/health` me `checks.distributedRateLimit`. Local prod
+  server check: bina env 31st request par 429; fake unreachable endpoint par
+  flag `true`, health 200 aur fallback warn. **Prod rollout baki:** Upstash env
+  add + redeploy.
 
 ### 16.4 Vercel Production env checklist
 
@@ -523,7 +541,7 @@ deploy + prod verify + enforcement decision hai.
 | Passkeys | `WEBAUTHN_SECRET` (fallback: service-role), `WEBAUTHN_ORIGIN`/`RP_ID` optional | Health flag: `passkey` |
 | License | `LICENSE_SERVICE_URL`, `LICENSE_SERVICE_ANON_KEY` | Health flag: `license` |
 | Seller-only deployment | `LICENSE_SERVICE_SERVICE_ROLE_KEY`, `SELLER_PORTAL_PASSWORD`, `DEV_PORTAL_PASSWORD`, `SELLER_CREDS_ENCRYPTION_KEY` | Customer deployments par **kabhi nahi** |
-| Optional | `SENTRY_DSN`/`NEXT_PUBLIC_SENTRY_DSN`, `UPSTASH_REDIS_REST_URL/TOKEN` | Monitoring/distributed rate limit |
+| Optional | `SENTRY_DSN`/`NEXT_PUBLIC_SENTRY_DSN`, `UPSTASH_REDIS_REST_URL/TOKEN` | Monitoring/distributed rate limit; health flag `distributedRateLimit` |
 | Never in Production | `E2E_ALLOW_WRITES`, `E2E_WRITE_HOST`, E2E test creds | Write specs live DB me rows bana sakte hain |
 
 Sab server secrets Vercel me **Sensitive** mark karein; `SETUP_TOKEN`/AI keys par
