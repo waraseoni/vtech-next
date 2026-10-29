@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## [1.73.0](https://github.com/waraseoni/vtech-next/compare/v1.72.0...v1.73.0) (2026-10-29)
+
+### Features
+
+* **jobs:** show client total due on job view ([fcd600e](https://github.com/waraseoni/vtech-next/commit/fcd600e8a53b92ec94c0f6fd6cd4dd498e12b5b4))
+* **rate-limit:** add distributed limiter with memory fallback ([20ed680](https://github.com/waraseoni/vtech-next/commit/20ed680f3847bdb0491a65f31b44d6465655d4f0))
+
 ## [1.72.0](https://github.com/waraseoni/vtech-next/compare/v1.71.4...v1.72.0) (2026-10-28)
 
 ### Features
