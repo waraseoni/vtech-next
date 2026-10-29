@@ -1,7 +1,7 @@
 import { getAdminSupabase } from "@/lib/admin-supabase";
 import { NextResponse } from "next/server";
 import { logger } from "@/lib/logger";
-import { clientIpFromHeaders, rateLimit } from "@/lib/rate-limit";
+import { clientIpFromHeaders, isDistributedRateLimitConfigured, rateLimit } from "@/lib/rate-limit";
 import { isTrackingEnforced } from "@/lib/tracking-token";
 
 // Public liveness/readiness probe. No writes, no secrets — sirf status,
@@ -14,7 +14,7 @@ const COMMIT = process.env.NEXT_PUBLIC_APP_COMMIT || "";
 
 export async function GET(request: Request) {
   const ip = clientIpFromHeaders(request.headers);
-  const limit = rateLimit(`health:${ip}`, 120, 60_000);
+  const limit = await rateLimit(`health:${ip}`, 120, 60_000);
   if (!limit.ok) {
     return NextResponse.json(
       { status: "rate_limited" },
@@ -60,6 +60,8 @@ export async function GET(request: Request) {
         license: Boolean(
           process.env.LICENSE_SERVICE_URL?.trim() && process.env.LICENSE_SERVICE_ANON_KEY?.trim()
         ),
+        // Env set hone par rate limit shared Redis par chalta hai, warna memory fallback.
+        distributedRateLimit: isDistributedRateLimitConfigured(),
       },
       time: new Date().toISOString(),
     },

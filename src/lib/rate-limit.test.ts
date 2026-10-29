@@ -1,9 +1,15 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { clientIpFromHeaders, rateLimit } from "./rate-limit";
+import { clientIpFromHeaders, isDistributedRateLimitConfigured, rateLimit } from "./rate-limit";
 
 let seq = 0;
 const freshKey = () => `test:${++seq}`;
+
+const redisResponse = (counts: number[]) =>
+  new Response(JSON.stringify(counts.map((result) => ({ result }))), {
+    status: 200,
+    headers: { "Content-Type": "application/json" },
+  });
 
 beforeEach(() => {
   vi.useFakeTimers();
@@ -12,45 +18,103 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.useRealTimers();
+  vi.unstubAllEnvs();
+  vi.unstubAllGlobals();
 });
 
-describe("rateLimit", () => {
-  it("allows requests up to the limit and then returns retryAfter", () => {
+describe("rateLimit (memory)", () => {
+  it("allows requests up to the limit and then returns retryAfter", async () => {
     const key = freshKey();
-    expect(rateLimit(key, 3, 60_000)).toMatchObject({ ok: true, remaining: 2 });
-    expect(rateLimit(key, 3, 60_000)).toMatchObject({ ok: true, remaining: 1 });
-    expect(rateLimit(key, 3, 60_000)).toMatchObject({ ok: true, remaining: 0 });
+    expect(await rateLimit(key, 3, 60_000)).toMatchObject({ ok: true, remaining: 2 });
+    expect(await rateLimit(key, 3, 60_000)).toMatchObject({ ok: true, remaining: 1 });
+    expect(await rateLimit(key, 3, 60_000)).toMatchObject({ ok: true, remaining: 0 });
 
-    const blocked = rateLimit(key, 3, 60_000);
+    const blocked = await rateLimit(key, 3, 60_000);
     expect(blocked.ok).toBe(false);
     expect(blocked.remaining).toBe(0);
     expect(blocked.retryAfter).toBe(60);
   });
 
-  it("resets the window after it expires", () => {
+  it("resets the window after it expires", async () => {
     const key = freshKey();
-    rateLimit(key, 1, 60_000);
-    expect(rateLimit(key, 1, 60_000).ok).toBe(false);
+    await rateLimit(key, 1, 60_000);
+    expect((await rateLimit(key, 1, 60_000)).ok).toBe(false);
 
     vi.advanceTimersByTime(60_000);
-    expect(rateLimit(key, 1, 60_000)).toMatchObject({ ok: true, remaining: 0 });
+    expect(await rateLimit(key, 1, 60_000)).toMatchObject({ ok: true, remaining: 0 });
   });
 
-  it("counts each key independently", () => {
+  it("counts each key independently", async () => {
     const a = freshKey();
     const b = freshKey();
-    rateLimit(a, 1, 60_000);
-    expect(rateLimit(a, 1, 60_000).ok).toBe(false);
-    expect(rateLimit(b, 1, 60_000).ok).toBe(true);
+    await rateLimit(a, 1, 60_000);
+    expect((await rateLimit(a, 1, 60_000)).ok).toBe(false);
+    expect((await rateLimit(b, 1, 60_000)).ok).toBe(true);
   });
 
-  it("returns a positive retryAfter even at window boundary", () => {
+  it("returns a positive retryAfter even at window boundary", async () => {
     const key = freshKey();
-    rateLimit(key, 1, 1_000);
+    await rateLimit(key, 1, 1_000);
     vi.advanceTimersByTime(999);
-    const blocked = rateLimit(key, 1, 1_000);
+    const blocked = await rateLimit(key, 1, 1_000);
     expect(blocked.ok).toBe(false);
     expect(blocked.retryAfter).toBeGreaterThanOrEqual(1);
+  });
+});
+
+describe("rateLimit (distributed)", () => {
+  const configure = () => {
+    vi.stubEnv("UPSTASH_REDIS_REST_URL", "https://redis.example.test/");
+    vi.stubEnv("UPSTASH_REDIS_REST_TOKEN", "test-token");
+  };
+
+  it("reports configuration presence", () => {
+    expect(isDistributedRateLimitConfigured()).toBe(false);
+    configure();
+    expect(isDistributedRateLimitConfigured()).toBe(true);
+  });
+
+  it("enforces the limit through Redis when configured", async () => {
+    configure();
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(redisResponse([1, 1]))
+      .mockResolvedValueOnce(redisResponse([2, 1]))
+      .mockResolvedValueOnce(redisResponse([3, 1]));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const key = freshKey();
+    expect(await rateLimit(key, 2, 60_000)).toMatchObject({ ok: true, remaining: 1 });
+    expect(await rateLimit(key, 2, 60_000)).toMatchObject({ ok: true, remaining: 0 });
+    const blocked = await rateLimit(key, 2, 60_000);
+    expect(blocked.ok).toBe(false);
+    expect(blocked.retryAfter).toBe(60);
+
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe("https://redis.example.test/pipeline");
+    expect(init.headers).toMatchObject({ Authorization: "Bearer test-token" });
+    const body = JSON.parse(String(init.body));
+    expect(body[0][0]).toBe("INCR");
+    expect(body[0][1]).toMatch(new RegExp(`^rl:${key}:`));
+    expect(body[1]).toEqual(["PEXPIRE", body[0][1], 60_000]);
+  });
+
+  it("falls back to memory when Redis rejects the request", async () => {
+    configure();
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("network down")));
+
+    const key = freshKey();
+    expect((await rateLimit(key, 1, 60_000)).ok).toBe(true);
+    expect((await rateLimit(key, 1, 60_000)).ok).toBe(false);
+  });
+
+  it("falls back to memory when Redis returns an error status", async () => {
+    configure();
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("nope", { status: 500 })));
+
+    const key = freshKey();
+    expect((await rateLimit(key, 1, 60_000)).ok).toBe(true);
+    expect((await rateLimit(key, 1, 60_000)).ok).toBe(false);
   });
 });
 

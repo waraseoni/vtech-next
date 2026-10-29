@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
     const user = await requireStaff();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const limit = rateLimit(`chat:${user.id}`, 20, 60_000);
+    const limit = await rateLimit(`chat:${user.id}`, 20, 60_000);
     if (!limit.ok) {
       return NextResponse.json(
         { error: "Bahut zyada AI requests — thodi der baad try karein." },

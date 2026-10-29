@@ -17,7 +17,7 @@ let setupInFlight = false;
 //   - Email/password validation + email confirm on (bina OTP ke login ho sake).
 export async function POST(req: NextRequest) {
   const ip = clientIpFromHeaders(req.headers);
-  const limit = rateLimit(`setup:${ip}`, 10, 60 * 60_000);
+  const limit = await rateLimit(`setup:${ip}`, 10, 60 * 60_000);
   if (!limit.ok) {
     return NextResponse.json(
       { error: "Bahut zyada setup attempts — thodi der baad try karein." },

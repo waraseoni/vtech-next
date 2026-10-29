@@ -49,7 +49,7 @@ function inr(n: number) {
 
 export async function GET(request: NextRequest) {
   const ip = clientIpFromHeaders(request.headers);
-  const limit = rateLimit(`print-job-status:${ip}`, 30, 60_000);
+  const limit = await rateLimit(`print-job-status:${ip}`, 30, 60_000);
   if (!limit.ok) {
     return new NextResponse("Bahut zyada requests — thodi der baad try karein.", {
       status: 429,

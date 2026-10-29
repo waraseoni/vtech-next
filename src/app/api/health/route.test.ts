@@ -54,6 +54,9 @@ describe("GET /api/health", () => {
       license: Boolean(
         process.env.LICENSE_SERVICE_URL?.trim() && process.env.LICENSE_SERVICE_ANON_KEY?.trim()
       ),
+      distributedRateLimit: Boolean(
+        process.env.UPSTASH_REDIS_REST_URL?.trim() && process.env.UPSTASH_REDIS_REST_TOKEN?.trim()
+      ),
     });
     // Local env values must never be echoed.
     expect(JSON.stringify(body)).not.toContain(process.env.PUBLIC_TRACKING_SECRET || "@@none@@");
@@ -91,6 +94,7 @@ describe("GET /api/health", () => {
         "push",
         "passkey",
         "license",
+        "distributedRateLimit",
       ]) {
         expect(typeof body.checks[key]).toBe("boolean");
       }
@@ -101,6 +105,7 @@ describe("GET /api/health", () => {
         process.env.SUPABASE_SERVICE_ROLE_KEY,
         process.env.WEBAUTHN_SECRET,
         process.env.VAPID_PRIVATE_KEY,
+        process.env.UPSTASH_REDIS_REST_TOKEN,
       ]) {
         if (secret?.trim()) expect(json).not.toContain(secret);
       }

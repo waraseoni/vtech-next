@@ -90,7 +90,7 @@ function sanitize(report: Record<string, unknown>) {
 export async function POST(request: Request) {
   try {
     const ip = clientIpFromHeaders(request.headers);
-    if (!rateLimit(`csp:${ip}`, 60, 60_000).ok) return noContent();
+    if (!(await rateLimit(`csp:${ip}`, 60, 60_000)).ok) return noContent();
 
     const declared = Number(request.headers.get("content-length") ?? 0);
     if (declared > MAX_BODY_BYTES) return noContent();

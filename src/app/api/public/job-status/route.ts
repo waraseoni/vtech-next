@@ -28,7 +28,7 @@ function json(body: unknown, status = 200, extra?: Record<string, string>) {
 
 export async function GET(request: NextRequest) {
   const ip = clientIpFromHeaders(request.headers);
-  const limit = rateLimit(`tracking:${ip}`, RATE_LIMIT, RATE_WINDOW_MS);
+  const limit = await rateLimit(`tracking:${ip}`, RATE_LIMIT, RATE_WINDOW_MS);
   if (!limit.ok) {
     return json({ error: "Bahut zyada requests — thodi der baad try karein." }, 429, {
       "Retry-After": String(limit.retryAfter),
@@ -59,7 +59,7 @@ export async function GET(request: NextRequest) {
   // Last-4 verification is a low-entropy factor — strict budget per IP so it
   // cannot be brute-forced alongside guessable sequential job IDs.
   if (phone) {
-    const phoneLimit = rateLimit(`tracking-phone:${ip}`, 10, 10 * 60_000);
+    const phoneLimit = await rateLimit(`tracking-phone:${ip}`, 10, 10 * 60_000);
     if (!phoneLimit.ok) {
       return json({ error: "Bahut zyada phone attempts — thodi der baad try karein." }, 429, {
         "Retry-After": String(phoneLimit.retryAfter),
