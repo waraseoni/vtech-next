@@ -60,9 +60,11 @@ describe("encryptSecret / decryptSecret", () => {
 
   it("tampered ciphertext par null", () => {
     const parts = encryptSecret(PLAIN).split(":");
-    // ciphertext ka aakhri char badal do
-    const data = parts[3];
-    parts[3] = data.slice(0, -1) + (data.endsWith("A") ? "B" : "A");
+    // byte-level tamper — base64 ke aakhri char ke lower bits unused hote hain,
+    // isliye char flip kabhi-kabhi same bytes decode kar deta tha (flaky).
+    const data = Buffer.from(parts[3], "base64url");
+    data[0] ^= 0xff;
+    parts[3] = data.toString("base64url");
     expect(decryptSecret(parts.join(":"))).toBeNull();
   });
 
