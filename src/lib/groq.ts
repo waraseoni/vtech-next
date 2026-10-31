@@ -262,7 +262,7 @@ export async function getGroqChatResponse(
     }
 
     if (errorMessage.includes("429") || errorMessage.includes("Rate limit")) {
-      return "Aapki Groq API request limit poori ho gayi hai. Kripya thodi der baad try karein. â³";
+      return "Aapki Groq API request limit poori ho gayi hai. Kripya thodi der baad try karein. ⏳";
     }
     return `Groq API Error: ${errorMessage}`;
   }

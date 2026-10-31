@@ -9,7 +9,7 @@ import { printHtmlResponse } from "@/lib/print-html";
 const supabase = getAdminSupabase();
 
 const rupee = (n: number, decimals = 0) =>
-  "â‚¹" +
+  "₹" +
   n.toLocaleString("en-IN", { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
 
 function fmtDate(iso: string): string {
@@ -245,7 +245,7 @@ export async function GET(request: NextRequest) {
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Business Ledger â€” ${monthLabel}</title>
+  <title>Business Ledger — ${monthLabel}</title>
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
     body{font-family:Arial,sans-serif;font-size:13px;background:#f0f2f5;padding:20px;color:#212529}
@@ -281,7 +281,7 @@ export async function GET(request: NextRequest) {
 <div class="wrap">
   <div class="card">
     <div class="hdr">
-      <h1>ðŸ“’ ${SHOP.name} â€” Business Ledger</h1>
+      <h1>📒 ${SHOP.name} — Business Ledger</h1>
       <p>Period: ${monthLabel} | Generated: ${fmtDate(new Date().toISOString())} | ${SHOP.mobile}</p>
     </div>
     <div class="stats">
@@ -336,8 +336,8 @@ export async function GET(request: NextRequest) {
 
   <div class="card">
     <div class="actions">
-      <button onclick="window.print()" class="btn btn-print">ðŸ–¨ Print</button>
-      <button onclick="window.close()" class="btn btn-close">âœ• Close</button>
+      <button onclick="window.print()" class="btn btn-print">🖨 Print</button>
+      <button onclick="window.close()" class="btn btn-close">✕ Close</button>
     </div>
   </div>
   <div class="footer">${SHOP.name} | ${SHOP.address} | ${SHOP.mobile}</div>

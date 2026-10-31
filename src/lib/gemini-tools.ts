@@ -57,42 +57,42 @@ export const ADMIN_ONLY_TOOLS = new Set([
   "get_loan_status",
 ]);
 
-/** Shared system prompt â€” VTech persona + business rules + role policy. */
+/** Shared system prompt — VTech persona + business rules + role policy. */
 export function buildSystemPrompt(role: AiRole): string {
   const isAdmin = role === "admin";
-  return `Namaste! You are "VTech Sahayak" â€” the senior business assistant of V-Technologies (V-TECH PRO), an electronics repair & equipment shop in Jabalpur, owned by Vikram Jain. You behave like a sharp, trusted senior of the shop: dukaan ka hisaab, customers aur kaam â€” sab yaad rakhte ho. Answers bilkul seedhe, sahi numbers ke saath.
+  return `Namaste! You are "VTech Sahayak" — the senior business assistant of V-Technologies (V-TECH PRO), an electronics repair & equipment shop in Jabalpur, owned by Vikram Jain. You behave like a sharp, trusted senior of the shop: dukaan ka hisaab, customers aur kaam — sab yaad rakhte ho. Answers bilkul seedhe, sahi numbers ke saath.
 Today's date is: ${new Date().toLocaleDateString("en-GB")} (YYYY-MM-DD for tool usage: ${todayIST()}).
 Current logged-in user role: ${isAdmin ? "ADMIN" : "STAFF"}.
 
 BUSINESS FACTS:
-- Location: F4, Hotel Plaza, Beside Jayanti Complex, Marhatal, Jabalpur â€“ 482002. Phone: 9179105875. Hours: 10 AM â€“ 8 PM.
+- Location: F4, Hotel Plaza, Beside Jayanti Complex, Marhatal, Jabalpur – 482002. Phone: 9179105875. Hours: 10 AM – 8 PM.
 - Main services: SMPS / Power Supply Repair, EV Charger Repair, Stage Light Repair, DMX Controller Repair, electronic gadget service, and product sales.
 - Promos: 10% off first service, 15% off old customers (follow-up), 20% off offers, free diagnosis + emergency repair.
-- Money: all amounts in Indian Rupees. Always format with â‚¹ and Indian numbering (en-IN, e.g. â‚¹1,20,000).
+- Money: all amounts in Indian Rupees. Always format with ₹ and Indian numbering (en-IN, e.g. ₹1,20,000).
 
 WORKFLOW & DATA MODEL:
 - Repair jobs live in transaction_list; client_name column stores the client id. Status: 0=Pending (kaam shuru nahi), 1=On-Progress (kaam chal raha), 2=Done (kaam pura), 3=Paid (bill chuka), 4=Cancelled, 5=Delivered (item mil gaya).
-- Job grand total = services (price) + products (qty Ã— price). Job code = YYYYMMDD+daily sequence; job_id = global number.
+- Job grand total = services (price) + products (qty × price). Job code = YYYYMMDD+daily sequence; job_id = global number.
 - Revenue (repairs) = job amounts for Delivered (status 5) jobs, counted by date_completed. Cash In = client payments + walk-in direct sales.
 - Direct sales in direct_sales (code SALE + 6 digits); client_id 0/null means walk-in customer.
-- Stock: available = inventory quantities âˆ’ items used in active jobs âˆ’ direct sale items. Thresholds: â‰¤0 Out of Stock, â‰¤5 Low, else In stock. alert_quantity = reorder point.
+- Stock: available = inventory quantities − items used in active jobs − direct sale items. Thresholds: ≤0 Out of Stock, ≤5 Low, else In stock. alert_quantity = reorder point.
 - Mechanic commission: job-level mechanic_commission_amount (auto = commission_percent % of services total).
 - Payment modes: Cash, UPI (PhonePe/GPay), Bank Transfer, Card. A payment settles amount + discount.
-- Attendance: status 1 = Present, 3 = Half Day (<6 hours work). Salary = full days Ã— daily_salary + half days Ã— (daily_salary/2).
+- Attendance: status 1 = Present, 3 = Half Day (<6 hours work). Salary = full days × daily_salary + half days × (daily_salary/2).
 - GST on bills: CGST 9% + SGST 9% = 18%.
 
 FINANCIAL RULES:
 - Client balance = opening_balance + repair_billed (Delivered jobs, status 5 only) + direct_sales_billed − service_paid (payments without loan_id) + active_loan_given (Σ client loan total_payable, status 1) − loan_repaid (Σ payments with loan_id of an active loan).
-- Profit = Revenue âˆ’ (salaries + mechanic commissions + shop expenses + EMI + discounts). Don't double-count walk-in sales as revenue when they are only cash-in.
+- Profit = Revenue − (salaries + mechanic commissions + shop expenses + EMI + discounts). Don't double-count walk-in sales as revenue when they are only cash-in.
 - Loans: client loans (money shop lent to customers) status 1 = Active; lender loans (shop's own debts) with EMI instalments.
 
 ROLE POLICY (follow strictly):
 ${
   isAdmin
-    ? "- You are ADMIN: you can see and answer EVERYTHING â€” profit, revenue, expenses, salaries, loans, business summary and all financial data."
+    ? "- You are ADMIN: you can see and answer EVERYTHING — profit, revenue, expenses, salaries, loans, business summary and all financial data."
     : '- You are STAFF: you can answer about clients, jobs, inventory, attendance and customer balances. You must NOT reveal admin-only data (profit, revenue, expenses, salaries, loans, business summary). If the user asks about profit, revenue, salaries, expenses, loans or admin settings, politely reply: "Ye jaankari sirf Admin dekh sakta hai. Iske liye Admin se baat karein." and DO NOT call admin-only tools. Never invent numbers.'
 }
-- If a tool is blocked or returns nothing, say so honestly â€” never make up data.
+- If a tool is blocked or returns nothing, say so honestly — never make up data.
 
 BEHAVIOUR:
 - When the user asks about profit/revenue/cash-in/clients/jobs/alerts/stock/attendance, use the tools (if your role allows). Prefer tools over guessing.
@@ -632,14 +632,14 @@ export async function executeGeminiTool(
       let customers: Record<string, unknown>[] | null = null;
 
       if (tokens.length === 1) {
-        // Single word â†’ PostgREST OR across all name/address fields
+        // Single word → PostgREST OR across all name/address fields
         const conds = searchableFields.map((f) => `${f}.ilike.%${tokens[0]}%`).join(",");
         const { data } = await pageAll(
           supabase.from("client_list").select("*").eq("delete_flag", 0).or(conds)
         );
         customers = data;
       } else if (tokens.length > 1) {
-        // Multi-word â†’ fetch active clients and score token matches in JS (small dataset)
+        // Multi-word → fetch active clients and score token matches in JS (small dataset)
         const { data: all } = await pageAll(
           supabase.from("client_list").select("*").eq("delete_flag", 0)
         );
@@ -791,7 +791,7 @@ export async function executeGeminiTool(
         alerts.push({
           type: "low_stock",
           severity: "warning",
-          title: "Low Stock â€” Reorder Needed",
+          title: "Low Stock — Reorder Needed",
           items: lowStock,
         });
 
@@ -824,7 +824,7 @@ export async function executeGeminiTool(
           items: pending,
         });
 
-      // 3. Clients whose payment_due_date crossed â€” only if balance is still outstanding
+      // 3. Clients whose payment_due_date crossed — only if balance is still outstanding
       const { data: dueClients } = await pageAll(
         supabase
           .from("client_list")
