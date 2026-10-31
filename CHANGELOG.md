@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## [1.75.0](https://github.com/waraseoni/vtech-next/compare/v1.74.0...v1.75.0) (2026-10-31)
+
+### Features
+
+* **reports:** ship balance sheet chittha phases 2 and 3 ([fb1007b](https://github.com/waraseoni/vtech-next/commit/fb1007bf2e69c708dd3255864dd4e7339426c634))
+
+### Bug Fixes
+
+* **encoding:** repair double-encoded Devanagari and rupee symbols ([4aaf399](https://github.com/waraseoni/vtech-next/commit/4aaf3999fcb96a98862d97a429d5c32c56816a1b))
+
 ## [1.74.0](https://github.com/waraseoni/vtech-next/compare/v1.73.0...v1.74.0) (2026-10-31)
 
 ### Features
