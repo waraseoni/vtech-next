@@ -403,6 +403,15 @@ function SidebarNav({
           </li>
         </SubMenu>
 
+        {isAdmin && isModuleEnabled(enabledModules, "sales") && (
+          <li>
+            <Link href="/estimates" className={navLinkCls(lk("/estimates"))} onClick={onNavClick}>
+              <FileText size={16} />
+              <span>Estimate</span>
+            </Link>
+          </li>
+        )}
+
         {canSeeInventory && isModuleEnabled(enabledModules, "inventory") && (
           <>
             <li className="text-[9px] font-black uppercase text-app tracking-widest px-3 pt-5 pb-1.5 select-none">

@@ -33,7 +33,7 @@ export default function AdminPage({ title, subtitle, allowStaff, children }: Pro
       const role = p?.role;
       const ok = allowStaff
         ? role === "admin" || role === "developer" || role === "staff"
-        : role === "admin";
+        : role === "admin" || role === "developer";
       if (!ok) {
         router.push("/");
         return;

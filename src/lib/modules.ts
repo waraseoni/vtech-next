@@ -19,7 +19,7 @@ export type ModuleKey = (typeof ALL_MODULES)[number]["key"];
 /** Har module ke related routes — route guard ke liye */
 export const MODULE_TO_ROUTE: Record<string, string[]> = {
   jobs: ["/jobs"],
-  sales: ["/direct-sales"],
+  sales: ["/direct-sales", "/estimates"],
   clients: ["/clients", "/clients-admin", "/client-loans"],
   inventory: ["/inventory", "/products", "/suppliers"],
   finance: ["/back-office", "/payments", "/expenses", "/advance", "/lenders"],

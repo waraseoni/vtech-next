@@ -5,6 +5,7 @@ import { requireStaff } from "@/lib/api-auth";
 import { getPrintShop, getSiteBaseUrl, qrDataUrl } from "@/lib/print-shop";
 import { signTrackingToken } from "@/lib/tracking-token";
 import { printHtmlResponse } from "@/lib/print-html";
+import { numberToWords } from "@/lib/numberToWords";
 
 // ─── Supabase (server-side) ──────────────────────────────────────────────────
 const supabase = getAdminSupabase();
@@ -35,63 +36,6 @@ function fmtTime(iso: string | null): string {
 }
 function inr(n: number): string {
   return "₹" + n.toLocaleString("en-IN", { minimumFractionDigits: 2 });
-}
-
-// ─── Number to Words (Indian system) ─────────────────────────────────────────
-function numberToWords(num: number): string {
-  const ones = [
-    "",
-    "One",
-    "Two",
-    "Three",
-    "Four",
-    "Five",
-    "Six",
-    "Seven",
-    "Eight",
-    "Nine",
-    "Ten",
-    "Eleven",
-    "Twelve",
-    "Thirteen",
-    "Fourteen",
-    "Fifteen",
-    "Sixteen",
-    "Seventeen",
-    "Eighteen",
-    "Nineteen",
-  ];
-  const tens = [
-    "",
-    "",
-    "Twenty",
-    "Thirty",
-    "Forty",
-    "Fifty",
-    "Sixty",
-    "Seventy",
-    "Eighty",
-    "Ninety",
-  ];
-  function helper(n: number): string {
-    if (n === 0) return "";
-    if (n < 20) return ones[n] + " ";
-    if (n < 100) return tens[Math.floor(n / 10)] + (n % 10 ? " " + ones[n % 10] : "") + " ";
-    return ones[Math.floor(n / 100)] + " Hundred " + helper(n % 100);
-  }
-  if (num === 0) return "Zero Rupees Only";
-  let w = "";
-  const cr = Math.floor(num / 10000000);
-  num %= 10000000;
-  const lk = Math.floor(num / 100000);
-  num %= 100000;
-  const th = Math.floor(num / 1000);
-  num %= 1000;
-  if (cr) w += helper(cr) + "Crore ";
-  if (lk) w += helper(lk) + "Lakh ";
-  if (th) w += helper(th) + "Thousand ";
-  w += helper(num);
-  return w.trim() + " Rupees Only";
 }
 
 // ─── STATUS MAP ───────────────────────────────────────────────────────────────
