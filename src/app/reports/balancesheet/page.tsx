@@ -1,10 +1,11 @@
 "use client";
-import { useState, useEffect, useCallback, Suspense, useMemo } from "react";
+import { useState, useEffect, useCallback, Suspense, useMemo, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import {
   Loader2,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   Users,
   Wrench,
   Package,
@@ -13,17 +14,33 @@ import {
   BarChart2,
   Banknote,
   Printer,
-  X,
   Eye,
   RefreshCw,
   TrendingUp as Up,
   TrendingDown as Down,
-  Info,
+  Scale,
+  Download,
+  Wallet,
+  CreditCard,
 } from "lucide-react";
-import { todayIST, startOfMonthIST, endOfMonthIST } from "@/lib/dateUtils";
+import { todayIST, startOfMonthIST, endOfMonthIST, formatIST } from "@/lib/dateUtils";
+import {
+  buildBalanceSheet,
+  type CashFlow,
+  type DetailTab,
+  type StatementRow,
+} from "@/lib/balance-sheet";
 
-const inr = (n: number) =>
-  "₹" + (n || 0).toLocaleString("en-IN", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+const inr = (n: number) => {
+  const v = n || 0;
+  const digits = Math.abs(v).toLocaleString("en-IN", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  });
+  return `${v < 0 ? "-₹" : "₹"}${digits}`;
+};
+
+const fmtAmount = (n: number) => (n === 0 ? "—" : inr(n));
 
 type CLRow = {
   client_id: number;
@@ -31,7 +48,9 @@ type CLRow = {
   contact: string | null;
   opening_balance: number;
   total_repair_amount: number;
+  total_sales: number;
   total_payment: number;
+  total_discount: number;
   current_balance: number;
   previous_transactions: number;
   total_jobs: number;
@@ -48,6 +67,8 @@ type MLRow = {
   days_worked_in_period: number;
   total_salary_due: number;
   salary_due_in_period: number;
+  total_commission: number;
+  period_commission: number;
   balance_amount: number;
 };
 
@@ -80,6 +101,20 @@ type LoanRow = {
   status: string;
 };
 
+type ClientLoanRow = {
+  loan_id: number;
+  client_id: number;
+  client_name: string;
+  loan_date: string;
+  principal_amount: number;
+  total_payable: number;
+  emi_amount: number;
+  paid: number;
+  paid_in_period: number;
+  outstanding: number;
+  status: number;
+};
+
 type TopCustomer = {
   client_id: number;
   customer_name: string;
@@ -92,6 +127,14 @@ type TopCustomer = {
   current_balance: number;
 };
 
+type PeriodSummary = {
+  from: string;
+  to: string;
+  totalIncome: number;
+  totalExpenses: number;
+  netProfit: number;
+};
+
 type Summary = {
   totalIncome: number;
   totalExpenses: number;
@@ -99,14 +142,19 @@ type Summary = {
   totalStockValue: number;
   totalMechBalance: number;
   totalLoanBalance: number;
-};
-
-type LedgerEntry = {
-  event_date: string;
-  description: string;
-  debit: number;
-  credit: number;
-  balance: number;
+  salaryEarned: number;
+  commissionExpense: number;
+  shopExpense: number;
+  emiExpense: number;
+  discountGiven: number;
+  repairIncome: number;
+  directSalesIncome: number;
+  cashReceived: number;
+  clientLoansGiven: number;
+  clientLoanPrincipalGiven: number;
+  purchasePayments: number;
+  cashBalance: number;
+  previous: PeriodSummary | null;
 };
 
 type FilterType = "monthly" | "yearly" | "custom";
@@ -122,10 +170,12 @@ function BalanceSheetContent() {
   const [selMonth, setSelMonth] = useState(currentMonth);
   const [startDate, setStartDate] = useState(() => startOfMonthIST());
   const [endDate, setEndDate] = useState(() => endOfMonthIST());
+  const [asOnDate, setAsOnDate] = useState("");
   const [activeTab, setActiveTab] = useState("customer");
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [err, setErr] = useState("");
+  const [mobileOpen, setMobileOpen] = useState({ assets: true, liabilities: true });
 
   const [customerLedger, setCustomerLedger] = useState<CLRow[]>([]);
   const [mechanicLedger, setMechanicLedger] = useState<MLRow[]>([]);
@@ -133,15 +183,10 @@ function BalanceSheetContent() {
   const [incomeSummary, setIncomeSummary] = useState<IncomeRow[]>([]);
   const [expenseSummary, setExpenseSummary] = useState<ExpenseRow[]>([]);
   const [loanLedger, setLoanLedger] = useState<LoanRow[]>([]);
+  const [clientLoanLedger, setClientLoanLedger] = useState<ClientLoanRow[]>([]);
   const [topCustomers, setTopCustomers] = useState<TopCustomer[]>([]);
+  const [cashFlow, setCashFlow] = useState<CashFlow | null>(null);
   const [summary, setSummary] = useState<Summary | null>(null);
-
-  const [selectedClient] = useState<{ id: number; name: string; opening_balance: number } | null>(
-    null
-  );
-  const [detailedLedger] = useState<LedgerEntry[]>([]);
-  const [showLedgerModal, setShowLedgerModal] = useState(false);
-  const [ledgerLoading] = useState(false);
 
   const fetchData = useCallback(
     async (isRefresh = false) => {
@@ -150,6 +195,7 @@ function BalanceSheetContent() {
       setErr("");
       try {
         const params = new URLSearchParams({ from: startDate, to: endDate });
+        if (asOnDate) params.set("asOn", asOnDate);
         const res = await fetch(`/api/reports/balancesheet?${params}`);
         if (!res.ok) throw new Error("Failed to fetch data");
         const data = await res.json();
@@ -160,7 +206,9 @@ function BalanceSheetContent() {
         setIncomeSummary(data.incomeSummary || []);
         setExpenseSummary(data.expenseSummary || []);
         setLoanLedger(data.loanLedger || []);
+        setClientLoanLedger(data.clientLoanLedger || []);
         setTopCustomers(data.topCustomers || []);
+        setCashFlow(data.cashFlow || null);
         setSummary(data.summary || null);
       } catch (e) {
         setErr(e instanceof Error ? e.message || "Failed to load data" : String(e));
@@ -169,7 +217,7 @@ function BalanceSheetContent() {
         setRefreshing(false);
       }
     },
-    [startDate, endDate]
+    [startDate, endDate, asOnDate]
   );
 
   useEffect(() => {
@@ -191,6 +239,7 @@ function BalanceSheetContent() {
     if (ed) setEndDate(ed);
 
     if (nav === "prev" || nav === "next") {
+      setAsOnDate("");
       let y = yr || selYear;
       let m = mo || selMonth;
       if (filterType === "monthly") {
@@ -222,6 +271,7 @@ function BalanceSheetContent() {
   }, [searchParams, filterType, selYear, selMonth]);
 
   const applyFilter = () => {
+    setAsOnDate("");
     if (filterType === "monthly") {
       const d = new Date(selYear, selMonth - 1, 1);
       setStartDate(startOfMonthIST(d));
@@ -233,6 +283,7 @@ function BalanceSheetContent() {
   };
 
   const navigate = (dir: "prev" | "next") => {
+    setAsOnDate("");
     let y = selYear,
       m = selMonth;
     if (filterType === "monthly") {
@@ -272,6 +323,40 @@ function BalanceSheetContent() {
     [customerLedger]
   );
 
+  const statement = useMemo(
+    () =>
+      buildBalanceSheet({
+        customers: customerLedger,
+        mechanics: mechanicLedger,
+        loans: loanLedger,
+        stock: stockInventory,
+        cash: cashFlow?.balance ?? 0,
+        clientLoans: clientLoanLedger,
+      }),
+    [customerLedger, mechanicLedger, loanLedger, stockInventory, cashFlow, clientLoanLedger]
+  );
+
+  const detailRef = useRef<HTMLDivElement>(null);
+  const drillDown = (tab: DetailTab) => {
+    setActiveTab(tab);
+    requestAnimationFrame(() =>
+      detailRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
+    );
+  };
+
+  const dayLabel = (day: string) => {
+    if (!day) return "—";
+    const d = new Date(`${day}T00:00:00+05:30`);
+    return Number.isNaN(d.getTime())
+      ? "—"
+      : formatIST(d, { day: "2-digit", month: "short", year: "numeric" });
+  };
+  const effectiveAsOn = asOnDate || endDate;
+  const asOnLabel = dayLabel(effectiveAsOn);
+
+  const prevDelta =
+    summary?.previous != null ? summary.netProfit - summary.previous.netProfit : null;
+
   const monthName = new Date(selYear, selMonth - 1, 1).toLocaleString("en", { month: "long" });
   const filterLabel =
     filterType === "monthly"
@@ -280,14 +365,112 @@ function BalanceSheetContent() {
         ? `${selYear}`
         : `${startDate} से ${endDate}`;
 
+  const exportCsv = () => {
+    const lines: (string | number)[][] = [];
+    lines.push(["व्यापार चिट्ठा", `स्थिति ${asOnLabel}`, `अवधि ${filterLabel}`], []);
+    lines.push(["संपत्ति", "राशि"]);
+    statement.assets.forEach((r) => lines.push([r.label, r.amount]));
+    lines.push(["कुल संपत्ति", statement.totalAssets], []);
+    lines.push(["देनदारी", "राशि"]);
+    statement.liabilities.forEach((r) => lines.push([r.label, r.amount]));
+    lines.push(
+      ["कुल देनदारी", statement.totalLiabilities],
+      ["पूंजी (शुद्ध मूल्य)", statement.capital],
+      ["कुल (देनदारी + पूंजी)", statement.totalLiabilities + statement.capital],
+      []
+    );
+    lines.push(
+      ["लाभ-हानि (अवधि)", ""],
+      ["आय", summary?.totalIncome ?? 0],
+      ["व्यय", summary?.totalExpenses ?? 0],
+      ["शुद्ध लाभ", summary?.netProfit ?? 0]
+    );
+    if (summary?.previous) {
+      const p = summary.previous;
+      lines.push(
+        [`पिछली अवधि (${dayLabel(p.from)} – ${dayLabel(p.to)})`, ""],
+        ["आय", p.totalIncome],
+        ["व्यय", p.totalExpenses],
+        ["शुद्ध लाभ", p.netProfit]
+      );
+    }
+    lines.push([], ["नकद/बैंक (अनुमानित)", ""]);
+    cashFlow?.inflow.forEach((r) => lines.push([`जमा — ${r.label}`, r.amount]));
+    lines.push(["कुल जमा", cashFlow?.totalInflow ?? 0]);
+    cashFlow?.outflow.forEach((r) => lines.push([`खर्च — ${r.label}`, r.amount]));
+    lines.push(["कुल खर्च", cashFlow?.totalOutflow ?? 0], ["शेष", cashFlow?.balance ?? 0], []);
+    lines.push(["ग्राहक लेजर"], ["ग्राहक", "पिछला", "मरम्मत", "बिक्री", "भुगतान", "बैलेंस"]);
+    customerLedger.forEach((c) =>
+      lines.push([
+        c.customer_name,
+        c.opening_balance,
+        c.total_repair_amount,
+        c.total_sales,
+        c.total_payment,
+        c.current_balance,
+      ])
+    );
+    lines.push([], ["मैकेनिक लेजर"], ["मैकेनिक", "वेतन", "कमीशन", "अग्रिम", "बकाया"]);
+    mechanicLedger.forEach((m) =>
+      lines.push([
+        m.mechanic_name,
+        m.salary_due_in_period,
+        m.period_commission,
+        m.advance_in_period,
+        m.balance_amount,
+      ])
+    );
+    lines.push([], ["क्लाइंट लोन (दिए गए)"], ["ग्राहक", "तारीख", "कुल देय", "जमा", "बकाया"]);
+    clientLoanLedger.forEach((l) =>
+      lines.push([l.client_name, l.loan_date, l.total_payable, l.paid, l.outstanding])
+    );
+    lines.push([], ["स्टॉक"], ["प्रोडक्ट", "स्टॉक इन", "बिका", "शेष", "मूल्य"]);
+    stockInventory.forEach((s) =>
+      lines.push([
+        s.product_name,
+        s.total_stock_in,
+        s.sold_quantity,
+        s.remaining_stock,
+        s.stock_value,
+      ])
+    );
+    lines.push([], ["आय"], ["विवरण", "राशि"]);
+    incomeSummary.forEach((i) => lines.push([i.description, i.amount]));
+    lines.push([], ["व्यय"], ["श्रेणी", "राशि"]);
+    expenseSummary.forEach((e) => lines.push([e.expense_category || "अन्य", e.amount]));
+    lines.push([], ["लेंडर लोन"], ["लेंडर", "लोन", "चुकाया", "बकाया"]);
+    loanLedger.forEach((l) =>
+      lines.push([l.lender_name, l.loan_amount, l.total_paid, l.balance_amount])
+    );
+
+    const csvCell = (v: string | number) => {
+      const s = String(v ?? "");
+      return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    const csv = "\uFEFF" + lines.map((r) => r.map(csvCell).join(",")).join("\r\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `chittha-${effectiveAsOn}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-lg font-black text-white">व्यापार बैलेंस शीट</h1>
-          <p className="text-xs text-muted mt-0.5">{filterLabel}</p>
+          <h1 className="text-lg font-black text-white">व्यापार चिट्ठा</h1>
+          <p className="text-xs text-muted mt-0.5">
+            चिट्ठा स्थिति: <span className="font-bold text-app-2">{asOnLabel}</span>
+            <span className="mx-1.5 text-muted-2">·</span>
+            अवधि: {filterLabel}
+          </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <button
             onClick={() => fetchData(true)}
             disabled={refreshing}
@@ -296,8 +479,17 @@ function BalanceSheetContent() {
             <RefreshCw size={13} className={refreshing ? "animate-spin" : ""} /> Refresh
           </button>
           <button
+            onClick={exportCsv}
+            className="flex items-center gap-2 px-3 py-2 bg-panel border border-app rounded-xl text-xs font-bold text-muted hover:text-white hover:border-blue-500/40 transition-all"
+          >
+            <Download size={13} /> CSV
+          </button>
+          <button
             onClick={() =>
-              window.open(`/api/print-balancesheet?from=${startDate}&to=${endDate}`, "_blank")
+              window.open(
+                `/api/print-balancesheet?from=${startDate}&to=${endDate}&asOn=${effectiveAsOn}`,
+                "_blank"
+              )
             }
             className="flex items-center gap-2 px-4 py-2 bg-panel border border-app rounded-xl text-xs font-bold text-muted hover:text-white hover:border-blue-500/40 transition-all"
           >
@@ -306,42 +498,30 @@ function BalanceSheetContent() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
+      <div className="grid grid-cols-2 xl:grid-cols-4 gap-3">
         <MetricCard
-          label="कुल आय"
-          value={summary?.totalIncome || 0}
+          label="कुल संपत्ति"
+          value={statement.totalAssets}
           color="emerald"
-          icon={<TrendingUp size={14} />}
-        />
-        <MetricCard
-          label="कुल व्यय"
-          value={summary?.totalExpenses || 0}
-          color="red"
-          icon={<TrendingDown size={14} />}
-        />
-        <MetricCard
-          label="शुद्ध लाभ"
-          value={summary?.netProfit ?? 0}
-          color={(summary?.netProfit ?? 0) >= 0 ? "emerald" : "red"}
-          icon={(summary?.netProfit ?? 0) >= 0 ? <Up size={14} /> : <Down size={14} />}
-        />
-        <MetricCard
-          label="स्टॉक वैल्यू"
-          value={summary?.totalStockValue || 0}
-          color="blue"
           icon={<Package size={14} />}
         />
         <MetricCard
-          label="मैकेनिक बकाया"
-          value={summary?.totalMechBalance || 0}
+          label="कुल देनदारी"
+          value={statement.totalLiabilities}
           color="amber"
-          icon={<Wrench size={14} />}
+          icon={<Banknote size={14} />}
         />
         <MetricCard
-          label="लोन बकाया"
-          value={summary?.totalLoanBalance || 0}
-          color="purple"
-          icon={<Banknote size={14} />}
+          label="पूंजी (शुद्ध मूल्य)"
+          value={statement.capital}
+          color={statement.capital >= 0 ? "blue" : "red"}
+          icon={<TrendingUp size={14} />}
+        />
+        <MetricCard
+          label="शुद्ध लाभ (अवधि)"
+          value={summary?.netProfit ?? 0}
+          color={(summary?.netProfit ?? 0) >= 0 ? "emerald" : "red"}
+          icon={(summary?.netProfit ?? 0) >= 0 ? <Up size={14} /> : <Down size={14} />}
         />
       </div>
 
@@ -349,7 +529,7 @@ function BalanceSheetContent() {
         <div className="flex flex-wrap items-end gap-3">
           <div>
             <label className="text-[10px] font-black uppercase text-muted-2 tracking-widest block mb-1">
-              फिल्टर
+              अवधि
             </label>
             <select
               value={filterType}
@@ -425,6 +605,29 @@ function BalanceSheetContent() {
             </>
           )}
 
+          <div>
+            <label className="text-[10px] font-black uppercase text-muted-2 tracking-widest block mb-1">
+              स्थिति तिथि (as on)
+            </label>
+            <div className="flex items-center gap-1">
+              <input
+                type="date"
+                value={asOnDate || endDate}
+                onChange={(e) => setAsOnDate(e.target.value)}
+                className="px-3 py-2 bg-panel-2 border border-app rounded-xl text-xs font-bold text-app-2 outline-none focus:border-blue-500/50"
+              />
+              {asOnDate && (
+                <button
+                  onClick={() => setAsOnDate("")}
+                  className="px-2 py-2 text-[10px] font-bold text-muted hover:text-app-2"
+                  title="अवधि के अंतिम दिन पर वापस"
+                >
+                  रीसेट
+                </button>
+              )}
+            </div>
+          </div>
+
           <button
             onClick={applyFilter}
             className="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-xl text-xs font-bold text-white transition-all"
@@ -445,14 +648,185 @@ function BalanceSheetContent() {
             <ChevronRight size={14} />
           </button>
         </div>
+        <p className="mt-2 text-[10px] text-muted-2 leading-relaxed">
+          अवधि आय-व्यय (P&amp;L) के लिए है; चिट्ठा{" "}
+          <span className="font-bold text-muted">{asOnLabel}</span> तक की स्थिति दिखाता है। स्थिति
+          तिथि बदलने पर चिट्ठा उसी तारीख तक बनेगा।
+        </p>
       </div>
 
       <div className="bg-panel border border-app rounded-2xl overflow-hidden">
+        <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 border-b border-app">
+          <div className="flex items-center gap-2">
+            <Scale size={14} className="text-blue-400" />
+            <h2 className="text-sm font-black text-white">चिट्ठा — {asOnLabel} तक</h2>
+          </div>
+          <span className="text-[10px] font-bold text-muted-2">
+            किसी पंक्ति पर क्लिक करें → नीचे विवरण
+          </span>
+        </div>
+        <div className="grid lg:grid-cols-2">
+          <div className="p-4 lg:border-r border-app">
+            <button
+              type="button"
+              onClick={() => setMobileOpen((s) => ({ ...s, assets: !s.assets }))}
+              className="mb-1 flex w-full items-center justify-between gap-2 text-left lg:pointer-events-none"
+            >
+              <span className="flex items-center gap-1.5">
+                <ChevronDown
+                  size={13}
+                  className={`text-muted-2 transition-transform lg:hidden ${mobileOpen.assets ? "" : "-rotate-90"}`}
+                />
+                <h3 className="text-xs font-black text-emerald-400">संपत्ति</h3>
+                <span className="hidden text-[10px] font-bold uppercase tracking-widest text-muted-2 lg:inline">
+                  Assets
+                </span>
+              </span>
+              <span className="text-xs font-black tabular-nums text-emerald-400 lg:hidden">
+                {inr(statement.totalAssets)}
+              </span>
+            </button>
+            <div className={mobileOpen.assets ? "" : "hidden lg:block"}>
+              {statement.assets.map((row) => (
+                <StatementRowButton
+                  key={row.key}
+                  row={row}
+                  tone="emerald"
+                  onClick={() => drillDown(row.tab)}
+                />
+              ))}
+              <div className="mt-2 flex items-center justify-between border-t-[3px] border-double border-app pt-2 text-xs font-black text-white">
+                <span>कुल संपत्ति</span>
+                <span className="tabular-nums text-emerald-400">{inr(statement.totalAssets)}</span>
+              </div>
+            </div>
+          </div>
+          <div className="p-4 border-t lg:border-t-0 border-app">
+            <button
+              type="button"
+              onClick={() => setMobileOpen((s) => ({ ...s, liabilities: !s.liabilities }))}
+              className="mb-1 flex w-full items-center justify-between gap-2 text-left lg:pointer-events-none"
+            >
+              <span className="flex items-center gap-1.5">
+                <ChevronDown
+                  size={13}
+                  className={`text-muted-2 transition-transform lg:hidden ${mobileOpen.liabilities ? "" : "-rotate-90"}`}
+                />
+                <h3 className="text-xs font-black text-app-2">देनदारी</h3>
+                <span className="hidden text-[10px] font-bold uppercase tracking-widest text-muted-2 lg:inline">
+                  Liabilities
+                </span>
+              </span>
+              <span className="text-xs font-black tabular-nums text-white lg:hidden">
+                {inr(statement.totalLiabilities + statement.capital)}
+              </span>
+            </button>
+            <div className={mobileOpen.liabilities ? "" : "hidden lg:block"}>
+              {statement.liabilities.map((row) => (
+                <StatementRowButton
+                  key={row.key}
+                  row={row}
+                  tone="neutral"
+                  onClick={() => drillDown(row.tab)}
+                />
+              ))}
+              <div className="mt-2 flex items-center justify-between text-xs font-bold text-app-2">
+                <span>कुल देनदारी</span>
+                <span className="tabular-nums">{inr(statement.totalLiabilities)}</span>
+              </div>
+              <div className="mt-1 flex items-center justify-between text-xs font-bold text-blue-400">
+                <span>पूंजी (शुद्ध मूल्य)</span>
+                <span className="tabular-nums">{inr(statement.capital)}</span>
+              </div>
+              <div className="mt-2 flex items-center justify-between border-t-[3px] border-double border-app pt-2 text-xs font-black text-white">
+                <span>कुल (देनदारी + पूंजी)</span>
+                <span className="tabular-nums">
+                  {inr(statement.totalLiabilities + statement.capital)}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <p className="px-4 pb-3 text-[10px] leading-relaxed text-muted-2">
+          संपत्ति = देनदारी + पूंजी · नकद/बैंक शेष अनुमानित है (owner capital/drawings और
+          paid-purchase records इस अनुमान से बाहर हैं)।
+        </p>
+      </div>
+
+      <div className="bg-panel border border-app rounded-2xl px-4 py-3">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <TrendingUp size={13} className="text-blue-400" />
+            <span className="text-xs font-black text-white">इस अवधि का लाभ-हानि</span>
+            <span className="text-[10px] text-muted-2">({filterLabel})</span>
+          </div>
+          <div className="flex flex-wrap items-center gap-4 text-xs font-bold">
+            <span className="text-muted">
+              आय{" "}
+              <span className="ml-1 tabular-nums text-emerald-400">
+                {inr(summary?.totalIncome ?? 0)}
+              </span>
+            </span>
+            <span className="text-muted">
+              व्यय{" "}
+              <span className="ml-1 tabular-nums text-app-2">
+                {inr(summary?.totalExpenses ?? 0)}
+              </span>
+            </span>
+            <span className="text-muted">
+              शुद्ध लाभ{" "}
+              <span
+                className={`ml-1 tabular-nums ${
+                  (summary?.netProfit ?? 0) >= 0 ? "text-emerald-400" : "text-red-400"
+                }`}
+              >
+                {inr(summary?.netProfit ?? 0)}
+              </span>
+            </span>
+          </div>
+        </div>
+        {summary?.previous && (
+          <p className="mt-2 border-t border-app/50 pt-2 text-[10px] leading-relaxed text-muted-2">
+            पिछली अवधि ({dayLabel(summary.previous.from)} – {dayLabel(summary.previous.to)}): आय{" "}
+            <span className="tabular-nums text-muted">{inr(summary.previous.totalIncome)}</span> ·
+            व्यय{" "}
+            <span className="tabular-nums text-muted">{inr(summary.previous.totalExpenses)}</span> ·
+            शुद्ध लाभ{" "}
+            <span
+              className={`tabular-nums ${
+                summary.previous.netProfit >= 0 ? "text-emerald-400" : "text-red-400"
+              }`}
+            >
+              {inr(summary.previous.netProfit)}
+            </span>
+            {prevDelta !== null && (
+              <span
+                className={`ml-1 font-bold ${prevDelta >= 0 ? "text-emerald-400" : "text-red-400"}`}
+              >
+                ({prevDelta >= 0 ? "सुधार" : "गिरावट"} {inr(Math.abs(prevDelta))})
+              </span>
+            )}
+          </p>
+        )}
+      </div>
+
+      <div
+        ref={detailRef}
+        className="bg-panel border border-app rounded-2xl overflow-hidden scroll-mt-20"
+      >
+        <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 border-b border-app">
+          <h2 className="text-sm font-black text-white">विवरण</h2>
+          <span className="text-[10px] font-bold text-muted-2">
+            चिट्ठे की पंक्ति चुनने पर यहीं विवरण खुलेगा
+          </span>
+        </div>
         <div className="flex flex-wrap gap-1 p-2 border-b border-app">
           {[
             { id: "customer", label: "ग्राहक लेजर", icon: <Users size={13} /> },
             { id: "mechanic", label: "मैकेनिक लेजर", icon: <Wrench size={13} /> },
             { id: "inventory", label: "स्टॉक", icon: <Package size={13} /> },
+            { id: "client_loan", label: "क्लाइंट लोन", icon: <CreditCard size={13} /> },
+            { id: "cash", label: "नकद/बैंक", icon: <Wallet size={13} /> },
             { id: "income", label: "आय", icon: <TrendingUp size={13} /> },
             { id: "expense", label: "व्यय", icon: <TrendingDown size={13} /> },
             { id: "top_customers", label: "शीर्ष ग्राहक", icon: <BarChart2 size={13} /> },
@@ -484,6 +858,8 @@ function BalanceSheetContent() {
               {activeTab === "customer" && <CustomerTab data={customerLedger} totals={totals} />}
               {activeTab === "mechanic" && <MechanicTab data={mechanicLedger} />}
               {activeTab === "inventory" && <InventoryTab data={stockInventory} />}
+              {activeTab === "client_loan" && <ClientLoanTab data={clientLoanLedger} />}
+              {activeTab === "cash" && <CashTab data={cashFlow} />}
               {activeTab === "income" && <IncomeTab data={incomeSummary} summary={summary} />}
               {activeTab === "expense" && <ExpenseTab data={expenseSummary} />}
               {activeTab === "top_customers" && <TopCustomersTab data={topCustomers} />}
@@ -491,66 +867,39 @@ function BalanceSheetContent() {
             </>
           )}
         </div>
-
-        {/* ═══════════════════════════════════════════ CALCULATION SUMMARY */}
-        <div className="bg-panel border border-blue-500/15 rounded-2xl p-4 mt-4">
-          <div className="flex items-center gap-2 mb-2">
-            <Info size={12} className="text-blue-400" />
-            <span className="text-[10px] font-extrabold uppercase tracking-widest text-blue-400">
-              Calculation Summary
-            </span>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-[10px] font-mono">
-            <div className="bg-slate-900/50 rounded-lg p-2">
-              <p className="text-blue-400 font-bold mb-1">Income</p>
-              <div className="text-muted space-y-0.5">
-                <div>
-                  <span className="text-emerald-400">Total Income</span> = Repair Income + Walk-in
-                  Sales + Client Sales
-                </div>
-              </div>
-            </div>
-            <div className="bg-slate-900/50 rounded-lg p-2">
-              <p className="text-blue-400 font-bold mb-1">Expenses</p>
-              <div className="text-muted space-y-0.5">
-                <div>
-                  <span className="text-red-400">Total Expenses</span> = Salary + Commission + Shop
-                  + EMI + Discount
-                </div>
-                <div>
-                  <span className="text-cyan-400">Net Profit</span> = Total Income − Total Expenses
-                </div>
-              </div>
-            </div>
-            <div className="bg-slate-900/50 rounded-lg p-2">
-              <p className="text-blue-400 font-bold mb-1">Balance Sheet</p>
-              <div className="text-muted space-y-0.5">
-                <div>
-                  <span className="text-blue-400">Total Assets</span> = Stock Value + Cash Balance
-                </div>
-                <div>
-                  <span className="text-red-400">Total Liabilities</span> = Staff Payable + Loan
-                  Outstanding
-                </div>
-                <div>
-                  <span className="text-purple-400">Capital</span> = Total Assets − Total
-                  Liabilities
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
-
-      {showLedgerModal && selectedClient && (
-        <ClientLedgerModal
-          client={selectedClient}
-          entries={detailedLedger}
-          loading={ledgerLoading}
-          onClose={() => setShowLedgerModal(false)}
-        />
-      )}
     </div>
+  );
+}
+
+function StatementRowButton({
+  row,
+  tone,
+  onClick,
+}: {
+  row: StatementRow;
+  tone: "emerald" | "neutral";
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className="flex w-full items-center justify-between gap-3 rounded-md border-b border-app/40 px-1 py-2 -mx-1 text-left transition-colors last:border-b-0 hover:bg-white/[0.03]"
+    >
+      <span className="flex items-center gap-1.5 text-xs font-bold text-app-2">
+        {row.label}
+        {row.count > 0 && (
+          <span className="text-[10px] font-medium text-muted-2">({row.count})</span>
+        )}
+      </span>
+      <span
+        className={`text-xs font-bold tabular-nums ${
+          row.amount === 0 ? "text-muted-2" : tone === "emerald" ? "text-emerald-400" : "text-app-2"
+        }`}
+      >
+        {fmtAmount(row.amount)}
+      </span>
+    </button>
   );
 }
 
@@ -582,7 +931,7 @@ function MetricCard({
           {icon}
         </div>
       </div>
-      <p className={`text-lg font-black ${colorMap[color]}`}>{inr(value ?? 0)}</p>
+      <p className={`text-lg font-black tabular-nums ${colorMap[color]}`}>{inr(value ?? 0)}</p>
     </div>
   );
 }
@@ -596,7 +945,7 @@ function CustomerTab({
 }) {
   return (
     <div className="overflow-x-auto">
-      <table className="w-full">
+      <table className="w-full tabular-nums">
         <thead>
           <tr className="bg-panel-2">
             {[
@@ -703,7 +1052,7 @@ function CustomerTab({
 function MechanicTab({ data }: { data: MLRow[] }) {
   return (
     <div className="overflow-x-auto">
-      <table className="w-full">
+      <table className="w-full tabular-nums">
         <thead>
           <tr className="bg-panel-2">
             {["मैकेनिक नाम", "दिन काम", "कुल वेतन", "कुल अग्रिम", "बैलेंस"].map((c) => (
@@ -736,7 +1085,7 @@ function MechanicTab({ data }: { data: MLRow[] }) {
                 <td className="px-3 py-2.5 text-xs text-right font-bold text-emerald-400">
                   {inr(m.salary_due_in_period)}
                 </td>
-                <td className="px-3 py-2.5 text-xs text-right font-bold text-red-400">
+                <td className="px-3 py-2.5 text-xs text-right font-bold text-app-2">
                   {inr(m.advance_in_period)}
                 </td>
                 <td
@@ -757,7 +1106,7 @@ function InventoryTab({ data }: { data: StockRow[] }) {
   const totalValue = data.reduce((s, r) => s + r.stock_value, 0);
   return (
     <div className="overflow-x-auto">
-      <table className="w-full">
+      <table className="w-full tabular-nums">
         <thead>
           <tr className="bg-panel-2">
             {["प्रोडक्ट", "स्टॉक इन", "बिका", "शेष", "वैल्यू"].map((c) => (
@@ -822,7 +1171,7 @@ function InventoryTab({ data }: { data: StockRow[] }) {
 function IncomeTab({ data, summary }: { data: IncomeRow[]; summary: Summary | null }) {
   return (
     <div className="overflow-x-auto">
-      <table className="w-full">
+      <table className="w-full tabular-nums">
         <thead>
           <tr className="bg-panel-2">
             {["विवरण", "राशि"].map((c) => (
@@ -860,7 +1209,7 @@ function ExpenseTab({ data }: { data: ExpenseRow[] }) {
   const total = data.reduce((s, e) => s + e.amount, 0);
   return (
     <div className="overflow-x-auto">
-      <table className="w-full">
+      <table className="w-full tabular-nums">
         <thead>
           <tr className="bg-panel-2">
             {["श्रेणी", "राशि"].map((c) => (
@@ -885,16 +1234,14 @@ function ExpenseTab({ data }: { data: ExpenseRow[] }) {
               {data.map((e) => (
                 <tr key={e.expense_category} className="border-t border-app/50">
                   <td className="px-3 py-3 text-sm font-bold text-app-2">{e.expense_category}</td>
-                  <td className="px-3 py-3 text-sm text-right font-black text-red-400">
+                  <td className="px-3 py-3 text-sm text-right font-black text-app-2">
                     {inr(e.amount)}
                   </td>
                 </tr>
               ))}
               <tr className="border-t-2 border-app">
                 <td className="px-3 py-3 text-sm font-black text-white">कुल व्यय</td>
-                <td className="px-3 py-3 text-sm text-right font-black text-red-400">
-                  {inr(total)}
-                </td>
+                <td className="px-3 py-3 text-sm text-right font-black text-app-2">{inr(total)}</td>
               </tr>
             </>
           )}
@@ -907,7 +1254,7 @@ function ExpenseTab({ data }: { data: ExpenseRow[] }) {
 function TopCustomersTab({ data }: { data: TopCustomer[] }) {
   return (
     <div className="overflow-x-auto">
-      <table className="w-full">
+      <table className="w-full tabular-nums">
         <thead>
           <tr className="bg-panel-2">
             {["ग्राहक", "संपर्क", "जॉब्स", "कुल राशि", "भुगतान", "बैलेंस"].map((c) => (
@@ -959,7 +1306,7 @@ function TopCustomersTab({ data }: { data: TopCustomer[] }) {
 function LoanTab({ data }: { data: LoanRow[] }) {
   return (
     <div className="overflow-x-auto">
-      <table className="w-full">
+      <table className="w-full tabular-nums">
         <thead>
           <tr className="bg-panel-2">
             {["लेंडर", "कुल लोन", "इस अवधि में भुगतान", "बकाया", "स्थिति"].map((c) => (
@@ -991,7 +1338,7 @@ function LoanTab({ data }: { data: LoanRow[] }) {
                   {inr(l.paid_in_period)}
                 </td>
                 <td
-                  className={`px-3 py-2.5 text-xs text-right font-bold ${l.balance_amount > 0 ? "text-red-400" : "text-emerald-400"}`}
+                  className={`px-3 py-2.5 text-xs text-right font-bold ${l.balance_amount > 0 ? "text-app-2" : "text-emerald-400"}`}
                 >
                   {inr(l.balance_amount)}
                 </td>
@@ -1011,85 +1358,186 @@ function LoanTab({ data }: { data: LoanRow[] }) {
   );
 }
 
-function ClientLedgerModal({
-  client,
-  entries,
-  loading,
-  onClose,
-}: {
-  client: { id: number; name: string; opening_balance: number };
-  entries: LedgerEntry[];
-  loading: boolean;
-  onClose: () => void;
-}) {
+function ClientLoanTab({ data }: { data: ClientLoanRow[] }) {
+  const totals = data.reduce(
+    (s, l) => ({
+      payable: s.payable + l.total_payable,
+      paid: s.paid + l.paid,
+      outstanding: s.outstanding + l.outstanding,
+    }),
+    { payable: 0, paid: 0, outstanding: 0 }
+  );
   return (
-    <div
-      className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
-      onClick={(e) => e.target === e.currentTarget && onClose()}
-    >
-      <div className="bg-panel border border-app rounded-2xl w-full max-w-2xl shadow-2xl max-h-[80vh] flex flex-col">
-        <div className="flex items-center justify-between p-4 border-b border-app">
-          <div>
-            <h3 className="font-black text-white text-sm">{client.name} — Ledger</h3>
-            <p className="text-[10px] text-muted">Opening: {inr(client.opening_balance)}</p>
-          </div>
-          <button
-            onClick={onClose}
-            className="w-8 h-8 flex items-center justify-center bg-panel-2 hover:bg-panel-2 rounded-lg text-muted hover:text-white transition-all"
-          >
-            <X size={14} />
-          </button>
-        </div>
-        <div className="flex-1 overflow-y-auto p-4">
-          <table className="w-full">
+    <div className="space-y-2">
+      <div className="overflow-x-auto">
+        <table className="w-full tabular-nums">
+          <thead>
+            <tr className="bg-panel-2">
+              {["ग्राहक", "तारीख", "मूलधन", "कुल देय", "जमा", "बकाया"].map((c) => (
+                <th
+                  key={c}
+                  className="px-3 py-2.5 text-[10px] font-black uppercase text-muted-2 tracking-widest text-left whitespace-nowrap"
+                >
+                  {c}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {data.length === 0 ? (
+              <tr>
+                <td colSpan={6} className="text-center py-12 text-muted-2 text-xs font-bold">
+                  कोई बकाया क्लाइंट लोन नहीं
+                </td>
+              </tr>
+            ) : (
+              <>
+                {data.map((l) => (
+                  <tr
+                    key={l.loan_id}
+                    className="border-t border-app/50 hover:bg-white/[0.02] transition-colors"
+                  >
+                    <td className="px-3 py-2.5">
+                      <a
+                        href={`/clients/${l.client_id}/view`}
+                        target="_blank"
+                        className="text-sm font-bold text-blue-400 hover:text-blue-300 hover:underline"
+                      >
+                        {l.client_name}
+                      </a>
+                      <div className="text-[10px] text-muted-2 mt-0.5">
+                        {l.emi_amount > 0 ? `EMI ${inr(l.emi_amount)}` : "लोन"}
+                      </div>
+                    </td>
+                    <td className="px-3 py-2.5 text-xs text-muted whitespace-nowrap">
+                      {l.loan_date || "—"}
+                    </td>
+                    <td className="px-3 py-2.5 text-xs text-right text-muted">
+                      {inr(l.principal_amount)}
+                    </td>
+                    <td className="px-3 py-2.5 text-xs text-right font-bold text-app-2">
+                      {inr(l.total_payable)}
+                    </td>
+                    <td className="px-3 py-2.5 text-xs text-right font-bold text-emerald-400">
+                      {inr(l.paid)}
+                    </td>
+                    <td className="px-3 py-2.5 text-xs text-right font-bold text-amber-400">
+                      {inr(l.outstanding)}
+                    </td>
+                  </tr>
+                ))}
+                <tr className="border-t-2 border-blue-500/30 bg-blue-500/5">
+                  <td className="px-3 py-2.5 text-xs font-black text-blue-400">
+                    कुल ({data.length})
+                  </td>
+                  <td />
+                  <td />
+                  <td className="px-3 py-2.5 text-xs text-right font-black text-app-2">
+                    {inr(totals.payable)}
+                  </td>
+                  <td className="px-3 py-2.5 text-xs text-right font-black text-emerald-400">
+                    {inr(totals.paid)}
+                  </td>
+                  <td className="px-3 py-2.5 text-xs text-right font-black text-amber-400">
+                    {inr(totals.outstanding)}
+                  </td>
+                </tr>
+              </>
+            )}
+          </tbody>
+        </table>
+      </div>
+      <p className="text-[10px] leading-relaxed text-muted-2">
+        सिर्फ सक्रिय लोन जिनकी तारीख स्थिति तिथि तक है। बकाया = कुल देय − (जमा + छूट)।
+      </p>
+    </div>
+  );
+}
+
+function CashTab({ data }: { data: CashFlow | null }) {
+  if (!data) {
+    return (
+      <div className="text-center py-12 text-muted-2 text-xs font-bold">नकद डेटा नहीं मिला</div>
+    );
+  }
+  return (
+    <div className="space-y-3">
+      <div className="grid gap-3 md:grid-cols-2">
+        <div className="overflow-x-auto">
+          <table className="w-full tabular-nums">
             <thead>
               <tr className="bg-panel-2">
-                {["तारीख", "विवरण", "डेबिट", "क्रेडिट", "बैलेंस"].map((c) => (
-                  <th
-                    key={c}
-                    className="px-3 py-2 text-[10px] font-black uppercase text-muted-2 tracking-widest text-left"
-                  >
-                    {c}
-                  </th>
-                ))}
+                <th className="px-3 py-2.5 text-[10px] font-black uppercase text-emerald-400 tracking-widest text-left">
+                  जमा (Inflow)
+                </th>
+                <th className="px-3 py-2.5 text-[10px] font-black uppercase text-muted-2 tracking-widest text-right">
+                  राशि
+                </th>
               </tr>
             </thead>
             <tbody>
-              {loading ? (
-                <tr>
-                  <td colSpan={5} className="text-center py-8">
-                    <Loader2 size={20} className="animate-spin text-blue-400 inline" />
+              {data.inflow.map((r) => (
+                <tr key={r.key} className="border-t border-app/50">
+                  <td className="px-3 py-2 text-xs font-bold text-app-2">{r.label}</td>
+                  <td className="px-3 py-2 text-xs text-right font-bold text-emerald-400">
+                    {inr(r.amount)}
                   </td>
                 </tr>
-              ) : entries.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="text-center py-12 text-muted-2 text-xs font-bold">
-                    कोई एंट्री नहीं
+              ))}
+              <tr className="border-t-2 border-app">
+                <td className="px-3 py-2 text-xs font-black text-white">कुल जमा</td>
+                <td className="px-3 py-2 text-xs text-right font-black text-emerald-400">
+                  {inr(data.totalInflow)}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full tabular-nums">
+            <thead>
+              <tr className="bg-panel-2">
+                <th className="px-3 py-2.5 text-[10px] font-black uppercase text-red-400 tracking-widest text-left">
+                  खर्च (Outflow)
+                </th>
+                <th className="px-3 py-2.5 text-[10px] font-black uppercase text-muted-2 tracking-widest text-right">
+                  राशि
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.outflow.map((r) => (
+                <tr key={r.key} className="border-t border-app/50">
+                  <td className="px-3 py-2 text-xs font-bold text-app-2">{r.label}</td>
+                  <td className="px-3 py-2 text-xs text-right font-bold text-red-400">
+                    {inr(r.amount)}
                   </td>
                 </tr>
-              ) : (
-                entries.map((e, i) => (
-                  <tr key={i} className="border-t border-app/50">
-                    <td className="px-3 py-2 text-xs text-muted">{e.event_date}</td>
-                    <td className="px-3 py-2 text-xs text-app-2">{e.description}</td>
-                    <td className="px-3 py-2 text-xs text-right text-emerald-400">
-                      {e.debit > 0 ? inr(e.debit) : ""}
-                    </td>
-                    <td className="px-3 py-2 text-xs text-right text-teal-400">
-                      {e.credit > 0 ? inr(e.credit) : ""}
-                    </td>
-                    <td
-                      className={`px-3 py-2 text-xs text-right font-bold ${e.balance >= 0 ? "text-blue-400" : "text-red-400"}`}
-                    >
-                      {inr(e.balance)}
-                    </td>
-                  </tr>
-                ))
-              )}
+              ))}
+              <tr className="border-t-2 border-app">
+                <td className="px-3 py-2 text-xs font-black text-white">कुल खर्च</td>
+                <td className="px-3 py-2 text-xs text-right font-black text-red-400">
+                  {inr(data.totalOutflow)}
+                </td>
+              </tr>
             </tbody>
           </table>
         </div>
       </div>
+      <div className="flex items-center justify-between rounded-xl border border-app bg-panel-2 px-3 py-2.5">
+        <span className="text-xs font-black text-white">
+          {data.balance >= 0 ? "नकद/बैंक शेष (अनुमानित)" : "ओवरड्राफ्ट (अनुमानित)"}
+        </span>
+        <span
+          className={`text-sm font-black tabular-nums ${data.balance >= 0 ? "text-blue-400" : "text-red-400"}`}
+        >
+          {inr(data.balance)}
+        </span>
+      </div>
+      <p className="text-[10px] leading-relaxed text-muted-2">
+        अनुमान: सभी जमा − सभी खर्च, स्थिति तिथि तक। Owner capital/drawings और paid-purchase records
+        शामिल नहीं हैं, इसलिए इसे बैंक स्टेटमेंट से मिलाकर देखें — यह अंतिम शेष नहीं है।
+      </p>
     </div>
   );
 }

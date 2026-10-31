@@ -15,6 +15,29 @@ Har kaam ke liye: plan + todo banate hain, jo complete ho jata hai use mark kart
       Plan: `docs/plans/estimate_builder_plan_oct31_2026.md`.
       **USER ACTION:** authenticated admin/developer par desktop/mobile print, draft restore,
       WhatsApp aur R1/R2/R3 live check karna (details plan §13.1).
+- [x] Balance Sheet "व्यापार चिट्ठा" Phase 1 (screen) — as-on header, 4 KPI (संपत्ति/देनदारी/पूंजी/
+      शुद्ध लाभ), T-format statement (double-rule totals), row → tab drill-down, period filters
+      relabelled, Calculation Summary hataya, tabular-nums + zero `—`. Naya pure helper
+      `src/lib/balance-sheet.ts` + 7 tests. Saath hi poore `src` ka mojibake repair (6 files:
+      report/print routes, gemini-tools, groq — double-encoded Devanagari/₹/—).
+      Gates: tsc/eslint/prettier/570 tests/build green. Plan:
+      `docs/plans/balancesheet_chittha_ux_plan_oct31_2026.md`.
+      **USER ACTION:** authenticated user se `/reports/balancesheet` desktop/mobile, row drill-down,
+      period switch aur print check karna.
+- [x] Balance Sheet "व्यापार चिट्ठा" Phase 2+3 — shared server computation
+      (`src/lib/balance-sheet-data.ts`) ab screen aur print dono ke liye single source; report API
+      thin + `asOn` param (default = period end). Statement me naye rows: नकद/बैंक (अनुमानित,
+      negative → ओवरड्राफ्ट liability) aur क्लाइंट लोन बकाया (active, `outstanding > 0`).
+      Estimated cash `computeCashFlow` se (inflows − outflows, as-on tak). Print route ab asli
+      T-format chittha (cream paper, double-rule totals, detail tables, P&L + previous period,
+      signature lines, escaped HTML). UI: as-on date control, CSV export (BOM), previous-period
+      comparison, mobile accordion + totals in headers, `ClientLedgerModal` dead code removed.
+      Fix: `lender_list.delete_flag` column nahi hai — us query se print 400/500 de sakta tha.
+      Helper tests 7 → 17. Gates: tsc/eslint/changed-file prettier/580 tests/build green.
+      Plan: `docs/plans/balancesheet_chittha_ux_plan_oct31_2026.md`.
+      **USER ACTION:** authenticated user se `/reports/balancesheet` — desktop/mobile statement,
+      as-on date change, row drill-down, क्लाइंट लोन + नकद tabs, CSV download, print chittha
+      (A4) check karna. Zero DB writes; read-only queries.
 - [x] `8718f5e` fix(direct-sales): submit row wrap — narrow screen par buttons frame se bahar kat the the
 - [x] `e32e06f` test(attendance): §9 test clock-independent (19:15-24:00 IST window)
 - [x] `01f38d8` feat(bulk-edit): jobs bulk-edit page par row checkboxes — ticked rows Target Client
