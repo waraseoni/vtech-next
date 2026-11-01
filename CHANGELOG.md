@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## [1.75.1](https://github.com/waraseoni/vtech-next/compare/v1.75.0...v1.75.1) (2026-11-01)
+
+### Performance Improvements
+
+* **jobs:** seed job detail and form pages from the server ([03a700d](https://github.com/waraseoni/vtech-next/commit/03a700d41bbdd36f376e8bd5bfea3371a358c945))
+* **reports:** seed report pages on the server ([d6966c8](https://github.com/waraseoni/vtech-next/commit/d6966c8fa01782d0054facad3be55d308ce0bcc8))
+
 ## [1.75.0](https://github.com/waraseoni/vtech-next/compare/v1.74.0...v1.75.0) (2026-10-31)
 
 ### Features
