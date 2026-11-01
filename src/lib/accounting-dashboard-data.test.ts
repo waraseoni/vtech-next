@@ -54,9 +54,7 @@ function baseTables(): Record<string, Row[]> {
     ],
     attendance_list: [{ mechanic_id: 1, curr_date: DAY, status: 1 }],
     mechanic_list: [{ id: 1, daily_salary: 300 }],
-    mechanic_salary_history: [
-      { mechanic_id: 1, salary: 400, effective_date: "2026-10-01" },
-    ],
+    mechanic_salary_history: [{ mechanic_id: 1, salary: 400, effective_date: "2026-10-01" }],
     client_payments: [{ amount: 200, discount: 20, payment_date: DAY + TS }],
     expense_list: [{ amount: 50, category: "Rent", date_created: DAY + TS }],
     advance_payments: [{ amount: 30, mechanic_id: 1, date_paid: DAY + TS }],

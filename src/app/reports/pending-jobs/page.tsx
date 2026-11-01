@@ -36,7 +36,5 @@ export default async function PendingJobsPage({
     logger.error("Pending jobs page data error:", err);
   }
 
-  return (
-    <PendingJobsBody initialJobs={initialJobs} initialFilters={{ from, to, status }} />
-  );
+  return <PendingJobsBody initialJobs={initialJobs} initialFilters={{ from, to, status }} />;
 }

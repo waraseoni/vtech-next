@@ -143,11 +143,7 @@ export async function fetchAccountingDashboardData(
         .lte("date_created", eTs)
     ),
     pageAllRows(
-      supabase
-        .from("advance_payments")
-        .select("amount")
-        .gte("date_paid", sTs)
-        .lte("date_paid", eTs)
+      supabase.from("advance_payments").select("amount").gte("date_paid", sTs).lte("date_paid", eTs)
     ),
     pageAllRows(
       supabase
@@ -157,11 +153,11 @@ export async function fetchAccountingDashboardData(
         .lte("payment_date", eTs)
     ),
     // Names (sab clients) + opening balance (delete_flag=0) — ek hi read
-    supabase
-      .from("client_list")
-      .select("id, firstname, lastname, opening_balance, delete_flag"),
+    supabase.from("client_list").select("id, firstname, lastname, opening_balance, delete_flag"),
     // All-time (as-of `to`) aggregates
-    pageAllRows(supabase.from("client_payments").select("amount, discount").lte("payment_date", eTs)),
+    pageAllRows(
+      supabase.from("client_payments").select("amount, discount").lte("payment_date", eTs)
+    ),
     pageAllRows(
       supabase.from("direct_sales").select("total_amount, client_id").lte("date_created", eTs)
     ),
@@ -178,11 +174,7 @@ export async function fetchAccountingDashboardData(
       supabase.from("transaction_list").select("amount").eq("status", 5).lte("date_completed", eTs)
     ),
     pageAllRows(
-      supabase
-        .from("client_loans")
-        .select("total_payable")
-        .eq("status", 1)
-        .lte("loan_date", eTs)
+      supabase.from("client_loans").select("total_payable").eq("status", 1).lte("loan_date", eTs)
     ),
     supabase.from("lender_list").select("loan_amount").eq("status", 1),
     pageAllRows(supabase.from("inventory_list").select("quantity, product_id")),

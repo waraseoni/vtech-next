@@ -43,7 +43,5 @@ export default async function AccountingDashboardPage({
     logger.error("Accounting dashboard page data error:", err);
   }
 
-  return (
-    <AccountingDashboardBody initialData={data} initialRange={{ from, to }} />
-  );
+  return <AccountingDashboardBody initialData={data} initialRange={{ from, to }} />;
 }

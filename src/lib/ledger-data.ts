@@ -78,11 +78,12 @@ export async function fetchLedgerData(
       supabase.from("mechanic_list").select("id, firstname, lastname, daily_salary, delete_flag")
     ),
     pageAllRows(supabase.from("product_list").select("id, name, price")),
-    pageAllRows(supabase.from("mechanic_salary_history").select("mechanic_id, effective_date, salary")),
+    pageAllRows(
+      supabase.from("mechanic_salary_history").select("mechanic_id, effective_date, salary")
+    ),
   ]);
 
-  const clientMap: Record<number, { firstname: string; middlename: string; lastname: string }> =
-    {};
+  const clientMap: Record<number, { firstname: string; middlename: string; lastname: string }> = {};
   allClients?.forEach((c) => {
     clientMap[c.id] = {
       firstname: c.firstname || "",
@@ -236,18 +237,15 @@ export async function fetchLedgerData(
 
     // 12. All-time repairs (liability)
     pageAllRows(
-      supabase.from("transaction_list").select("mechanic_id, mechanic_commission_amount").eq(
-        "status",
-        5
-      )
+      supabase
+        .from("transaction_list")
+        .select("mechanic_id, mechanic_commission_amount")
+        .eq("status", 5)
     ),
 
     // 13. All-time attendance (liability)
     pageAllRows(
-      supabase
-        .from("attendance_list")
-        .select("mechanic_id, curr_date, status")
-        .in("status", [1, 3])
+      supabase.from("attendance_list").select("mechanic_id, curr_date, status").in("status", [1, 3])
     ),
 
     // 14. All-time advances (liability)
@@ -389,8 +387,7 @@ export async function fetchLedgerData(
   );
   const loanOutstanding = Math.max(0, totalLoan - totalLoanPaidAll);
 
-  const salaryMap: Record<number, { name: string; full: number; half: number; daily: number }> =
-    {};
+  const salaryMap: Record<number, { name: string; full: number; half: number; daily: number }> = {};
   (attendance || []).forEach((a) => {
     const mid = a.mechanic_id;
     if (!salaryMap[mid]) {
@@ -416,7 +413,8 @@ export async function fetchLedgerData(
 
   // P&L salary (PHP: per attendance row, salary_history rate <= curr_date, else daily_salary)
   const totalSalary = (attendance || []).reduce((sum, a) => {
-    const rate = historyRateFor(a.mechanic_id, a.curr_date) ?? (mechanicMap[a.mechanic_id]?.daily || 0);
+    const rate =
+      historyRateFor(a.mechanic_id, a.curr_date) ?? (mechanicMap[a.mechanic_id]?.daily || 0);
     return sum + (a.status === 3 ? rate / 2 : rate);
   }, 0);
 
