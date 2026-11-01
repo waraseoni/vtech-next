@@ -7,6 +7,18 @@ Har kaam ke liye: plan + todo banate hain, jo complete ho jata hai use mark kart
 
 ---
 
+## Recent work log (2026-11)
+
+- [x] Jobs server-first speed — P0: `/jobs` filter/date/reset/preview URL sync native
+      `history.pushState` (server RSC refetch khatam). P1: `/jobs/[id]/view` server seed
+      (`jobViewQueries.ts` neutral + RSC layout + React Query `initialData`). P2: `/jobs/new` +
+      `/jobs/[id]/edit` master data + available stock server seed (`jobFormQueries.ts`,
+      `server-job-form.ts`), fallback 7 sequential RTT → 1 wave. Stock formula unchanged.
+      Gates: tsc/eslint/584 tests/build + 8-route smoke green. Zero DB writes.
+      Plan: `docs/plans/jobs_server_first_plan_nov02_2026.md`.
+      **USER ACTION:** authenticated admin se filter/preview (no RSC request), view first paint,
+      new/edit dropdown + stock check karna.
+
 ## Recent work log (2026-10)
 
 - [x] Editable estimate builder — `/estimates` (client + inventory + custom part/service rows,
@@ -439,13 +451,18 @@ Base messenger already live (`30aae41`). Ye round un requested features add kart
 
 - [x] W3a: dashboard `.from()` clusters parallel (`Promise.all`) + dedupe
 - [x] W3b: jobs page batching — done (Phase 4 P2, `050218b`)
-- [ ] W3c: reports/accounting-dashboard batching
+- [x] W3c: reports/accounting-dashboard batching — **DONE (2026-11-01):** shared `src/lib/accounting-dashboard-data.ts` + server seed; queries 28→21, do waves → ek `Promise.all`; numbers identical, koi DB change nahi; 2 vitest tests (aggregates + as-of loan filter) added.
 - [ ] Har page: tsc + eslint + vitest + visual QA green
 
 ### Phase C — Post-season (G3)
 
-- [ ] W6: RootClient split + icons per-page + shared chunk review + Sentry tuning
-- [ ] W7: RSC migration hot pages — PARTIAL: clients/dashboard/jobs DONE (Phase 4 RSC); inventory + cash-flow pending
+> **2026-11-01:** consolidated plan `docs/plans/frontend_speed_plan_nov01_2026.md`
+> (v2 comparison + no-DB speed work). Uska order: Phase 0 measurement/budgets
+> pehle, phir W6 (bundle), phir reports first-paint; boot-gate lift alag gated sprint.
+- [x] W9: speed plan Phase 0 — **build-level baseline done (2026-11-01)**: chunks 7.4 MB/208; per-route referenced JS (upper bound) `/jobs` 661 KB, `/dashboard` 598, `/clients` 604, `/reports/balancesheet` 589, `/inventory` 748, `/login` 580. Runtime Lighthouse/CDP measurement pending owner-approved window (authenticated login live DB par presence write kar sakta hai).
+- [x] W6: WS-B first slice — `TeamOnline`, `ShortcutHelpOverlay`, `LicenseGate` dynamic chunks; delta ~-12–13 KB/route (-2%). `optimizePackageImports` no-op (Next 16 auto-optimizes). **WS-G (2026-11-01):** Serwist precache verified (52 KB sw.js, 228 entries, koi HTML/RSC nahi), Sentry replay dead config removed (integration bundle me nahi), error tracking + 10% traces unchanged. SidebarNav extraction **deferred** (desktop+drawer shared, ~10 KB, authed visual QA chahiye).
+- [x] W10: WS-F query/cache hygiene — `system_info` `React.cache` per-request (`server-firm-info.ts`, jobs+clients share), converted reports ek `Promise.all` wave, `select("*")` audit done (baaki detail-fetch/list pages intentional).
+- [ ] W7: RSC migration hot pages — PARTIAL: clients/dashboard/jobs DONE (Phase 4 RSC); balancesheet + cash-flow + monthly-profit + pending-jobs + daily-done **DONE (2026-11-01, server page + initialData, APIs/shared modules unchanged)**; inventory pending (WS-C)
 - [ ] W8: React Query / SWR data layer
 
 ### Phase D — Measure-repeat

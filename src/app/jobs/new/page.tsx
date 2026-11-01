@@ -29,6 +29,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import PageLoader from "@/components/PageLoader";
 import { logActivity } from "@/lib/activity";
 import { fetchClientDue, dueLabel } from "@/lib/client-due";
+import { buildAvailableStock } from "@/app/jobs/jobFormQueries";
+import { useJobFormSeed } from "@/app/jobs/JobFormSeedProvider";
 import { getNextJobId, peekNextJobId, bumpJobCounter } from "@/lib/jobIdCounter";
 import SearchableSelect from "@/components/SearchableSelect";
 import JobSpotPicker from "@/components/JobSpotPicker";
@@ -95,6 +97,8 @@ function ManageJobPageInner({ params }: { params: Promise<{ id?: string }> }) {
   const resolvedParams = use(params);
   const router = useRouter();
   const searchParams = useSearchParams();
+  // Server layout (src/app/jobs/new/layout.tsx) ka master-data seed.
+  const formSeed = useJobFormSeed();
 
   // jobId present → edit mode; else → new mode
   const jobId = resolvedParams.id ? parseInt(resolvedParams.id) : null;
@@ -111,13 +115,14 @@ function ManageJobPageInner({ params }: { params: Promise<{ id?: string }> }) {
   // Re-entrancy guard — double click / Enter double submit par duplicate row
   // nahi banegaa (submitJob in-flight ho to doosra call ignore hota hai).
   const savingRef = useRef(false);
-  const [currentUserId, setCurrentUserId] = useState<number>(0); // numeric user id from profiles
+  const [currentUserId, setCurrentUserId] = useState<number>(formSeed?.currentUserId ?? 0);
 
-  // Master data
-  const [clients, setClients] = useState<Client[]>([]);
-  const [mechanics, setMechanics] = useState<Mechanic[]>([]);
-  const [services, setServices] = useState<Service[]>([]);
-  const [products, setProducts] = useState<Product[]>([]);
+  // Master data — seed mile to pehla render hi bhara hua (post-hydration
+  // waterfall khatam); warna effect fallback fetch chalata hai.
+  const [clients, setClients] = useState<Client[]>(formSeed?.clients ?? []);
+  const [mechanics, setMechanics] = useState<Mechanic[]>(formSeed?.mechanics ?? []);
+  const [services, setServices] = useState<Service[]>(formSeed?.services ?? []);
+  const [products, setProducts] = useState<Product[]>(formSeed?.products ?? []);
 
   // ── FORM (react-hook-form) ────────────────────────────────────────────
   // transaction_list row me jaane wale scalar fields ek hi schema se validate
@@ -151,7 +156,7 @@ function ManageJobPageInner({ params }: { params: Promise<{ id?: string }> }) {
     label: string;
     type: "due" | "advance" | "settled";
   } | null>(null);
-  const [userRole, setUserRole] = useState<string>("staff");
+  const [userRole, setUserRole] = useState<string>(formSeed?.userRole ?? "staff");
   const [jobCode, setJobCode] = useState<string>(""); // job_id column
   const [txnCode, setTxnCode] = useState<string>(""); // code column (YYYYMMDD+seq)
   const [serviceRows, setServiceRows] = useState<ServiceRow[]>([]);
@@ -197,130 +202,110 @@ function ManageJobPageInner({ params }: { params: Promise<{ id?: string }> }) {
     [setValue, clearErrors, fetchClientBalance]
   );
 
-  // ── FETCH MASTER DATA ─────────────────────────────────────────────────
+  // ── FETCH MASTER DATA (fallback — seed mile to mount par kuch nahi) ───
   useEffect(() => {
+    // Server seed: lists already state me hain; sirf ?client_id auto-select.
+    if (formSeed) {
+      if (presetClientId && !isEdit) {
+        const found = formSeed.clients.find((c) => c.id === presetClientId);
+        if (found) pickClient(found);
+      }
+      return;
+    }
+
     const loadMaster = async () => {
-      // Current logged-in user's numeric ID (from profiles → maps to transaction_list.user_id)
       try {
         const {
           data: { user },
         } = await getCachedUser();
-        if (user) {
-          // profiles.mechanic_id is the numeric id used in transaction_list.user_id
-          // Fall back to 0 if profile not found (will still error if DB enforces NOT NULL)
-          const { data: profile } = await supabase
-            .from("profiles")
-            .select("mechanic_id, role")
-            .eq("id", user.id)
-            .single();
-          setCurrentUserId(profile?.mechanic_id ?? 0);
-          setUserRole(profile?.role ?? "staff");
-        }
-      } catch {
-        /* silently ignore — user_id will be 0 */
-      }
 
-      // Clients
-      const { data: cData } = await supabase
-        .from("client_list")
-        .select("id, firstname, middlename, lastname, contact")
-        .eq("delete_flag", 0)
-        .order("firstname");
-      const mapped: Client[] = (cData || []).map((c) => ({
-        ...c,
-        fullname: [c.firstname, c.middlename, c.lastname].filter(Boolean).join(" "),
-      }));
-      setClients(mapped);
-
-      // Auto-select client from ?client_id param
-      if (presetClientId && !isEdit) {
-        const found = mapped.find((c) => c.id === presetClientId);
-        if (found) {
-          pickClient(found);
-        }
-      }
-
-      // Mechanics
-      const { data: mData } = await supabase
-        .from("mechanic_list")
-        .select("id, firstname, middlename, lastname, commission_percent")
-        .eq("delete_flag", 0)
-        .eq("status", 1)
-        .order("firstname");
-      setMechanics(
-        (mData || []).map((m) => ({
-          id: m.id,
-          fullname: [m.firstname, m.middlename, m.lastname].filter(Boolean).join(" "),
-          commission_percent: m.commission_percent || 0,
-        }))
-      );
-
-      // Services
-      const { data: sData } = await supabase
-        .from("service_list")
-        .select("id, name, price")
-        .eq("delete_flag", 0)
-        .eq("status", 1)
-        .order("name");
-      setServices(sData || []);
-
-      // Products with available stock — 3 separate queries.
-      // Nested join product_list→transaction_products→transaction_list fails in PostgREST
-      // because transaction_products has no single-column PK (composite key only).
-      const [{ data: pData }, { data: invData }, { data: tpData }, { data: dsiData }] =
-        await Promise.all([
-          // 1. All active products
+        // Saare masters + stock inputs EK wave me (pehle 7 sequential RTT the).
+        const [
+          profileRes,
+          { data: cData },
+          { data: mData },
+          { data: sData },
+          { data: pData },
+          { data: invData },
+          { data: tpData },
+          { data: dsiData },
+          { data: cancelledJobs },
+        ] = await Promise.all([
+          user
+            ? supabase.from("profiles").select("mechanic_id, role").eq("id", user.id).single()
+            : Promise.resolve({ data: null }),
+          supabase
+            .from("client_list")
+            .select("id, firstname, middlename, lastname, contact")
+            .eq("delete_flag", 0)
+            .order("firstname"),
+          supabase
+            .from("mechanic_list")
+            .select("id, firstname, middlename, lastname, commission_percent")
+            .eq("delete_flag", 0)
+            .eq("status", 1)
+            .order("firstname"),
+          supabase
+            .from("service_list")
+            .select("id, name, price")
+            .eq("delete_flag", 0)
+            .eq("status", 1)
+            .order("name"),
           supabase
             .from("product_list")
             .select("id, name, price")
             .eq("delete_flag", 0)
             .eq("status", 1)
             .order("name"),
-
-          // 2. Total stock in (sum per product from inventory)
           supabase.from("inventory_list").select("product_id, quantity"),
-
-          // 3. Qty sold in non-cancelled jobs only
           supabase.from("transaction_products").select("product_id, qty, transaction_id"),
-
-          // 4. Qty sold in direct sales
           supabase.from("direct_sale_items").select("product_id, qty"),
+          supabase.from("transaction_list").select("id").eq("status", 4),
         ]);
 
-      // Get cancelled job IDs to exclude from sold count
-      const { data: cancelledJobs } = await supabase
-        .from("transaction_list")
-        .select("id")
-        .eq("status", 4);
-      const cancelledIds = new Set((cancelledJobs || []).map((j) => j.id));
+        if (user) {
+          // profiles.mechanic_id is the numeric id used in transaction_list.user_id
+          const profile = profileRes.data as { mechanic_id?: number; role?: string } | null;
+          setCurrentUserId(profile?.mechanic_id ?? 0);
+          setUserRole(profile?.role ?? "staff");
+        }
 
-      // Build lookup maps
-      const invMap: Record<number, number> = {};
-      (invData || []).forEach((r) => {
-        invMap[r.product_id] = (invMap[r.product_id] || 0) + (r.quantity || 0);
-      });
+        const mapped: Client[] = (cData || []).map((c) => ({
+          ...c,
+          fullname: [c.firstname, c.middlename, c.lastname].filter(Boolean).join(" "),
+        }));
+        setClients(mapped);
 
-      const jobSoldMap: Record<number, number> = {};
-      (tpData || []).forEach((r) => {
-        if (!cancelledIds.has(r.transaction_id))
-          jobSoldMap[r.product_id] = (jobSoldMap[r.product_id] || 0) + (r.qty || 0);
-      });
+        // Auto-select client from ?client_id param
+        if (presetClientId && !isEdit) {
+          const found = mapped.find((c) => c.id === presetClientId);
+          if (found) pickClient(found);
+        }
 
-      const saleSoldMap: Record<number, number> = {};
-      (dsiData || []).forEach((r) => {
-        saleSoldMap[r.product_id] = (saleSoldMap[r.product_id] || 0) + (r.qty || 0);
-      });
-
-      const withStock: Product[] = (pData || []).map((p) => ({
-        id: p.id,
-        name: p.name,
-        price: p.price,
-        available_stock: (invMap[p.id] || 0) - (jobSoldMap[p.id] || 0) - (saleSoldMap[p.id] || 0),
-      }));
-      setProducts(withStock);
+        setMechanics(
+          (mData || []).map((m) => ({
+            id: m.id,
+            fullname: [m.firstname, m.middlename, m.lastname].filter(Boolean).join(" "),
+            commission_percent: m.commission_percent || 0,
+          }))
+        );
+        setServices(sData || []);
+        setProducts(
+          buildAvailableStock(
+            pData || [],
+            invData || [],
+            tpData || [],
+            dsiData || [],
+            new Set((cancelledJobs || []).map((j) => j.id))
+          )
+        );
+      } catch (err) {
+        // user_id 0 reh jayega — save par DB hi reject karega (purana behaviour)
+        logger.warn("job form master load failed:", err);
+      }
     };
     loadMaster();
-  }, [presetClientId, isEdit, pickClient]);
+  }, [presetClientId, isEdit, pickClient, formSeed]);
 
   // ── FETCH JOB (edit mode) ─────────────────────────────────────────────
   useEffect(() => {

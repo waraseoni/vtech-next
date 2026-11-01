@@ -241,6 +241,14 @@ function JobsListContent({
   const router = useRouter();
   const searchParams = useSearchParams();
 
+  // Same-route URL sync — `router.push` yahan naya RSC render trigger karta tha
+  // (server poora jobs seed dobara banata), par useJobList mount ke baad naya
+  // seed adopt nahi karta → bekaar server scan + client fetch dono. Native
+  // History API URL/useSearchParams sync karta hai BINA server request ke.
+  const syncJobsUrl = useCallback((url: string) => {
+    window.history.pushState(null, "", url);
+  }, []);
+
   // Sprint 3 #12: list data-layer (filters + fetch + pagination) useJobList me.
   // Yahan sirf UI state rehta hai — behavior 1:1 same.
   // Phase 4 P2: initial seed mile (aur mount-filters match karein) to mount-par
@@ -491,13 +499,13 @@ function JobsListContent({
   const openPreview = (id: number) => {
     const p = new URLSearchParams(searchParams.toString());
     p.set("preview", String(id));
-    router.push(`/jobs?${p.toString()}`, { scroll: false });
+    syncJobsUrl(`/jobs?${p.toString()}`);
   };
   const closePreview = () => {
     const p = new URLSearchParams(searchParams.toString());
     p.delete("preview");
     const qs = p.toString();
-    router.push(`/jobs${qs ? `?${qs}` : ""}`, { scroll: false });
+    syncJobsUrl(`/jobs${qs ? `?${qs}` : ""}`);
   };
 
   // ── NEW: Quick Status Change ─────────────────────────────
@@ -1107,7 +1115,7 @@ function JobsListContent({
     const p = new URLSearchParams(searchParams.toString());
     p.set("date_from", nd);
     p.set("date_to", nd);
-    router.push(`?${p}`);
+    syncJobsUrl(`?${p}`);
   };
 
   const applyDesktopFilter = () => {
@@ -1115,7 +1123,7 @@ function JobsListContent({
     if (dateFrom) p.set("date_from", dateFrom);
     if (dateTo) p.set("date_to", dateTo);
     if (hideDelivered) p.set("hide_delivered", "1");
-    router.push(`?${p}`);
+    syncJobsUrl(`?${p}`);
   };
 
   const applyMobileFilter = () => {
@@ -1123,7 +1131,7 @@ function JobsListContent({
     if (dateFrom) p.set("date_from", dateFrom);
     if (dateTo) p.set("date_to", dateTo);
     if (hideDelivered) p.set("hide_delivered", "1");
-    router.push(`?${p}`);
+    syncJobsUrl(`?${p}`);
     setShowFilterModal(false);
   };
 
@@ -1137,7 +1145,7 @@ function JobsListContent({
     try {
       localStorage.removeItem("jobs_hide_delivered");
     } catch {}
-    router.push("/jobs");
+    syncJobsUrl("/jobs");
     setShowFilterModal(false);
   };
 

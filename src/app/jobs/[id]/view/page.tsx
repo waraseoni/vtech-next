@@ -5,6 +5,7 @@ import { supabase } from "@/lib/supabase";
 import { useQuery } from "@tanstack/react-query";
 import { useSystemInfo } from "@/lib/queries/system-info";
 import { jobViewOptions, type JobDetail, type TransactionImage } from "@/lib/queries/job-view";
+import { useJobViewSeed } from "./JobViewSeedProvider";
 import { GeoPin } from "@/app/components/ViewOnlyBanner";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
@@ -280,8 +281,15 @@ export default function JobDetailsPage() {
   const router = useRouter();
   const jobId = params.id as string;
 
-  const [job, setJob] = useState<JobDetail | null>(null);
-  const [images, setImages] = useState<TransactionImage[]>([]);
+  // Server layout (RSC) ne ye snapshot bheja hai — state seed se init karo
+  // taaki pehla client render hi final data ho (effect/loader flash na ho).
+  const numId = Number(jobId?.trim());
+  const validId = Boolean(jobId) && Number.isFinite(numId) && numId > 0;
+  const viewSeed = useJobViewSeed();
+  const seedSnap = viewSeed && validId && viewSeed.job.id === numId ? viewSeed : undefined;
+
+  const [job, setJob] = useState<JobDetail | null>(seedSnap?.job ?? null);
+  const [images, setImages] = useState<TransactionImage[]>(seedSnap?.images ?? []);
   const [activityLogs, setActivityLogs] = useState<ActivityEntry[]>([]);
   const [userNames, setUserNames] = useState<Record<string, string>>({});
   const [deleting, setDeleting] = useState(false);
@@ -432,9 +440,13 @@ export default function JobDetailsPage() {
   const [showStatusModal, setShowStatusModal] = useState(false);
   // Sprint 3 #14: WA preview (direct open nahi)
   const [waPreview, setWaPreview] = useState<{ phone: string; msg: string } | null>(null);
-  const [newStatus, setNewStatus] = useState(0);
-  const [deliveryDate, setDeliveryDate] = useState(""); // for Delivered status
-  const [deliveryTime, setDeliveryTime] = useState(""); // HH:MM
+  const [newStatus, setNewStatus] = useState(seedSnap?.job.status ?? 0);
+  const [deliveryDate, setDeliveryDate] = useState(
+    seedSnap ? toDateInput(seedSnap.job.date_completed) : ""
+  ); // for Delivered status
+  const [deliveryTime, setDeliveryTime] = useState(
+    seedSnap ? fmtTimeHM(seedSnap.job.date_completed) : ""
+  ); // HH:MM
   const [updatingStatus, setUpdatingStatus] = useState(false);
 
   // Payment modal
@@ -522,10 +534,7 @@ export default function JobDetailsPage() {
     []
   );
 
-  // ── DATA (React Query cache) ──────────────────────────────────────────────
-  const numId = Number(jobId?.trim());
-  const validId = Boolean(jobId) && Number.isFinite(numId) && numId > 0;
-
+  // ── DATA (React Query cache + RSC seed) ───────────────────────────────────
   const {
     data: snap,
     isPending,
@@ -534,6 +543,7 @@ export default function JobDetailsPage() {
   } = useQuery({
     ...jobViewOptions(numId),
     enabled: validId,
+    initialData: seedSnap,
   });
 
   const loading = isPending;
