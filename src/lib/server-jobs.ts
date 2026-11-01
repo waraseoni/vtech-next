@@ -8,6 +8,7 @@ import {
   type JobsPageData,
 } from "@/app/jobs/jobListQueries";
 import { fetchOpenPartCounts } from "@/lib/requiredParts";
+import { getFirmInfo } from "@/lib/server-firm-info";
 import { logger } from "@/lib/logger";
 
 /**
@@ -105,19 +106,7 @@ export async function fetchJobsPageData(
     }
   })();
 
-  const sysInfoP = (async (): Promise<Record<string, string>> => {
-    try {
-      const { data } = await supabase.from("system_info").select("meta_field, meta_value");
-      const info: Record<string, string> = {};
-      (data || []).forEach((r: { meta_field: string; meta_value: string | null }) => {
-        info[r.meta_field] = r.meta_value ?? "";
-      });
-      return info;
-    } catch (e) {
-      logger.warn("Jobs sysInfo fetch failed:", e);
-      return {};
-    }
-  })();
+  const sysInfoP = getFirmInfo();
 
   const mechP = (async (): Promise<Record<number, string>> => {
     try {

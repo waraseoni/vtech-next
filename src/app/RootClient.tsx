@@ -1,7 +1,6 @@
 "use client";
 import PWAHead from "../components/PWAHead";
 import LiveClock from "../components/LiveClock";
-import LicenseGate from "../components/LicenseGate";
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -73,7 +72,6 @@ import PullToRefresh from "@/components/PullToRefresh";
 import { ThemeToggle } from "@/app/components/ui/ThemeToggle";
 import { DensityToggle } from "@/app/components/ui/DensityToggle";
 import { useDensity } from "@/hooks/useDensity";
-import { TeamOnline } from "@/app/components/ui/TeamOnline";
 import { useSidebarTooltip } from "@/components/SidebarTooltip";
 import dynamic from "next/dynamic";
 
@@ -81,8 +79,21 @@ import dynamic from "next/dynamic";
 // null). Dynamic chunk: capgo printer + nativePrint bridge shell ke critical
 // JS me nahi khinchte — first paint + parse kam hota hai.
 const NativePrintPreview = dynamic(() => import("@/components/NativePrintPreview"), { ssr: false });
+
+// Drawer-only / rare-state UI: ye normal boot par render hi nahi hota, isliye
+// inka JS main shell chunk me rakhna waste hai. Dynamic chunk tab download
+// hota hai jab pehli baar actually render ho.
+const TeamOnline = dynamic(
+  () => import("@/app/components/ui/TeamOnline").then((m) => m.TeamOnline),
+  { ssr: false }
+);
+const ShortcutHelpOverlay = dynamic(
+  () => import("@/app/components/ui/ShortcutHelpOverlay").then((m) => m.ShortcutHelpOverlay),
+  { ssr: false }
+);
+const LicenseGate = dynamic(() => import("@/components/LicenseGate"), { ssr: false });
+
 import SwipeNavigation from "@/components/SwipeNavigation";
-import { ShortcutHelpOverlay } from "@/app/components/ui/ShortcutHelpOverlay";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 // Sprint 4 #16: shortcut routes central nav.config se
 import { SHORTCUT_ROUTES } from "@/config/nav.config";
@@ -789,6 +800,16 @@ function SidebarNav({
 
                   <li className="text-[8px] font-black uppercase text-muted-2 tracking-widest px-3 pt-3 pb-0.5 select-none">
                     Financial
+                  </li>
+                  <li>
+                    <Link
+                      href="/reports/accounting-dashboard"
+                      className={subLinkCls(pathname === "/reports/accounting-dashboard")}
+                      onClick={onNavClick}
+                    >
+                      <Landmark size={12} className="text-cyan-400" />
+                      Accounting Dashboard
+                    </Link>
                   </li>
                   <li>
                     <Link
@@ -2025,7 +2046,7 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
       <a href="#main-content" className="skip-to-content">
         Skip to content
       </a>
-      <ShortcutHelpOverlay open={helpOpen} onClose={() => setHelpOpen(false)} />
+      {helpOpen && <ShortcutHelpOverlay open={helpOpen} onClose={() => setHelpOpen(false)} />}
       <MobileBottomTab onMore={() => setDrawerOpen(true)} onBack={goInAppBack} />
     </>
   );

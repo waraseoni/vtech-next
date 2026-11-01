@@ -1,4 +1,5 @@
 import { getServerSupabase } from "@/lib/api-auth";
+import { getFirmInfo } from "@/lib/server-firm-info";
 import {
   buildDueMaps,
   computeClientDue,
@@ -274,8 +275,16 @@ export async function fetchClientsPageData(
   const supabase = await getServerSupabase();
 
   const finPromise = fetchFinancialsViaRpc(supabase).catch(() => null);
+  // Per-request cached read; page par koi doosra module bhi maange to ek hi query.
+  const firmInfoPromise = getFirmInfo().then((all) => {
+    const picked: Record<string, string> = {};
+    for (const k of FIRM_INFO_KEYS) {
+      if (k in all) picked[k] = all[k];
+    }
+    return picked;
+  });
 
-  const [userRole, sysResult, clsResult, finResult] = await Promise.all([
+  const [userRole, firmInfo, clsResult, finResult] = await Promise.all([
     options.userRole
       ? Promise.resolve(options.userRole)
       : (async () => {
@@ -295,7 +304,7 @@ export async function fetchClientsPageData(
           }
         })(),
 
-    supabase.from("system_info").select("meta_field, meta_value").in("meta_field", FIRM_INFO_KEYS),
+    firmInfoPromise,
 
     supabase
       .from("client_list")
@@ -306,11 +315,6 @@ export async function fetchClientsPageData(
 
     finPromise,
   ]);
-
-  const firmInfo: Record<string, string> = {};
-  ((sysResult.data as DbRow[] | null) || []).forEach((r) => {
-    firmInfo[String(r.meta_field)] = String(r.meta_value ?? "");
-  });
 
   const cls = clsResult.data;
   if (!cls?.length) {
