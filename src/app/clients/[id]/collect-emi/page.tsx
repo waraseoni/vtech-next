@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { toast } from "@/lib/toast";
+import { useClientActionSeed } from "../ClientActionSeed";
 
 function todayIST(): string {
   const parts = new Intl.DateTimeFormat("en-CA", {
@@ -58,11 +59,12 @@ export default function CollectEMIPage({ params }: { params: Promise<{ id: strin
   const searchParams = useSearchParams();
   const clientId = parseInt(resolvedParams.id);
   const preselectedLoanId = searchParams.get("loan_id");
+  const emiSeed = useClientActionSeed("emi");
 
   const [loading, setLoading] = useState(false);
-  const [fetching, setFetching] = useState(true);
-  const [clientName, setClientName] = useState("");
-  const [loans, setLoans] = useState<ActiveLoan[]>([]);
+  const [fetching, setFetching] = useState(!emiSeed);
+  const [clientName, setClientName] = useState(emiSeed?.name ?? "");
+  const [loans, setLoans] = useState<ActiveLoan[]>(emiSeed?.loans ?? []);
 
   const [selectedLoanId, setSelectedLoanId] = useState<string>(preselectedLoanId || "");
   const [amount, setAmount] = useState("");
@@ -71,6 +73,7 @@ export default function CollectEMIPage({ params }: { params: Promise<{ id: strin
   const [remarks, setRemarks] = useState("");
 
   useEffect(() => {
+    if (emiSeed) return;
     const fetchData = async () => {
       setFetching(true);
       try {
@@ -112,7 +115,7 @@ export default function CollectEMIPage({ params }: { params: Promise<{ id: strin
       }
     };
     fetchData();
-  }, [clientId]);
+  }, [clientId, emiSeed]);
 
   useEffect(() => {
     if (preselectedLoanId) setSelectedLoanId(preselectedLoanId);

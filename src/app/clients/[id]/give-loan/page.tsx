@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { toast } from "@/lib/toast";
+import { useClientActionSeed } from "../ClientActionSeed";
 
 function todayIST(): string {
   const parts = new Intl.DateTimeFormat("en-CA", {
@@ -45,11 +46,12 @@ export default function GiveLoanPage({ params }: { params: Promise<{ id: string 
   const router = useRouter();
   const queryClient = useQueryClient();
   const clientId = parseInt(resolvedParams.id);
+  const balanceSeed = useClientActionSeed("balance");
 
   const [loading, setLoading] = useState(false);
-  const [fetching, setFetching] = useState(true);
-  const [clientName, setClientName] = useState("");
-  const [balance, setBalance] = useState<number | null>(null);
+  const [fetching, setFetching] = useState(!balanceSeed);
+  const [clientName, setClientName] = useState(balanceSeed?.name ?? "");
+  const [balance, setBalance] = useState<number | null>(balanceSeed ? balanceSeed.balance : null);
 
   const [principal, setPrincipal] = useState("");
   const [interestRate, setInterestRate] = useState("0");
@@ -58,6 +60,7 @@ export default function GiveLoanPage({ params }: { params: Promise<{ id: string 
   const [remarks, setRemarks] = useState("");
 
   useEffect(() => {
+    if (balanceSeed) return;
     const fetchData = async () => {
       setFetching(true);
       try {
@@ -119,7 +122,7 @@ export default function GiveLoanPage({ params }: { params: Promise<{ id: string 
       }
     };
     fetchData();
-  }, [clientId]);
+  }, [clientId, balanceSeed]);
 
   const p = parseFloat(principal) || 0;
   const r = parseFloat(interestRate) || 0;

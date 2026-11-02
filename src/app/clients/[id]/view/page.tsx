@@ -9,6 +9,7 @@ import {
   type Job,
   type Payment,
 } from "@/lib/queries/client-detail";
+import { useClientDetailSeed } from "./ClientDetailSeedProvider";
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
 import ZoomableImage from "@/components/ZoomableImage";
@@ -249,8 +250,13 @@ export default function ViewClientProfile() {
   const router = useRouter();
   const params = useParams();
   const clientId = parseInt(params.id as string);
+  // Server seed (RSC layout) se pehla render hi final data — loader flash nahi.
+  const validId = Number.isFinite(clientId) && clientId > 0;
+  const clientSeed = useClientDetailSeed();
+  const seedSnap =
+    clientSeed && validId && clientSeed.client.id === clientId ? clientSeed : undefined;
 
-  const [client, setClient] = useState<Client | null>(null);
+  const [client, setClient] = useState<Client | null>(seedSnap?.client ?? null);
   const [dueModal, setDueModal] = useState(false);
   const [fabOpen, setFabOpen] = useState(false);
   const fabRef = useRef<HTMLDivElement>(null);
@@ -274,9 +280,9 @@ export default function ViewClientProfile() {
   }, [fabOpen]);
   const [dueForm, setDueForm] = useState({ due_date: "", due_remarks: "" });
   const [savingDue, setSavingDue] = useState(false);
-  const [jobs, setJobs] = useState<Job[]>([]);
+  const [jobs, setJobs] = useState<Job[]>(seedSnap?.jobs ?? []);
   const [openPartCounts, setOpenPartCounts] = useState<Map<number, number>>(new Map());
-  const [payments, setPayments] = useState<Payment[]>([]);
+  const [payments, setPayments] = useState<Payment[]>(seedSnap?.payments ?? []);
   const [activeTab, setActiveTab] = useState<"repairs" | "direct" | "payments" | "loan_payments">(
     "repairs"
   );
@@ -391,8 +397,8 @@ export default function ViewClientProfile() {
   const [servicePaid, setServicePaid] = useState(0);
   // ── DATA (React Query) ────────────────────────────────────────────────
   // 8 queries ek hi round-trip me; 30s ke andar back/forward navigation par
-  // cache-hit (pehle har mount par poora fan-out chalta tha).
-  const validId = Number.isFinite(clientId) && clientId > 0;
+  // cache-hit (pehle har mount par poora fan-out chalta tha). Server seed
+  // available ho to mount par duplicate fetch nahi hota.
   const {
     data: snap,
     isPending,
@@ -400,6 +406,7 @@ export default function ViewClientProfile() {
   } = useQuery({
     ...clientDetailOptions(clientId),
     enabled: validId,
+    initialData: seedSnap,
   });
   const queryClient = useQueryClient();
   const sysInfo = useSystemInfo();

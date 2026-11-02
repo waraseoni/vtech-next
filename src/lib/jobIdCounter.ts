@@ -1,8 +1,9 @@
 import { supabase } from "@/lib/supabase";
+import { FALLBACK_LAST_JOB_ID, fetchPeekNextJobIdWith } from "@/lib/jobIdCounterQuery";
 
 // Job ID counter — job_id_counter (id=1) DB ka authoritative source hai.
 // PHP legacy ka last job id fallback (agar counter ya transactions na ho).
-export const FALLBACK_LAST_JOB_ID = 28101;
+export { FALLBACK_LAST_JOB_ID };
 
 // Sabhi entry points (new / quick create / bulk) isi se next job_id lete hain.
 // Sabse pehle ATOMIC RPC claim karo (20260916 migration) — read+increment+return
@@ -41,16 +42,7 @@ export async function getNextJobId(): Promise<number> {
 // page kholne bhar se IDs waste na hon. Pehle readonly RPC peek_next_job_id,
 // migration na hone par direct counter read (RLS-approved read) ka fallback.
 export async function peekNextJobId(): Promise<number> {
-  const { data, error } = await supabase.rpc("peek_next_job_id");
-  if (!error && typeof data === "number" && data > 0) return data;
-
-  const { data: row } = await supabase
-    .from("job_id_counter")
-    .select("last_job_id")
-    .eq("id", 1)
-    .maybeSingle();
-  if (row?.last_job_id) return Number(row.last_job_id) + 1;
-  return FALLBACK_LAST_JOB_ID + 1;
+  return fetchPeekNextJobIdWith(supabase);
 }
 
 // Save ke baad counter bump — upsert taaki row missing ho to ban jaye

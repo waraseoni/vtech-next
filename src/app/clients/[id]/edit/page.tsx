@@ -24,6 +24,7 @@ import {
   fetchClientContacts,
 } from "@/lib/clientContacts";
 import type { ClientContactInput } from "@/lib/clientContacts";
+import { useClientActionSeed } from "../ClientActionSeed";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // STYLE CONSTANTS (dark theme)
@@ -83,22 +84,26 @@ export default function ManageClientPage() {
   const rawId = params?.id as string | undefined;
   const clientId = rawId ? parseInt(rawId) : null;
   const isEdit = !!clientId && !isNaN(clientId);
+  // Server seed (RSC layout) — edit form pehle render me bhara hua, loader nahi.
+  const editSeed = useClientActionSeed("edit");
 
   const [loading, setLoading] = useState(false); // submit spinner
-  const [fetchLoading, setFetchLoading] = useState(isEdit); // initial data load
+  const [fetchLoading, setFetchLoading] = useState(isEdit && !editSeed); // initial data load
   const [errors, setErrors] = useState<FieldErrors>({});
   const [submitted, setSubmitted] = useState(false);
 
   const [form, setForm] = useState<FormState>({
-    firstname: "",
-    middlename: "",
-    lastname: "",
-    email: "",
-    address: "",
-    opening_balance: "0.00",
+    firstname: editSeed?.client.firstname || "",
+    middlename: editSeed?.client.middlename || "",
+    lastname: editSeed?.client.lastname || "",
+    email: editSeed?.client.email || "",
+    address: editSeed?.client.address || "",
+    opening_balance: editSeed?.client.opening_balance?.toString() || "0.00",
   });
 
-  const nextKey = useRef(1);
+  const seedContacts = editSeed?.contacts ?? [];
+  // Seeded rows key 0..n-1 use karte hain, isliye naya row n se shuru.
+  const nextKey = useRef(seedContacts.length > 0 ? seedContacts.length : 1);
   const mkRow = (p?: Partial<ContactRow>): ContactRow => ({
     key: nextKey.current++,
     name: "",
@@ -107,13 +112,25 @@ export default function ManageClientPage() {
     is_primary: false,
     ...p,
   });
-  const [rows, setRows] = useState<ContactRow[]>(() => [
-    { key: 0, name: "", label: "Mobile", phone: "", is_primary: true },
-  ]);
+  const [rows, setRows] = useState<ContactRow[]>(() => {
+    if (seedContacts.length > 0) {
+      return seedContacts.map((c, i) => ({
+        key: i,
+        id: c.id,
+        name: c.name || "",
+        label: c.label || "Mobile",
+        phone: c.phone || "",
+        is_primary: !!c.is_primary,
+      }));
+    }
+    // Legacy primary `contact` se single row (jo aaj effect karta hai).
+    const legacy = (editSeed?.client.contact ?? "").trim();
+    return [{ key: 0, name: "", label: "Mobile", phone: legacy, is_primary: true }];
+  });
 
   // ── FETCH EXISTING CLIENT (edit mode) ──────────────────────────────────
   useEffect(() => {
-    if (!isEdit || !clientId) return;
+    if (!isEdit || !clientId || editSeed) return;
     (async () => {
       try {
         const [{ data, error }, contactRows] = await Promise.all([
@@ -159,7 +176,7 @@ export default function ManageClientPage() {
         setFetchLoading(false);
       }
     })();
-  }, [clientId, isEdit, router]);
+  }, [clientId, isEdit, router, editSeed]);
 
   // ── FIELD CHANGE ────────────────────────────────────────────────────────
   const handleChange = (field: keyof FormState, value: string) => {

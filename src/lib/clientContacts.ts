@@ -1,4 +1,6 @@
 import { supabase } from "@/lib/supabase";
+import { fetchClientContactsWith } from "@/lib/clientContactsQuery";
+import type { ClientContact } from "@/lib/clientContactsQuery";
 
 /**
  * Client MULTI-CONTACT model (2026-09-21, provenance `20260921_client_contacts.sql`).
@@ -14,14 +16,7 @@ import { supabase } from "@/lib/supabase";
 export const CONTACT_LABELS = ["Mobile", "Office", "WhatsApp", "Shop", "Other"] as const;
 export type ContactLabel = (typeof CONTACT_LABELS)[number];
 
-export type ClientContact = {
-  id?: number;
-  client_id: number;
-  name: string;
-  label: string;
-  phone: string;
-  is_primary: boolean;
-};
+export type { ClientContact };
 
 export type ClientContactInput = {
   id?: number;
@@ -89,17 +84,7 @@ export function normalizeContacts(input: ClientContactInput[]): {
 
 /** Ek client ke contacts load karo (primary pehle). */
 export async function fetchClientContacts(clientId: number): Promise<ClientContact[]> {
-  const { data, error } = await supabase
-    .from("client_contacts")
-    .select("id, client_id, name, label, phone, is_primary")
-    .eq("client_id", clientId)
-    .order("is_primary", { ascending: false })
-    .order("id", { ascending: true });
-
-  if (error) {
-    throw new Error(`client_contacts load fail: ${error.message}`);
-  }
-  return (data || []) as ClientContact[];
+  return fetchClientContactsWith(supabase, clientId);
 }
 
 /** Multiple clients ke contacts ek saath (list page bulk attach). */

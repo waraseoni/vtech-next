@@ -1,7 +1,8 @@
 "use client";
-import React, { useEffect, useState, use, useCallback, useMemo } from "react";
+import React, { useEffect, useState, use, useCallback, useMemo, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import { useSearchParams, useRouter } from "next/navigation";
+import { useClientLedgerSeed } from "./ClientLedgerSeedProvider";
 import {
   Printer,
   X,
@@ -138,22 +139,33 @@ export default function LedgerPrintPage({ params }: { params: Promise<{ id: stri
   );
 
   // ── STATE ─────────────────────────────────────────────────────────────
-  const [client, setClient] = useState<ClientInfo | null>(null);
-  const [firmInfo, setFirmInfo] = useState<FirmInfo>({
-    name: "V-Technologies",
-    address: "Jabalpur, MP",
-    contact: "",
-    email: "",
-  });
-  const [rows, setRows] = useState<LedgerRow[]>([]);
-  const [totals, setTotals] = useState<Totals>({
-    repairs: 0,
-    sales: 0,
-    loans: 0,
-    payments: 0,
-    discount: 0,
-  });
-  const [loading, setLoading] = useState(true);
+  // Server seed sirf default (bina filter) ledger ke liye — filtered path
+  // pehle jaisa client-side fetch karta hai.
+  const ledgerSeed = useClientLedgerSeed();
+  const hasFilters = Boolean(fromDate || toDate || activeStatuses.length > 0);
+  const seed = ledgerSeed && !hasFilters ? ledgerSeed : undefined;
+
+  const [client, setClient] = useState<ClientInfo | null>(seed?.client ?? null);
+  const [firmInfo, setFirmInfo] = useState<FirmInfo>(
+    seed?.firmInfo ?? {
+      name: "V-Technologies",
+      address: "Jabalpur, MP",
+      contact: "",
+      email: "",
+    }
+  );
+  const [rows, setRows] = useState<LedgerRow[]>(seed?.rows ?? []);
+  const [totals, setTotals] = useState<Totals>(
+    seed?.totals ?? {
+      repairs: 0,
+      sales: 0,
+      loans: 0,
+      payments: 0,
+      discount: 0,
+    }
+  );
+  const [loading, setLoading] = useState(!seed);
+  const skipInitialFetch = useRef(Boolean(seed));
   const [filterOpen, setFilterOpen] = useState(false);
 
   // Local filter state (before applying)
@@ -431,6 +443,11 @@ export default function LedgerPrintPage({ params }: { params: Promise<{ id: stri
   }, [clientId, fromDate, toDate, activeStatuses]);
 
   useEffect(() => {
+    // Seed se aaya pehla render skip — baad ke filter/clear changes par fetch.
+    if (skipInitialFetch.current) {
+      skipInitialFetch.current = false;
+      return;
+    }
     fetchLedger();
   }, [fetchLedger]);
 

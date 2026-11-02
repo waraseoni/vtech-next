@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { toast } from "@/lib/toast";
+import { useClientActionSeed } from "../ClientActionSeed";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TIMEZONE HELPERS — IST (UTC+5:30)
@@ -75,13 +76,14 @@ export default function AddPaymentPage({ params }: { params: Promise<{ id: strin
   const router = useRouter();
   const queryClient = useQueryClient();
   const clientId = parseInt(resolvedParams.id);
+  const paySeed = useClientActionSeed("pay");
 
-  const [fetchingMeta, setFetchingMeta] = useState(true);
+  const [fetchingMeta, setFetchingMeta] = useState(!paySeed);
   const [loading, setLoading] = useState(false);
-  const [clientName, setClientName] = useState("");
-  const [balance, setBalance] = useState<number | null>(null);
-  const [jobs, setJobs] = useState<JobOption[]>([]);
-  const [directSales, setDirectSales] = useState<SaleOption[]>([]);
+  const [clientName, setClientName] = useState(paySeed?.name ?? "");
+  const [balance, setBalance] = useState<number | null>(paySeed ? paySeed.balance : null);
+  const [jobs, setJobs] = useState<JobOption[]>(paySeed?.jobs ?? []);
+  const [directSales, setDirectSales] = useState<SaleOption[]>(paySeed?.directSales ?? []);
 
   // BUG FIX 1: default date = todayIST(), not toISOString().split('T')[0]
   const [amount, setAmount] = useState("");
@@ -95,6 +97,7 @@ export default function AddPaymentPage({ params }: { params: Promise<{ id: strin
 
   // ── FETCH ──────────────────────────────────────────────────────────────
   useEffect(() => {
+    if (paySeed) return;
     const fetchData = async () => {
       setFetchingMeta(true);
       try {
@@ -173,7 +176,7 @@ export default function AddPaymentPage({ params }: { params: Promise<{ id: strin
       }
     };
     fetchData();
-  }, [clientId]);
+  }, [clientId, paySeed]);
 
   // ── DERIVED ────────────────────────────────────────────────────────────
   const netAmount = (parseFloat(amount) || 0) + (parseFloat(discount) || 0);
