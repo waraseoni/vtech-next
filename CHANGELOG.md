@@ -1,5 +1,21 @@
 # CHANGELOG
 
+## [1.76.0](https://github.com/waraseoni/vtech-next/compare/v1.75.1...v1.76.0) (2026-11-02)
+
+### Features
+
+* **seed:** add staff seed loader and server seed provider ([53f72f4](https://github.com/waraseoni/vtech-next/commit/53f72f4b9a5812029d408ec4a01847f2cbec78ea))
+
+### Performance Improvements
+
+* **clients:** seed client detail, action and direct-sale pages ([c736d0b](https://github.com/waraseoni/vtech-next/commit/c736d0b143d4eb4edb2f569659d141b0cd53a77b))
+* **direct-sales:** seed sale and advance pages on the server ([e456fa6](https://github.com/waraseoni/vtech-next/commit/e456fa6e89916c5bba24d1223776ad98741ba194))
+* **inventory:** seed product and inventory staff pages ([7d3f1b2](https://github.com/waraseoni/vtech-next/commit/7d3f1b268b86ca4bb2a38125591735ae83e441ef))
+* **jobs:** seed aux and legacy job entry pages ([f9f376c](https://github.com/waraseoni/vtech-next/commit/f9f376c977af43f9b932babef86dfe8a3f35c6d1))
+* **mechanics:** seed detail, ledger and commission pages ([06136b0](https://github.com/waraseoni/vtech-next/commit/06136b0c6408349dd114dc0f0418c39e5cf2585c))
+* **ops:** seed activity-logs, attendance, inquiries, messages and profile ([005956c](https://github.com/waraseoni/vtech-next/commit/005956c7d80ca3fe1a742af188640dfb0ef555f7))
+* **reports:** seed remaining report pages on the server ([35fe819](https://github.com/waraseoni/vtech-next/commit/35fe8190df04af465b546edf68ef133a2e070114))
+
 ## [1.75.1](https://github.com/waraseoni/vtech-next/compare/v1.75.0...v1.75.1) (2026-11-01)
 
 ### Performance Improvements
