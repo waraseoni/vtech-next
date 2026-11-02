@@ -33,6 +33,7 @@ import { resolveTemplate, substituteTemplate, firmVars } from "@/lib/whatsapp";
 import { buildDueMaps, balanceFromMaps } from "@/lib/client-due";
 import WaPreviewModal from "@/components/WaPreviewModal";
 import { toast } from "@/lib/toast";
+import type { DeliveredSeed } from "./deliveredSeed";
 
 type Transaction = {
   id: number;
@@ -57,6 +58,7 @@ type Props = {
   fromDate?: string;
   toDate?: string;
   clientId?: string;
+  initial?: DeliveredSeed | null;
 };
 
 const inr = (n: number) =>
@@ -139,10 +141,11 @@ const MechAvatar = ({
   );
 };
 
-export default function DeliveredReportClient({ fromDate, toDate, clientId }: Props) {
+export default function DeliveredReportClient({ fromDate, toDate, clientId, initial }: Props) {
   const router = useRouter();
-  const [from, setFrom] = useState(fromDate || todayIST());
-  const [to, setTo] = useState(toDate || todayIST());
+  const seedReady = !!initial;
+  const [from, setFrom] = useState(fromDate || initial?.from || todayIST());
+  const [to, setTo] = useState(toDate || initial?.to || todayIST());
   const [selectedClientId, setSelectedClientId] = useState<string>(clientId || "all");
   const [showDetailModal, setShowDetailModal] = useState<Transaction | null>(null);
   // Sprint 3 #14: WA preview (direct open nahi)
@@ -170,6 +173,7 @@ export default function DeliveredReportClient({ fromDate, toDate, clientId }: Pr
     queryKey: ["delivered-report-clients"],
     queryFn: fetchClients,
     staleTime: 30_000,
+    initialData: initial?.clientsList,
   });
 
   const fetchFirmInfo = useCallback(async () => {
@@ -184,6 +188,7 @@ export default function DeliveredReportClient({ fromDate, toDate, clientId }: Pr
     queryKey: ["delivered-report-firm-info"],
     queryFn: fetchFirmInfo,
     staleTime: 30_000,
+    initialData: initial?.firmInfo,
   });
 
   const fetchData = useCallback(async () => {
@@ -329,6 +334,7 @@ export default function DeliveredReportClient({ fromDate, toDate, clientId }: Pr
     queryKey: ["delivered-report", from, to, selectedClientId],
     queryFn: fetchData,
     staleTime: 30_000,
+    initialData: seedReady ? initial?.reportData : undefined,
   });
   const transactions = useMemo<Transaction[]>(() => reportData?.transactions ?? [], [reportData]);
   const clientTotals = useMemo<Record<number, ClientTotals>>(

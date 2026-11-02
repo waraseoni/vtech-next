@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { isValid } from "date-fns/isValid";
@@ -24,6 +24,7 @@ import {
   Printer,
 } from "lucide-react";
 import { todayIST, formatIST, parseISTDate, startOfMonthIST, endOfMonthIST } from "@/lib/dateUtils";
+import type { VyaparPayload } from "@/lib/vyapar-data";
 
 const getMonthStart = (d: Date): string => startOfMonthIST(d);
 const getMonthEnd = (d: Date): string => endOfMonthIST(d);
@@ -78,7 +79,8 @@ type ApiResponse = {
   counts: Counts;
 };
 
-type Props = { fromDate?: string; toDate?: string };
+type Seed = { from: string; to: string; data: VyaparPayload };
+type Props = { fromDate?: string; toDate?: string; initial?: Seed | null };
 
 function StatCard({
   label,
@@ -141,15 +143,21 @@ function PRow({
   );
 }
 
-export default function VyaparDarpanClient({ fromDate, toDate }: Props) {
+export default function VyaparDarpanClient({ fromDate, toDate, initial }: Props) {
   const router = useRouter();
 
-  const [from, setFrom] = useState(() => fromDate || getMonthStart(parseISTDate(todayIST())));
-  const [to, setTo] = useState(() => toDate || getMonthEnd(parseISTDate(todayIST())));
+  const [from, setFrom] = useState(
+    () => fromDate || initial?.from || getMonthStart(parseISTDate(todayIST()))
+  );
+  const [to, setTo] = useState(
+    () => toDate || initial?.to || getMonthEnd(parseISTDate(todayIST()))
+  );
 
-  const [loading, setLoading] = useState(true);
+  const seedReady = !!initial && from === initial.from && to === initial.to;
+
+  const [loading, setLoading] = useState(!seedReady);
   const [error, setError] = useState<string | null>(null);
-  const [data, setData] = useState<ApiResponse | null>(null);
+  const [data, setData] = useState<ApiResponse | null>(seedReady && initial ? initial.data : null);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -170,7 +178,13 @@ export default function VyaparDarpanClient({ fromDate, toDate }: Props) {
     }
   }, [from, to]);
 
+  // Server seed pehli render ko cover karta hai — mount par dobara fetch nahi.
+  const seededRef = useRef(seedReady);
   useEffect(() => {
+    if (seededRef.current) {
+      seededRef.current = false;
+      return;
+    }
     fetchData();
   }, [fetchData]);
 

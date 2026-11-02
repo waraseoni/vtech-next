@@ -36,6 +36,7 @@ import {
 } from "lucide-react";
 
 import { todayIST, formatIST, parseISTDate, startOfMonthIST, endOfMonthIST } from "@/lib/dateUtils";
+import type { LedgerPayload } from "@/lib/ledger-data";
 
 // ── Timezone-safe helpers ─────────────────────────────────────────────────────
 const getMonthStart = (d: Date): string => startOfMonthIST(d);
@@ -135,7 +136,7 @@ type LedgerEntry = {
   type: "Cash In" | "Cash Out";
   net_amount: number | string;
   discount_amount?: number | string;
-  client_id?: number;
+  client_id?: number | null;
   client_fullname?: string;
 };
 type StockItem = { name: string; price: number | string; quantity: number | string };
@@ -164,7 +165,8 @@ type ApiResponse = {
   staffLiability: number | string;
   loanOutstanding: number | string;
 };
-type Props = { fromDate?: string; toDate?: string };
+type Seed = { from: string; to: string; data: LedgerPayload };
+type Props = { fromDate?: string; toDate?: string; initial?: Seed | null };
 
 // ── Shared UI components ──────────────────────────────────────────────────────
 const thCls =
@@ -324,17 +326,25 @@ function PRow({
 }
 
 // ── Main component ─────────────────────────────────────────────────────────────
-export default function LedgerReportClient({ fromDate, toDate }: Props) {
+export default function LedgerReportClient({ fromDate, toDate, initial }: Props) {
   const router = useRouter();
 
   // BUG FIX 4: 'today' must be inside component to get fresh value per render
   // (was already inside, confirmed — keeping explicit)
-  const [from, setFrom] = useState(() => fromDate || getMonthStart(parseISTDate(todayIST())));
-  const [to, setTo] = useState(() => toDate || getMonthEnd(parseISTDate(todayIST())));
+  const [from, setFrom] = useState(
+    () => fromDate || initial?.from || getMonthStart(parseISTDate(todayIST()))
+  );
+  const [to, setTo] = useState(
+    () => toDate || initial?.to || getMonthEnd(parseISTDate(todayIST()))
+  );
 
-  const [loading, setLoading] = useState(true);
+  const seedReady = !!initial && from === initial.from && to === initial.to;
+
+  const [loading, setLoading] = useState(!seedReady);
   const [error, setError] = useState<string | null>(null);
-  const [data, setData] = useState<ApiResponse | null>(null);
+  const [data, setData] = useState<ApiResponse | null>(
+    seedReady && initial ? (initial.data as ApiResponse) : null
+  );
   const [showStock, setShowStock] = useState(false);
 
   // Modal toggles
@@ -366,7 +376,13 @@ export default function LedgerReportClient({ fromDate, toDate }: Props) {
     }
   }, [from, to]);
 
+  // Server seed pehli render ko cover karta hai — mount par dobara fetch nahi.
+  const seededRef = useRef(seedReady);
   useEffect(() => {
+    if (seededRef.current) {
+      seededRef.current = false;
+      return;
+    }
     fetchData();
   }, [fetchData]);
 
