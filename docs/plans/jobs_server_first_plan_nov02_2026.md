@@ -126,7 +126,11 @@ waterfall; fallback (seed null) par bhi pehle se tez; save flow unchanged.
 
 ## 4. Out of scope (separate plan)
 
-- **P3:** bulk / bulk-edit / old / combined-invoice / spot-labels ka server seed.
+- **P3:** ~~bulk / bulk-edit / old / combined-invoice / spot-labels ka server seed.~~
+  **Update (2026-11-03):** bulk, bulk-edit, combined-invoice, spot-labels done
+  (`jobsAuxQueries.ts` + `JobAuxSeed` + 4 layouts). Legacy `/jobs/old` +
+  `/jobs/[id]/old` owner-approval tak deferred. Dekho:
+  `docs/plans/clients_server_first_plan_nov02_2026.md` §3 J-P3.
 - **P4:** list page par Suspense streaming (stats/spots/parts), row-hover
   prefetch, stale-jobs panel lazy-load.
 - Koi bhi DB schema/index/view/RPC change (owner approval ke bina banned).

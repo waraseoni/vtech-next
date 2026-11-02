@@ -9,6 +9,17 @@ Har kaam ke liye: plan + todo banate hain, jo complete ho jata hai use mark kart
 
 ## Recent work log (2026-11)
 
+- [x] Staff server-first — remaining 44 staff-accessible routes server-seeded.
+      Waves: A direct-sales+advance (4), B mechanics (4), C products/inventory (8),
+      D reports (19 — incl. delivered/ledger/vyapar-darpan wrappers), E ops
+      (activity-logs/attendance/inquiries/messages/profile), F clients
+      (`add-direct-sale`; `/clients/new` audit-only no-op), G legacy `/jobs/old` +
+      `/jobs/[id]/old`. Default-view-only seeding; non-default filters/URL params
+      client fetch par. Gates: tsc/eslint/589 tests/prettier/schema-drift/build +
+      13-route unauth smoke (307 → `/login`, health 200). Zero DB writes.
+      Plan + notes: `docs/plans/staff_server_first_plan_nov03_2026.md`.
+      **USER ACTION:** authenticated admin se 44 routes ka first paint (no loader
+      flash), non-default filters, aur `/jobs/old` Assign Technician panel check karna.
 - [x] Jobs server-first speed — P0: `/jobs` filter/date/reset/preview URL sync native
       `history.pushState` (server RSC refetch khatam). P1: `/jobs/[id]/view` server seed
       (`jobViewQueries.ts` neutral + RSC layout + React Query `initialData`). P2: `/jobs/new` +
@@ -18,6 +29,20 @@ Har kaam ke liye: plan + todo banate hain, jo complete ho jata hai use mark kart
       Plan: `docs/plans/jobs_server_first_plan_nov02_2026.md`.
       **USER ACTION:** authenticated admin se filter/preview (no RSC request), view first paint,
       new/edit dropdown + stock check karna.
+- [x] Clients server-first speed — C-P0: `/clients/[id]/view` server seed
+      (`clientDetailQueries.ts` neutral + `initialData`). C-P1: `/clients/[id]/edit` +
+      add-payment/give-loan/collect-emi seeds (`clientActionQueries.ts`,
+      `server-client-seed.ts`), sequential waves → 1 server wave. C-P2: `/clients/[id]/ledger-print`
+      default (unfiltered) seed; filtered path client-side hi. C-P3: legacy `/clients/[id]`
+      ab `/view` par server redirect. Gates: tsc/eslint/589 tests/prettier/schema-drift/build + 8-route smoke green. Zero DB writes. Plan: `docs/plans/clients_server_first_plan_nov02_2026.md`.
+      **USER ACTION:** authenticated admin se view first paint, action pages ka naam/balance,
+      ledger default view, legacy redirect check karna.
+- [x] Jobs P3 (non-legacy) — `/jobs/bulk` + `/jobs/bulk-edit` masters/next-id,
+      `/jobs/combined-invoice` default client list, `/jobs/spot-labels` spots/refs/linked ids
+      server seed (`jobsAuxQueries.ts`, `JobAuxSeed`, `server-jobs-aux-seed.ts`). QR data URLs
+      mount par client-side (browser origin). Legacy `/jobs/old` + `/jobs/[id]/old`
+      owner-approval tak deferred. Gates: tsc/eslint/589 tests/prettier/build + 5-route smoke
+      green. Zero DB writes. Plan: `docs/plans/clients_server_first_plan_nov02_2026.md` §J-P3.
 
 ## Recent work log (2026-10)
 
@@ -384,58 +409,58 @@ Base messenger already live (`30aae41`). Ye round un requested features add kart
 
 ### Phase A2 — Nav/save hang + intermittent-slow quick wins ✅ (2026-10-18)
 
-> User report: *"universal search par click ke baad result page nahi khulta ·
-> forms/jobs save-update par hang · kabhi kabhi sab badhiya chalta hai"*.
+> User report: _"universal search par click ke baad result page nahi khulta ·
+> forms/jobs save-update par hang · kabhi kabhi sab badhiya chalta hai"_.
 > Plan + full detail: `docs/plans/perf_db_fetch_audit_oct14_2026.md` Phase 6 + Phase 8.
 
 - [x] **`logActivity()` 5s timeout** (`src/lib/activity.ts`) — save hang ka
-  root cause: 3 serial RT (`getCachedUser` → `profiles` → insert) bina timeout
+      root cause: 3 serial RT (`getCachedUser` → `profiles` → insert) bina timeout
 - [x] **Job save chain parallel** (`jobs/new`) — services+products+bump ab ek
-  `Promise.all`; `logActivity` fire-and-forget (save path se poora hata)
+      `Promise.all`; `logActivity` fire-and-forget (save path se poora hata)
 - [x] **Artificial 1s nav delay hata** — 9 save flows ka `setTimeout(router.replace, 1000)`
-  (clients edit/add-payment/collect-emi/give-loan/add-direct-sale, jobs edit/bulk/bulk-edit/new)
+      (clients edit/add-payment/collect-emi/give-loan/add-direct-sale, jobs edit/bulk/bulk-edit/new)
 - [x] **Search result prefetch** — hover/focus par sirf hovered result (`NavbarSearch` + `useNavbarSearch`)
 - [x] **`/api/license/status` throttle** — max 1/min per navigation (force always).
-  Ye har nav par auth RTT + 3 `system_info` reads + kabhi kabhi cross-project
-  `check_license` RPC karta tha → Vercel ki limited concurrency me doosre
-  data-fetch QUEUE hote the ("page khulta hi nahi" wala symptom).
+      Ye har nav par auth RTT + 3 `system_info` reads + kabhi kabhi cross-project
+      `check_license` RPC karta tha → Vercel ki limited concurrency me doosre
+      data-fetch QUEUE hote the ("page khulta hi nahi" wala symptom).
 - [x] **Reload watchdogs relaxed** — layout `__VTECH_BOOTED__` 8s → 15s,
-  `useAppBoot` boot guard 6s → 12s (false-positive auto-reload ruk gaya)
+      `useAppBoot` boot guard 6s → 12s (false-positive auto-reload ruk gaya)
 - [x] **DB indexes (audit Phase 6)** — `supabase/migrations/20261018_perf_indexes.sql`:
-  17 indexes + `pg_trgm` GIN (navbar search ke `ILIKE '%q%'` ke liye).
-  ✅ applied (2026-10-19).
+      17 indexes + `pg_trgm` GIN (navbar search ke `ILIKE '%q%'` ke liye).
+      ✅ applied (2026-10-19).
 
 ### Phase A3 — Client data cache (audit Phase 3) ✅ COMPLETE (2026-10-19)
 
 - [x] **React Query foundation** — `@tanstack/react-query@5.104.4` + root
-  `Providers` (`src/app/Providers.tsx`, `RootClient` ke bahar — public pages
-  aur boot/license guards ke har branch me). Defaults: `staleTime 30s` ·
-  `gcTime 5m` · `refetchOnWindowFocus false` · `retry 1`
+      `Providers` (`src/app/Providers.tsx`, `RootClient` ke bahar — public pages
+      aur boot/license guards ke har branch me). Defaults: `staleTime 30s` ·
+      `gcTime 5m` · `refetchOnWindowFocus false` · `retry 1`
 - [x] **Shared query modules** — `src/lib/queries/{system-info,direct-sale,job-view}.ts`;
-  queryFn module level par taaki search hover prefetch kar sake
+      queryFn module level par taaki search hover prefetch kar sake
 - [x] **`useSystemInfo()`** — firm info 5 min cached (pehle har mount par 1 RT)
 - [x] **`jobs/[id]/view` (-232 LOC) + `direct-sales/[id]/view` (-134 LOC) → `useQuery`**
-  — back/forward par dobara network call nahi; save flows `refetch()` /
-  `removeQueries(directSaleKey)`
+      — back/forward par dobara network call nahi; save flows `refetch()` /
+      `removeQueries(directSaleKey)`
 - [x] **Search hover = data prefetch** (`prefetchDetailData` in
-  `useNavbarSearch`) — click par 4-stage waterfall cache-hit + hover/click
-  dedupe
+      `useNavbarSearch`) — click par 4-stage waterfall cache-hit + hover/click
+      dedupe
 - [x] **`clients/[id]/view` (-165 LOC) → `useQuery`** — 8-query fan-out ek hi
-  snapshot me; client photo / job status+spot / payment edit-delete jaisi local
-  edits ke baad `invalidateQueries` (warna 30s cache purana dikha deta)
+      snapshot me; client photo / job status+spot / payment edit-delete jaisi local
+      edits ke baad `invalidateQueries` (warna 30s cache purana dikha deta)
 - [x] **Settings save → invalidate `["system-info"]`** — firm details turant fresh
 - [x] **List/report pages → `useQuery`** (2026-10-19, 4 commits) — har mount-effect
-  offender convert: products · users · services · dashboard (financial + due-stats) ·
-  mechanics/MechanicsBody · messages · client-loans · lenders · inquiries ·
-  reports/{activity,client-payment,daily-done,pending-jobs,delivered/client} ·
-  jobs/{spot-labels,combined-invoice,JobsBody} · suppliers/{SuppliersClient,[id]} ·
-  inventory/{InventoryClient,[id],locations,bom-check,stocktake,purchase-orders} ·
-  backup · attendance/MonthlyReport. 26 files; back/forward + search-click ab
-  staleTime (30s) ke andar cache-hit; har save/delete/mutation site ab `refetch()`
-  (warna cache purana re-hydrate karta). RSC-seeded pages (`SuppliersClient`,
-  `InventoryClient`, `MechanicsBody`) `initialData:` se first-paint bhi zero-RT.
+      offender convert: products · users · services · dashboard (financial + due-stats) ·
+      mechanics/MechanicsBody · messages · client-loans · lenders · inquiries ·
+      reports/{activity,client-payment,daily-done,pending-jobs,delivered/client} ·
+      jobs/{spot-labels,combined-invoice,JobsBody} · suppliers/{SuppliersClient,[id]} ·
+      inventory/{InventoryClient,[id],locations,bom-check,stocktake,purchase-orders} ·
+      backup · attendance/MonthlyReport. 26 files; back/forward + search-click ab
+      staleTime (30s) ke andar cache-hit; har save/delete/mutation site ab `refetch()`
+      (warna cache purana re-hydrate karta). RSC-seeded pages (`SuppliersClient`,
+      `InventoryClient`, `MechanicsBody`) `initialData:` se first-paint bhi zero-RT.
 - [x] **Test renders wrap `QueryClientProvider`** — `MechanicsBody.test.tsx` +
-  `MonthlyReport.test.tsx` (`retry:false`; warna `No QueryClient set` throw).
+      `MonthlyReport.test.tsx` (`retry:false`; warna `No QueryClient set` throw).
 
 > **Deliberately NOT converted:** `jobs/useJobList.ts` — RSC-seed gate ka apna
 > regression suite hai (`useJobList.test.tsx`, 5 tests) jo mount-par zero-fetch
@@ -459,6 +484,7 @@ Base messenger already live (`30aae41`). Ye round un requested features add kart
 > **2026-11-01:** consolidated plan `docs/plans/frontend_speed_plan_nov01_2026.md`
 > (v2 comparison + no-DB speed work). Uska order: Phase 0 measurement/budgets
 > pehle, phir W6 (bundle), phir reports first-paint; boot-gate lift alag gated sprint.
+
 - [x] W9: speed plan Phase 0 — **build-level baseline done (2026-11-01)**: chunks 7.4 MB/208; per-route referenced JS (upper bound) `/jobs` 661 KB, `/dashboard` 598, `/clients` 604, `/reports/balancesheet` 589, `/inventory` 748, `/login` 580. Runtime Lighthouse/CDP measurement pending owner-approved window (authenticated login live DB par presence write kar sakta hai).
 - [x] W6: WS-B first slice — `TeamOnline`, `ShortcutHelpOverlay`, `LicenseGate` dynamic chunks; delta ~-12–13 KB/route (-2%). `optimizePackageImports` no-op (Next 16 auto-optimizes). **WS-G (2026-11-01):** Serwist precache verified (52 KB sw.js, 228 entries, koi HTML/RSC nahi), Sentry replay dead config removed (integration bundle me nahi), error tracking + 10% traces unchanged. SidebarNav extraction **deferred** (desktop+drawer shared, ~10 KB, authed visual QA chahiye).
 - [x] W10: WS-F query/cache hygiene — `system_info` `React.cache` per-request (`server-firm-info.ts`, jobs+clients share), converted reports ek `Promise.all` wave, `select("*")` audit done (baaki detail-fetch/list pages intentional).

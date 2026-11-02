@@ -1,6 +1,8 @@
 # Clients Server-First + Jobs P3 Speed Plan (2026-11-02)
 
-> **Status: PROPOSED — implementation pending (user approval ke baad).**
+> **Status: DONE (2026-11-03) — C-P0 + C-P1 + C-P2 + C-P3 implemented, gates green.
+> J-P3 ke 4 non-legacy surfaces bhi done. Sirf legacy `/jobs/old` routes
+> owner-approval par deferred.**
 > **Rule: DB LIVE hai — koi schema/index/view/RPC/column/write NAHI. Sirf reads +
 > transport/execution placement badalna hai.**
 >
@@ -156,6 +158,14 @@ Priority order (traffic ke hisaab se):
 
 Har page pe wahi pattern: neutral query module + server layout + provider.
 
+**Result (2026-11-03):** 1–3 done. `jobsAuxQueries.ts` (neutral) + `JobAuxSeed`
+provider + `server-jobs-aux-seed.ts` loader + 4 layouts. Bulk seed me
+`nextJobId` bhi (`fetchPeekNextJobIdWith`; `jobIdCounter.peekNextJobId` ab isi ko
+delegate karta hai). Combined-invoice sirf default client list seed karta hai
+(jobs selected client par depend karte hain). Spot-labels me spots/refs/linked ids
+seed hote hain; QR data URLs mount par client-side banti hain (browser origin
+server par nahi hota). `/jobs/old` + `/jobs/[id]/old` owner-approval tak deferred.
+
 ---
 
 ## 4. Shared infra (dono modules)
@@ -246,3 +256,21 @@ Har phase independent:
 3. **C-P2** (ledger-print) — heavy print page.
 4. **C-P3** (legacy redirect) — 3-line cleanup.
 5. **J-P3** — bulk/bulk-edit → combined-invoice → spot-labels → old (last).
+
+---
+
+## 10. Result (2026-11-03)
+
+| Item | Kya badla                                                                                                                                                                                                                                                                                                                                                                      |
+| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| C-P0 | `clientDetailQueries.ts` neutral extract (8 parallel reads + `buildLoanAggregates`), `clientContactsQuery.ts` + `fetchClientContactsWith` delegate, `queries/client-detail.ts` thin client wrapper. `view/layout.tsx` (`force-dynamic`) + `ClientDetailSeedProvider`; page state seed se init aur `useQuery` me `initialData` (sirf `seed.client.id === clientId` par).        |
+| C-P1 | `clientActionQueries.ts` (`computeClientBalance`, `buildActiveLoans`, 4 fetch helpers), `server-client-seed.ts` shared loader, `ClientActionSeed` provider + 4 route layouts (edit/add-payment/give-loan/collect-emi). Pages seed se lazy-init; seed `null` par purana client effect chalta hai (guarded). `add-direct-sale` / `new` intentionally skipped (plan ka optional). |
+| C-P2 | `clientLedgerQueries.ts` default-view seed + `ledger-print` layout/provider. **Limitation:** server layout `searchParams` nahi padh sakta, isliye seed sirf bina filter wale default ledger ke liye hai; `from/to/status` wala path pehle jaise client-side fetch karta hai (clear filter par bhi).                                                                            |
+| C-P3 | `src/app/clients/[id]/page.tsx` ab server `redirect()` → `/clients/{id}/view`. Legacy duplicate UI (1254 lines, dead surface) codebase se hat gaya; purane links/bookmarks 307 par resolve hote hain.                                                                                                                                                                          |
+| J-P3 | `jobsAuxQueries.ts` + `JobAuxSeed` + `server-jobs-aux-seed.ts` + 4 layouts. Bulk/bulk-edit masters pehle render me; combined-invoice default client list `initialData`; spot-labels spots/refs/linked ids seed, QR URLs mount par client-side. `/jobs/old` routes deferred (owner approval).                                                                                   |
+
+**Deviations from plan text:** server helper file `src/lib/server-client-seed.ts` hai (`server-clients-detail.ts` nahi); seed providers per-route-tree hain (shared single provider nahi).
+
+**Gates:** `tsc` clean, `eslint` clean (sab touched files), `vitest 589/589` (5 naye tests: 3 detail + 2 action), Prettier check pass, `schema:drift` OK (24 migrations), production `next build` green, fresh `next start` smoke — `/clients`, `/clients/1`, `/clients/1/view`, `/clients/1/edit`, `/clients/1/add-payment`, `/clients/1/give-loan`, `/clients/1/collect-emi`, `/clients/1/ledger-print`, `/jobs`, `/jobs/bulk`, `/jobs/bulk-edit`, `/jobs/combined-invoice`, `/jobs/spot-labels` sab unauth 307 `/login`; `/api/health` 200. Zero DB writes.
+
+**Pending user check (authenticated):** `/clients/{id}/view` first paint par data present; edit/add-payment/give-loan/collect-emi par naam/balance options pehle render; ledger-print default numbers; legacy `/clients/{id}` redirect; filter change par sirf client refetch. Jobs: bulk/bulk-edit dropdowns + next job id, combined-invoice client list, spot-labels grid + QR images.
