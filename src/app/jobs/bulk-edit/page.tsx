@@ -19,6 +19,7 @@ import {
 import PageLoader from "@/components/PageLoader";
 import SearchableSelect from "@/components/SearchableSelect";
 import { toast } from "@/lib/toast";
+import { useJobAuxSeed } from "../JobAuxSeed";
 
 // ─── IST Helper ───────────────────────────────────────────────────────────────
 function nowIST(): string {
@@ -70,12 +71,15 @@ const lCls = "block text-[9px] font-bold uppercase tracking-wider text-muted mb-
 export default function BulkEditPage() {
   const router = useRouter();
 
-  const [clients, setClients] = useState<Client[]>([]);
-  const [mechanics, setMechanics] = useState<Mechanic[]>([]);
+  // Server seed: clients + mechanics pehle render me; seed `null` par fallback.
+  const seed = useJobAuxSeed("bulk-edit");
+
+  const [clients, setClients] = useState<Client[]>(seed?.clients ?? []);
+  const [mechanics, setMechanics] = useState<Mechanic[]>(seed?.mechanics ?? []);
   const [sourceClient, setSourceClient] = useState("");
   const [globalClient, setGlobalClient] = useState("");
   const [rows, setRows] = useState<TxnRow[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!seed);
   const [rowLoading, setRowLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [loaded, setLoaded] = useState(false);
@@ -104,8 +108,9 @@ export default function BulkEditPage() {
   }, []);
 
   useEffect(() => {
+    if (seed) return;
     fetchMaster();
-  }, [fetchMaster]);
+  }, [fetchMaster, seed]);
 
   const clientLabel = (c: Client) => {
     const name = [c.firstname, c.middlename, c.lastname].filter(Boolean).join(" ");

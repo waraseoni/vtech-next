@@ -26,6 +26,7 @@ import {
 import Image from "next/image";
 import SpotJobsModal from "@/components/SpotJobsModal";
 import { toast } from "@/lib/toast";
+import { useJobAuxSeed } from "../JobAuxSeed";
 
 type Spot = { id: number; name: string };
 type Orientation = "portrait" | "landscape";
@@ -140,6 +141,17 @@ export default function SpotLabelsPage() {
   }, []);
 
   const queryClient = useQueryClient();
+  // Server seed: spots/refs/linked ids pehle render me. QR data URLs server par
+  // nahi ban sakte (browser origin chahiye) — wo neeche mount par banti hain.
+  const seed = useJobAuxSeed("spot-labels");
+  const seedData = seed
+    ? {
+        spots: seed.spots,
+        refs: seed.refs,
+        allLinkedIds: new Set(seed.allLinkedIds),
+        urls: {} as Record<number, string>,
+      }
+    : undefined;
   const {
     data,
     isPending: loading,
@@ -148,6 +160,7 @@ export default function SpotLabelsPage() {
     queryKey: ["spot-labels"],
     queryFn: loadData,
     staleTime: 30_000,
+    initialData: seedData,
   });
 
   useEffect(() => {
@@ -157,6 +170,20 @@ export default function SpotLabelsPage() {
     setAllLinkedIds(data.allLinkedIds);
     setUrls(data.urls);
   }, [data]);
+
+  useEffect(() => {
+    if (!data || data.spots.length === 0 || Object.keys(urls).length > 0) return;
+    let cancelled = false;
+    const origin = window.location.origin;
+    Promise.all(
+      data.spots.map(async (s) => [s.id, await qrDataUrl(`${origin}/jobs?spot=${s.id}`)] as const)
+    ).then((entries) => {
+      if (!cancelled) setUrls(Object.fromEntries(entries));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [data, urls]);
 
   const handleDeleteSpot = async (s: Spot) => {
     const used = refs[s.id] || 0;

@@ -19,6 +19,7 @@ import PageLoader from "@/components/PageLoader";
 import SearchableSelect from "@/components/SearchableSelect";
 import { getNextJobId, peekNextJobId, bumpJobCounter } from "@/lib/jobIdCounter";
 import { toast } from "@/lib/toast";
+import { useJobAuxSeed } from "../JobAuxSeed";
 
 // ─── IST Helper ───────────────────────────────────────────────────────────────
 function nowIST(): string {
@@ -92,17 +93,33 @@ const fieldErr = (fields: string[] | undefined, key: string) => fields?.includes
 export default function BulkJobPage() {
   const router = useRouter();
 
-  const [clients, setClients] = useState<Client[]>([]);
-  const [mechanics, setMechanics] = useState<Mechanic[]>([]);
+  // Server seed: masters + next job id pehle render me. Seed `null` par niche
+  // wala purana fetchMaster() chalta hai.
+  const seed = useJobAuxSeed("bulk");
+
+  const [clients, setClients] = useState<Client[]>(seed?.clients ?? []);
+  const [mechanics, setMechanics] = useState<Mechanic[]>(seed?.mechanics ?? []);
   const [clientId, setClientId] = useState("");
   const [globalMech, setGlobalMech] = useState("");
   // Global mechanic ka hamesha-fresh mirror — searchable dropdown se select ke
   // baad addRow ko latest value mile (stale closure se bachne ke liye).
   const globalMechRef = useRef("");
-  const [baseJobId, setBaseJobId] = useState(0);
-  const [rows, setRows] = useState<BulkRow[]>([]);
-  const [rowKey, setRowKey] = useState(100); // unique key counter
-  const [loading, setLoading] = useState(true);
+  const [baseJobId, setBaseJobId] = useState(seed?.nextJobId ?? 0);
+  const [rows, setRows] = useState<BulkRow[]>(
+    seed
+      ? [0, 1, 2].map((i) => ({
+          id: i,
+          estJobId: seed.nextJobId + i,
+          item: "",
+          fault: "",
+          mechanic_id: "",
+          uniq_id: "",
+          remark: "",
+        }))
+      : []
+  );
+  const [rowKey, setRowKey] = useState(seed ? 3 : 100); // unique key counter
+  const [loading, setLoading] = useState(!seed);
   const [saving, setSaving] = useState(false);
   // Re-entrancy guard — double click / slow network par bulk save do baar na
   // chale (har baar fresh getNextJobId aur duplicate rows ki possibility).
@@ -145,8 +162,9 @@ export default function BulkJobPage() {
   }, []);
 
   useEffect(() => {
+    if (seed) return;
     fetchMaster();
-  }, [fetchMaster]);
+  }, [fetchMaster, seed]);
 
   // ── Add row ────────────────────────────────────────────────────────────────
   const addRow = () => {

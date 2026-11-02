@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import { JOB_STATUS_INLINE } from "@/lib/status-colors";
 import { toast } from "@/lib/toast";
+import { useJobAuxSeed } from "../JobAuxSeed";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 interface Client {
@@ -66,6 +67,10 @@ function inr(n: number) {
 // MAIN COMPONENT
 // ═══════════════════════════════════════════════════════════════════
 export default function CombinedInvoicePage() {
+  // Server seed: default (bina search) client list pehle render me. Search
+  // query badalte hi normal client-side fetch chalta hai.
+  const seed = useJobAuxSeed("combined-invoice");
+
   // ── Step 1: Client selection ─────────────────────────────────────
   const [step, setStep] = useState<1 | 2>(1);
   const [clientSearch, setClientSearch] = useState("");
@@ -111,6 +116,7 @@ export default function CombinedInvoicePage() {
     queryKey: ["combined-invoice-clients", debouncedClientSearch],
     queryFn: fetchClients,
     staleTime: 30_000,
+    initialData: debouncedClientSearch === "" && seed ? (seed.clients as Client[]) : undefined,
   });
 
   // ── Load jobs for selected client ────────────────────────────────
