@@ -1,8 +1,14 @@
 import SaleForm from "../components/SaleForm";
 import Link from "next/link";
 import { ArrowLeft, ShoppingBag, Plus } from "lucide-react";
+import { loadStaffSeed } from "@/lib/server-seed";
+import { fetchSaleFormSeed } from "@/lib/server-direct-sale";
 
-export default function NewSalePage() {
+export const dynamic = "force-dynamic";
+
+export default async function NewSalePage() {
+  const seed = await loadStaffSeed("New direct sale", (supabase) => fetchSaleFormSeed(supabase));
+
   return (
     <div className="min-h-screen bg-app font-sans pb-16">
       {/* ── HERO HEADER ── */}
@@ -65,7 +71,7 @@ export default function NewSalePage() {
             </span>
           </div>
           <div className="p-5 sm:p-6">
-            <SaleForm mode="new" />
+            <SaleForm mode="new" initial={seed ?? undefined} />
           </div>
         </div>
       </div>

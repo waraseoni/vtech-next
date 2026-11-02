@@ -27,13 +27,13 @@ import SearchableSelect from "@/components/SearchableSelect";
 import { toast } from "@/lib/toast";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-interface Product {
+export interface Product {
   id: number;
   name: string;
   price: number;
   available_stock: number;
 }
-interface SaleItem {
+export interface SaleItem {
   product_id: number;
   product_name: string;
   qty: number;
@@ -44,9 +44,27 @@ interface SaleItem {
 interface SaleFormProps {
   mode: "new" | "edit";
   saleId?: number;
+  initial?: SaleFormSeed;
 }
 type DbRow = ReturnType<typeof JSON.parse>;
 type SaleItemRow = { product_id: number; qty: number; price: number };
+
+/** Server layout/page se aane wala first-paint seed (optional). */
+export interface SaleFormSeed {
+  userRole: "admin" | "staff";
+  mechanicId: number | null;
+  clients: { id: number; name: string }[];
+  mechanics: { id: number; name: string }[];
+  products: Product[];
+  sale?: {
+    row: DbRow;
+    client_id: number | null;
+    mechanic_id: number | null;
+    payment_mode: string | null;
+    remarks: string | null;
+    items: SaleItem[];
+  };
+}
 
 // ─── Payment modes ────────────────────────────────────────────────────────────
 const PAYMENT_MODES = [
@@ -101,25 +119,36 @@ function Field({
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-export default function SaleForm({ mode, saleId }: SaleFormProps) {
+export default function SaleForm({ mode, saleId, initial }: SaleFormProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
 
-  const [pageLoading, setPageLoading] = useState(true);
+  const initialItems = initial?.sale?.items ?? [];
+  const [pageLoading, setPageLoading] = useState(!initial);
   const [saving, setSaving] = useState(false);
-  const [userRole, setUserRole] = useState<"admin" | "staff">("staff");
-  const [mechanicId, setMechanicId] = useState<number | null>(null);
-  const [clients, setClients] = useState<{ id: number; name: string }[]>([]);
-  const [mechanics, setMechanics] = useState<{ id: number; name: string }[]>([]);
-  const [products, setProducts] = useState<Product[]>([]);
-  const [selectedClient, setSelectedClient] = useState<number | "">("");
-  const [selectedMechanic, setSelectedMechanic] = useState<number | "">("");
-  const [paymentMode, setPaymentMode] = useState("Cash");
-  const [remarks, setRemarks] = useState("");
-  const [items, setItems] = useState<SaleItem[]>([]);
+  const [userRole, setUserRole] = useState<"admin" | "staff">(initial?.userRole ?? "staff");
+  const [mechanicId, setMechanicId] = useState<number | null>(initial?.mechanicId ?? null);
+  const [clients, setClients] = useState<{ id: number; name: string }[]>(initial?.clients ?? []);
+  const [mechanics, setMechanics] = useState<{ id: number; name: string }[]>(
+    initial?.mechanics ?? []
+  );
+  const [products, setProducts] = useState<Product[]>(initial?.products ?? []);
+  const [selectedClient, setSelectedClient] = useState<number | "">(
+    initial?.sale?.client_id ?? ""
+  );
+  const [selectedMechanic, setSelectedMechanic] = useState<number | "">(
+    initial?.sale?.mechanic_id ?? ""
+  );
+  const [paymentMode, setPaymentMode] = useState(initial?.sale?.payment_mode ?? "Cash");
+  const [remarks, setRemarks] = useState(initial?.sale?.remarks ?? "");
+  const [items, setItems] = useState<SaleItem[]>(initialItems);
   const [selectedProductId, setSelectedProductId] = useState<number | "">("");
-  const [totalAmount, setTotalAmount] = useState(0);
-  const [originalSaleData, setOriginalSaleData] = useState<DbRow | null>(null);
+  const [totalAmount, setTotalAmount] = useState(() =>
+    initialItems.reduce((s, i) => s + i.qty * i.price, 0)
+  );
+  const [originalSaleData, setOriginalSaleData] = useState<DbRow | null>(
+    initial?.sale?.row ?? null
+  );
   const [formError, setFormError] = useState<string | null>(null);
   // I5 (oversell visibility): pehle submit par oversell confirm lena zaroori hai.
   // Items badalte hi confirm reset — purana ack stale nahi rehna chahiye.
@@ -127,7 +156,7 @@ export default function SaleForm({ mode, saleId }: SaleFormProps) {
 
   // Keep a stable ref to products so fetchSaleData can read the latest value
   // BUG FIX 1: fetchSaleData used stale `products` state (always [] on first render)
-  const productsRef = useRef<Product[]>([]);
+  const productsRef = useRef<Product[]>(initial?.products ?? []);
   useEffect(() => {
     productsRef.current = products;
   }, [products]);
@@ -157,6 +186,7 @@ export default function SaleForm({ mode, saleId }: SaleFormProps) {
   //   mount → fetchUserRole → setUserRole("admin") → effect re-runs → fetchUserRole again → ...
   // Fix: run init once on mount; fetch mechanics separately when userRole is confirmed
   useEffect(() => {
+    if (initial) return;
     initForm();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 

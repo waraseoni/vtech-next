@@ -1,12 +1,18 @@
-"use client";
-import { useParams } from "next/navigation";
 import SaleForm from "../../components/SaleForm";
 import Link from "next/link";
 import { ArrowLeft, Edit3, ShoppingBag } from "lucide-react";
+import { loadStaffSeed } from "@/lib/server-seed";
+import { fetchSaleFormSeed } from "@/lib/server-direct-sale";
 
-export default function EditSalePage() {
-  const params = useParams();
-  const saleId = Number(params.id);
+export const dynamic = "force-dynamic";
+
+export default async function EditSalePage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const saleId = Number(id);
+
+  const seed = Number.isFinite(saleId)
+    ? await loadStaffSeed("Edit direct sale", (supabase) => fetchSaleFormSeed(supabase, saleId))
+    : null;
 
   return (
     <div className="min-h-screen bg-app font-sans pb-16">
@@ -90,7 +96,7 @@ export default function EditSalePage() {
             </span>
           </div>
           <div className="p-5 sm:p-6">
-            <SaleForm mode="edit" saleId={saleId} />
+            <SaleForm mode="edit" saleId={saleId} initial={seed ?? undefined} />
           </div>
         </div>
 

@@ -1,7 +1,8 @@
 "use client";
-import { useState, useEffect, useCallback, Suspense } from "react";
+import { useState, useEffect, useCallback, useRef, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import { useServerSeed } from "@/app/components/ServerSeed";
 import { CanWrite } from "@/lib/viewOnly";
 import SearchableSelect from "@/components/SearchableSelect";
 import { Loader2, Printer, Plus, Edit2, Trash2, DollarSign, X } from "lucide-react";
@@ -22,15 +23,28 @@ type AdvanceRow = {
 
 type Mechanic = { id: number; firstname: string; middlename: string | null; lastname: string };
 
+type AdvanceSeed = {
+  from: string;
+  to: string;
+  mechanics: Mechanic[];
+  rows: AdvanceRow[];
+};
+
 function AdvanceLedgerContent() {
   const searchParams = useSearchParams();
+  const seed = useServerSeed<AdvanceSeed>("advance");
 
   const [from, setFrom] = useState(searchParams.get("from") || startOfMonthIST());
   const [to, setTo] = useState(searchParams.get("to") || todayIST());
   const [mechanicId, setMechanicId] = useState(searchParams.get("mechanic_id") || "all");
-  const [loading, setLoading] = useState(true);
-  const [rows, setRows] = useState<AdvanceRow[]>([]);
-  const [mechanics, setMechanics] = useState<Mechanic[]>([]);
+  // Seed sirf default view (current month + all staff) ke liye hai.
+  const seedReady =
+    !!seed && from === seed.from && to === seed.to && mechanicId === "all";
+  const [loading, setLoading] = useState(!seedReady);
+  const [rows, setRows] = useState<AdvanceRow[]>(seedReady ? (seed?.rows ?? []) : []);
+  const [mechanics, setMechanics] = useState<Mechanic[]>(
+    seedReady ? (seed?.mechanics ?? []) : []
+  );
   const [showModal, setShowModal] = useState(false);
   const [editRow, setEditRow] = useState<AdvanceRow | null>(null);
   const [formData, setFormData] = useState({
@@ -82,7 +96,12 @@ function AdvanceLedgerContent() {
     }
   }, [from, to, mechanicId]);
 
+  const seededRef = useRef(seedReady);
   useEffect(() => {
+    if (seededRef.current) {
+      seededRef.current = false;
+      return;
+    }
     fetchData();
   }, [fetchData]);
 

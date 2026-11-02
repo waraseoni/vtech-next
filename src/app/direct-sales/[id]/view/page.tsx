@@ -4,7 +4,8 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { useSystemInfo } from "@/lib/queries/system-info";
-import { directSaleOptions } from "@/lib/queries/direct-sale";
+import { directSaleOptions, type Sale } from "@/lib/queries/direct-sale";
+import { useServerSeed } from "@/app/components/ServerSeed";
 import { numberToWords } from "@/lib/utils";
 import { substituteTemplate, firmVars, resolveTemplate } from "@/lib/whatsapp";
 import { toast } from "@/lib/toast";
@@ -111,8 +112,12 @@ function InfoRow({
 export default function ViewSalePage() {
   const params = useParams();
   const saleId = Number(params.id);
+  const seed = useServerSeed<Sale>("direct-sale-view");
 
-  const { data: sale, isPending: loading } = useQuery(directSaleOptions(saleId));
+  const { data: sale, isPending: loading } = useQuery({
+    ...directSaleOptions(saleId),
+    initialData: seed,
+  });
   const sysInfo = useSystemInfo();
   // Sprint 3 #14: WA preview (direct open nahi)
   const [waPreview, setWaPreview] = useState<{ phone: string; msg: string } | null>(null);
