@@ -3,6 +3,8 @@ import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
+import { useServerSeed } from "@/app/components/ServerSeed";
+import type { PurchaseOrdersSeed } from "../purchaseOrdersSeed";
 import { todayIST } from "@/lib/dateUtils";
 import SearchableSelect from "@/components/SearchableSelect";
 import SupplierPicker from "@/components/SupplierPicker";
@@ -106,6 +108,7 @@ const fmtDate = (d: string | null) =>
     : "—";
 
 export default function PurchaseOrdersPage() {
+  const seed = useServerSeed<PurchaseOrdersSeed>("inventory-purchase-orders");
   const [search, setSearch] = useState("");
   const [statusF, setStatusF] = useState<"all" | POStatus>("all");
   const [modalOpen, setModalOpen] = useState(false);
@@ -119,7 +122,7 @@ export default function PurchaseOrdersPage() {
   const [waMessage, setWaMessage] = useState("");
   const [waPhone, setWaPhone] = useState("");
 
-  const fetchPos = useCallback(async () => {
+  const fetchPos = useCallback(async (): Promise<PurchaseOrdersSeed> => {
     try {
       const [poRes, supRes, personRes, sysRes] = await Promise.all([
         supabase
@@ -244,6 +247,7 @@ export default function PurchaseOrdersPage() {
   } = useQuery({
     queryKey: ["purchase-orders"],
     queryFn: fetchPos,
+    initialData: seed,
     staleTime: 30_000,
   });
   const pos = useMemo(() => data?.pos ?? [], [data]);

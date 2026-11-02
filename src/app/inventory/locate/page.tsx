@@ -34,29 +34,9 @@ import {
   Link as LinkIcon,
 } from "lucide-react";
 import PageLoader from "@/components/PageLoader";
+import { useServerSeed } from "@/app/components/ServerSeed";
+import type { LocateLocGroup as LocGroup, LocateProduct as ProductLoc } from "../locateSeed";
 // ─── Types ────────────────────────────────────────────────────────────────────
-type LocGroup = {
-  parts: LocationParts;
-  path: string;
-  qty: number;
-  rows: number;
-  lastDate: string;
-  poCodes: string[];
-};
-
-type ProductLoc = {
-  id: number;
-  name: string;
-  description: string;
-  barcode: string | null;
-  image_path: string | null;
-  alert_quantity: number;
-  available: number;
-  total_in: number;
-  groups: LocGroup[];
-  unlocatedQty: number;
-  unlocatedPoCodes: string[];
-};
 
 type TreeNode = {
   key: string;
@@ -182,9 +162,10 @@ async function qrDataUrl(text: string, size = 260): Promise<string> {
 // ─── Main page ────────────────────────────────────────────────────────────────
 export default function LocatePage() {
   const router = useRouter();
-  const [loading, setLoading] = useState(true);
+  const seed = useServerSeed<ProductLoc[]>("inventory-locate");
+  const [loading, setLoading] = useState(!seed);
   const [refreshing, setRefreshing] = useState(false);
-  const [prods, setProds] = useState<ProductLoc[]>([]);
+  const [prods, setProds] = useState<ProductLoc[]>(seed ?? []);
   const [tab, setTab] = useState<"products" | "tree" | "unplaced">("products");
   const [q, setQ] = useState("");
   const [scanInput, setScanInput] = useState("");
@@ -350,7 +331,12 @@ export default function LocatePage() {
     }
   }, []);
 
+  const seededRef = useRef(!!seed);
   useEffect(() => {
+    if (seededRef.current) {
+      seededRef.current = false;
+      return;
+    }
     fetchData();
   }, [fetchData]);
 

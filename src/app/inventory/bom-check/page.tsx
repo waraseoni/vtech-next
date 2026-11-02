@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 import { supabase, getCachedUser } from "@/lib/supabase";
 import { fetchStockByProducts } from "@/lib/inventoryStock";
 import { itemsToLines, type BomTemplate } from "@/lib/bomTemplates";
+import { useServerSeed } from "@/app/components/ServerSeed";
+import type { BomCheckSeed } from "../bomCheckSeed";
 import PageLoader from "@/components/PageLoader";
 import {
   ClipboardList,
@@ -190,7 +192,8 @@ const SAMPLE_BILLS = [
 
 export default function BomCheckPage() {
   const router = useRouter();
-  const [roleChecked, setRoleChecked] = useState(false);
+  const seed = useServerSeed<BomCheckSeed>("inventory-bom-check");
+  const [roleChecked, setRoleChecked] = useState(!!seed);
   const [projectName, setProjectName] = useState("");
   const [input, setInput] = useState("");
   const [lines, setLines] = useState<BomLine[] | null>(null);
@@ -220,6 +223,7 @@ export default function BomCheckPage() {
   const { data: templates = [], refetch: refetchTemplates } = useQuery({
     queryKey: ["bom-templates"],
     queryFn: fetchTemplates,
+    initialData: seed?.templates,
     staleTime: 30_000,
   });
 
@@ -272,6 +276,7 @@ export default function BomCheckPage() {
   } = useQuery({
     queryKey: ["bom-check-catalog"],
     queryFn: fetchCatalog,
+    initialData: seed?.catalogData,
     staleTime: 30_000,
   });
   const catalog = useMemo(() => catalogData?.catalog ?? [], [catalogData]);

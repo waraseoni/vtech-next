@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -31,24 +31,15 @@ import {
   type BoxPrintOptions,
 } from "@/lib/boxPrint";
 import type { LocationParts } from "@/lib/locations";
+import { useServerSeed } from "@/app/components/ServerSeed";
+import type {
+  BoxLabelsSeed,
+  BoxLabelsBoxOption as BoxOption,
+  BoxLabelsBoxRow as BoxRow,
+} from "../boxLabelsSeed";
 import { toast } from "@/lib/toast";
 
 /* ─── types ─────────────────────────────────────────────────────────────── */
-
-type BoxOption = {
-  id: number;
-  name: string;
-  path: string;
-  binId: number | null;
-};
-
-type BoxRow = BoxLabelData & {
-  qty: number;
-  printQty: number;
-  selected?: boolean;
-  /** Manual "Add Custom Box" se bana ho to true — DB me sync nahi hai. */
-  custom?: boolean;
-};
 
 type LocRow = {
   id: number;
@@ -82,10 +73,13 @@ const toParts = (r: {
 /* ─── page ──────────────────────────────────────────────────────────────── */
 
 export default function BoxLabelsPage() {
-  const [boxes, setBoxes] = useState<BoxRow[]>([]);
-  const [boxOptions, setBoxOptions] = useState<BoxOption[]>([]);
-  const [partsMap, setPartsMap] = useState<Record<string, Partial<LocationParts> | null>>({});
-  const [loadingBoxes, setLoadingBoxes] = useState(true);
+  const seed = useServerSeed<BoxLabelsSeed>("inventory-box-labels");
+  const [boxes, setBoxes] = useState<BoxRow[]>(seed?.boxes ?? []);
+  const [boxOptions, setBoxOptions] = useState<BoxOption[]>(seed?.boxOptions ?? []);
+  const [partsMap, setPartsMap] = useState<Record<string, Partial<LocationParts> | null>>(
+    seed?.partsMap ?? {}
+  );
+  const [loadingBoxes, setLoadingBoxes] = useState(!seed);
 
   // collapsible box content dropdowns — Set of indices currently open
   const [openDropdowns, setOpenDropdowns] = useState<Set<number>>(new Set());
@@ -173,7 +167,12 @@ export default function BoxLabelsPage() {
     }
   }, []);
 
+  const seededRef = useRef(!!seed);
   useEffect(() => {
+    if (seededRef.current) {
+      seededRef.current = false;
+      return;
+    }
     loadExistingBoxes();
   }, [loadExistingBoxes]);
 

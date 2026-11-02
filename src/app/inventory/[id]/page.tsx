@@ -6,6 +6,8 @@ import Link from "next/link";
 import ZoomableImage from "@/components/ZoomableImage";
 import { safeImageSrc } from "@/lib/image-utils";
 import { supabase, getCachedUser } from "@/lib/supabase";
+import { useServerSeed } from "@/app/components/ServerSeed";
+import type { InventoryDetailSeed } from "../inventoryDetailSeed";
 import { stockStatusStyle, alertThreshold, stockValue } from "@/lib/inventory";
 import {
   ArrowLeft,
@@ -126,10 +128,12 @@ function StockRing({
 export default function ProductDetailPage() {
   const params = useParams();
   const productId = Number(params.id);
+  const seed = useServerSeed<InventoryDetailSeed>("inventory-detail");
+  const initial = seed?.data.product?.id === productId ? seed : undefined;
 
   const [modalOpen, setModalOpen] = useState(false);
   const [userRole, setUserRole] = useState<string>("staff");
-  const [roleChecked, setRoleChecked] = useState(false);
+  const [roleChecked, setRoleChecked] = useState(!!initial);
   const [editingStock, setEditingStock] = useState<StockIn | null>(null);
   const [activeTab, setActiveTab] = useState<"in" | "out" | "ledger">("in");
   const [locEditing, setLocEditing] = useState(false);
@@ -346,6 +350,7 @@ export default function ProductDetailPage() {
   } = useQuery({
     queryKey: ["inventory-detail", productId],
     queryFn: fetchData,
+    initialData: initial?.data,
     staleTime: 30_000,
   });
 
@@ -387,6 +392,7 @@ export default function ProductDetailPage() {
         return null;
       }
     },
+    initialData: initial?.hierarchy,
     staleTime: 30_000,
   });
   const locHierarchy = useMemo<Hierarchy>(

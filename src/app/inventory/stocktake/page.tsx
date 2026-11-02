@@ -4,6 +4,8 @@ import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { supabase, getCachedUser } from "@/lib/supabase";
 import { fetchStockByProducts, type StockRow } from "@/lib/inventoryStock";
+import { useServerSeed } from "@/app/components/ServerSeed";
+import type { StocktakeSeed } from "../stocktakeSeed";
 import { logActivity } from "@/lib/activity";
 import PageLoader from "@/components/PageLoader";
 import {
@@ -35,6 +37,7 @@ type RecentAdjustment = {
 };
 
 export default function StocktakePage() {
+  const seed = useServerSeed<StocktakeSeed>("inventory-stocktake");
   const [userRole, setUserRole] = useState<string>("staff");
   const [roleChecked, setRoleChecked] = useState(false);
 
@@ -103,6 +106,7 @@ export default function StocktakePage() {
   const { data: productData, refetch: refetchProducts } = useQuery({
     queryKey: ["stocktake-products"],
     queryFn: fetchProducts,
+    initialData: seed?.productData,
     staleTime: 30_000,
   });
   const products = useMemo(() => productData?.products ?? [], [productData]);
@@ -177,6 +181,7 @@ export default function StocktakePage() {
   } = useQuery({
     queryKey: ["stocktake-recent"],
     queryFn: fetchRecent,
+    initialData: seed?.recent,
     staleTime: 30_000,
   });
 

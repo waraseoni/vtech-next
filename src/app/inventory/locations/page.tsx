@@ -5,6 +5,14 @@ import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import AdminPage from "@/app/components/AdminPage";
 import { supabase, getCachedUser } from "@/lib/supabase";
+import { useServerSeed } from "@/app/components/ServerSeed";
+import type {
+  LocationsSeed,
+  LocationsLocRow as LocRow,
+  LocationsProductRow as ProductRow,
+  LocationsRow as LocationWithCount,
+  LocationsHierarchy as HierarchyData,
+} from "../locationsSeed";
 import { LocationParts, locPath, encodeLocationToken } from "@/lib/locations";
 import { logActivity } from "@/lib/activity";
 import { requireAdmin } from "@/lib/requireAdmin";
@@ -32,36 +40,6 @@ import {
 } from "lucide-react";
 
 /* ─── types ─────────────────────────────────────────────────────────────── */
-
-type LocRow = {
-  id: number;
-  code: string | null;
-  zone: string | null;
-  rack: string | null;
-  bin: string | null;
-  box: string | null;
-  label: string | null;
-  status: number;
-  delete_flag: number;
-  created_at: string;
-  zone_id: number | null;
-  rack_id: number | null;
-  bin_id: number | null;
-  box_id: number | null;
-};
-
-type EntityRow = { id: number; name: string; status: number; delete_flag: number };
-
-type ProductRow = { id: number; name: string };
-
-type LocationWithCount = LocRow & { productCount: number; products: ProductRow[] };
-
-type HierarchyData = {
-  zones: EntityRow[];
-  racks: EntityRow[];
-  bins: EntityRow[];
-  boxes: EntityRow[];
-};
 
 type FormState = {
   zone_id: number | null;
@@ -118,6 +96,7 @@ const defaultForm: FormState = {
 
 export default function LocationsPage() {
   const router = useRouter();
+  const seed = useServerSeed<LocationsSeed>("inventory-locations");
   const [search, setSearch] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState<LocRow | null>(null);
@@ -190,6 +169,7 @@ export default function LocationsPage() {
   } = useQuery({
     queryKey: ["inventory-locations"],
     queryFn: fetchData,
+    initialData: seed,
     staleTime: 30_000,
   });
   const rows = snapshot?.rows ?? [];

@@ -4,6 +4,8 @@ import { useEffect, useState, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import AdminPage from "@/app/components/AdminPage";
 import { supabase, getCachedUser } from "@/lib/supabase";
+import { useServerSeed } from "@/app/components/ServerSeed";
+import type { ProductSeedRow as Product } from "./productsSeed";
 import {
   Search,
   Plus,
@@ -23,23 +25,10 @@ import { safeImageSrc } from "@/lib/image-utils";
 import ProductFormModal from "@/components/ProductFormModal";
 import { requireAdmin } from "@/lib/requireAdmin";
 
-type Product = {
-  id: number;
-  name: string;
-  description: string;
-  cost_price: number;
-  price: number;
-  hsn: string;
-  barcode: string | null;
-  alert_quantity: number;
-  status: number;
-  delete_flag: number;
-  image_path?: string | null;
-};
-
 const inr = (n: number) => "₹" + (n || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 });
 
 export default function ProductsPage() {
+  const seed = useServerSeed<Product[]>("products");
   const [search, setSearch] = useState("");
   const [isMobile, setIsMobile] = useState(false);
   const [showModal, setShowModal] = useState(false);
@@ -91,6 +80,7 @@ export default function ProductsPage() {
   } = useQuery({
     queryKey: ["products"],
     queryFn: fetchData,
+    initialData: seed,
     staleTime: 30_000,
   });
   const err = queryErr instanceof Error ? queryErr.message : queryErr ? "Data load failed" : "";
