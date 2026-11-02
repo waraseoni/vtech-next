@@ -1,0 +1,585 @@
+"use client";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { supabase, getCachedUser } from "@/lib/supabase";
+import type { ProfileSeed } from "./profileSeed";
+import { useRouter } from "next/navigation";
+import ZoomableImage from "@/components/ZoomableImage";
+import {
+  User,
+  Mail,
+  Shield,
+  ShieldCheck,
+  Save,
+  KeyRound,
+  Loader2,
+  Eye,
+  EyeOff,
+  Wrench,
+  Camera,
+  Trash2,
+  ImageIcon,
+  Fingerprint,
+} from "lucide-react";
+import { compressImage } from "@/lib/imageCompression";
+import { openCamera } from "@/lib/nativeCamera";
+import { useImageUpload } from "@/lib/useImageUpload";
+import SearchableSelect from "@/components/SearchableSelect";
+import PageLoader from "@/components/PageLoader";
+import PasskeyDevices from "@/components/PasskeyDevices";
+import { toast } from "@/lib/toast";
+
+const inputCls =
+  "w-full px-3 py-2.5 bg-app border border-app rounded-xl text-sm text-white outline-none focus:border-blue-500/60 transition-all placeholder:text-app";
+const labelCls = "block text-[10px] font-black uppercase tracking-wider text-muted mb-1.5";
+
+type Props = { initial?: ProfileSeed | null };
+
+export default function ProfileClient({ initial }: Props) {
+  const router = useRouter();
+  const seedReady = !!initial;
+
+  const [loading, setLoading] = useState(!seedReady);
+  const [savingInfo, setSavingInfo] = useState(false);
+  const [savingPass, setSavingPass] = useState(false);
+
+  // Profile data
+  const [userId, setUserId] = useState(initial?.userId || "");
+  const [fullName, setFullName] = useState(initial?.fullName || "");
+  const [email, setEmail] = useState(initial?.email || "");
+  const [role, setRole] = useState(initial?.role || "");
+  const [mechanicName, setMechanicName] = useState(initial?.mechanicName || "");
+  const [mechanicId, setMechanicId] = useState(initial?.mechanicId || "");
+  const [mechanics, setMechanics] = useState<{ id: number; name: string }[]>(
+    initial?.mechanics || []
+  );
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(initial?.avatarUrl ?? null);
+
+  // Avatar photo
+  const [photoSaving, setPhotoSaving] = useState(false);
+  const [photoErr, setPhotoErr] = useState("");
+  const [photoPopup, setPhotoPopup] = useState(false);
+  const photoRef = useRef<HTMLInputElement>(null);
+  const photoCamRef = useRef<HTMLInputElement>(null);
+  const { openCropper, cropperEl } = useImageUpload();
+
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    // Avatar circle 1:1 dikhta hai — crop editor pehle.
+    const picked = await openCropper(file, { aspect: 1, title: "Profile Photo — Crop" });
+    if (!picked) return;
+    setPhotoSaving(true);
+    setPhotoErr("");
+    try {
+      const compressed = await compressImage(picked);
+      if (compressed.bytes > 100 * 1024) {
+        setPhotoErr("Image abhi bhi 100KB se bada hai — kam resolution ki photo try karein");
+        setPhotoSaving(false);
+        return;
+      }
+      const fd = new FormData();
+      fd.append("file", compressed.file);
+      fd.append("userId", userId);
+      const res = await fetch("/api/user-avatar", { method: "POST", body: fd });
+      const json = await res.json();
+      if (json.status !== "success") throw new Error(json.msg || "Upload failed");
+      setAvatarUrl(json.url);
+      setPhotoSaving(false);
+    } catch (err: unknown) {
+      setPhotoErr(err instanceof Error ? err.message : "Upload failed");
+      setPhotoSaving(false);
+    }
+  };
+
+  const handlePhotoDelete = async () => {
+    if (!confirm("Kya aap apni avatar photo delete karna chahte hain?")) return;
+    setPhotoSaving(true);
+    setPhotoErr("");
+    try {
+      const fd = new FormData();
+      fd.append("userId", userId);
+      fd.append("delete", "1");
+      const res = await fetch("/api/user-avatar", { method: "POST", body: fd });
+      const json = await res.json();
+      if (json.status !== "success") throw new Error(json.msg || "Delete failed");
+      setAvatarUrl(null);
+      setPhotoSaving(false);
+    } catch (err: unknown) {
+      setPhotoErr(err instanceof Error ? err.message : "Delete failed");
+      setPhotoSaving(false);
+    }
+  };
+
+  // Password change
+  const [currentPass, setCurrentPass] = useState("");
+  const [newPass, setNewPass] = useState("");
+  const [confirmPass, setConfirmPass] = useState("");
+  const [showCurrent, setShowCurrent] = useState(false);
+  const [showNew, setShowNew] = useState(false);
+
+  // ── Fetch ─────────────────────────────────────────────────────────────────
+  const load = useCallback(async () => {
+    const {
+      data: { user },
+    } = await getCachedUser();
+    if (!user) {
+      router.push("/login");
+      return;
+    }
+
+    setUserId(user.id);
+    setEmail(user.email || "");
+
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("full_name, role, mechanic_id, email, avatar_url")
+      .eq("id", user.id)
+      .single();
+
+    setFullName(profile?.full_name || user.email?.split("@")[0] || "");
+    setRole(profile?.role || "staff");
+    setAvatarUrl(profile?.avatar_url || null);
+    if (profile?.email) setEmail(profile.email);
+
+    // Mechanics list (PHP: mechanic_list WHERE status=1) — dropdown ke liye
+    const { data: mechs } = await supabase
+      .from("mechanic_list")
+      .select("id, firstname, middlename, lastname")
+      .eq("status", 1)
+      .order("firstname");
+    const mechList = (mechs || []).map((m) => ({
+      id: m.id,
+      name: [m.firstname, m.middlename, m.lastname].filter(Boolean).join(" "),
+    }));
+    setMechanics(mechList);
+
+    // Mechanic name resolve karo agar linked hai
+    if (profile?.mechanic_id) {
+      setMechanicId(String(profile.mechanic_id));
+      const linked = mechList.find((m) => m.id === profile.mechanic_id);
+      if (linked) setMechanicName(linked.name);
+    }
+
+    setLoading(false);
+  }, [router]);
+
+  // Server seed pehli render cover karta hai — mount par dobara fetch nahi.
+  const seededRef = useRef(seedReady);
+  useEffect(() => {
+    if (seededRef.current) {
+      seededRef.current = false;
+      return;
+    }
+    load();
+  }, [load]);
+
+  // ── Save Profile Info ─────────────────────────────────────────────────────
+  const handleSaveInfo = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!fullName.trim()) {
+      toast.error("Naam zaroori hai!");
+      return;
+    }
+    setSavingInfo(true);
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .update({
+          full_name: fullName.trim(),
+          mechanic_id: mechanicId ? parseInt(mechanicId) : null,
+        })
+        .eq("id", userId);
+      if (error) {
+        if (error.code === "23505") {
+          throw new Error("Ye mechanic pehle se kisi aur user se linked hai!");
+        }
+        throw error;
+      }
+      // Mechanic badge refresh
+      const linked = mechanics.find((m) => String(m.id) === mechanicId);
+      setMechanicName(linked ? linked.name : "");
+      toast.success("Profile update ho gayi!");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Update failed!");
+    } finally {
+      setSavingInfo(false);
+    }
+  };
+
+  // ── Change Password ───────────────────────────────────────────────────────
+  const handleChangePass = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentPass) {
+      toast.error("Pehle current password enter karo!");
+      return;
+    }
+    if (newPass.length < 6) {
+      toast.error("Naya password kam se kam 6 characters ka hona chahiye!");
+      return;
+    }
+    if (newPass !== confirmPass) {
+      toast.error("Dono passwords match nahi karte!");
+      return;
+    }
+
+    setSavingPass(true);
+    try {
+      // Step 1: Verify current password by re-signing in
+      const { error: signInErr } = await supabase.auth.signInWithPassword({
+        email,
+        password: currentPass,
+      });
+      if (signInErr) {
+        toast.error("Current password galat hai!");
+        setSavingPass(false);
+        return;
+      }
+
+      // Step 2: Update password
+      const { error: updateErr } = await supabase.auth.updateUser({ password: newPass });
+      if (updateErr) throw updateErr;
+
+      toast.success("Password change ho gaya!");
+      setCurrentPass("");
+      setNewPass("");
+      setConfirmPass("");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Password change failed!");
+    } finally {
+      setSavingPass(false);
+    }
+  };
+
+  if (loading) return <PageLoader icon={User} label="loading profile..." tone="blue" />;
+
+  return (
+    <div className="min-h-screen bg-app font-sans pb-12">
+      <div className="max-w-lg mx-auto px-4 pt-6 space-y-4">
+        {/* Profile header card */}
+        <div className="bg-panel border border-app rounded-2xl p-6 flex items-center gap-5">
+          {/* Avatar circle */}
+          <div className="relative flex-shrink-0">
+            {avatarUrl ? (
+              <ZoomableImage
+                src={avatarUrl}
+                alt={fullName || "User"}
+                width={64}
+                height={64}
+                className="w-16 h-16 rounded-2xl object-cover flex-shrink-0 shadow-lg border border-white/10"
+                onError={(e) => {
+                  (e.currentTarget as HTMLImageElement).style.display = "none";
+                }}
+              />
+            ) : (
+              <div
+                className={`w-16 h-16 rounded-2xl flex items-center justify-center text-white font-black text-xl flex-shrink-0 shadow-lg ${
+                  role === "admin"
+                    ? "bg-gradient-to-br from-amber-500 to-amber-700 shadow-amber-900/40"
+                    : "bg-gradient-to-br from-blue-500 to-blue-700 shadow-blue-900/40"
+                }`}
+              >
+                {(fullName || "U").slice(0, 2).toUpperCase()}
+              </div>
+            )}
+            <button
+              onClick={() => setPhotoPopup(!photoPopup)}
+              disabled={photoSaving}
+              className="absolute -bottom-1.5 -right-1.5 w-8 h-8 rounded-full bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center shadow-lg border-2 border-app-2 transition-colors disabled:opacity-60"
+              title="Photo upload"
+            >
+              {photoSaving ? <Loader2 size={14} className="animate-spin" /> : <Camera size={14} />}
+            </button>
+            {photoPopup && (
+              <div className="absolute -bottom-20 right-0 z-50 bg-panel border border-app-2 rounded-xl shadow-2xl p-1.5 min-w-[120px]">
+                <button
+                  onClick={() => {
+                    setPhotoPopup(false);
+                    void openCamera(
+                      (f) =>
+                        handlePhotoUpload({
+                          target: { files: [f], value: "" },
+                        } as unknown as React.ChangeEvent<HTMLInputElement>),
+                      photoCamRef
+                    );
+                  }}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-xs text-white rounded-lg hover:bg-blue-600/20 transition-colors"
+                >
+                  <Camera size={12} /> Camera
+                </button>
+                <button
+                  onClick={() => {
+                    setPhotoPopup(false);
+                    photoRef.current?.click();
+                  }}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-xs text-white rounded-lg hover:bg-blue-600/20 transition-colors"
+                >
+                  <ImageIcon size={12} /> Gallery
+                </button>
+              </div>
+            )}
+            <input
+              ref={photoRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handlePhotoUpload}
+            />
+            <input
+              ref={photoCamRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              className="hidden"
+              onChange={handlePhotoUpload}
+            />
+          </div>
+          <div className="flex-1 min-w-0">
+            <h1 className="text-xl font-black text-white truncate">{fullName || "—"}</h1>
+            <p className="text-muted text-sm mt-0.5 truncate">{email}</p>
+            <div className="flex items-center gap-2 mt-2 flex-wrap">
+              {role === "admin" ? (
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-black bg-amber-500/15 text-amber-400 border border-amber-500/25">
+                  <ShieldCheck size={10} /> Administrator
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-black bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                  <Shield size={10} /> Staff
+                </span>
+              )}
+              {mechanicName && (
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-black bg-teal-500/10 text-teal-400 border border-teal-500/20">
+                  <Wrench size={10} /> {mechanicName}
+                </span>
+              )}
+              {avatarUrl && (
+                <button
+                  onClick={handlePhotoDelete}
+                  disabled={photoSaving}
+                  className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 transition-colors disabled:opacity-60"
+                  title="Delete photo"
+                >
+                  <Trash2 size={10} /> Photo Delete
+                </button>
+              )}
+            </div>
+            {photoErr && (
+              <p className="text-[11px] text-red-400 font-semibold mt-1.5">{photoErr}</p>
+            )}
+          </div>
+        </div>
+
+        {/* ── Profile Info Form ── */}
+        <div className="bg-panel border border-app rounded-2xl overflow-hidden">
+          <div className="flex items-center gap-2.5 px-5 py-3.5 bg-gradient-to-r from-blue-600/20 to-transparent border-b border-app">
+            <User size={14} className="text-blue-400" />
+            <h3 className="text-xs font-black uppercase tracking-wider text-muted">
+              Profile Information
+            </h3>
+          </div>
+          <form onSubmit={handleSaveInfo} className="p-5 space-y-4">
+            <div>
+              <label className={labelCls}>Full Name *</label>
+              <div className="relative">
+                <User
+                  size={14}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-2 pointer-events-none"
+                />
+                <input
+                  type="text"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  placeholder="Apna naam enter karo"
+                  required
+                  className={`${inputCls} pl-9`}
+                />
+              </div>
+            </div>
+            <div>
+              <label className={labelCls}>Email Address</label>
+              <div className="relative">
+                <Mail
+                  size={14}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-2 pointer-events-none"
+                />
+                <input
+                  type="email"
+                  value={email}
+                  disabled
+                  className={`${inputCls} pl-9 opacity-50 cursor-not-allowed`}
+                />
+              </div>
+              <p className="text-[10px] text-app mt-1">Email change nahi ho sakta</p>
+            </div>
+
+            {/* Mechanic Link (attendance ke liye — staff/admin khud ko mechanic se link kare) */}
+            {(role === "staff" || role === "admin") && (
+              <div>
+                <label className={labelCls}>
+                  <Wrench size={10} className="inline mr-1" /> Link to Mechanic Profile
+                </label>
+                <SearchableSelect
+                  value={mechanicId || null}
+                  options={mechanics.map((m) => ({ id: m.id, label: m.name }))}
+                  onSelect={(v) => setMechanicId(v)}
+                  placeholder="— Select Mechanic —"
+                  clearLabel="— Select Mechanic —"
+                />
+                <p className="text-[10px] text-app mt-1">
+                  Attendance lagane ke liye apni profile ko mechanic se link karna zaroori hai।
+                </p>
+              </div>
+            )}
+            <button
+              type="submit"
+              disabled={savingInfo}
+              className="w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-black text-sm disabled:opacity-50 flex items-center justify-center gap-2 transition-all shadow-lg shadow-blue-900/30"
+            >
+              {savingInfo ? (
+                <>
+                  <Loader2 size={15} className="animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Save size={15} /> Save Profile
+                </>
+              )}
+            </button>
+          </form>
+        </div>
+
+        {/* ── Change Password Form ── */}
+        <div className="bg-panel border border-app rounded-2xl overflow-hidden">
+          <div className="flex items-center gap-2.5 px-5 py-3.5 bg-gradient-to-r from-amber-600/20 to-transparent border-b border-app">
+            <KeyRound size={14} className="text-amber-400" />
+            <h3 className="text-xs font-black uppercase tracking-wider text-muted">
+              Change Password
+            </h3>
+          </div>
+          <form onSubmit={handleChangePass} className="p-5 space-y-4">
+            {/* Current Password */}
+            <div>
+              <label className={labelCls}>Current Password *</label>
+              <div className="relative">
+                <input
+                  type={showCurrent ? "text" : "password"}
+                  value={currentPass}
+                  onChange={(e) => setCurrentPass(e.target.value)}
+                  placeholder="Apna purana password"
+                  className={`${inputCls} pr-10`}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowCurrent((v) => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-2 hover:text-muted transition-colors"
+                >
+                  {showCurrent ? <EyeOff size={14} /> : <Eye size={14} />}
+                </button>
+              </div>
+            </div>
+
+            {/* New Password */}
+            <div>
+              <label className={labelCls}>New Password *</label>
+              <div className="relative">
+                <input
+                  type={showNew ? "text" : "password"}
+                  value={newPass}
+                  onChange={(e) => setNewPass(e.target.value)}
+                  placeholder="Min 6 characters"
+                  className={`${inputCls} pr-10`}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowNew((v) => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-2 hover:text-muted transition-colors"
+                >
+                  {showNew ? <EyeOff size={14} /> : <Eye size={14} />}
+                </button>
+              </div>
+              {newPass && (
+                <div className="flex items-center gap-2 mt-1.5">
+                  <div
+                    className={`h-1 flex-1 rounded-full transition-all ${
+                      newPass.length >= 8
+                        ? "bg-emerald-500"
+                        : newPass.length >= 6
+                          ? "bg-amber-500"
+                          : "bg-red-500"
+                    }`}
+                  />
+                  <span
+                    className={`text-[10px] font-bold ${
+                      newPass.length >= 8
+                        ? "text-emerald-400"
+                        : newPass.length >= 6
+                          ? "text-amber-400"
+                          : "text-red-400"
+                    }`}
+                  >
+                    {newPass.length >= 8 ? "Strong" : newPass.length >= 6 ? "OK" : "Too short"}
+                  </span>
+                </div>
+              )}
+            </div>
+
+            {/* Confirm Password */}
+            <div>
+              <label className={labelCls}>Confirm New Password *</label>
+              <input
+                type={showNew ? "text" : "password"}
+                value={confirmPass}
+                onChange={(e) => setConfirmPass(e.target.value)}
+                placeholder="Dobara enter karo"
+                className={`${inputCls} ${
+                  confirmPass && confirmPass !== newPass
+                    ? "border-red-500/50"
+                    : confirmPass && confirmPass === newPass
+                      ? "border-emerald-500/50"
+                      : ""
+                }`}
+              />
+              {confirmPass && (
+                <p
+                  className={`text-[10px] font-bold mt-1 ${confirmPass === newPass ? "text-emerald-400" : "text-red-400"}`}
+                >
+                  {confirmPass === newPass ? "✓ Passwords match" : "✗ Match nahi karte"}
+                </p>
+              )}
+            </div>
+
+            <button
+              type="submit"
+              disabled={savingPass}
+              className="w-full py-2.5 bg-amber-600 hover:bg-amber-500 text-white rounded-xl font-black text-sm disabled:opacity-50 flex items-center justify-center gap-2 transition-all shadow-lg shadow-amber-900/30"
+            >
+              {savingPass ? (
+                <>
+                  <Loader2 size={15} className="animate-spin" />
+                  Changing...
+                </>
+              ) : (
+                <>
+                  <KeyRound size={15} /> Change Password
+                </>
+              )}
+            </button>
+          </form>
+        </div>
+
+        {/* ── Devices (Passkey / Fingerprint Login) ── */}
+        <div className="bg-panel border border-app rounded-2xl overflow-hidden">
+          <div className="flex items-center gap-2.5 px-5 py-3.5 bg-gradient-to-r from-cyan-600/20 to-transparent border-b border-app">
+            <Fingerprint size={14} className="text-cyan-400" />
+            <h3 className="text-xs font-black uppercase tracking-wider text-muted">
+              Devices (Fingerprint Login)
+            </h3>
+          </div>
+          <PasskeyDevices />
+        </div>
+      </div>
+      {cropperEl}
+    </div>
+  );
+}

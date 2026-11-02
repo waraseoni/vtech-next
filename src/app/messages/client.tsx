@@ -1,0 +1,1033 @@
+"use client";
+
+import { useState, useEffect, useRef, useCallback } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useSearchParams, useRouter } from "next/navigation";
+import Link from "next/link";
+import ZoomableImage from "@/components/ZoomableImage";
+import { supabase, getCachedUser } from "@/lib/supabase";
+import { safeImageSrc } from "@/lib/image-utils";
+import {
+  MessageSquare,
+  ArrowLeft,
+  Send,
+  Loader2,
+  Search,
+  Inbox,
+  Check,
+  CheckCheck,
+  Paperclip,
+  Trash2,
+  X,
+  Image as ImageIcon,
+  Eye,
+} from "lucide-react";
+import PageLoader from "@/components/PageLoader";
+import Lightbox from "@/components/Lightbox";
+import {
+  fetchConversations,
+  fetchMessages,
+  sendMessage,
+  markRead,
+  markDelivered,
+  subscribeMessages,
+  subscribeTyping,
+  broadcastTyping,
+  isOnline,
+  lastSeenText,
+  type Conversation,
+  type Message,
+  type ProfileLite,
+  type Presence,
+} from "@/lib/messaging";
+import { uploadMedia, deleteMedia, mediaPublicUrl } from "@/lib/media";
+import { subscribePresence } from "@/lib/presence";
+import type { MessagesSeed } from "./messagesSeed";
+
+const fmtTime = (s: string) =>
+  new Date(s).toLocaleTimeString("en-IN", {
+    timeZone: "Asia/Kolkata",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  });
+const fmtDay = (s: string) => {
+  const d = new Date(s);
+  const today = new Date();
+  const sameDay = d.toDateString() === today.toDateString();
+  if (sameDay) return fmtTime(s);
+  return d.toLocaleDateString("en-IN", {
+    timeZone: "Asia/Kolkata",
+    day: "2-digit",
+    month: "short",
+  });
+};
+const avatarInitial = (n: string | null | undefined) => (n || "?").trim().charAt(0).toUpperCase();
+
+// circular avatar — jb avatar_url ho to image, warna initials circle.
+function Avatar({
+  name,
+  avatarUrl,
+  size = "sm",
+}: {
+  name: string | null | undefined;
+  avatarUrl?: string | null;
+  size?: "sm" | "md";
+}) {
+  const src = safeImageSrc(avatarUrl);
+  const cls = size === "md" ? "w-10 h-10 text-sm" : "w-9 h-9 text-sm";
+  if (src) {
+    return (
+      <ZoomableImage
+        src={src}
+        alt={name || "User"}
+        width={40}
+        height={40}
+        className={`${cls} rounded-full object-cover border border-app`}
+        onError={(e) => {
+          (e.target as HTMLImageElement).style.display = "none";
+        }}
+      />
+    );
+  }
+  return (
+    <div
+      className={`${cls} rounded-full bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center text-white font-black`}
+    >
+      {avatarInitial(name)}
+    </div>
+  );
+}
+
+export default function MessagesClient({ initial }: { initial?: MessagesSeed | null }) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  // Server seed (directory + my profile) pehla render cover karta hai.
+  const seedReady = !!initial;
+  const meIdRef = useRef<string>(initial?.me.id ?? "");
+  const [meId, setMeId] = useState<string>(initial?.me.id ?? "");
+  const [meName, setMeName] = useState(initial?.me.name || "Me");
+
+  const [conversations, setConversations] = useState<Conversation[]>(initial?.conversations ?? []);
+  const [profiles, setProfiles] = useState<ProfileLite[]>(initial?.profiles ?? []);
+  const [presenceMap, setPresenceMap] = useState<Record<string, Presence>>(
+    initial?.presenceMap ?? {}
+  );
+
+  const [activeId, setActiveId] = useState<string | null>(searchParams.get("to") || null);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [sending, setSending] = useState(false);
+  const [draft, setDraft] = useState("");
+  const [sendErr, setSendErr] = useState<string | null>(null);
+  const [typingFrom, setTypingFrom] = useState<string | null>(null);
+  const [pendingMedia, setPendingMedia] = useState<File[]>([]);
+  const [uploading, setUploading] = useState(false);
+  // delete confirm — accidental delete se bachne ke liye 2-step (pehle click
+  // "Confirm?", 3s ke andar wahi message par dobara click = pakka delete).
+  const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
+  const confirmTimer = useRef<number | null>(null);
+  // Chat photo par click → zoom lightbox (new tab ka anchor fallback rakha hai)
+  const [zoomMedia, setZoomMedia] = useState<string | null>(null);
+  // delete rights: staff sirf apna send-kiya hua delete kare; admin/developer sab.
+  const [myRole, setMyRole] = useState<string>(initial?.me.role ?? "");
+
+  const [loading, setLoading] = useState(!seedReady);
+  const [isMobile, setIsMobile] = useState(false);
+  const [search, setSearch] = useState("");
+  const [notFound, setNotFound] = useState(!!initial && initial.profiles.length === 0);
+  const [loadErr, setLoadErr] = useState<string | null>(null);
+
+  const msgsRef = useRef<Message[]>([]);
+  const convRef = useRef<Conversation[]>([]);
+  const activeRef = useRef<string | null>(activeId);
+  // `?to=` ke liye: jis conversation ka history fetch ho chuka hai uska record.
+  // (refresh par activeId pehle se ?to= se set rehta hai, isliye !activeId wala
+  // guard kaam nahi karta — isi liye history kabhi load na hoti thi.)
+  const loadedConvRef = useRef<string | null>(null);
+  const subCleanup = useRef<{ unsubscribe: () => void } | null>(null);
+  const presCleanup = useRef<{ unsubscribe: () => void } | null>(null);
+  const listRef = useRef<HTMLDivElement>(null);
+  const profileMapRef = useRef<Record<string, ProfileLite>>({});
+  const typingTimer = useRef<number | null>(null);
+
+  useEffect(() => {
+    setIsMobile(window.matchMedia("(max-width: 768px)").matches);
+    const onR = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    const mq = window.matchMedia("(max-width: 768px)");
+    mq.addEventListener("change", onR);
+    return () => mq.removeEventListener("change", onR);
+  }, []);
+
+  // ── Fitted height: mobile composer kabhi bottom tab-bar ke peeche na chhipe ──
+  // Purana `h-[calc(100vh-3.5rem-76px)]` viewport-math galat tha, kyunki:
+  //  1. `100vh` mobile browser chrome (URL bar) ignore karta hai, aur on-screen
+  //     keyboard khulte hi shrink nahi hota.
+  //  2. `ViewOnlyBanner` `<main>` se PEHLE in-flow render hota hai — yaani
+  //     office ke bahar (banner visible) hi uski ~46px height add hoti hai.
+  //     Us pehle total page bottom `100vh - 52 + bannerHeight` par jaata tha,
+  //     jabki tab-bar last ~57px ghere deta hai → composer poora chhup jata
+  //     tha. Yehi user ka original bug tha.
+  //  3. 76px hardcoded tha, jabki tab-bar ki asli height (safe-area/notch
+  //     wale device) usse alag hoti hai.
+  // Isliye ab: page ko apni ASLI visible height dete hain — (viewport ka
+  // bottom - page ka on-screen top - tab-bar ki measured height).
+  const shellRef = useRef<HTMLDivElement>(null);
+  const [shellH, setShellH] = useState(0);
+
+  useEffect(() => {
+    const measure = () => {
+      const shell = shellRef.current;
+      if (!shell) return;
+      const vv = window.visualViewport;
+      // Keyboard khulte hi visualViewport chhota hota hai — `100vh` nahi.
+      const vh = vv?.height ?? window.innerHeight;
+      // Page ka apna on-screen top (header + banner + main padding already
+      // included) — isse har ancestor ka height automatically account hota hai.
+      const top = shell.getBoundingClientRect().top - (vv?.offsetTop ?? 0);
+      // Tab-bar `display:none` ho to (>=768px) height 0 → koi cut nahi.
+      const bar = document.querySelector<HTMLElement>("[data-mobile-tabbar]");
+      const barH = bar ? bar.getBoundingClientRect().height : 0;
+      // 200px floor: mount/transition ke transient 0 se layout collapse na ho.
+      setShellH(Math.max(200, vh - top - barH));
+    };
+
+    measure();
+    const ro = new ResizeObserver(measure);
+    // Banner show/hide hone par <main> ka size badalta hai → re-measure.
+    const main = shellRef.current?.closest("main");
+    if (main) ro.observe(main);
+    const bar = document.querySelector<HTMLElement>("[data-mobile-tabbar]");
+    if (bar) ro.observe(bar);
+    window.addEventListener("resize", measure);
+    window.visualViewport?.addEventListener("resize", measure);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", measure);
+      window.visualViewport?.removeEventListener("resize", measure);
+    };
+  }, [isMobile, activeId, conversations.length]);
+
+  // session + role check — directory (profiles/presence/conversations) alag
+  // query me aati hai, taaki back-navigation par cache-hit ho.
+  const [dirReady, setDirReady] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const {
+          data: { user },
+        } = await getCachedUser();
+        if (!user) {
+          router.push("/login");
+          return;
+        }
+        meIdRef.current = user.id;
+        setMeId(user.id);
+        // my name for push + apna role check (staff/admin/developer hi messenger use kar sakta hai)
+        const { data: myP } = await supabase
+          .from("profiles")
+          .select("full_name, role")
+          .eq("id", user.id)
+          .maybeSingle();
+        setMeName(myP?.full_name || user.email?.split("@")[0] || "Me");
+        const myRole = myP?.role || "";
+        setMyRole(myRole);
+        if (!["admin", "staff", "developer"].includes(myRole)) {
+          if (!cancelled) {
+            setNotFound(true);
+            setLoading(false);
+          }
+          return;
+        }
+        setDirReady(true);
+      } catch {
+        if (!cancelled) {
+          setLoadErr("Kuch gadbad hui — messenger load nahi hua");
+          setLoading(false);
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Directory: profiles + presence snapshot + conversations. Realtime updates
+  // inke useState copies ko mutate karte hain — query sirf mount/cache se
+  // hydrate karta hai.
+  const fetchDirectory = useCallback(async () => {
+    const me = meIdRef.current;
+    const { data: profs, error: profErr } = await supabase
+      .from("profiles")
+      .select("id, full_name, role, avatar_url")
+      .neq("id", me)
+      .in("role", ["admin", "staff", "developer"])
+      .order("full_name", { ascending: true });
+    if (profErr) {
+      // ek result par profile lookup fail (misleading "no users") se bachne ke liye
+      // basic columns ke saath dubara try karo
+      const { data: basic } = await supabase
+        .from("profiles")
+        .select("id, full_name, role, avatar_url")
+        .neq("id", me)
+        .in("role", ["admin", "staff", "developer"])
+        .order("full_name", { ascending: true });
+      return {
+        profiles: (basic || []) as ProfileLite[],
+        presenceMap: {} as Record<string, Presence>,
+        conversations: [] as Conversation[],
+      };
+    }
+    const plist = (profs || []) as ProfileLite[];
+    // presence snapshot
+    const { data: pres, error: presErr } = await supabase
+      .from("user_presence")
+      .select("user_id, status, last_seen");
+    const pmap: Record<string, Presence> = {};
+    if (!presErr) {
+      (pres || []).forEach((r) => (pmap[r.user_id] = { status: r.status, last_seen: r.last_seen }));
+    }
+    const convs = presErr ? [] : await fetchConversations(me, plist, pmap);
+    return { profiles: plist, presenceMap: pmap, conversations: convs };
+  }, []);
+
+  const { data: dir, error: dirErr } = useQuery({
+    queryKey: ["messages-directory"],
+    queryFn: fetchDirectory,
+    enabled: dirReady,
+    staleTime: 30_000,
+    // Default view ka first paint server seed se — warna client fetch.
+    initialData:
+      seedReady && initial
+        ? {
+            profiles: initial.profiles,
+            presenceMap: initial.presenceMap,
+            conversations: initial.conversations,
+          }
+        : undefined,
+  });
+
+  useEffect(() => {
+    if (!dir) return;
+    setProfiles(dir.profiles);
+    const pm: Record<string, ProfileLite> = {};
+    dir.profiles.forEach((p) => (pm[p.id] = p));
+    profileMapRef.current = pm;
+    setPresenceMap(dir.presenceMap);
+    setConversations(dir.conversations);
+    convRef.current = dir.conversations;
+    setNotFound(dir.profiles.length === 0);
+    setLoading(false);
+  }, [dir]);
+
+  useEffect(() => {
+    if (dirErr) {
+      setLoadErr("Kuch gadbad hui — messenger load nahi hua");
+      setLoading(false);
+    }
+  }, [dirErr]);
+
+  // live presence updates
+  useEffect(() => {
+    const sub = subscribePresence((userId, row) => {
+      setPresenceMap((prev) => ({
+        ...prev,
+        [userId]: { status: row.status, last_seen: row.last_seen },
+      }));
+      // update conversation presence
+      setConversations((prev) =>
+        prev.map((c) => (c.other.id === userId ? { ...c, presence: row } : c))
+      );
+    });
+    presCleanup.current = sub;
+    return () => presCleanup.current?.unsubscribe();
+  }, []);
+
+  // live messages — update conversations (list) + active chat + clear unread
+  const onIncoming = useCallback(
+    (msg: Message, action: "insert" | "update") => {
+      const me = meIdRef.current;
+      const otherId = msg.sender_id === me ? msg.recipient_id : msg.sender_id;
+
+      if (action === "update") {
+        // delivery/read tick update ya delete — active chat me reflect karo
+        if (activeRef.current === msg.sender_id && msg.recipient_id === me) {
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === msg.id ? { ...m, delivered_at: msg.delivered_at, read_at: msg.read_at } : m
+            )
+          );
+        }
+        return;
+      }
+
+      // INSERT — naya message
+      setConversations((prev) => {
+        const list = [...prev];
+        const existing = list.find((c) => c.other.id === otherId);
+        const otherProf: ProfileLite = existing?.other ||
+          profileMapRef.current[otherId] || {
+            id: otherId,
+            full_name: otherId.slice(0, 8),
+            role: null,
+          };
+        if (existing) {
+          list[list.indexOf(existing)] = {
+            ...existing,
+            lastMessage: msg,
+            unread:
+              msg.recipient_id === me && activeRef.current !== otherId
+                ? existing.unread + 1
+                : existing.unread,
+          };
+        } else {
+          list.unshift({
+            other: otherProf,
+            lastMessage: msg,
+            unread: msg.recipient_id === me ? 1 : 0,
+            presence: presenceMap[otherId] || null,
+          });
+        }
+        list.sort(
+          (a, b) =>
+            (b.lastMessage ? new Date(b.lastMessage.created_at).getTime() : 0) -
+            (a.lastMessage ? new Date(a.lastMessage.created_at).getTime() : 0)
+        );
+        convRef.current = list;
+        return list;
+      });
+      if (activeRef.current === msg.sender_id) {
+        setMessages((prev) => {
+          if (prev.some((m) => m.id === msg.id)) return prev;
+          const next = [...prev, msg];
+          msgsRef.current = next;
+          return next;
+        });
+        if (msg.recipient_id === me) {
+          void markRead(me, msg.sender_id);
+        }
+        requestAnimationFrame(() => {
+          listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: "smooth" });
+        });
+      } else {
+        // active nahi to bas delivered mark karo (double tick) — read baad me
+        if (msg.recipient_id === me) {
+          void markDelivered(me, msg.sender_id);
+        }
+      }
+    },
+    [presenceMap]
+  );
+
+  useEffect(() => {
+    if (!meIdRef.current) return;
+    const sub = subscribeMessages(meIdRef.current, onIncoming);
+    subCleanup.current = sub;
+    return () => subCleanup.current?.unsubscribe();
+  }, [onIncoming]);
+
+  // typing indicator — dusre user ka typing state live + 2.5s me clear
+  useEffect(() => {
+    if (!meIdRef.current) return;
+    const off = subscribeTyping(meIdRef.current, (fromUserId) => {
+      if (fromUserId !== activeRef.current) return;
+      setTypingFrom(fromUserId);
+    });
+    return off;
+    // `loading` ke false hone par meIdRef.current set ho chuka hota hai — isliye
+    // `[]` ki jagah `[loading]` taki mount par early-return ke baad dobara subscribe ho.
+  }, [loading]);
+
+  // active chat dikh raha ho to typing 2.5s baad hat jaye
+  useEffect(() => {
+    if (!typingFrom) return;
+    const t = setTimeout(() => setTypingFrom(null), 2500);
+    return () => clearTimeout(t);
+  }, [typingFrom]);
+
+  // draft change par typing broadcast (throttle ~1.3s)
+  useEffect(() => {
+    if (!meIdRef.current || !activeRef.current) return;
+    if (typingTimer.current) return;
+    typingTimer.current = window.setTimeout(() => {
+      typingTimer.current = null;
+    }, 1300);
+    broadcastTyping(activeRef.current, meIdRef.current);
+  }, [draft, activeId]);
+  useEffect(
+    () => () => {
+      if (typingTimer.current) window.clearTimeout(typingTimer.current);
+    },
+    []
+  );
+
+  // load active conversation messages
+  const openConversation = useCallback(
+    async (id: string, profiles: ProfileLite[]) => {
+      activeRef.current = id;
+      setActiveId(id);
+      const me = meIdRef.current;
+      // ensure target conversation exists (offline/new user bhi chat pane open kare)
+      setConversations((prev) => {
+        if (prev.some((c) => c.other.id === id)) return prev;
+        const prof = profiles.find((p) => p.id === id);
+        const entry: Conversation = {
+          other:
+            prof ||
+            ({
+              id,
+              full_name: "User",
+              role: null,
+            } as ProfileLite),
+          lastMessage: null,
+          unread: 0,
+          presence: presenceMap[id] || null,
+        };
+        const next = [entry, ...prev];
+        convRef.current = next;
+        return next;
+      });
+      setMessages([]);
+      msgsRef.current = [];
+      const history = await fetchMessages(me, id);
+      setMessages(history);
+      msgsRef.current = history;
+      void markRead(me, id);
+      // clear unread locally
+      setConversations((prev) => prev.map((c) => (c.other.id === id ? { ...c, unread: 0 } : c)));
+      requestAnimationFrame(() => {
+        if (listRef.current) listRef.current.scrollTop = listRef.current.scrollHeight;
+      });
+      // URL sync (mobile back ke liye)
+      try {
+        const sp = new URLSearchParams(searchParams.toString());
+        sp.set("to", id);
+        window.history.replaceState(null, "", `/messages?${sp.toString()}`);
+      } catch {
+        /* ignore */
+      }
+    },
+    [searchParams, presenceMap]
+  );
+
+  // todo: on first load if URL has ?to=, open it after profiles load
+  useEffect(() => {
+    const to = searchParams.get("to");
+    if (to && profiles.length && meIdRef.current && profiles.some((p) => p.id === to)) {
+      // refresh par activeId pehle se `?to=` se bhar jata hai, isliye `!activeId`
+      // guard se history load nahi hoti thi. Isliye `loadedConvRef` se track karo
+      // taaki har baar kholne par history fetch ho, magar baar-baar na repeat ho.
+      if (to !== loadedConvRef.current) {
+        loadedConvRef.current = to;
+        void openConversation(to, profiles);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profiles, activeId]);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const pickFiles = (files: FileList | null) => {
+    if (!files || !files.length) return;
+    const arr = Array.from(files).slice(0, 5);
+    if (arr.some((f) => f.size > 5 * 1024 * 1024)) {
+      setSendErr("File 5MB se bada hai — chhota file select karo");
+      setTimeout(() => setSendErr(null), 4000);
+      return;
+    }
+    setPendingMedia((prev) => [...prev, ...arr]);
+  };
+
+  const removePending = (i: number) =>
+    setPendingMedia((prev) => prev.filter((_, idx) => idx !== i));
+
+  const send = async () => {
+    const other = activeRef.current;
+    if (!other) return;
+    const text = draft.trim();
+    if ((!text && pendingMedia.length === 0) || sending) return;
+    setSending(true);
+
+    // media pehle upload (compress ho kar ~100KB me) — server space bachao
+    let media: { url: string; type: string; name: string } | undefined;
+    if (pendingMedia.length > 0) {
+      setUploading(true);
+      try {
+        const folder = [meIdRef.current, other].sort().join("_");
+        const uploaded = await uploadMedia(pendingMedia[0], folder);
+        media = uploaded;
+      } catch (e) {
+        setUploading(false);
+        setSending(false);
+        setSendErr(e instanceof Error ? e.message : "Media upload fail hua");
+        setTimeout(() => setSendErr(null), 4000);
+        return;
+      }
+      setUploading(false);
+    }
+
+    const bodyText = text || "";
+    setDraft("");
+    setPendingMedia([]);
+    // optimistic append
+    const temp: Message = {
+      id: -Date.now(),
+      sender_id: meIdRef.current,
+      recipient_id: other,
+      content: bodyText,
+      created_at: new Date().toISOString(),
+      read_at: null,
+      delivered_at: null,
+      media_url: media?.url || null,
+      media_type: media?.type || null,
+      media_name: media?.name || null,
+    };
+    setMessages((prev) => {
+      const next = [...prev, temp];
+      msgsRef.current = next;
+      return next;
+    });
+    requestAnimationFrame(() => {
+      listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: "smooth" });
+    });
+    const res = await sendMessage(meIdRef.current, other, meName, bodyText, media);
+    if (!res.ok) {
+      setMessages(msgsRef.current.filter((m) => m.id !== temp.id));
+      setSendErr(res.error || "Message bhejna fail hua");
+      setTimeout(() => setSendErr(null), 4000);
+    }
+    setSending(false);
+  };
+
+  const deleteMessage = async (m: Message) => {
+    // sender/recipient dono delete kar sakte hain — row + (agar media ho) storage hatao
+    try {
+      if (m.media_url) await deleteMedia(m.media_url);
+    } catch {
+      /* ignore */
+    }
+    await supabase.from("messages").delete().eq("id", m.id);
+    setMessages((prev) => prev.filter((x) => x.id !== m.id));
+    msgsRef.current = msgsRef.current.filter((x) => x.id !== m.id);
+    // conversation list last-message cleanup
+    setConversations((prev) =>
+      prev.map((c) =>
+        c.other.id === (m.sender_id === meIdRef.current ? m.recipient_id : m.sender_id)
+          ? { ...c, lastMessage: null }
+          : c
+      )
+    );
+  };
+
+  // delete confirm handler — pehli click "Confirm?", 3s ke andar dobara click = delete.
+  const handleDeleteClick = (m: Message) => {
+    if (confirmDeleteId === m.id) {
+      if (confirmTimer.current) {
+        clearTimeout(confirmTimer.current);
+        confirmTimer.current = null;
+      }
+      setConfirmDeleteId(null);
+      void deleteMessage(m);
+    } else {
+      setConfirmDeleteId(m.id);
+      if (confirmTimer.current) clearTimeout(confirmTimer.current);
+      confirmTimer.current = window.setTimeout(() => setConfirmDeleteId(null), 3000);
+    }
+  };
+
+  const filteredProfiles = profiles.filter(
+    (p) =>
+      !conversations.some((c) => c.other.id === p.id) &&
+      (p.full_name || "").toLowerCase().includes(search.toLowerCase())
+  );
+
+  const activeConv = conversations.find((c) => c.other.id === activeId);
+
+  if (loading) return <PageLoader icon={MessageSquare} label="Loading Messages" />;
+  if (loadErr) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-6">
+        <div className="text-center text-rose-400 text-sm">
+          <Inbox className="mx-auto mb-3" size={40} />
+          {loadErr}
+          <p className="mt-2 text-muted text-xs">Thodi der baad dubara try karo.</p>
+        </div>
+      </div>
+    );
+  }
+  if (notFound && !isMobile) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-6">
+        <div className="text-center text-muted text-sm">
+          <Inbox className="mx-auto mb-3" size={40} />
+          Koi aur staff/admin registered nahi hai — messenger sirf staff/admin ke beech chat ke liye
+          hai.
+        </div>
+      </div>
+    );
+  }
+
+  // ── Chat pane ──────────────────────────────────────────────────────
+  const chatPane =
+    activeId && activeConv ? (
+      <div className="flex-1 flex flex-col min-h-0 border-l border-white/5">
+        {/* header */}
+        <div className="flex items-center gap-3 px-4 h-14 border-b border-white/5 bg-white/[0.02]">
+          {isMobile && (
+            <button
+              onClick={() => {
+                activeRef.current = null;
+                setActiveId(null);
+                try {
+                  const sp = new URLSearchParams(searchParams.toString());
+                  sp.delete("to");
+                  window.history.replaceState(null, "", `/messages${sp.toString()}`);
+                } catch {
+                  /* ignore */
+                }
+              }}
+              className="w-9 h-9 flex items-center justify-center rounded-xl text-muted hover:bg-white/[0.06]"
+            >
+              <ArrowLeft size={18} />
+            </button>
+          )}
+          <div className="relative">
+            <Avatar name={activeConv.other.full_name} avatarUrl={activeConv.other.avatar_url} />
+            {isOnline(activeConv.presence) && (
+              <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-500 border-2 border-app" />
+            )}
+          </div>
+          <div className="min-w-0">
+            <p className="text-sm font-bold text-app-2 truncate">
+              {activeConv.other.full_name || "User"}
+            </p>
+            <p
+              className={`text-[10px] font-semibold ${
+                typingFrom
+                  ? "text-emerald-400"
+                  : isOnline(activeConv.presence)
+                    ? "text-emerald-400"
+                    : "text-muted"
+              }`}
+            >
+              {typingFrom
+                ? "typing…"
+                : isOnline(activeConv.presence)
+                  ? "Online"
+                  : activeConv.presence
+                    ? `Last seen ${lastSeenText(activeConv.presence)}`
+                    : "Offline"}
+            </p>
+          </div>
+        </div>
+        {/* messages */}
+        <div ref={listRef} className="flex-1 overflow-y-auto p-4 space-y-2">
+          {messages.length === 0 && (
+            <p className="text-center text-muted text-xs pt-10">
+              Abhi koi message nahi — pehla message bhejo
+            </p>
+          )}
+          {messages.map((m) => {
+            const mine = m.sender_id === meId;
+            const isMedia = !!m.media_url;
+            return (
+              <div key={m.id} className={`flex ${mine ? "justify-end" : "justify-start"}`}>
+                <div
+                  className={`relative max-w-[80%] px-3 py-2 rounded-2xl text-sm leading-snug ${
+                    mine
+                      ? "bg-blue-600 text-white rounded-br-md"
+                      : "bg-white/[0.06] text-app-2 rounded-bl-md"
+                  }`}
+                >
+                  {isMedia && (
+                    <div className="mb-1.5">
+                      {m.media_type?.startsWith("image/") ? (
+                        <a
+                          href={mediaPublicUrl(m.media_url!)}
+                          target="_blank"
+                          rel="noreferrer"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            setZoomMedia(mediaPublicUrl(m.media_url!));
+                          }}
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={mediaPublicUrl(m.media_url!)}
+                            alt={m.media_name || "media"}
+                            className="max-h-56 w-auto max-w-full rounded-lg border border-black/20 cursor-zoom-in"
+                            loading="lazy"
+                          />
+                        </a>
+                      ) : (
+                        <a
+                          href={mediaPublicUrl(m.media_url!)}
+                          target="_blank"
+                          rel="noreferrer"
+                          className={`flex items-center gap-2 text-xs font-semibold underline ${
+                            mine ? "text-blue-100" : "text-blue-300"
+                          }`}
+                        >
+                          <ImageIcon size={14} /> {m.media_name || "File"}
+                        </a>
+                      )}
+                    </div>
+                  )}
+                  {m.content && !(isMedia && m.content === m.media_name) && (
+                    <p className="whitespace-pre-wrap break-words">{m.content}</p>
+                  )}
+                  <div
+                    className={`flex items-center gap-1 mt-1 text-[9px] ${
+                      mine ? "text-blue-200" : "text-muted"
+                    }`}
+                  >
+                    {fmtDay(m.created_at)}
+                    {mine && (
+                      <span className="flex items-center">
+                        {m.read_at ? (
+                          <CheckCheck size={11} className="text-sky-300" />
+                        ) : m.delivered_at ? (
+                          <CheckCheck size={11} className="opacity-60" />
+                        ) : (
+                          <Check size={11} className="opacity-60" />
+                        )}
+                      </span>
+                    )}
+                    {(myRole === "admin" || myRole === "developer" || mine) &&
+                      (confirmDeleteId === m.id ? (
+                        <button
+                          onClick={() => handleDeleteClick(m)}
+                          title="Confirm delete"
+                          className="ml-1 px-1.5 py-0.5 rounded bg-rose-500/20 border border-rose-500/40 text-rose-300 font-black text-[9px] uppercase"
+                        >
+                          Confirm?
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => handleDeleteClick(m)}
+                          title="Delete"
+                          className="ml-1 p-0.5 rounded hover:bg-white/10 text-muted hover:text-rose-300"
+                        >
+                          <Trash2 size={10} />
+                        </button>
+                      ))}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        {/* input */}
+        <div className="p-3 border-t border-white/5 bg-white/[0.02]">
+          {sendErr && (
+            <p className="mb-2 text-[11px] font-semibold text-rose-400 px-1">{sendErr}</p>
+          )}
+          {pendingMedia.length > 0 && (
+            <div className="flex flex-wrap gap-2 mb-2">
+              {pendingMedia.map((f, i) => (
+                <div
+                  key={i}
+                  className="relative flex items-center gap-2 px-3 py-1.5 rounded-lg bg-app border border-app text-xs text-app-2"
+                >
+                  {f.type.startsWith("image/") ? <ImageIcon size={14} /> : <Paperclip size={14} />}
+                  <span className="max-w-[140px] truncate">{f.name}</span>
+                  <button
+                    onClick={() => removePending(i)}
+                    className="text-muted hover:text-rose-300"
+                  >
+                    <X size={13} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+          <div className="flex items-center gap-2">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt"
+              multiple
+              className="hidden"
+              onChange={(e) => {
+                pickFiles(e.target.files);
+                e.target.value = "";
+              }}
+            />
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={sending || uploading}
+              title="Attach media"
+              className="w-11 h-11 flex-shrink-0 flex items-center justify-center rounded-xl bg-app border border-app text-muted hover:text-blue-400 hover:border-blue-500/40 disabled:opacity-40 transition-all"
+            >
+              <Paperclip size={18} />
+            </button>
+            <input
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  void send();
+                }
+              }}
+              placeholder={`${activeConv.other.full_name || "User"} ko message likho…`}
+              className="flex-1 px-4 py-2.5 rounded-xl bg-app border border-app text-sm text-white outline-none focus:border-blue-500/60 placeholder:text-muted-2"
+            />
+            <button
+              onClick={() => void send()}
+              disabled={sending || (!draft.trim() && pendingMedia.length === 0)}
+              className="w-11 h-11 flex-shrink-0 flex items-center justify-center rounded-xl bg-blue-600 text-white hover:bg-blue-500 disabled:opacity-40 transition-all"
+            >
+              {uploading ? (
+                <Loader2 size={18} className="animate-spin" />
+              ) : sending ? (
+                <Loader2 size={18} className="animate-spin" />
+              ) : (
+                <Send size={18} />
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
+    ) : null;
+
+  // ── Conversation list pane ─────────────────────────────────────────
+  const listPane = (
+    <div className={`${isMobile && chatPane ? "hidden" : "flex"} flex-col h-full min-h-0 flex-1`}>
+      <div className="px-4 pt-4 pb-2">
+        <h1 className="text-lg font-black text-app-2 flex items-center gap-2">
+          <MessageSquare size={20} className="text-blue-400" />
+          Messages
+        </h1>
+        {myRole === "admin" || myRole === "developer" ? (
+          <Link
+            href="/messages/supervise"
+            className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-cyan-400 hover:text-cyan-300 bg-cyan-400/10 hover:bg-cyan-400/20 border border-cyan-400/20 rounded-lg px-2.5 py-1.5"
+          >
+            <Eye size={13} /> Supervise chats
+          </Link>
+        ) : null}
+        <div className="relative mt-3">
+          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search user…"
+            className="w-full pl-9 pr-3 py-2 rounded-xl bg-app border border-app text-sm text-white outline-none focus:border-blue-500/60 placeholder:text-muted-2"
+          />
+        </div>
+      </div>
+      <div className="flex-1 overflow-y-auto pb-4">
+        {conversations.map((c) => {
+          const on = isOnline(c.presence);
+          const active = c.other.id === activeId;
+          return (
+            <button
+              key={c.other.id}
+              onClick={() => void openConversation(c.other.id, profiles)}
+              className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-colors ${
+                active ? "bg-blue-600/15" : "hover:bg-white/[0.04]"
+              }`}
+            >
+              <div className="relative flex-shrink-0">
+                <Avatar name={c.other.full_name} avatarUrl={c.other.avatar_url} size="md" />
+                {on && (
+                  <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-500 border-2 border-app" />
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-bold text-app-2 truncate">
+                    {c.other.full_name || "User"}
+                  </p>
+                  {c.lastMessage && (
+                    <span className="text-[9px] text-muted flex-shrink-0 ml-2">
+                      {fmtDay(c.lastMessage.created_at)}
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <p className="text-xs text-muted truncate flex-1">
+                    {c.lastMessage
+                      ? `${c.lastMessage.sender_id === meId ? "You: " : ""}${c.lastMessage.content}`
+                      : "Koi message nahi"}
+                  </p>
+                  {c.unread > 0 && (
+                    <span className="flex-shrink-0 min-w-[18px] h-[18px] px-1 rounded-full bg-blue-600 text-white text-[9px] font-black flex items-center justify-center">
+                      {c.unread}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </button>
+          );
+        })}
+
+        {/* filtered user to start new chat */}
+        {filteredProfiles.length > 0 && (
+          <>
+            <div className="px-4 pt-3 pb-1 text-[10px] font-black uppercase tracking-wider text-muted-2">
+              New chat
+            </div>
+            {filteredProfiles.map((p) => (
+              <button
+                key={p.id}
+                onClick={() => void openConversation(p.id, profiles)}
+                className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-white/[0.04] transition-colors"
+              >
+                <div className="w-10 h-10 flex-shrink-0">
+                  <Avatar name={p.full_name} avatarUrl={p.avatar_url} size="md" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-bold text-app-2 truncate">{p.full_name || "User"}</p>
+                  <p className="text-xs text-muted truncate">{p.role || "staff"} • Start chat</p>
+                </div>
+              </button>
+            ))}
+          </>
+        )}
+
+        {conversations.length === 0 && filteredProfiles.length === 0 && (
+          <div className="px-6 py-16 text-center text-muted">
+            <Inbox className="mx-auto mb-3" size={36} />
+            <p className="text-sm">Koi user nahi mila</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  // ── Responsive layout ──────────────────────────────────────────────
+  if (isMobile) {
+    // mobile: list ya chat (ek time par ek) — height upar wale measured
+    // logic se aati hai taaki composer hamesha bottom tab-bar ke upar rahe
+    // (ViewOnlyBanner visible hone par bhi, aur keyboard khulte par bhi).
+    // 0 = pehla render/ssr: flex-none se content apni height le leta hai.
+    return (
+      <div ref={shellRef} className="flex" style={shellH ? { height: `${shellH}px` } : undefined}>
+        {chatPane ? chatPane : listPane}
+        {zoomMedia && (
+          <Lightbox src={zoomMedia} alt="Attachment" onClose={() => setZoomMedia(null)} />
+        )}
+      </div>
+    );
+  }
+  // desktop: dono panes
+  return (
+    <div className="h-[calc(100vh-3.5rem)] max-w-6xl mx-auto w-full flex">
+      <div className="w-80 flex-shrink-0 border-r border-white/5">{listPane}</div>
+      {chatPane || (
+        <div className="flex-1 flex items-center justify-center text-muted text-sm">
+          <div className="text-center">
+            <MessageSquare className="mx-auto mb-3" size={40} />
+            Baat-cheet shuru karne ke liye left me kisi user ko select karo
+          </div>
+        </div>
+      )}
+      {zoomMedia && (
+        <Lightbox src={zoomMedia} alt="Attachment" onClose={() => setZoomMedia(null)} />
+      )}
+    </div>
+  );
+}
