@@ -6,6 +6,8 @@ import Link from "next/link";
 import ZoomableImage from "@/components/ZoomableImage";
 import { safeImageSrc } from "@/lib/image-utils";
 import { supabase } from "@/lib/supabase";
+import { useServerSeed } from "@/app/components/ServerSeed";
+import type { MechanicDetailSeed } from "../../mechanicDetailSeed";
 import {
   Loader2,
   ArrowLeft,
@@ -119,43 +121,49 @@ export default function MechanicDetailPage() {
   const params = useParams();
   const router = useRouter();
   const id = Number(params.id);
+  const seed = useServerSeed<MechanicDetailSeed>("mechanic-detail");
+  const initial = seed?.mechanic.id === id ? seed : undefined;
 
-  const [loading, setLoading] = useState(true);
-  const [mechanic, setMechanic] = useState<Mechanic | null>(null);
+  const [loading, setLoading] = useState(!initial);
+  const [mechanic, setMechanic] = useState<Mechanic | null>(initial?.mechanic ?? null);
   // Sprint 3 #14: WA preview (direct open nahi)
   const [waPreview, setWaPreview] = useState<{ phone: string; msg: string } | null>(null);
   const [activeTab, setActiveTab] = useState<Tab>("work");
 
   // Date filter state
-  const [fromDate, setFromDate] = useState(() => startOfMonthIST());
-  const [toDate, setToDate] = useState(() => todayIST());
+  const [fromDate, setFromDate] = useState(() => initial?.fromDate ?? startOfMonthIST());
+  const [toDate, setToDate] = useState(() => initial?.toDate ?? todayIST());
 
   // Data states
-  const [jobs, setJobs] = useState<Job[]>([]);
-  const [advances, setAdvances] = useState<Advance[]>([]);
-  const [attendance, setAttendance] = useState<Attendance[]>([]);
+  const [jobs, setJobs] = useState<Job[]>(initial?.jobs ?? []);
+  const [advances, setAdvances] = useState<Advance[]>(initial?.advances ?? []);
+  const [attendance, setAttendance] = useState<Attendance[]>(initial?.attendance ?? []);
 
   // Pagination
   const [itemsPerPage, setItemsPerPage] = useState(25);
   const [currentPage, setCurrentPage] = useState(1);
 
   // Stats
-  const [stats, setStats] = useState({
-    totalEarned: 0,
-    totalSalary: 0,
-    totalCommission: 0,
-    totalAdvance: 0,
-    periodBalance: 0,
-    overallBalance: 0,
-    jobCount: 0,
-    workingDays: 0,
-    fullDays: 0,
-    halfDays: 0,
-    absentDays: 0,
-  });
+  const [stats, setStats] = useState(
+    initial?.stats ?? {
+      totalEarned: 0,
+      totalSalary: 0,
+      totalCommission: 0,
+      totalAdvance: 0,
+      periodBalance: 0,
+      overallBalance: 0,
+      jobCount: 0,
+      workingDays: 0,
+      fullDays: 0,
+      halfDays: 0,
+      absentDays: 0,
+    }
+  );
 
   // ── SALARY RATE HISTORY ─────────────────────────────────────────
-  const [salaryHist, setSalaryHist] = useState<{ effective_date: string; salary: string }[]>([]);
+  const [salaryHist, setSalaryHist] = useState<{ effective_date: string; salary: string }[]>(
+    initial?.salaryHist ?? []
+  );
 
   // PHP: latest rate with effective_date <= day (ORDER effective_date DESC, id DESC)
   const getRate = (dateStr: string) => {
@@ -398,10 +406,17 @@ export default function MechanicDetailPage() {
     setLoading(false);
   }, [id, mechanic, fromDate, toDate]);
 
+  const seededMechanicRef = useRef(!!initial);
   useEffect(() => {
+    if (seededMechanicRef.current) return;
     fetchMechanic();
   }, [fetchMechanic]);
+  const seededDataRef = useRef(!!initial);
   useEffect(() => {
+    if (seededDataRef.current) {
+      seededDataRef.current = false;
+      return;
+    }
     if (mechanic) fetchData();
   }, [mechanic, fetchData]);
 

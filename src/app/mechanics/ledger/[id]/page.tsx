@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import { useServerSeed } from "@/app/components/ServerSeed";
+import type { MechanicMonthLedgerSeed } from "../../mechanicMonthLedgerSeed";
 import { fetchAll } from "@/lib/fetch-all";
 import {
   ArrowLeft,
@@ -67,29 +69,37 @@ export default function MechanicLedger() {
   const router = useRouter();
   const mid = params.id as string;
 
+  // Seed sirf default month par lagta hai — URL filters hone par client fetch karega.
+  const seed = useServerSeed<MechanicMonthLedgerSeed>("mechanic-month-ledger");
+  const urlFrom = searchParams.get("from");
+  const urlTo = searchParams.get("to");
+  const monthParam = searchParams.get("month");
+  const seedReady = !!seed && !urlFrom && !urlTo && !monthParam && String(seed.mechanic.id) === mid;
+
   // Date Logic
   const today = new Date();
-  const monthParam = searchParams.get("month");
   const [from, setFrom] = useState(() => {
-    const f = searchParams.get("from");
-    if (f) return f;
+    if (urlFrom) return urlFrom;
     if (monthParam && /^\d{4}-\d{2}$/.test(monthParam))
       return format(startOfMonth(new Date(monthParam + "-01")), "yyyy-MM-dd");
+    if (seedReady) return seed.from;
     return format(startOfMonth(today), "yyyy-MM-01");
   });
   const [to, setTo] = useState(() => {
-    const t = searchParams.get("to");
-    if (t) return t;
+    if (urlTo) return urlTo;
     if (monthParam && /^\d{4}-\d{2}$/.test(monthParam))
       return format(endOfMonth(new Date(monthParam + "-01")), "yyyy-MM-dd");
+    if (seedReady) return seed.to;
     return format(endOfMonth(today), "yyyy-MM-dd");
   });
 
-  const [loading, setLoading] = useState(true);
-  const [mechanic, setMechanic] = useState<Mechanic | null>(null);
-  const [ledgerData, setLedgerData] = useState<LedgerRow[]>([]);
-  const [openingBalance, setOpeningBalance] = useState(0);
-  const [totalPeriod, setTotalPeriod] = useState({ generated: 0, payable: 0, advance: 0, wage: 0 });
+  const [loading, setLoading] = useState(!seedReady);
+  const [mechanic, setMechanic] = useState<Mechanic | null>(seedReady ? seed.mechanic : null);
+  const [ledgerData, setLedgerData] = useState<LedgerRow[]>(seedReady ? seed.ledgerData : []);
+  const [openingBalance, setOpeningBalance] = useState(seedReady ? seed.openingBalance : 0);
+  const [totalPeriod, setTotalPeriod] = useState(
+    seedReady ? seed.totalPeriod : { generated: 0, payable: 0, advance: 0, wage: 0 }
+  );
 
   const fetchData = useCallback(async () => {
     if (!mid) return;
@@ -321,7 +331,12 @@ export default function MechanicLedger() {
     }
   }, [mid, from, to]);
 
+  const seededRef = useRef(seedReady);
   useEffect(() => {
+    if (seededRef.current) {
+      seededRef.current = false;
+      return;
+    }
     fetchData();
   }, [fetchData]);
 

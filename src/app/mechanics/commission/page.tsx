@@ -1,7 +1,9 @@
 "use client";
-import { useState, useEffect, useCallback, Suspense } from "react";
+import { useState, useEffect, useCallback, useRef, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import { useServerSeed } from "@/app/components/ServerSeed";
+import type { CommissionSeed } from "../commissionSeed";
 import ZoomableImage from "@/components/ZoomableImage";
 import SearchableSelect from "@/components/SearchableSelect";
 import {
@@ -105,11 +107,19 @@ function CommissionContent() {
   );
   const [month, setMonthState] = useState(searchParams.get("month") || currentMonth);
   const [mechanicId, setMechState] = useState(searchParams.get("mechanic_id") || "all");
-  const [loading, setLoading] = useState(true);
+
+  // Seed sirf default statement (current month, all staff) par lagta hai.
+  const seed = useServerSeed<CommissionSeed>("mechanic-commission");
+  const seedReady =
+    !!seed && activeTab === "statement" && month === seed.month && mechanicId === "all";
+
+  const [loading, setLoading] = useState(!seedReady);
 
   // Statement State
-  const [rows, setRows] = useState<CommRow[]>([]);
-  const [mechanics, setMechanics] = useState<{ id: number; name: string }[]>([]);
+  const [rows, setRows] = useState<CommRow[]>(seedReady ? seed.rows : []);
+  const [mechanics, setMechanics] = useState<{ id: number; name: string }[]>(
+    seedReady ? seed.mechanics : []
+  );
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage] = useState(25);
 
@@ -348,7 +358,12 @@ function CommissionContent() {
     }
   }, [month, mechanicId, activeTab]);
 
+  const seededRef = useRef(seedReady);
   useEffect(() => {
+    if (seededRef.current) {
+      seededRef.current = false;
+      return;
+    }
     fetchData();
   }, [fetchData]);
 

@@ -1,9 +1,11 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
+import { useServerSeed } from "@/app/components/ServerSeed";
+import type { MechanicLedgerSeed } from "../../mechanicLedgerSeed";
 import { downloadBlob } from "@/lib/nativePrint";
 import {
   Loader2,
@@ -49,16 +51,20 @@ export default function MechanicLedgerPage() {
   const params = useParams();
   const router = useRouter();
   const id = Number(params.id);
+  const seed = useServerSeed<MechanicLedgerSeed>("mechanic-ledger");
+  const initial = seed?.mechanic.id === id ? seed : undefined;
 
-  const [fromDate, setFromDate] = useState(() => startOfMonthIST());
-  const [toDate, setToDate] = useState(() => todayIST());
+  const [fromDate, setFromDate] = useState(() => initial?.fromDate ?? startOfMonthIST());
+  const [toDate, setToDate] = useState(() => initial?.toDate ?? todayIST());
 
-  const [loading, setLoading] = useState(true);
-  const [mechanic, setMechanic] = useState<Mechanic | null>(null);
-  const [entries, setEntries] = useState<LedgerEntry[]>([]);
-  const [openingBalance, setOpeningBalance] = useState(0);
-  const [closingBalance, setClosingBalance] = useState(0);
-  const [totals, setTotals] = useState({ earned: 0, commission: 0, advance: 0 });
+  const [loading, setLoading] = useState(!initial);
+  const [mechanic, setMechanic] = useState<Mechanic | null>(initial?.mechanic ?? null);
+  const [entries, setEntries] = useState<LedgerEntry[]>(initial?.entries ?? []);
+  const [openingBalance, setOpeningBalance] = useState(initial?.openingBalance ?? 0);
+  const [closingBalance, setClosingBalance] = useState(initial?.closingBalance ?? 0);
+  const [totals, setTotals] = useState(
+    initial?.totals ?? { earned: 0, commission: 0, advance: 0 }
+  );
 
   const fetchMechanic = useCallback(async () => {
     const { data, error } = await supabase
@@ -231,11 +237,17 @@ export default function MechanicLedgerPage() {
   }, [mechanic, fromDate, toDate]);
 
   // data fetch mount effect; setLoading sync init legit hai
+  const seededMechanicRef = useRef(!!initial);
   useEffect(() => {
+    if (seededMechanicRef.current) return;
     fetchMechanic();
   }, [fetchMechanic]);
-  // data fetch; loading init sync legit hai
+  const seededLedgerRef = useRef(!!initial);
   useEffect(() => {
+    if (seededLedgerRef.current) {
+      seededLedgerRef.current = false;
+      return;
+    }
     if (mechanic) fetchLedger();
   }, [mechanic, fetchLedger]);
 
