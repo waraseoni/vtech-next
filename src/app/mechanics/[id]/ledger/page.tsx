@@ -62,9 +62,7 @@ export default function MechanicLedgerPage() {
   const [entries, setEntries] = useState<LedgerEntry[]>(initial?.entries ?? []);
   const [openingBalance, setOpeningBalance] = useState(initial?.openingBalance ?? 0);
   const [closingBalance, setClosingBalance] = useState(initial?.closingBalance ?? 0);
-  const [totals, setTotals] = useState(
-    initial?.totals ?? { earned: 0, commission: 0, advance: 0 }
-  );
+  const [totals, setTotals] = useState(initial?.totals ?? { earned: 0, commission: 0, advance: 0 });
 
   const fetchMechanic = useCallback(async () => {
     const { data, error } = await supabase

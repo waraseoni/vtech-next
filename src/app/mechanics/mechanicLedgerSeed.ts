@@ -1,10 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import {
-  parseISTDate,
-  startOfMonthIST,
-  toISTDatePart,
-  todayIST,
-} from "@/lib/dateUtils";
+import { parseISTDate, startOfMonthIST, toISTDatePart, todayIST } from "@/lib/dateUtils";
 
 /**
  * `/mechanics/[id]/ledger` ka neutral server query. Page ka purana client
@@ -148,15 +143,7 @@ export async function fetchMechanicLedgerSeed(
   let totalAdvance = 0;
   const currentDate = parseISTDate(fromDate);
   const endDate = parseISTDate(toDate);
-  const dayNames = [
-    "Sunday",
-    "Monday",
-    "Tuesday",
-    "Wednesday",
-    "Thursday",
-    "Friday",
-    "Saturday",
-  ];
+  const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
   while (currentDate <= endDate) {
     const dateStr = toISTDatePart(currentDate);

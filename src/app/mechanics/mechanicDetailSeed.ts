@@ -149,10 +149,7 @@ export async function fetchMechanicDetailSeed(
     .order("curr_date", { ascending: false });
   const attendance = (attData || []) as MechanicDetailAttendance[];
 
-  const totalCommission = jobsWithSvc.reduce(
-    (s, j) => s + (j.mechanic_commission_amount || 0),
-    0
-  );
+  const totalCommission = jobsWithSvc.reduce((s, j) => s + (j.mechanic_commission_amount || 0), 0);
   const fullDays = attendance.filter((a) => a.status === 1).length;
   const halfDays = attendance.filter((a) => a.status === 3).length;
   let totalSalary = 0;

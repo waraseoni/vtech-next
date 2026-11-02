@@ -78,10 +78,7 @@ export async function fetchInventoryDetailSeed(
       .from("transaction_products")
       .select("qty, price, transaction_id")
       .eq("product_id", productId),
-    supabase
-      .from("direct_sale_items")
-      .select("qty, price, sale_id")
-      .eq("product_id", productId),
+    supabase.from("direct_sale_items").select("qty, price, sale_id").eq("product_id", productId),
   ]);
 
   if (prodRes.error || !prodRes.data) return null;
@@ -183,10 +180,7 @@ export async function fetchInventoryDetailSeed(
       ).data || []
     : [];
   const cMap = new Map(
-    clients.map((c) => [
-      c.id,
-      [c.firstname, c.middlename, c.lastname].filter(Boolean).join(" "),
-    ])
+    clients.map((c) => [c.id, [c.firstname, c.middlename, c.lastname].filter(Boolean).join(" ")])
   );
 
   const jobOut: InventoryDetailStockOut[] = [];
@@ -240,7 +234,13 @@ export async function fetchInventoryDetailSeed(
       stockIn: stockInData,
       poCodes,
       stockOut: allOut,
-      stats: { totalIn, totalSold, available, revenue, stockValue: stockValue(available, prod?.price) },
+      stats: {
+        totalIn,
+        totalSold,
+        available,
+        revenue,
+        stockValue: stockValue(available, prod?.price),
+      },
     },
     hierarchy: {
       zones: (zonesRes.data || []) as unknown as InventoryDetailHierarchy["zones"],

@@ -5,7 +5,9 @@ import { fetchCommissionSeed } from "../commissionSeed";
 export const dynamic = "force-dynamic";
 
 export default async function CommissionLayout({ children }: { children: React.ReactNode }) {
-  const seed = await loadStaffSeed("Mechanics commission", (supabase) => fetchCommissionSeed(supabase));
+  const seed = await loadStaffSeed("Mechanics commission", (supabase) =>
+    fetchCommissionSeed(supabase)
+  );
 
   return (
     <ServerSeedProvider seedKey="mechanic-commission" data={seed}>

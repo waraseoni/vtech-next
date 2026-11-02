@@ -58,15 +58,10 @@ export async function fetchBoxLabelsSeed(supabase: SupabaseClient): Promise<BoxL
   const [boxesRes, locRes, plRes] = await Promise.all([
     supabase
       .from("location_boxes")
-      .select(
-        "id, name, bin_id, location_bins(name, location_racks(name, location_zones(name)))"
-      )
+      .select("id, name, bin_id, location_bins(name, location_racks(name, location_zones(name)))")
       .eq("delete_flag", 0)
       .order("name"),
-    supabase
-      .from("locations")
-      .select("id, box_id, zone, rack, bin, box")
-      .eq("delete_flag", 0),
+    supabase.from("locations").select("id, box_id, zone, rack, bin, box").eq("delete_flag", 0),
     supabase.from("product_locations").select("location_id, product_id, product_list(name)"),
   ]);
 

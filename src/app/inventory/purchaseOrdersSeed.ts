@@ -6,11 +6,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
  */
 
 export type PurchaseOrdersStatus =
-  | "pending"
-  | "ordered"
-  | "partially_received"
-  | "received"
-  | "cancelled";
+  "pending" | "ordered" | "partially_received" | "received" | "cancelled";
 
 export type PurchaseOrdersItem = {
   id: number;

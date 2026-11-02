@@ -47,17 +47,19 @@ export async function fetchLocateSeed(supabase: SupabaseClient): Promise<LocateP
     .from("product_locations")
     .select("product_id, locations!inner(zone, rack, bin, box)")
     .in("product_id", ids);
-  ((plRows || []) as Array<{
-    product_id: number;
-    locations:
-      | { zone?: string | null; rack?: string | null; bin?: string | null; box?: string | null }
-      | Array<{
-          zone?: string | null;
-          rack?: string | null;
-          bin?: string | null;
-          box?: string | null;
-        }>;
-  }>).forEach((row) => {
+  (
+    (plRows || []) as Array<{
+      product_id: number;
+      locations:
+        | { zone?: string | null; rack?: string | null; bin?: string | null; box?: string | null }
+        | Array<{
+            zone?: string | null;
+            rack?: string | null;
+            bin?: string | null;
+            box?: string | null;
+          }>;
+    }>
+  ).forEach((row) => {
     const loc = Array.isArray(row.locations) ? row.locations[0] : row.locations;
     const mapped = {
       zone: loc?.zone || "",

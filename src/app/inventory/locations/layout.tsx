@@ -5,7 +5,9 @@ import { fetchLocationsSeed } from "../locationsSeed";
 export const dynamic = "force-dynamic";
 
 export default async function LocationsLayout({ children }: { children: React.ReactNode }) {
-  const seed = await loadStaffSeed("Inventory locations", (supabase) => fetchLocationsSeed(supabase));
+  const seed = await loadStaffSeed("Inventory locations", (supabase) =>
+    fetchLocationsSeed(supabase)
+  );
 
   return (
     <ServerSeedProvider seedKey="inventory-locations" data={seed}>

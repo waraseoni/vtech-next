@@ -38,13 +38,10 @@ function AdvanceLedgerContent() {
   const [to, setTo] = useState(searchParams.get("to") || todayIST());
   const [mechanicId, setMechanicId] = useState(searchParams.get("mechanic_id") || "all");
   // Seed sirf default view (current month + all staff) ke liye hai.
-  const seedReady =
-    !!seed && from === seed.from && to === seed.to && mechanicId === "all";
+  const seedReady = !!seed && from === seed.from && to === seed.to && mechanicId === "all";
   const [loading, setLoading] = useState(!seedReady);
   const [rows, setRows] = useState<AdvanceRow[]>(seedReady ? (seed?.rows ?? []) : []);
-  const [mechanics, setMechanics] = useState<Mechanic[]>(
-    seedReady ? (seed?.mechanics ?? []) : []
-  );
+  const [mechanics, setMechanics] = useState<Mechanic[]>(seedReady ? (seed?.mechanics ?? []) : []);
   const [showModal, setShowModal] = useState(false);
   const [editRow, setEditRow] = useState<AdvanceRow | null>(null);
   const [formData, setFormData] = useState({

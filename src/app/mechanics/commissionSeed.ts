@@ -121,7 +121,11 @@ export async function fetchCommissionSeed(
     });
     Object.values(histByMech).forEach((arr) =>
       arr.sort((a, b) =>
-        a.effective_date < b.effective_date ? 1 : a.effective_date > b.effective_date ? -1 : b.id - a.id
+        a.effective_date < b.effective_date
+          ? 1
+          : a.effective_date > b.effective_date
+            ? -1
+            : b.id - a.id
       )
     );
   }

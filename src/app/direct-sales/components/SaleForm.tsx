@@ -133,9 +133,7 @@ export default function SaleForm({ mode, saleId, initial }: SaleFormProps) {
     initial?.mechanics ?? []
   );
   const [products, setProducts] = useState<Product[]>(initial?.products ?? []);
-  const [selectedClient, setSelectedClient] = useState<number | "">(
-    initial?.sale?.client_id ?? ""
-  );
+  const [selectedClient, setSelectedClient] = useState<number | "">(initial?.sale?.client_id ?? "");
   const [selectedMechanic, setSelectedMechanic] = useState<number | "">(
     initial?.sale?.mechanic_id ?? ""
   );

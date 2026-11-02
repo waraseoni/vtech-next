@@ -67,7 +67,11 @@ export async function fetchSaleFormSeed(
       .select("id, firstname, middlename, lastname")
       .eq("delete_flag", 0)
       .order("firstname"),
-    supabase.from("mechanic_list").select("id, firstname, lastname").eq("status", 1).order("firstname"),
+    supabase
+      .from("mechanic_list")
+      .select("id, firstname, lastname")
+      .eq("status", 1)
+      .order("firstname"),
     supabase.from("product_list").select("id, name, price").eq("delete_flag", 0).eq("status", 1),
   ]);
 

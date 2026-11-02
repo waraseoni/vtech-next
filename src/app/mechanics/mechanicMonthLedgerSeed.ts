@@ -135,7 +135,9 @@ export async function fetchMechanicMonthLedgerSeed(
     fetchAll<MechanicMonthLedgerJob>(
       supabase
         .from("transaction_list")
-        .select("id, job_id, item, mechanic_commission_amount, status, date_created, date_completed")
+        .select(
+          "id, job_id, item, mechanic_commission_amount, status, date_created, date_completed"
+        )
         .eq("mechanic_id", mid)
         .gte("date_created", from + " 00:00:00")
         .lte("date_created", to + " 23:59:59")
@@ -143,7 +145,9 @@ export async function fetchMechanicMonthLedgerSeed(
     fetchAll<MechanicMonthLedgerJob>(
       supabase
         .from("transaction_list")
-        .select("id, job_id, item, mechanic_commission_amount, status, date_created, date_completed")
+        .select(
+          "id, job_id, item, mechanic_commission_amount, status, date_created, date_completed"
+        )
         .eq("mechanic_id", mid)
         .eq("status", 5)
         .gte("date_completed", from + " 00:00:00")
