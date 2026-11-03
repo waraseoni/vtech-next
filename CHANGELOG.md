@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.76.1](https://github.com/waraseoni/vtech-next/compare/v1.76.0...v1.76.1) (2026-11-03)
+
+### Performance Improvements
+
+* **boot:** lazy-load Sentry, defer charts, split report payload ([a154651](https://github.com/waraseoni/vtech-next/commit/a154651e3e577538e801c490d95db92a1aba5d09))
+
 ## [1.76.0](https://github.com/waraseoni/vtech-next/compare/v1.75.1...v1.76.0) (2026-11-02)
 
 ### Features
