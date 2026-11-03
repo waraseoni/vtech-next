@@ -43,6 +43,21 @@ Har kaam ke liye: plan + todo banate hain, jo complete ho jata hai use mark kart
       mount par client-side (browser origin). Legacy `/jobs/old` + `/jobs/[id]/old`
       owner-approval tak deferred. Gates: tsc/eslint/589 tests/prettier/build + 5-route smoke
       green. Zero DB writes. Plan: `docs/plans/clients_server_first_plan_nov02_2026.md` §J-P3.
+- [x] Speed findings implementation (WS-1..WS-4) — WS-1: Sentry ab lazy (`src/lib/sentry-lazy.ts`,
+      `ensureSentry()`), static SDK import `sentry.client.config.ts` + `error.tsx`/`global-error.tsx`
+      se hataya, idle init (`requestIdleCallback`, 1.5s fallback). WS-2: `DeferredMount` (IntersectionObserver
+      `200px` + 2.5s fallback, reserved min-height) — dashboard + clients charts ab in-view par mount,
+      Recharts 311KB chunk first paint se bahar; 3 tests. WS-3: monthly-profit first paint
+      411.4KB → 2.7KB (raw rows modal open par on-demand, year-cached, stale-request guard); balancesheet
+      37.0KB monthly / 111.6KB yearly — 200KB budget ke andar, tab split nahi chahiye. WS-4:
+      boot-gate stage 2/3 `NEXT_PUBLIC_SSR_SHELL` flag ke peeche (default off = current behaviour;
+      on karne par root layout `cookies()` se saare routes dynamic ho jate hain — route-group refactor
+      tak off rakhein). Gates: tsc/eslint/611 tests/prettier/schema-drift/3 production builds +
+      unauth smoke (307 → `/login`, health 200). Zero DB writes (sirf read-only service-role SELECTs).
+      Baseline: `docs/plans/speed_baseline_nov2026.md`; plan + §9 results:
+      `docs/plans/speed_findings_implementation_plan_nov03_2026.md`.
+      **USER ACTION:** authenticated admin par Lighthouse/CDP numbers, aur WS-4 enable karne se pehle
+      verification matrix (expired/revoked/license/idle/stale SW/offline) — dono owner-gated.
 
 ## Recent work log (2026-10)
 

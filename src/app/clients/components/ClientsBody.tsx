@@ -5,6 +5,7 @@ import { todayIST } from "@/lib/dateUtils";
 import { downloadBlob } from "@/lib/nativePrint";
 import Link from "next/link";
 import ZoomableImage from "@/components/ZoomableImage";
+import DeferredMount from "@/components/DeferredMount";
 import {
   Users,
   UserPlus,
@@ -526,7 +527,9 @@ export default function ClientsBody({
         </div>
 
         {/* ━━━━━━ BAR CHART ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
-        <ClientChart clients={clients} />
+        <DeferredMount minHeightClassName="min-h-[264px]">
+          <ClientChart clients={clients} />
+        </DeferredMount>
 
         {/* ━━━━━━ FILTER BAR ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
         <div className="bg-panel border border-app rounded-2xl p-4 space-y-3">

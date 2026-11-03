@@ -1,10 +1,6 @@
 import { redirect } from "next/navigation";
 import { getServerSupabase, requireStaffWithRole } from "@/lib/api-auth";
-import {
-  fetchMonthlyProfitData,
-  type MonthlyData,
-  type MonthlyRawData,
-} from "@/lib/monthly-profit-data";
+import { fetchMonthlyProfitData, type MonthlyData } from "@/lib/monthly-profit-data";
 import { logger } from "@/lib/logger";
 import { todayIST } from "@/lib/dateUtils";
 import MonthlyProfitBody from "./MonthlyProfitBody";
@@ -33,16 +29,14 @@ export default async function MonthlyProfitPage({
   const year = parsed >= 2000 && parsed <= 2100 ? parsed : currentYear;
 
   let data: MonthlyData[] = [];
-  let rawData: MonthlyRawData = {};
   try {
     const supabase = await getServerSupabase();
     const payload = await fetchMonthlyProfitData(supabase, year);
     data = payload.data;
-    rawData = payload.rawData;
   } catch (err) {
     // Seed fail ho to body mount par client refetch kar leti hai.
     logger.error("Monthly profit page data error:", err);
   }
 
-  return <MonthlyProfitBody initialYear={year} initialData={data} initialRawData={rawData} />;
+  return <MonthlyProfitBody initialYear={year} initialData={data} />;
 }

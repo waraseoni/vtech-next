@@ -2,6 +2,8 @@ import "./globals.css";
 import Script from "next/script";
 import RootClient from "./RootClient";
 import Providers from "./Providers";
+import { isSsrShellEnabled, type SsrShellAuth } from "@/lib/ssr-shell";
+import { readSsrShellAuth } from "@/lib/server-ssr-auth";
 import type { Metadata, Viewport } from "next";
 
 const SITE_NAME = process.env.NEXT_PUBLIC_SITE_NAME || "V-Technologies";
@@ -96,7 +98,11 @@ const THEME_BOOT = `(function(){
   document.documentElement.setAttribute("data-theme",t);
 })();`;
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  // WS-4: flag off (default) par koi server auth cost/dynamic-render nahi —
+  // branch hi skip ho jati hai aur shell pehle jaisa client-gated rehta hai.
+  const ssrShellAuth: SsrShellAuth | null = isSsrShellEnabled() ? await readSsrShellAuth() : null;
+
   return (
     // data-theme="dark" = server-rendered default (script bhi same rakhta hai);
     // suppressHydrationWarning: saved-light users ke case me script attribute
@@ -126,7 +132,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           dangerouslySetInnerHTML={{ __html: BOOT_GUARD }}
         />
         <Providers>
-          <RootClient>{children}</RootClient>
+          <RootClient ssrShellAuth={ssrShellAuth}>{children}</RootClient>
         </Providers>
       </body>
     </html>

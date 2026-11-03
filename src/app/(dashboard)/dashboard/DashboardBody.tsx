@@ -6,6 +6,7 @@ import { supabase, getCachedUser } from "@/lib/supabase";
 import Link from "next/link";
 import Image from "next/image";
 import dynamic from "next/dynamic";
+import DeferredMount from "@/components/DeferredMount";
 
 const DashboardCharts = dynamic(() => import("./DashboardCharts"), {
   ssr: false,
@@ -730,12 +731,14 @@ export default function DashboardBody({ initial }: { initial: DashboardInitialDa
       )}
 
       {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━ CHARTS */}
-      <DashboardCharts
-        revenueData={revenueData}
-        statusData={statusData}
-        totalJobs={totalJobs}
-        isDark={isDark}
-      />
+      <DeferredMount minHeightClassName="min-h-[660px] lg:min-h-[350px]">
+        <DashboardCharts
+          revenueData={revenueData}
+          statusData={statusData}
+          totalJobs={totalJobs}
+          isDark={isDark}
+        />
+      </DeferredMount>
 
       {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━ FINANCIAL (admin only) */}
       {isAdmin && (

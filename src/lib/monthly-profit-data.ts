@@ -5,6 +5,11 @@
  *
  * Bucketing single-pass hai (O(N), loop me koi Intl.DateTimeFormat nahi) —
  * pehle 12 months × N rows filter karne se TBT regress hua tha (GATE-C).
+ *
+ * PAYLOAD SPLIT (3 Nov 2026): RSC first paint sirf 12 monthly buckets bhejta
+ * hai. Raw rows (transactions/attendance/etc.) modal drill-down ke liye
+ * `fetchMonthlyProfitRawData` se on-demand aate hain — pehle poora saal ka raw
+ * data har page load ke HTML payload me chala jata tha.
  */
 
 import { eachMonthOfInterval } from "date-fns/eachMonthOfInterval";
@@ -35,8 +40,29 @@ export type MonthlyRawData = Record<string, DbRow[]>;
 
 export type MonthlyProfitPayload = {
   data: MonthlyData[];
-  rawData: MonthlyRawData;
 };
+
+export type MonthlyProfitRows = {
+  transactions: DbRow[];
+  directSales: DbRow[];
+  clientPayments: DbRow[];
+  expenses: DbRow[];
+  loanPayments: DbRow[];
+  attendance: DbRow[];
+  mechanics: DbRow[];
+  clients: DbRow[];
+  lenders: DbRow[];
+};
+
+export type MonthlyDetailType =
+  | "repair_jobs"
+  | "commission"
+  | "walkin_sales"
+  | "client_sales"
+  | "expenses"
+  | "salaries"
+  | "emi"
+  | "discounts";
 
 const pageAllRows = (q: any) => pageAll<DbRow>(q);
 
@@ -47,10 +73,11 @@ const IST_MONTH_FMT = new Intl.DateTimeFormat("en-CA", {
 });
 const istMonth = (iso: string) => IST_MONTH_FMT.format(new Date(iso));
 
-export async function fetchMonthlyProfitData(
+/** Saal ka poora raw data ek saath fetch karta hai (server + on-demand client). */
+export async function fetchMonthlyProfitRows(
   supabase: SupabaseLike,
   year: number
-): Promise<MonthlyProfitPayload> {
+): Promise<MonthlyProfitRows> {
   const start = `${year}-01-01`;
   const end = `${year}-12-31`;
   const endTz = `${year}-12-31T23:59:59+05:30`;
@@ -116,6 +143,21 @@ export async function fetchMonthlyProfitData(
     pageAllRows(supabase.from("lender_list").select("id, fullname")),
   ]);
 
+  return {
+    transactions: transactions || [],
+    directSales: directSales || [],
+    clientPayments: clientPayments || [],
+    expenses: expenses || [],
+    loanPayments: loanPayments || [],
+    attendance: attendance || [],
+    mechanics: mechanics || [],
+    clients: clients || [],
+    lenders: lenders || [],
+  };
+}
+
+/** Pure aggregation — rows in, 12 monthly buckets out. */
+export function computeMonthlyProfit(rows: MonthlyProfitRows, year: number): MonthlyData[] {
   const months = eachMonthOfInterval({
     start: new Date(year, 0, 1),
     end: new Date(year, 11, 31),
@@ -137,26 +179,26 @@ export async function fetchMonthlyProfitData(
     emis: [],
     atts: [],
   }));
-  const bucketByDate = (rows: DbRow[] | null, dateField: string, key: keyof Buckets) => {
-    for (const row of rows || []) {
+  const bucketByDate = (list: DbRow[], dateField: string, key: keyof Buckets) => {
+    for (const row of list) {
       const m = Number(String(row[dateField]).slice(5, 7)) - 1;
       if (m >= 0 && m < 12) buckets[m][key].push(row);
     }
   };
   // transactions: IST month (date_completed); baaki: raw ISO prefix
   // (startsWith semantics preserved — same-year data query se guaranteed)
-  for (const t of transactions || []) {
+  for (const t of rows.transactions) {
     const m = Number(istMonth(t.date_completed).slice(5, 7)) - 1;
     if (m >= 0 && m < 12) buckets[m].jobs.push(t);
   }
-  bucketByDate(directSales, "date_created", "sales");
-  bucketByDate(clientPayments, "created_at", "pays");
-  bucketByDate(expenses, "date_created", "exps");
-  bucketByDate(loanPayments, "payment_date", "emis");
-  bucketByDate(attendance, "curr_date", "atts");
-  const mechanicsById = new Map((mechanics || []).map((me) => [me.id, me]));
+  bucketByDate(rows.directSales, "date_created", "sales");
+  bucketByDate(rows.clientPayments, "created_at", "pays");
+  bucketByDate(rows.expenses, "date_created", "exps");
+  bucketByDate(rows.loanPayments, "payment_date", "emis");
+  bucketByDate(rows.attendance, "curr_date", "atts");
+  const mechanicsById = new Map(rows.mechanics.map((me) => [me.id, me]));
 
-  const data: MonthlyData[] = months.map((mDate, idx) => {
+  return months.map((mDate, idx) => {
     const mNum = idx + 1;
     const mName = format(mDate, "MMMM");
     const b = buckets[idx];
@@ -208,19 +250,133 @@ export async function fetchMonthlyProfitData(
       margin,
     };
   });
+}
 
-  return {
-    data,
-    rawData: {
-      transactions,
-      directSales,
-      clientPayments,
-      expenses,
-      loanPayments,
-      attendance,
-      mechanics,
-      clients,
-      lenders,
-    },
+/** Server first paint / year change — sirf monthly buckets (raw rows nahi). */
+export async function fetchMonthlyProfitData(
+  supabase: SupabaseLike,
+  year: number
+): Promise<MonthlyProfitPayload> {
+  const rows = await fetchMonthlyProfitRows(supabase, year);
+  return { data: computeMonthlyProfit(rows, year) };
+}
+
+/** Modal drill-down ke liye on-demand raw rows. */
+export async function fetchMonthlyProfitRawData(
+  supabase: SupabaseLike,
+  year: number
+): Promise<MonthlyRawData> {
+  return { ...(await fetchMonthlyProfitRows(supabase, year)) };
+}
+
+const DETAIL_TITLES: Record<MonthlyDetailType, string> = {
+  repair_jobs: "Repair Jobs (Delivered)",
+  commission: "Mechanic Commission",
+  walkin_sales: "Walk-in Direct Sales",
+  client_sales: "Client Direct Sales",
+  expenses: "Shop Expenses",
+  salaries: "Staff Salaries",
+  emi: "Loan EMI Payments",
+  discounts: "Customer Discounts",
+};
+
+export const monthlyDetailTitle = (type: MonthlyDetailType, monthName: string, year: number) =>
+  `${DETAIL_TITLES[type]} - ${monthName} ${year}`;
+
+/** Pure modal-row builder — pehle MonthlyProfitBody me inline tha. */
+export function buildMonthlyDetailRows(
+  rawData: MonthlyRawData,
+  type: MonthlyDetailType,
+  year: number,
+  monthNum: number
+): DbRow[] {
+  const prefix = `${year}-${monthNum.toString().padStart(2, "0")}`;
+
+  // O(1) lookups — per-row .find O(R×C) tha (click pe thousands rows freeze)
+  const clientsById = new Map((rawData.clients || []).map((c) => [c.id, c]));
+  const mechanicsById = new Map((rawData.mechanics || []).map((m) => [m.id, m]));
+  const lendersById = new Map((rawData.lenders || []).map((l) => [l.id, l]));
+  const clientNameOf = (id: unknown, fallback: string) => {
+    const c = clientsById.get(id as number);
+    return c
+      ? `${c.firstname} ${c.middlename || ""} ${c.lastname || ""}`.replace(/\s+/g, " ").trim()
+      : fallback;
   };
+
+  switch (type) {
+    case "repair_jobs":
+      return (rawData.transactions || [])
+        .filter((t) => istMonth(t.date_completed) === prefix)
+        .map((t) => ({
+          ...t,
+          client_name: clientNameOf(t.client_name, "Walk-in"),
+        }));
+    case "commission":
+      return (rawData.transactions || [])
+        .filter(
+          (t) =>
+            istMonth(t.date_completed) === prefix && parseFloat(t.mechanic_commission_amount) > 0
+        )
+        .map((t) => ({
+          ...t,
+          client_name: clientNameOf(t.client_name, "Walk-in"),
+        }));
+    case "walkin_sales":
+      return (rawData.directSales || []).filter(
+        (d) =>
+          String(d.date_created).startsWith(prefix) &&
+          (!d.client_id || d.client_id === 0 || d.client_id === "")
+      );
+    case "client_sales":
+      return (rawData.directSales || [])
+        .filter(
+          (d) =>
+            String(d.date_created).startsWith(prefix) &&
+            d.client_id &&
+            d.client_id !== 0 &&
+            d.client_id !== ""
+        )
+        .map((d) => ({
+          ...d,
+          client_name: clientNameOf(d.client_id, "Unknown Client"),
+        }));
+    case "expenses":
+      return (rawData.expenses || []).filter((e) => String(e.date_created).startsWith(prefix));
+    case "salaries": {
+      const mAtt = (rawData.attendance || []).filter((a) => String(a.curr_date).startsWith(prefix));
+      const mechMap: Record<number, { name: string; full: number; half: number; rate: number }> =
+        {};
+      mAtt.forEach((att) => {
+        const mech = mechanicsById.get(att.mechanic_id);
+        if (!mech) return;
+        if (!mechMap[mech.id]) {
+          mechMap[mech.id] = {
+            name:
+              [mech.firstname, mech.middlename, mech.lastname].filter(Boolean).join(" ") ||
+              `Mechanic #${mech.id}`,
+            full: 0,
+            half: 0,
+            rate: mech.daily_salary || 0,
+          };
+        }
+        if (att.status === 1) mechMap[mech.id].full += 1;
+        else if (att.status === 3) mechMap[mech.id].half += 1;
+      });
+      return Object.values(mechMap).filter((m) => m.full > 0 || m.half > 0);
+    }
+    case "emi":
+      return (rawData.loanPayments || [])
+        .filter((lp) => String(lp.payment_date).startsWith(prefix))
+        .map((lp) => ({
+          ...lp,
+          lender_name: lendersById.get(lp.lender_id)?.fullname || "Unknown Lender",
+        }));
+    case "discounts":
+      return (rawData.clientPayments || [])
+        .filter((cp) => String(cp.created_at).startsWith(prefix) && parseFloat(cp.discount) > 0)
+        .map((cp) => ({
+          ...cp,
+          client_name: clientNameOf(cp.client_id, "Unknown Client"),
+        }));
+  }
 }

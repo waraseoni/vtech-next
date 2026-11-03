@@ -4,11 +4,23 @@ import { useState, useEffect, useMemo, useRef, type ReactNode } from "react";
 import { supabase } from "@/lib/supabase";
 import {
   fetchMonthlyProfitData,
+  fetchMonthlyProfitRawData,
+  buildMonthlyDetailRows,
+  monthlyDetailTitle,
   type DbRow,
   type MonthlyData,
   type MonthlyRawData,
+  type MonthlyDetailType,
 } from "@/lib/monthly-profit-data";
-import { BarChart3, TrendingUp, DollarSign, Package, Receipt, Printer } from "lucide-react";
+import {
+  BarChart3,
+  TrendingUp,
+  DollarSign,
+  Package,
+  Receipt,
+  Printer,
+  Loader2,
+} from "lucide-react";
 import { X } from "lucide-react";
 import dynamic from "next/dynamic";
 
@@ -24,32 +36,23 @@ const MonthlyProfitChart = dynamic(() => import("./MonthlyProfitChart"), {
 const inr = (n: number) =>
   "₹" + (n || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-const IST_MONTH_FMT = new Intl.DateTimeFormat("en-CA", {
-  timeZone: "Asia/Kolkata",
-  year: "numeric",
-  month: "2-digit",
-});
-const istMonth = (iso: string) => IST_MONTH_FMT.format(new Date(iso));
-
 type MonthlyProfitBodyProps = {
   initialYear: number;
   initialData: MonthlyData[];
-  initialRawData: MonthlyRawData;
 };
 
-export default function MonthlyProfitBody({
-  initialYear,
-  initialData,
-  initialRawData,
-}: MonthlyProfitBodyProps) {
+export default function MonthlyProfitBody({ initialYear, initialData }: MonthlyProfitBodyProps) {
   const [year, setYear] = useState(initialYear);
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<MonthlyData[]>(initialData);
-  const [rawData, setRawData] = useState<MonthlyRawData>(initialRawData);
   const fetchedYearRef = useRef(initialData.length > 0 ? initialYear : 0);
+  // Raw rows sirf drill-down par — server payload me nahi aate.
+  const rawRef = useRef<{ year: number; data: MonthlyRawData } | null>(null);
+  const modalReqRef = useRef(0);
+  const [modalLoading, setModalLoading] = useState(false);
   const [modalConfig, setModalConfig] = useState<{
     title: string;
-    type: string;
+    type: MonthlyDetailType;
     data: DbRow[];
   } | null>(null);
 
@@ -57,12 +60,16 @@ export default function MonthlyProfitBody({
     if (year === fetchedYearRef.current) return;
     fetchedYearRef.current = year;
     let cancelled = false;
+    // Year badla — purane raw rows/modal ab valid nahi.
+    rawRef.current = null;
+    modalReqRef.current += 1;
+    setModalConfig(null);
+    setModalLoading(false);
     setLoading(true);
     fetchMonthlyProfitData(supabase, year)
       .then((payload) => {
         if (cancelled) return;
         setData(payload.data);
-        setRawData(payload.rawData);
       })
       .catch((err) => console.error(err))
       .finally(() => {
@@ -100,109 +107,38 @@ export default function MonthlyProfitBody({
     );
   }, [data]);
 
-  const openModal = (type: string, monthNum: number, monthName: string) => {
-    const mStr = monthNum.toString().padStart(2, "0");
-    const prefix = `${year}-${mStr}`;
-    let detailData: DbRow[] = [];
-    let title = "";
+  const closeModal = () => {
+    modalReqRef.current += 1;
+    setModalConfig(null);
+    setModalLoading(false);
+  };
 
-    // O(1) lookups — per-row .find O(R×C) tha (click pe thousands rows freeze)
-    const clientsById = new Map((rawData.clients || []).map((c) => [c.id, c]));
-    const mechanicsById = new Map((rawData.mechanics || []).map((m) => [m.id, m]));
-    const lendersById = new Map((rawData.lenders || []).map((l) => [l.id, l]));
-    const clientNameOf = (id: unknown, fallback: string) => {
-      const c = clientsById.get(id as number);
-      return c
-        ? `${c.firstname} ${c.middlename || ""} ${c.lastname || ""}`.replace(/\s+/g, " ").trim()
-        : fallback;
-    };
+  const openModal = async (type: MonthlyDetailType, monthNum: number, monthName: string) => {
+    const req = ++modalReqRef.current;
+    const title = monthlyDetailTitle(type, monthName, year);
+    setModalConfig({ title, type, data: [] });
 
-    if (type === "repair_jobs") {
-      title = `Repair Jobs (Delivered) - ${monthName} ${year}`;
-      detailData = (rawData.transactions || [])
-        .filter((t) => istMonth(t.date_completed) === prefix)
-        .map((t) => ({
-          ...t,
-          client_name: clientNameOf(t.client_name, "Walk-in"),
-        }));
-    } else if (type === "commission") {
-      title = `Mechanic Commission - ${monthName} ${year}`;
-      detailData = (rawData.transactions || [])
-        .filter(
-          (t) =>
-            istMonth(t.date_completed) === prefix && parseFloat(t.mechanic_commission_amount) > 0
-        )
-        .map((t) => ({
-          ...t,
-          client_name: clientNameOf(t.client_name, "Walk-in"),
-        }));
-    } else if (type === "walkin_sales") {
-      title = `Walk-in Direct Sales - ${monthName} ${year}`;
-      detailData = (rawData.directSales || []).filter(
-        (d) =>
-          String(d.date_created).startsWith(prefix) &&
-          (!d.client_id || d.client_id === 0 || d.client_id === "")
-      );
-    } else if (type === "client_sales") {
-      title = `Client Direct Sales - ${monthName} ${year}`;
-      detailData = (rawData.directSales || [])
-        .filter(
-          (d) =>
-            String(d.date_created).startsWith(prefix) &&
-            d.client_id &&
-            d.client_id !== 0 &&
-            d.client_id !== ""
-        )
-        .map((d) => ({
-          ...d,
-          client_name: clientNameOf(d.client_id, "Unknown Client"),
-        }));
-    } else if (type === "expenses") {
-      title = `Shop Expenses - ${monthName} ${year}`;
-      detailData = (rawData.expenses || []).filter((e) =>
-        String(e.date_created).startsWith(prefix)
-      );
-    } else if (type === "salaries") {
-      title = `Staff Salaries - ${monthName} ${year}`;
-      const mAtt = (rawData.attendance || []).filter((a) => String(a.curr_date).startsWith(prefix));
-      const mechMap: Record<number, { name: string; full: number; half: number; rate: number }> =
-        {};
-      mAtt.forEach((att) => {
-        const mech = mechanicsById.get(att.mechanic_id);
-        if (!mech) return;
-        if (!mechMap[mech.id]) {
-          mechMap[mech.id] = {
-            name:
-              [mech.firstname, mech.middlename, mech.lastname].filter(Boolean).join(" ") ||
-              `Mechanic #${mech.id}`,
-            full: 0,
-            half: 0,
-            rate: mech.daily_salary || 0,
-          };
-        }
-        if (att.status === 1) mechMap[mech.id].full += 1;
-        else if (att.status === 3) mechMap[mech.id].half += 1;
+    if (rawRef.current?.year === year) {
+      setModalConfig({
+        title,
+        type,
+        data: buildMonthlyDetailRows(rawRef.current.data, type, year, monthNum),
       });
-      detailData = Object.values(mechMap).filter((m) => m.full > 0 || m.half > 0);
-    } else if (type === "emi") {
-      title = `Loan EMI Payments - ${monthName} ${year}`;
-      detailData = (rawData.loanPayments || [])
-        .filter((lp) => String(lp.payment_date).startsWith(prefix))
-        .map((lp) => ({
-          ...lp,
-          lender_name: lendersById.get(lp.lender_id)?.fullname || "Unknown Lender",
-        }));
-    } else if (type === "discounts") {
-      title = `Customer Discounts - ${monthName} ${year}`;
-      detailData = (rawData.clientPayments || [])
-        .filter((cp) => String(cp.created_at).startsWith(prefix) && parseFloat(cp.discount) > 0)
-        .map((cp) => ({
-          ...cp,
-          client_name: clientNameOf(cp.client_id, "Unknown Client"),
-        }));
+      return;
     }
 
-    setModalConfig({ title, type, data: detailData });
+    // Raw rows on-demand — server first paint me nahi aate.
+    setModalLoading(true);
+    try {
+      const raw = await fetchMonthlyProfitRawData(supabase, year);
+      if (req !== modalReqRef.current) return;
+      rawRef.current = { year, data: raw };
+      setModalLoading(false);
+      setModalConfig({ title, type, data: buildMonthlyDetailRows(raw, type, year, monthNum) });
+    } catch (err) {
+      console.error(err);
+      if (req === modalReqRef.current) closeModal();
+    }
   };
 
   const cellCls =
@@ -452,7 +388,7 @@ export default function MonthlyProfitBody({
             <div className="flex items-center justify-between p-6 border-b border-app">
               <h2 className="text-xl font-black text-white">{modalConfig.title}</h2>
               <button
-                onClick={() => setModalConfig(null)}
+                onClick={closeModal}
                 className="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-800 text-muted hover:text-white hover:bg-rose-500 transition-colors"
               >
                 <X size={18} />
@@ -460,7 +396,11 @@ export default function MonthlyProfitBody({
             </div>
 
             <div className="p-6 overflow-y-auto">
-              {modalConfig.data.length === 0 ? (
+              {modalLoading ? (
+                <div className="flex items-center justify-center py-16">
+                  <Loader2 className="animate-spin text-indigo-400" size={26} />
+                </div>
+              ) : modalConfig.data.length === 0 ? (
                 <div className="text-center py-10 text-muted font-bold">
                   No data found for this period.
                 </div>

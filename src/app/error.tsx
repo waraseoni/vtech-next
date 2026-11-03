@@ -1,7 +1,7 @@
 "use client";
 
-import * as Sentry from "@sentry/nextjs";
 import { useEffect } from "react";
+import { ensureSentry } from "@/lib/sentry-lazy";
 
 export default function RootError({
   error,
@@ -11,8 +11,12 @@ export default function RootError({
   reset: () => void;
 }) {
   useEffect(() => {
-    // Sentry DSN configured hone par errors remote par track ho jate hain.
-    Sentry.captureException(error);
+    // Sentry lazy: ye boundary HAR route ke initial chunk me hoti hai, aur
+    // static import poore Sentry SDK ko always-loaded shared chunk me khinch
+    // leta tha. Error par hi load/init ho — report phir bhi jata hai.
+    ensureSentry()
+      .then((Sentry) => Sentry.captureException(error))
+      .catch(() => {});
   }, [error]);
 
   return (

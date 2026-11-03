@@ -7,6 +7,7 @@ import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
 import { supabase } from "@/lib/supabase";
 import { APP_VERSION_LABEL, APP_COMMIT } from "@/lib/app-version";
+import { isSsrShellRoute, type SsrShellAuth } from "@/lib/ssr-shell";
 import {
   LayoutDashboard,
   Users,
@@ -1084,7 +1085,14 @@ function SidebarNav({
 // ════════════════════════════════════════════════════════════════════════════
 // ROOT LAYOUT
 // ════════════════════════════════════════════════════════════════════════════
-export default function RootClient({ children }: { children: React.ReactNode }) {
+export default function RootClient({
+  children,
+  ssrShellAuth = null,
+}: {
+  children: React.ReactNode;
+  /** WS-4: server-resolved auth — sirf flag + route allowlist match par use. */
+  ssrShellAuth?: SsrShellAuth | null;
+}) {
   const pathname = usePathname();
   const router = useRouter();
   // AI drawer: iframe har app page par mount rehta tha → har load par poora /ai
@@ -1106,6 +1114,8 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
 
   // G1 gate-split: saara auth/boot state + effects ab useAppBoot() hook me hai.
   // Ye component sirf shell render karta hai — behavior bilkul unchanged.
+  // WS-4: flag + route allowlist match par server auth first paint me use hota
+  // hai (splash skip); warna purana client-gated boot.
   const {
     isMobile,
     authReady,
@@ -1133,7 +1143,7 @@ export default function RootClient({ children }: { children: React.ReactNode }) 
     idleWarnMin,
     refreshLicense,
     handleLogout,
-  } = useAppBoot();
+  } = useAppBoot({ ssrAuth: isSsrShellRoute(pathname) ? ssrShellAuth : null });
 
   // Mobile drawer heavy nav lazy mount trigger
   useEffect(() => {

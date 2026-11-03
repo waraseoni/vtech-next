@@ -16,6 +16,7 @@ import {
   LAST_ACTIVE_KEY,
 } from "@/lib/session-policy";
 import type { LicenseStatus } from "@/lib/license";
+import type { SsrShellAuth } from "@/lib/ssr-shell";
 import { logger } from "@/lib/logger";
 import { initPresence, cleanupPresence } from "@/lib/presence";
 
@@ -35,8 +36,14 @@ const LICENSE_REFRESH_MIN_MS = 60_000;
  * semantics (`!authReady` = boot ho raha hai) — behavior unchanged, sirf
  * naam/meaning alag. Boot-guard 12s auto-reload bhi reverse ho gaya: jab tak
  * auth ready nahi, watchdog active.
+ *
+ * WS-4 (NEXT_PUBLIC_SSR_SHELL, default off): `ssrAuth` mile to profile/
+ * authReady server render se hi initialized hote hain — shell + content first
+ * paint me aate hain (splash nahi), aur mount effect wahi validation/
+ * redirect/idle/license checks post-hydration chalata hai.
  */
-export function useAppBoot() {
+export function useAppBoot(options: { ssrAuth?: SsrShellAuth | null } = {}) {
+  const ssrAuth = options.ssrAuth ?? null;
   const pathname = usePathname();
   const router = useRouter();
   // THEME — alag hook (G1 split): useAppTheme.ts. Boot/auth se independent.
@@ -44,13 +51,13 @@ export function useAppBoot() {
 
   // BUG FIX 1: null prevents SSR↔client hydration mismatch.
   const [isMobile, setIsMobile] = useState<boolean | null>(null);
-  const [authReady, setAuthReady] = useState(false);
+  const [authReady, setAuthReady] = useState(!!ssrAuth);
   const [profile, setProfile] = useState<{
     full_name: string;
     role: string;
     avatar_url?: string | null;
-  } | null>(null);
-  const [userEmail, setUserEmail] = useState<string | null>(null);
+  } | null>(ssrAuth?.profile ?? null);
+  const [userEmail, setUserEmail] = useState<string | null>(ssrAuth?.email ?? null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [aiDrawerOpen, setAiDrawerOpen] = useState(false);

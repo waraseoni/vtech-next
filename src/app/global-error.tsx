@@ -1,7 +1,7 @@
 "use client";
 
-import * as Sentry from "@sentry/nextjs";
 import { useEffect } from "react";
+import { ensureSentry } from "@/lib/sentry-lazy";
 
 // Root layout ke errors global-error.tsx mein catch hote hain (error.tsx root
 // layout ke andar ke errors hi catch karti hai, apne se upar wale nahi).
@@ -15,7 +15,10 @@ export default function GlobalError({
   reset: () => void;
 }) {
   useEffect(() => {
-    Sentry.captureException(error);
+    // Same reason as error.tsx: SDK initial chunk me nahi, error par lazy.
+    ensureSentry()
+      .then((Sentry) => Sentry.captureException(error))
+      .catch(() => {});
   }, [error]);
 
   return (
