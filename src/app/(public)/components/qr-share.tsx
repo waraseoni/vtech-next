@@ -18,9 +18,10 @@ import {
   Download,
 } from "lucide-react";
 import Image from "next/image";
-import { SITE } from "../site";
+import { usePublicSiteContent } from "./public-content-provider";
 
 export function QrShareModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const content = usePublicSiteContent();
   const [qrDataUrl, setQrDataUrl] = useState("");
   const [siteUrl, setSiteUrl] = useState("");
   const [copied, setCopied] = useState(false);
@@ -96,8 +97,8 @@ export function QrShareModal({ open, onClose }: { open: boolean; onClose: () => 
     if (!siteUrl) return;
     if (navigator.share) {
       const textData: ShareData = {
-        title: `${SITE.name} — Website`,
-        text: `Scan karke website kholo ya link par tap karo. ${SITE.tagline}.`,
+        title: `${content.brand.name} — Website`,
+        text: `Scan karke website kholo ya link par tap karo. ${content.brand.tagline}.`,
         url: siteUrl,
       };
       // QR image file bhi share karo agar browser allow karta hai (Android Chrome / iOS Safari)
@@ -117,7 +118,7 @@ export function QrShareModal({ open, onClose }: { open: boolean; onClose: () => 
   };
 
   const shareMsg = () => {
-    const text = `Namaste! ${SITE.name} website — ${SITE.tagline}.`;
+    const text = `Namaste! ${content.brand.name} website — ${content.brand.tagline}.`;
     const url = siteUrl || window.location.origin;
     return { text, url };
   };
@@ -162,7 +163,7 @@ export function QrShareModal({ open, onClose }: { open: boolean; onClose: () => 
       color: "#ea4335",
       icon: <Mail size={18} />,
       href: () =>
-        `mailto:?subject=${encodeURIComponent(`${SITE.name} — Website`)}&body=${encodeURIComponent(`${shareMsg().text}\n${shareMsg().url}`)}`,
+        `mailto:?subject=${encodeURIComponent(`${content.brand.name} — Website`)}&body=${encodeURIComponent(`${shareMsg().text}\n${shareMsg().url}`)}`,
     },
   ];
 

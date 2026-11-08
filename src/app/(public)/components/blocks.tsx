@@ -1,5 +1,4 @@
 import Link from "next/link";
-import ZoomableImage from "@/components/ZoomableImage";
 import {
   ChevronRight,
   MessageCircle,
@@ -9,8 +8,7 @@ import {
   CheckCircle2,
   Wrench,
 } from "lucide-react";
-import { SITE, WHATSAPP_LINK } from "../site";
-import { EquipmentArt, type ArtKind } from "./equipment-art";
+import { buildWhatsAppLink, type PublicSiteContent } from "@/lib/public-site-defaults";
 
 export function PageHero({
   badge,
@@ -48,61 +46,6 @@ export function PageHero({
         </p>
       </div>
     </section>
-  );
-}
-
-export function EquipmentGrid({
-  items,
-}: {
-  items: {
-    art: ArtKind;
-    name: string;
-    detail: string;
-    badge?: "available" | "coming";
-    image?: string;
-  }[];
-}) {
-  return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-      {items.map((it, i) => (
-        <div
-          key={i}
-          className="group rounded-2xl overflow-hidden bg-white/[0.03] border border-white/[0.06] hover:border-blue-500/40 transition-all active:scale-[0.98]"
-        >
-          <div className="relative h-32 sm:h-36 overflow-hidden bg-app">
-            {it.image ? (
-              <ZoomableImage
-                src={it.image}
-                alt={it.name}
-                fill
-                sizes="(max-width: 640px) 100vw, 33vw"
-                className="object-cover transition-transform duration-500 group-hover:scale-105"
-              />
-            ) : (
-              <EquipmentArt
-                kind={it.art}
-                className="h-full w-full transition-transform duration-500 group-hover:scale-105"
-              />
-            )}
-            {it.badge && (
-              <span
-                className={`absolute top-3 right-3 z-10 text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full border backdrop-blur-sm ${
-                  it.badge === "available"
-                    ? "bg-emerald-500/15 border-emerald-500/30 text-emerald-400"
-                    : "bg-amber-500/15 border-amber-500/30 text-amber-400"
-                }`}
-              >
-                {it.badge === "available" ? "Available Now" : "Coming Soon"}
-              </span>
-            )}
-          </div>
-          <div className="p-4 sm:p-5">
-            <h3 className="text-[15px] font-bold mb-1">{it.name}</h3>
-            <p className="text-[13px] text-muted leading-relaxed">{it.detail}</p>
-          </div>
-        </div>
-      ))}
-    </div>
   );
 }
 
@@ -148,7 +91,7 @@ export function RepairHighlights({ points }: { points: { title: string; desc: st
   );
 }
 
-export function CtaBand() {
+export function CtaBand({ content }: { content: PublicSiteContent }) {
   return (
     <section className="py-12 sm:py-16">
       <div className="mx-auto max-w-4xl px-4">
@@ -163,13 +106,13 @@ export function CtaBand() {
             </p>
             <div className="mt-6 flex flex-col sm:flex-row justify-center gap-3">
               <a
-                href={SITE.phoneHref}
+                href={content.contact.phoneHref}
                 className="flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl bg-white text-blue-700 text-[14px] font-black shadow-xl active:scale-95 transition-transform"
               >
-                <Phone size={16} /> {SITE.phone}
+                <Phone size={16} /> {content.contact.phone}
               </a>
               <a
-                href={WHATSAPP_LINK("Hello, repair ke liye inquiry hai.")}
+                href={buildWhatsAppLink(content, "Hello, repair ke liye inquiry hai.")}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl bg-[#25D366] text-app text-[14px] font-black shadow-xl active:scale-95 transition-transform"
@@ -187,11 +130,13 @@ export function CtaBand() {
 // Client-branded minimal service page — sirf service ka naam + desc + CTA.
 // Seller-specific equipment lists / pricing / steps is template me nahi dikhte.
 export function BrandedServicePage({
+  content,
   badge,
   title,
   highlight,
   subtitle,
 }: {
+  content: PublicSiteContent;
   badge: string;
   title: string;
   highlight: string;
@@ -230,11 +175,11 @@ export function BrandedServicePage({
             ))}
           </div>
           <p className="text-[14px] text-muted leading-relaxed mt-10">
-            Kisi bhi repair ke liye {SITE.phone} par call karein ya WhatsApp karein.
+            Kisi bhi repair ke liye {content.contact.phone} par call karein ya WhatsApp karein.
           </p>
         </div>
       </section>
-      <CtaBand />
+      <CtaBand content={content} />
     </>
   );
 }

@@ -15,8 +15,10 @@ import {
   XCircle,
   PackageCheck,
   FileSearch,
+  Phone,
 } from "lucide-react";
-import { WHATSAPP_LINK } from "../site";
+import { buildWhatsAppLink } from "@/lib/public-site-defaults";
+import { usePublicSiteContent } from "../components/public-content-provider";
 import { JOB_STATUS_INLINE } from "@/lib/status-colors";
 
 type JobData = {
@@ -29,6 +31,7 @@ type JobData = {
   status: number;
   amount: number;
   date_created: string;
+  date_updated?: string | null;
 };
 
 type RecentLookup = {
@@ -88,6 +91,28 @@ const STATUS_CONFIG = Object.fromEntries(
                 : Number(k) === 4
                   ? "Repair cancel ho gaya hai"
                   : "Product deliver ho gaya hai",
+      nextAction:
+        Number(k) === 0
+          ? "Hum jaldi diagnosis shuru karke estimate bhejenge."
+          : Number(k) === 1
+            ? "Repair complete hote hi status update hoga."
+            : Number(k) === 2
+              ? "Bill clear karke apna item collect karein."
+              : Number(k) === 3
+                ? "Item pickup ke liye ready hai."
+                : Number(k) === 4
+                  ? "Sawaal ho to call/WhatsApp par baat karein."
+                  : "Koi action baaki nahi.",
+      eta:
+        Number(k) === 0
+          ? "Inspection usually same day"
+          : Number(k) === 1
+            ? "Most repairs 24–48 ghante"
+            : Number(k) === 2
+              ? "Pickup anytime during shop hours"
+              : Number(k) === 3
+                ? "Same day pickup"
+                : "—",
     },
   ])
 );
@@ -102,6 +127,7 @@ const STATUS_ICON: Record<number, React.ReactNode> = {
 };
 
 export default function JobStatusPage() {
+  const content = usePublicSiteContent();
   const [search, setSearch] = useState("");
   const [searchType, setSearchType] = useState<"job_id" | "code">("job_id");
   const [loading, setLoading] = useState(false);
@@ -109,7 +135,7 @@ export default function JobStatusPage() {
   const [services, setServices] = useState<Service[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [error, setError] = useState("");
-  const [view, setView] = useState<"detailed" | "compact" | "timeline">("detailed");
+  const [view, setView] = useState<"detailed" | "compact" | "timeline">("timeline");
   const [recentJobs, setRecentJobs] = useState<RecentLookup[]>([]);
   const [token, setToken] = useState<string | null>(null);
   const [limited, setLimited] = useState(false);
@@ -168,6 +194,7 @@ export default function JobStatusPage() {
           status: txn.status,
           amount: txn.amount ?? 0,
           date_created: txn.date_created,
+          date_updated: txn.date_updated ?? null,
         };
 
         setJob(nextJob);
@@ -235,6 +262,8 @@ export default function JobStatusPage() {
         color: "#6b7280",
         bg: "rgba(107,114,128,0.2)",
         desc: "Status unknown",
+        nextAction: "Sawaal ho to call/WhatsApp par baat karein.",
+        eta: "—",
       }
     : null;
   const totalServices = services.reduce((s, sv) => s + sv.price, 0);
@@ -296,6 +325,9 @@ export default function JobStatusPage() {
               <form onSubmit={handleSearch} className="flex gap-2">
                 <input
                   type="text"
+                  inputMode={searchType === "job_id" ? "numeric" : "text"}
+                  autoComplete="off"
+                  aria-label={searchType === "job_id" ? "Job ID" : "Repair Code"}
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder={
@@ -367,10 +399,28 @@ export default function JobStatusPage() {
                         </p>
                       </div>
                     </div>
+                    <p className="text-[12px] text-muted-2 mt-3">
+                      Printed bill ke QR se khula link extra <strong>token</strong> carry karta hai
+                      — usi se amount aur bill details bhi dikhti hain. Manual search me sirf status
+                      aur timeline dikhti hai.
+                    </p>
                   </div>
                 </div>
               </div>
             </div>
+
+            {/* Skeleton while the lookup runs */}
+            {loading && (
+              <div className="mt-6 space-y-3" aria-busy="true" aria-live="polite">
+                <p className="sr-only">Job status load ho raha hai…</p>
+                <div className="h-24 animate-pulse rounded-3xl bg-white/[0.04]" />
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="h-20 animate-pulse rounded-2xl bg-white/[0.04]" />
+                  <div className="h-20 animate-pulse rounded-2xl bg-white/[0.04]" />
+                </div>
+                <div className="h-32 animate-pulse rounded-2xl bg-white/[0.04]" />
+              </div>
+            )}
 
             {/* Recent lookups on this device only */}
             {recentJobs.length > 0 && (
@@ -451,7 +501,10 @@ export default function JobStatusPage() {
                 <div>
                   <h2 className="font-display text-lg sm:text-xl font-black">Job Status Tracker</h2>
                   <p className="text-xs text-muted mt-1">
-                    Job #{job.job_id} | Code: {job.code} | {job.date_created}
+                    Job #{job.job_id} | Code: {job.code} | Created: {job.date_created}
+                  </p>
+                  <p className="text-xs text-muted-2 mt-0.5">
+                    Last updated: {job.date_updated || job.date_created}
                   </p>
                 </div>
                 <div
@@ -488,6 +541,16 @@ export default function JobStatusPage() {
                 {/* DETAILED VIEW */}
                 {view === "detailed" && (
                   <div className="space-y-6">
+                    <div
+                      className="rounded-2xl border p-4"
+                      style={{ borderColor: statusInfo.color, background: statusInfo.bg }}
+                    >
+                      <p className="text-[11px] font-black uppercase tracking-wider text-muted">
+                        Next step
+                      </p>
+                      <p className="mt-1 text-sm font-bold text-app-2">{statusInfo.nextAction}</p>
+                      <p className="mt-1 text-[12px] text-muted">ETA: {statusInfo.eta}</p>
+                    </div>
                     {/* Info Grid */}
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                       {[
@@ -751,6 +814,20 @@ export default function JobStatusPage() {
                             )}
                           </div>
                           <p className="text-xs text-muted">{info.desc}</p>
+                          {isCurrent && (
+                            <div
+                              className="mt-2 rounded-xl border p-3"
+                              style={{
+                                borderColor: statusInfo.color,
+                                background: statusInfo.bg,
+                              }}
+                            >
+                              <p className="text-[12px] font-bold text-app-2">
+                                Next: {info.nextAction}
+                              </p>
+                              <p className="mt-1 text-[11px] text-muted">ETA: {info.eta}</p>
+                            </div>
+                          )}
                         </div>
                       );
                     })}
@@ -759,15 +836,26 @@ export default function JobStatusPage() {
               </div>
             </div>
 
-            {/* WhatsApp help */}
-            <a
-              href={WHATSAPP_LINK("Hello, meri job ka status dekhna hai. Job ID: " + job.job_id)}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center justify-center gap-2 px-4 py-3.5 rounded-2xl bg-[#25D366]/10 border border-[#25D366]/25 text-[#4ade80] text-sm font-black active:scale-[0.99] transition-transform mb-4"
-            >
-              Job ke baare mein koi sawaal? WhatsApp par poochhein
-            </a>
+            {/* Call / WhatsApp help */}
+            <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <a
+                href={content.contact.phoneHref}
+                className="flex items-center justify-center gap-2 rounded-2xl border border-emerald-500/25 bg-emerald-500/10 px-4 py-3.5 text-sm font-black text-emerald-300 active:scale-[0.99] transition-transform"
+              >
+                <Phone size={16} /> Call about this job
+              </a>
+              <a
+                href={buildWhatsAppLink(
+                  content,
+                  "Hello, meri job ka status dekhna hai. Job ID: " + job.job_id
+                )}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-2 rounded-2xl border border-[#25D366]/25 bg-[#25D366]/10 px-4 py-3.5 text-sm font-black text-[#4ade80] active:scale-[0.99] transition-transform"
+              >
+                Job ke baare mein WhatsApp par poochhein
+              </a>
+            </div>
           </div>
         )}
       </div>

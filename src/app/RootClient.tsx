@@ -62,6 +62,7 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   AlertTriangle,
+  Globe,
 } from "lucide-react";
 import { isModuleEnabled, isRouteDisabled } from "@/lib/modules";
 import { LITE_MODE, LITE_MODULES, isLiteRouteAllowed } from "@/lib/lite";
@@ -977,6 +978,16 @@ function SidebarNav({
               </li>
               <li>
                 <Link
+                  href="/settings/website"
+                  className={subLinkCls(pathname === "/settings/website")}
+                  onClick={onNavClick}
+                >
+                  <Globe size={12} className="text-cyan-400" />
+                  Website Content
+                </Link>
+              </li>
+              <li>
+                <Link
                   href="/settings/throttle"
                   className={subLinkCls(pathname === "/settings/throttle")}
                   onClick={onNavClick}
@@ -1264,6 +1275,7 @@ export default function RootClient({
     "/setup",
     "/about",
     "/contact",
+    "/policies",
     "/job-status",
     "/stage-lighting",
     "/industrial",
@@ -1341,6 +1353,7 @@ export default function RootClient({
           [
             "/about",
             "/contact",
+            "/policies",
             "/job-status",
             "/stage-lighting",
             "/industrial",
@@ -1525,6 +1538,9 @@ export default function RootClient({
   return (
     <>
       <PWAHead />
+      <a href="#main-content" className="skip-to-content">
+        Skip to content
+      </a>
       <Toaster theme="dark" position="top-right" richColors closeButton />
       <NativePrintPreview />
       <SwipeNavigation
@@ -1915,7 +1931,10 @@ export default function RootClient({
         <ViewOnlyProvider role={profile?.role}>
           <ViewOnlyBanner isAdmin={isAdmin} />
           {/* ── PAGE CONTENT ── */}
-          <main className={`flex-1 ${isAiPage ? "p-0" : "p-3 sm:p-5 theme-body"}`}>
+          <main
+            id="main-content"
+            className={`flex-1 ${isAiPage ? "p-0" : "p-3 sm:p-5 theme-body"}`}
+          >
             <PullToRefresh>
               {isClient && !pathname.startsWith("/my-account") ? (
                 <div className="h-[60vh] flex flex-col items-center justify-center gap-3 text-muted-2">
@@ -2053,9 +2072,6 @@ export default function RootClient({
           </div>
         </div>
       )}
-      <a href="#main-content" className="skip-to-content">
-        Skip to content
-      </a>
       {helpOpen && <ShortcutHelpOverlay open={helpOpen} onClose={() => setHelpOpen(false)} />}
       <MobileBottomTab onMore={() => setDrawerOpen(true)} onBack={goInAppBack} />
     </>

@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 // index na karein.
 export const metadata: Metadata = {
   title: "Job Status",
+  alternates: { canonical: "/job-status" },
   robots: { index: false, follow: false },
 };
 

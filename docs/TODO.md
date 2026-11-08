@@ -9,6 +9,56 @@ Har kaam ke liye: plan + todo banate hain, jo complete ho jata hai use mark kart
 
 ## Recent work log (2026-11)
 
+- [x] Public GPS map/directions + location share — `ContactInfoContent` ab
+      `latitude`/`longitude` (null default) rakhta hai; `mergeSiteContent` geofence
+      rows (`geofence_lat`/`geofence_lng`) ko range-validate karke read-only expose
+      karta hai (no new DB key/write). Map priority: `map_url` → office GPS → address;
+      naya `buildDirectionsLink` (`/maps/dir/?api=1&destination=<lat,lng>`) footer,
+      mobile sticky bar aur Contact page me. LocalBusiness JSON-LD me
+      `geo` + `hasMap`. Contact Location card me selectable `GPS: lat, lng` + copy;
+      naya `location-share.tsx` modal pehle recipient puchta hai — saved contact
+      (`navigator.share`, fallback WhatsApp chooser) ya typeable number →
+      `wa.me/<number>?text=…` (10-digit auto `91`), plus Copy/Map/Route. Footer
+      "Share location". Settings map_url hint updated. Gates: tsc/eslint/prettier/
+      build + **677 tests / 62 files** + read-only smoke (GPS line, coords hrefs,
+      JSON-LD geo/hasMap, routes 200). **Zero DB writes, no commit/push.**
+
+- [x] Public FAQ + a11y polish (WS-8e/8d slice) — content-driven FAQ home par:
+      `FaqContent` defaults/schema (`cleanFaqItems` cap 10, merge/sanitize,
+      `{faq:null}` reset), 6 safe Q&A (charge, time, warranty, workshop `{address}`
+      token, Job ID tracking, privacy). Naya `faq-section.tsx` — sticky heading +
+      contact card, native `<details name="site-faq">` exclusive accordion, FAQPage
+      JSON-LD. Settings → Website **FAQ tab** (change-only save/reset); save route
+      whitelist + seed payload updated. PublicShell/RootClient skip-link +
+      `main#main-content`. Gates: tsc/eslint/prettier/build + **664 tests** +
+      read-only 12-route smoke + FAQ markup/JSON-LD checks; seed dry-run 15.5 KB.
+      **Zero DB writes, no commit/push.**
+
+- [x] Public site DB content (WS-0…WS-7 + WS-8a/8b/8c) — content ab server-first
+      `system_info` se:
+      `site_content` JSON + firm keys merge (precedence: hardcoded defaults < JSON < firm
+      keys), `unstable_cache` tag `site-content`. Public shell/home/about/contact/login/
+      job-status/QR + 3 service pages content-driven; disabled service → 404; `site.ts`
+      retired. Admin save API `GET/POST /api/settings/site-content` (409 concurrency,
+      whitelist, 200 KB cap, audit, recursive section deep-merge, revalidate). Settings →
+      Website **7 tabs** (Branding/Contact/Home/FAQ/About/Services/SEO+Footer) with caps,
+      reorder, per-section reset. WS-6: DB-driven `generateMetadata` (absolute titles,
+      canonical, OG/Twitter), async sitemap (enabled services + DB `updatedAt`),
+      LocalBusiness + Breadcrumb JSON-LD, dismissible announcement banner; login/job-status
+      noindex. WS-7: `scripts/seed-public-site-content.mjs`
+      (dry-run default, `--apply`/`--force`/`--out`, 14.3 KB payload verified, zero writes).
+      WS-8a: open/closed badge, mobile sticky Call·WhatsApp·Directions bar + desktop FAB,
+      footer legal/map links, city H1 + 75dvh hero + photo-CTA, contact form inline errors + honeypot, naya `/policies` page. WS-8b: `EquipmentExplorer` (chips/search/groups),
+      optional turnaround/price/warranty, desktop Free-estimate CTA. WS-8c: timeline default,
+      next-action/ETA per status, last-updated, skeleton, Job-ID WhatsApp/Call actions.
+      `/policies` ko proxy + RootClient + useAppBoot + useAppTheme allowlists me add kiya.
+      Gates: tsc/eslint/**659 tests**/prettier/build + read-only 10-route smoke +
+      sitemap 7 URLs + policies anchors/JSON-LD/explorer checks.
+      **Zero DB writes, no commit/push.** Plan:
+      `docs/plans/public_site_db_content_plan_nov08_2026.md`.
+      **PENDING:** WS-8d/8e ke optional items (owner photos, Google review link).
+      **USER ACTION:** authenticated admin se Settings → Website save + hard refresh check.
+
 - [x] Staff server-first — remaining 44 staff-accessible routes server-seeded.
       Waves: A direct-sales+advance (4), B mechanics (4), C products/inventory (8),
       D reports (19 — incl. delivered/ledger/vyapar-darpan wrappers), E ops

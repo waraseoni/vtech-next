@@ -24,7 +24,7 @@ import {
   browserSupportsWebAuthnAutofill,
   type AuthenticationResponseJSON,
 } from "@simplewebauthn/browser";
-import { SITE } from "../site";
+import { usePublicSiteContent } from "../components/public-content-provider";
 import { APP_VERSION_LABEL, APP_VERSION_FULL } from "@/lib/app-version";
 import PullToRefresh from "@/components/PullToRefresh";
 import { isNativeApp } from "@/lib/nativeApp";
@@ -92,6 +92,7 @@ function TabButton({
 }
 
 export default function LoginPage() {
+  const content = usePublicSiteContent();
   useRouter();
   const [tab, setTab] = useState<Tab>("staff");
   const [email, setEmail] = useState("");
@@ -660,7 +661,7 @@ export default function LoginPage() {
 
           {/* Footer */}
           <p className="text-center text-app text-[11px] mt-5 font-medium">
-            {SITE.name} · {SITE.phone}
+            {content.brand.name} · {content.contact.phone}
           </p>
           <p className="text-center text-app text-[10px] mt-1 font-medium">
             <span

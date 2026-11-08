@@ -69,7 +69,9 @@ export async function GET(request: NextRequest) {
 
   let query = supabase
     .from("transaction_list")
-    .select("id, job_id, code, client_name, item, fault, remark, status, amount, date_created")
+    .select(
+      "id, job_id, code, client_name, item, fault, remark, status, amount, date_created, date_updated"
+    )
     .limit(1);
 
   if (jobId) query = query.eq("job_id", jobId);
@@ -113,6 +115,7 @@ export async function GET(request: NextRequest) {
         fault: txn.fault,
         status: txn.status,
         date_created: txn.date_created,
+        date_updated: txn.date_updated,
       },
       services: [],
       products: [],

@@ -35,6 +35,7 @@ export async function proxy(request: NextRequest) {
     "/",
     "/about",
     "/contact",
+    "/policies",
     "/job-status",
     "/track",
     "/login",

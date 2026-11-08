@@ -8,18 +8,21 @@ import {
   Sparkles,
   Mail,
   MapPin,
-  ShieldCheck,
-  Clock,
-  IndianRupee,
-  Wrench,
   ArrowRight,
   Star,
   BadgeCheck,
-  Gauge,
-  HandCoins,
 } from "lucide-react";
-import { SITE, WHATSAPP_LINK, SERVICES, IS_BRANDED, getSiteInfo, type SiteInfo } from "./site";
+import {
+  buildWhatsAppLink,
+  getCityLabel,
+  getServiceList,
+  type PublicSiteContent,
+} from "@/lib/public-site-defaults";
 import { EquipmentArt } from "./components/equipment-art";
+import { FaqSection } from "./components/faq-section";
+import { HighlightText } from "./components/highlight-text";
+import { PUBLIC_ICON_NODES } from "./components/public-icons";
+import { usePublicSiteContent } from "./components/public-content-provider";
 
 /* ─── Particles (fixed positions — no random at render → no hydration mismatch) ── */
 const PARTICLES = [
@@ -46,8 +49,8 @@ function Stat({ value, suffix, label }: { value: number; suffix: string; label: 
     if (!el) return;
     const io = new IntersectionObserver(
       (entries) => {
-        entries.forEach((e) => {
-          if (e.isIntersecting) setStarted(true);
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) setStarted(true);
         });
       },
       { threshold: 0.4 }
@@ -66,11 +69,11 @@ function Stat({ value, suffix, label }: { value: number; suffix: string; label: 
     let raf = 0;
     const t0 = performance.now();
     const dur = 1400;
-    const tick = (t: number) => {
-      const p = Math.min((t - t0) / dur, 1);
-      const eased = 1 - Math.pow(1 - p, 3);
+    const tick = (time: number) => {
+      const progress = Math.min((time - t0) / dur, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
       setShown(Math.round(value * eased));
-      if (p < 1) raf = requestAnimationFrame(tick);
+      if (progress < 1) raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
@@ -92,27 +95,13 @@ function Stat({ value, suffix, label }: { value: number; suffix: string; label: 
   );
 }
 
-/* ─── Client-branded minimal home ─────────────────────────────────────────────
- * NEXT_PUBLIC_SITE_NAME set hone par (client ka apna deployment) sirf client ki
- * branding dikhti hai — stats, testimonials, seller story sab skip.
- */
-function BrandedHome() {
-  // Live business details (client ke Settings/system_info se) — SITE (env) fallback.
-  const [siteInfo, setSiteInfo] = useState<SiteInfo | null>(null);
-  useEffect(() => {
-    let cancelled = false;
-    getSiteInfo().then((d) => {
-      if (!cancelled) setSiteInfo(d);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-  const info = siteInfo || ({} as SiteInfo);
-  const name = info.shop_name || SITE.name;
-  const phone = info.phone || SITE.phone;
-  const email = info.email || SITE.email;
-  const address = info.address || SITE.address;
+/* ─── Client-branded minimal home ───────────────────────────────────────────── */
+function BrandedHome({ content }: { content: PublicSiteContent }) {
+  const { home, contact } = content;
+  const services = getServiceList(content);
+  const city = getCityLabel(contact.address);
+  const showCity =
+    city && !`${home.heroTitle} ${home.heroHighlight}`.toLowerCase().includes(city.toLowerCase());
 
   return (
     <>
@@ -123,31 +112,32 @@ function BrandedHome() {
         <div className="relative mx-auto max-w-7xl px-4 py-20 sm:py-28">
           <div className="max-w-3xl">
             <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-300 text-[11px] font-bold uppercase tracking-widest mb-5">
-              <Sparkles size={13} /> {SITE.tagline}
+              <Sparkles size={13} /> {home.heroBadge}
             </span>
             <h1 className="font-display text-4xl sm:text-5xl lg:text-6xl font-black leading-[1.08] tracking-tight">
-              Welcome to{" "}
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-400">
-                {name}
-              </span>
+              <HighlightText text={home.heroTitle} highlight={home.heroHighlight} />
+              {showCity && <> — {city}</>}
             </h1>
             <p className="mt-5 text-[15px] sm:text-lg text-muted leading-relaxed max-w-xl">
-              {SITE.tagline}. Component-level repair, genuine parts, fast service.
+              {home.heroSubtitle}
             </p>
             <div className="mt-8 flex flex-col sm:flex-row gap-3">
               <a
-                href={WHATSAPP_LINK("Hello, mujhe repair service chahiye.", info.whatsapp)}
+                href={buildWhatsAppLink(
+                  content,
+                  "Hello, mujhe repair service chahiye. Photo bhej raha hoon."
+                )}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center justify-center gap-2 px-7 py-4 rounded-2xl bg-[#25D366] hover:bg-[#1fb959] text-app text-[15px] font-black shadow-lg shadow-[#25D366]/25 transition-all active:scale-95"
               >
-                <MessageCircle size={18} /> WhatsApp karein
+                <MessageCircle size={18} /> WhatsApp par photo bhejo
               </a>
               <a
-                href={`tel:+${phone.replace(/\D/g, "")}`}
+                href={contact.phoneHref}
                 className="flex items-center justify-center gap-2 px-7 py-4 rounded-2xl bg-white/[0.06] border border-white/12 hover:bg-white/[0.1] text-white text-[15px] font-bold transition-all active:scale-95"
               >
-                <Phone size={18} className="text-emerald-400" /> {phone}
+                <Phone size={18} className="text-emerald-400" /> Call Now
               </a>
             </div>
           </div>
@@ -155,7 +145,7 @@ function BrandedHome() {
       </section>
 
       {/* SERVICES */}
-      {SERVICES.length > 0 && (
+      {services.length > 0 && (
         <section className="py-12 sm:py-16">
           <div className="mx-auto max-w-7xl px-4">
             <div className="text-center max-w-2xl mx-auto mb-8 sm:mb-12">
@@ -167,22 +157,22 @@ function BrandedHome() {
               </h2>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {SERVICES.map((s) => (
+              {services.map((service) => (
                 <Link
-                  key={s.href}
-                  href={s.href}
+                  key={service.href}
+                  href={service.href}
                   className="group rounded-3xl overflow-hidden bg-white/[0.03] border border-white/[0.08] hover:border-blue-500/40 transition-all hover:-translate-y-1"
                 >
                   <div className="relative h-28 sm:h-32 overflow-hidden border-b border-white/[0.06]">
                     <EquipmentArt
-                      kind={s.art}
+                      kind={service.art}
                       className="h-full w-full transition-transform duration-500 group-hover:scale-105"
                     />
                   </div>
                   <div className="p-5 sm:p-6">
-                    <h3 className="font-display text-lg font-bold mb-1.5">{s.label}</h3>
+                    <h3 className="font-display text-lg font-bold mb-1.5">{service.label}</h3>
                     <p className="text-[13px] text-muted leading-relaxed mb-4 line-clamp-2">
-                      {s.desc}
+                      {service.desc}
                     </p>
                     <span className="inline-flex items-center gap-1.5 text-[13px] font-bold text-blue-400 group-hover:gap-2.5 transition-all">
                       Explore <ArrowRight size={14} />
@@ -208,29 +198,32 @@ function BrandedHome() {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <a
-              href={`tel:+${phone.replace(/\D/g, "")}`}
+              href={contact.phoneHref}
               className="rounded-2xl p-6 bg-white/[0.03] border border-white/[0.06] hover:border-emerald-500/30 transition-all text-center"
             >
               <Phone size={20} className="text-emerald-400 mx-auto mb-3" />
-              <h4 className="text-[13px] font-bold text-white">{phone}</h4>
+              <h4 className="text-[13px] font-bold text-white">{contact.phone}</h4>
               <p className="text-[11px] text-muted mt-1">Call / WhatsApp</p>
             </a>
             <a
-              href={`mailto:${email}`}
+              href={`mailto:${contact.email}`}
               className="rounded-2xl p-6 bg-white/[0.03] border border-white/[0.06] hover:border-blue-500/30 transition-all text-center"
             >
               <Mail size={20} className="text-blue-400 mx-auto mb-3" />
-              <h4 className="text-[13px] font-bold text-white break-all">{email}</h4>
+              <h4 className="text-[13px] font-bold text-white break-all">{contact.email}</h4>
               <p className="text-[11px] text-muted mt-1">Email</p>
             </a>
             <div className="rounded-2xl p-6 bg-white/[0.03] border border-white/[0.06] text-center">
               <MapPin size={20} className="text-cyan-400 mx-auto mb-3" />
-              <h4 className="text-[13px] font-bold text-white leading-snug">{address}</h4>
+              <h4 className="text-[13px] font-bold text-white leading-snug">{contact.address}</h4>
               <p className="text-[11px] text-muted mt-1">Location</p>
             </div>
           </div>
         </div>
       </section>
+
+      {/* FAQ */}
+      <FaqSection faq={content.faq} content={content} />
 
       {/* CTA */}
       <section className="py-12 sm:py-16">
@@ -239,20 +232,20 @@ function BrandedHome() {
             <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_30%_30%,white_1px,transparent_1px)] [background-size:22px_22px]" />
             <div className="relative">
               <h2 className="font-display text-2xl sm:text-4xl font-black tracking-tight">
-                Need Urgent Repair?
+                {home.ctaTitle}
               </h2>
               <p className="mt-3 text-[14px] sm:text-base text-blue-100/90 max-w-lg mx-auto">
-                Call karo ya WhatsApp par photo bhejo — free estimate.
+                {home.ctaSubtitle}
               </p>
               <div className="mt-7 flex flex-col sm:flex-row justify-center gap-3">
                 <a
-                  href={`tel:+${phone.replace(/\D/g, "")}`}
+                  href={contact.phoneHref}
                   className="flex items-center justify-center gap-2 px-7 py-3.5 rounded-2xl bg-white text-blue-700 text-[15px] font-black shadow-xl active:scale-95 transition-transform"
                 >
                   <Phone size={17} /> Call Now
                 </a>
                 <a
-                  href={WHATSAPP_LINK("Hello, repair ke liye inquiry hai.", info.whatsapp)}
+                  href={buildWhatsAppLink(content, "Hello, repair ke liye inquiry hai.")}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center justify-center gap-2 px-7 py-3.5 rounded-2xl bg-[#25D366] text-app text-[15px] font-black shadow-xl active:scale-95 transition-transform"
@@ -264,41 +257,39 @@ function BrandedHome() {
           </div>
         </div>
       </section>
-
-      {/* FLOATING WhatsApp */}
-      <a
-        href={WHATSAPP_LINK("", info.whatsapp)}
-        target="_blank"
-        rel="noopener noreferrer"
-        aria-label="WhatsApp"
-        className="fixed bottom-5 right-4 z-40 w-14 h-14 rounded-full bg-[#25D366] flex items-center justify-center shadow-2xl shadow-black/40 active:scale-90 transition-transform"
-      >
-        <MessageCircle size={26} className="text-app" />
-      </a>
     </>
   );
 }
 
 export default function PublicHome() {
-  if (IS_BRANDED) return <BrandedHome />;
+  const content = usePublicSiteContent();
+
+  if (content.mode === "minimal") return <BrandedHome content={content} />;
+
+  const { home, contact } = content;
+  const services = getServiceList(content);
+  const city = getCityLabel(contact.address);
+  const showCity =
+    city && !`${home.heroTitle} ${home.heroHighlight}`.toLowerCase().includes(city.toLowerCase());
+  const whyCards = home.why.slice(0, 4);
+
   return (
     <>
       {/* ═══ HERO ═════════════════════════════════════════════════════════ */}
-      <section className="relative min-h-[100dvh] flex items-center overflow-hidden">
-        {/* Background layers */}
+      <section className="relative min-h-[75dvh] flex items-center overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(37,99,235,0.14),transparent_55%),radial-gradient(ellipse_at_bottom_right,rgba(6,182,212,0.10),transparent_50%)]" />
         <div className="absolute inset-0 opacity-[0.35] bg-[radial-gradient(circle_at_1px_1px,rgba(255,255,255,0.08)_1px,transparent_0)] [background-size:28px_28px]" />
-        {PARTICLES.map((p, i) => (
+        {PARTICLES.map((particle, index) => (
           <div
-            key={i}
+            key={index}
             className="absolute rounded-full bg-blue-400/40 anim-float"
             style={{
-              top: p.top,
-              left: p.left,
-              width: p.size,
-              height: p.size,
-              animationDelay: p.delay,
-              animationDuration: p.dur,
+              top: particle.top,
+              left: particle.left,
+              width: particle.size,
+              height: particle.size,
+              animationDelay: particle.delay,
+              animationDuration: particle.dur,
             }}
           />
         ))}
@@ -306,287 +297,221 @@ export default function PublicHome() {
         <div className="relative mx-auto max-w-7xl px-4 w-full py-16">
           <div className="max-w-3xl">
             <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-300 text-[11px] font-bold uppercase tracking-widest mb-5">
-              <Sparkles size={13} /> {SITE.tagline}
+              <Sparkles size={13} /> {home.heroBadge}
             </span>
 
             <h1 className="font-display text-4xl sm:text-5xl lg:text-6xl font-black leading-[1.08] tracking-tight">
-              Expert Repair for{" "}
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-cyan-400 to-emerald-400">
-                Stage Lighting
-              </span>{" "}
-              &amp;{" "}
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-400">
-                Power Supply
-              </span>
+              <HighlightText text={home.heroTitle} highlight={home.heroHighlight} />
+              {showCity && <> — {city}</>}
             </h1>
 
             <p className="mt-5 text-[15px] sm:text-lg text-muted leading-relaxed max-w-xl">
-              SMPS · Sharpy · Moving Head · Par · DMX · Laser · LED Wall · Fog Machine · PLC · HMI ·
-              VFD · EV Charger —{" "}
-              <span className="text-app-2 font-semibold">component-level repair</span>, genuine
-              parts, same-day service.
+              {home.heroSubtitle}
             </p>
 
             <div className="mt-8 flex flex-col sm:flex-row gap-3">
               <a
-                href={WHATSAPP_LINK("Hello, mujhe repair service chahiye.")}
+                href={buildWhatsAppLink(
+                  content,
+                  "Hello, mujhe repair service chahiye. Photo bhej raha hoon."
+                )}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center justify-center gap-2 px-7 py-4 rounded-2xl bg-[#25D366] hover:bg-[#1fb959] text-app text-[15px] font-black shadow-lg shadow-[#25D366]/25 transition-all active:scale-95"
               >
-                <MessageCircle size={18} /> WhatsApp karein
+                <MessageCircle size={18} /> WhatsApp par photo bhejo
               </a>
               <a
-                href={SITE.phoneHref}
+                href={contact.phoneHref}
                 className="flex items-center justify-center gap-2 px-7 py-4 rounded-2xl bg-white/[0.06] border border-white/12 hover:bg-white/[0.1] text-white text-[15px] font-bold transition-all active:scale-95"
               >
-                <Phone size={18} className="text-emerald-400" /> {SITE.phone}
+                <Phone size={18} className="text-emerald-400" /> Call Now
               </a>
             </div>
 
-            <p className="mt-6 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] font-bold text-muted">
-              <span className="text-app-2">17+ Years</span>·
-              <span className="text-app-2">27,000+ Repairs</span>·
-              <span className="text-app-2">5,000+ Clients</span>·
-              <span className="flex items-center gap-1 text-emerald-400">
-                <BadgeCheck size={13} /> Genuine Parts
-              </span>
-            </p>
+            {home.trustChips.length > 0 && (
+              <p className="mt-6 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] font-bold text-muted">
+                {home.trustChips.map((chip) => (
+                  <span key={chip} className="flex items-center gap-1 text-app-2">
+                    <BadgeCheck size={13} className="text-emerald-400" /> {chip}
+                  </span>
+                ))}
+              </p>
+            )}
           </div>
         </div>
       </section>
 
       {/* ═══ 3 PILLARS ════════════════════════════════════════════════════ */}
-      <section className="py-14 sm:py-20">
-        <div className="mx-auto max-w-7xl px-4">
-          <div className="text-center max-w-2xl mx-auto mb-8 sm:mb-12">
-            <p className="text-[11px] font-black uppercase tracking-widest text-cyan-400 mb-2">
-              What We Repair
-            </p>
-            <h2 className="font-display text-2xl sm:text-4xl font-black tracking-tight">
-              Three Specialities.{" "}
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-400">
-                One Trusted Shop.
-              </span>
-            </h2>
-          </div>
+      {services.length > 0 && (
+        <section className="py-14 sm:py-20">
+          <div className="mx-auto max-w-7xl px-4">
+            <div className="text-center max-w-2xl mx-auto mb-8 sm:mb-12">
+              <p className="text-[11px] font-black uppercase tracking-widest text-cyan-400 mb-2">
+                What We Repair
+              </p>
+              <h2 className="font-display text-2xl sm:text-4xl font-black tracking-tight">
+                Three Specialities.{" "}
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-400">
+                  One Trusted Shop.
+                </span>
+              </h2>
+            </div>
 
-          <div className="flex lg:grid lg:grid-cols-3 gap-4 overflow-x-auto snap-x snap-mandatory pb-2 lg:pb-0 lg:overflow-visible -mx-4 px-4 lg:mx-0 lg:px-0 scrollbar-hide">
-            {SERVICES.map((s) => (
-              <Link
-                key={s.href}
-                href={s.href}
-                className="snap-center shrink-0 w-[82%] sm:w-[55%] lg:w-auto group rounded-3xl overflow-hidden bg-gradient-to-b from-white/[0.05] to-white/[0.02] border border-white/[0.08] hover:border-blue-500/40 transition-all hover:-translate-y-1"
-              >
-                <div className="relative h-28 sm:h-32 overflow-hidden border-b border-white/[0.06]">
-                  <EquipmentArt
-                    kind={s.art}
-                    className="h-full w-full transition-transform duration-500 group-hover:scale-105"
-                  />
-                </div>
-                <div className="p-5 sm:p-6">
-                  <h3 className="font-display text-lg font-bold mb-1.5">{s.label}</h3>
-                  <p className="text-[13px] text-muted leading-relaxed mb-4 line-clamp-2">
-                    {s.desc}
-                  </p>
-                  <span className="inline-flex items-center gap-1.5 text-[13px] font-bold text-blue-400 group-hover:gap-2.5 transition-all">
-                    Explore <ArrowRight size={14} />
-                  </span>
-                </div>
-              </Link>
-            ))}
+            <div className="flex lg:grid lg:grid-cols-3 gap-4 overflow-x-auto snap-x snap-mandatory pb-2 lg:pb-0 lg:overflow-visible -mx-4 px-4 lg:mx-0 lg:px-0 scrollbar-hide">
+              {services.map((service) => (
+                <Link
+                  key={service.href}
+                  href={service.href}
+                  className="snap-center shrink-0 w-[82%] sm:w-[55%] lg:w-auto group rounded-3xl overflow-hidden bg-gradient-to-b from-white/[0.05] to-white/[0.02] border border-white/[0.08] hover:border-blue-500/40 transition-all hover:-translate-y-1"
+                >
+                  <div className="relative h-28 sm:h-32 overflow-hidden border-b border-white/[0.06]">
+                    <EquipmentArt
+                      kind={service.art}
+                      className="h-full w-full transition-transform duration-500 group-hover:scale-105"
+                    />
+                  </div>
+                  <div className="p-5 sm:p-6">
+                    <h3 className="font-display text-lg font-bold mb-1.5">{service.label}</h3>
+                    <p className="text-[13px] text-muted leading-relaxed mb-4 line-clamp-2">
+                      {service.desc}
+                    </p>
+                    <span className="inline-flex items-center gap-1.5 text-[13px] font-bold text-blue-400 group-hover:gap-2.5 transition-all">
+                      Explore <ArrowRight size={14} />
+                    </span>
+                  </div>
+                </Link>
+              ))}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* ═══ STATS ════════════════════════════════════════════════════════ */}
-      <section className="py-10 sm:py-14">
-        <div className="mx-auto max-w-7xl px-4">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-            <Stat value={27000} suffix="+" label="Repairs Completed" />
-            <Stat value={17} suffix="+" label="Years of Trust" />
-            <Stat value={5000} suffix="+" label="Happy Clients" />
-            <Stat value={100} suffix="%" label="Load Tested Repairs" />
+      {home.stats.length > 0 && (
+        <section className="py-10 sm:py-14">
+          <div className="mx-auto max-w-7xl px-4">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+              {home.stats.map((stat) => (
+                <Stat key={stat.label} value={stat.value} suffix={stat.suffix} label={stat.label} />
+              ))}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* ═══ FEATURED SERVICES ═══════════════════════════════════════════ */}
-      <section className="py-14 sm:py-20 bg-app/60 border-y border-white/[0.05]">
-        <div className="mx-auto max-w-7xl px-4">
-          <div className="text-center max-w-2xl mx-auto mb-8 sm:mb-12">
-            <p className="text-[11px] font-black uppercase tracking-widest text-cyan-400 mb-2">
-              Featured Expertise
-            </p>
-            <h2 className="font-display text-2xl sm:text-4xl font-black tracking-tight">
-              Popular Repair Services
-            </h2>
-            <p className="text-[13px] sm:text-sm text-muted mt-3">
-              Don&apos;t see yours? Call karo — agar bana banaya hai to hum fix kar denge.
-            </p>
-          </div>
+      {home.featured.length > 0 && (
+        <section className="py-14 sm:py-20 bg-app/60 border-y border-white/[0.05]">
+          <div className="mx-auto max-w-7xl px-4">
+            <div className="text-center max-w-2xl mx-auto mb-8 sm:mb-12">
+              <p className="text-[11px] font-black uppercase tracking-widest text-cyan-400 mb-2">
+                Featured Expertise
+              </p>
+              <h2 className="font-display text-2xl sm:text-4xl font-black tracking-tight">
+                Popular Repair Services
+              </h2>
+              <p className="text-[13px] sm:text-sm text-muted mt-3">
+                Don&apos;t see yours? Call karo — agar bana banaya hai to hum fix kar denge.
+              </p>
+            </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
-            {[
-              {
-                art: "moving-head" as const,
-                title: "Sharpy / Moving Head",
-                desc: "16 / 20 ch · Gobo, motor, color",
-              },
-              {
-                art: "par" as const,
-                title: "Par & DMX Lights",
-                desc: "RGBW · COB · DMX 512 control",
-              },
-              { art: "laser" as const, title: "Laser Lights", desc: "Galvo, driver, diode repair" },
-              {
-                art: "led-wall" as const,
-                title: "LED Wall / Processor",
-                desc: "Module, receiving card, PSU",
-              },
-              { art: "fog" as const, title: "Fog / Smoke Machine", desc: "Pump, heater, PCB" },
-              {
-                art: "smps" as const,
-                title: "SMPS / Power Supply",
-                desc: "All types, component-level",
-              },
-              { art: "ev-charger" as const, title: "EV Charger", desc: "2-wheeler charger repair" },
-              {
-                art: "pcb" as const,
-                title: "PCB / Control Card",
-                desc: "Industrial electronics repair",
-              },
-            ].map((f, i) => (
-              <div
-                key={i}
-                className="group rounded-2xl overflow-hidden bg-white/[0.03] border border-white/[0.06] hover:border-blue-500/40 hover:bg-white/[0.05] transition-all active:scale-[0.98]"
-              >
-                <div className="relative h-20 sm:h-24 overflow-hidden bg-app">
-                  <EquipmentArt
-                    kind={f.art}
-                    className="h-full w-full transition-transform duration-500 group-hover:scale-110"
-                  />
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+              {home.featured.map((featured) => (
+                <div
+                  key={`${featured.art}-${featured.title}`}
+                  className="group rounded-2xl overflow-hidden bg-white/[0.03] border border-white/[0.06] hover:border-blue-500/40 hover:bg-white/[0.05] transition-all active:scale-[0.98]"
+                >
+                  <div className="relative h-20 sm:h-24 overflow-hidden bg-app">
+                    <EquipmentArt
+                      kind={featured.art}
+                      className="h-full w-full transition-transform duration-500 group-hover:scale-110"
+                    />
+                  </div>
+                  <div className="p-3.5 sm:p-4">
+                    <h4 className="text-[13px] sm:text-sm font-bold leading-snug">
+                      {featured.title}
+                    </h4>
+                    <p className="text-[11px] sm:text-[12px] text-muted mt-1">{featured.desc}</p>
+                  </div>
                 </div>
-                <div className="p-3.5 sm:p-4">
-                  <h4 className="text-[13px] sm:text-sm font-bold leading-snug">{f.title}</h4>
-                  <p className="text-[11px] sm:text-[12px] text-muted mt-1">{f.desc}</p>
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* ═══ WHY CHOOSE US ═══════════════════════════════════════════════ */}
-      <section className="py-14 sm:py-20">
-        <div className="mx-auto max-w-7xl px-4">
-          <div className="text-center max-w-2xl mx-auto mb-8 sm:mb-12">
-            <p className="text-[11px] font-black uppercase tracking-widest text-cyan-400 mb-2">
-              Why Us
-            </p>
-            <h2 className="font-display text-2xl sm:text-4xl font-black tracking-tight">
-              Repairs People Actually{" "}
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-400">
-                Trust
-              </span>
-            </h2>
-          </div>
+      {home.why.length > 0 && (
+        <section className="py-14 sm:py-20">
+          <div className="mx-auto max-w-7xl px-4">
+            <div className="text-center max-w-2xl mx-auto mb-8 sm:mb-12">
+              <p className="text-[11px] font-black uppercase tracking-widest text-cyan-400 mb-2">
+                Why Us
+              </p>
+              <h2 className="font-display text-2xl sm:text-4xl font-black tracking-tight">
+                Repairs People Actually{" "}
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-400">
+                  Trust
+                </span>
+              </h2>
+            </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {[
-              {
-                icon: <Clock size={20} />,
-                title: "Fast Turnaround",
-                desc: "90% jobs same day ya 24 ghante mein. Emergency repair bhi karte hain.",
-              },
-              {
-                icon: <Wrench size={20} />,
-                title: "Component-Level Fix",
-                desc: "Board replace nahi karte — actual faulty component change karte hain.",
-              },
-              {
-                icon: <ShieldCheck size={20} />,
-                title: "Genuine Parts + Warranty",
-                desc: "100% original spares. Har repair par service warranty.",
-              },
-              {
-                icon: <Gauge size={20} />,
-                title: "Load Tested",
-                desc: "Har repaired item full load par test karke hi return karte hain.",
-              },
-              {
-                icon: <HandCoins size={20} />,
-                title: "Fair, Transparent Pricing",
-                desc: "Pehle batao, phir repair. Koi hidden charges nahi.",
-              },
-              {
-                icon: <IndianRupee size={20} />,
-                title: "Best Rates",
-                desc: "17 saal ka experience — quality aur price dono me best.",
-              },
-            ].map((f, i) => (
-              <div
-                key={i}
-                className="rounded-2xl p-6 bg-white/[0.03] border border-white/[0.06] hover:border-cyan-500/30 transition-all"
-              >
-                <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-blue-500/20 to-cyan-500/15 flex items-center justify-center text-cyan-400 mb-4">
-                  {f.icon}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {whyCards.map((reason) => (
+                <div
+                  key={reason.title}
+                  className="rounded-2xl p-6 bg-white/[0.03] border border-white/[0.06] hover:border-cyan-500/30 transition-all"
+                >
+                  <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-blue-500/20 to-cyan-500/15 flex items-center justify-center text-cyan-400 mb-4">
+                    {PUBLIC_ICON_NODES[reason.icon]}
+                  </div>
+                  <h4 className="text-[15px] font-bold mb-1.5">{reason.title}</h4>
+                  <p className="text-[13px] text-muted leading-relaxed">{reason.desc}</p>
                 </div>
-                <h4 className="text-[15px] font-bold mb-1.5">{f.title}</h4>
-                <p className="text-[13px] text-muted leading-relaxed">{f.desc}</p>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* ═══ TESTIMONIALS ════════════════════════════════════════════════ */}
-      <section className="py-14 sm:py-20 bg-app/60 border-y border-white/[0.05]">
-        <div className="mx-auto max-w-7xl px-4">
-          <div className="text-center max-w-2xl mx-auto mb-8 sm:mb-12">
-            <p className="text-[11px] font-black uppercase tracking-widest text-cyan-400 mb-2">
-              Testimonials
-            </p>
-            <h2 className="font-display text-2xl sm:text-4xl font-black tracking-tight">
-              Our Clients Say
-            </h2>
-          </div>
+      {home.testimonials.length > 0 && (
+        <section className="py-14 sm:py-20 bg-app/60 border-y border-white/[0.05]">
+          <div className="mx-auto max-w-7xl px-4">
+            <div className="text-center max-w-2xl mx-auto mb-8 sm:mb-12">
+              <p className="text-[11px] font-black uppercase tracking-widest text-cyan-400 mb-2">
+                Testimonials
+              </p>
+              <h2 className="font-display text-2xl sm:text-4xl font-black tracking-tight">
+                Our Clients Say
+              </h2>
+            </div>
 
-          <div className="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-2 -mx-4 px-4 scrollbar-hide">
-            {[
-              {
-                q: "2 AM pe DJ kharab ho gaya tha — Vikram bhai 3 ghante mein fix kar ke de gaye. Life saver!",
-                n: "Rohit DJ, Jabalpur",
-              },
-              {
-                q: "LED wall ka processor jal gaya tha — market me 15 din bol rahe the. Yahan 18 ghante mein ho gaya!",
-                n: "Shubham Events",
-              },
-              {
-                q: "SMPS 5 alag shop dikha ke laaya. Aakhir me yahi se 1 din mein theek hua. Genuine parts, kam rate.",
-                n: "Anil Electricals",
-              },
-              {
-                q: "EV charger ka PCB fix kiya jo kisi ne nahi kiya. Ab 6 mahine se ekdum perfect chal raha hai.",
-                n: "Sanjay, Bike Rider",
-              },
-            ].map((t, i) => (
-              <div
-                key={i}
-                className="snap-center shrink-0 w-[85%] sm:w-[46%] lg:w-[31%] rounded-3xl p-6 bg-white/[0.03] border border-white/[0.07]"
-              >
-                <div className="flex gap-0.5 text-amber-400 mb-3">
-                  {Array.from({ length: 5 }).map((_, s) => (
-                    <Star key={s} size={14} fill="currentColor" />
-                  ))}
+            <div className="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-2 -mx-4 px-4 scrollbar-hide">
+              {home.testimonials.map((testimonial) => (
+                <div
+                  key={`${testimonial.name}-${testimonial.quote.slice(0, 24)}`}
+                  className="snap-center shrink-0 w-[85%] sm:w-[46%] lg:w-[31%] rounded-3xl p-6 bg-white/[0.03] border border-white/[0.07]"
+                >
+                  <div className="flex gap-0.5 text-amber-400 mb-3">
+                    {Array.from({ length: testimonial.rating ?? 5 }).map((_, star) => (
+                      <Star key={star} size={14} fill="currentColor" />
+                    ))}
+                  </div>
+                  <p className="text-[14px] text-app-2 leading-relaxed mb-4">
+                    &ldquo;{testimonial.quote}&rdquo;
+                  </p>
+                  <p className="text-[13px] font-bold text-white">- {testimonial.name}</p>
                 </div>
-                <p className="text-[14px] text-app-2 leading-relaxed mb-4">&ldquo;{t.q}&rdquo;</p>
-                <p className="text-[13px] font-bold text-white">- {t.n}</p>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
+
+      {/* ═══ FAQ ═════════════════════════════════════════════════════════ */}
+      <FaqSection faq={content.faq} content={content} />
 
       {/* ═══ CTA ═════════════════════════════════════════════════════════ */}
       <section className="py-14 sm:py-20">
@@ -595,20 +520,20 @@ export default function PublicHome() {
             <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_30%_30%,white_1px,transparent_1px)] [background-size:22px_22px]" />
             <div className="relative">
               <h2 className="font-display text-2xl sm:text-4xl font-black tracking-tight">
-                Need Urgent Repair?
+                {home.ctaTitle}
               </h2>
               <p className="mt-3 text-[14px] sm:text-base text-blue-100/90 max-w-lg mx-auto">
-                Call karo ya WhatsApp par photo bhejo — free estimate. Same-day service available.
+                {home.ctaSubtitle}
               </p>
               <div className="mt-7 flex flex-col sm:flex-row justify-center gap-3">
                 <a
-                  href={SITE.phoneHref}
+                  href={contact.phoneHref}
                   className="flex items-center justify-center gap-2 px-7 py-3.5 rounded-2xl bg-white text-blue-700 text-[15px] font-black shadow-xl active:scale-95 transition-transform"
                 >
                   <Phone size={17} /> Call Now
                 </a>
                 <a
-                  href={WHATSAPP_LINK("Hello, repair ke liye inquiry hai.")}
+                  href={buildWhatsAppLink(content, "Hello, repair ke liye inquiry hai.")}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center justify-center gap-2 px-7 py-3.5 rounded-2xl bg-[#25D366] text-app text-[15px] font-black shadow-xl active:scale-95 transition-transform"
@@ -620,17 +545,6 @@ export default function PublicHome() {
           </div>
         </div>
       </section>
-
-      {/* ═══ FLOATING WhatsApp ════════════════════════════════════════════ */}
-      <a
-        href={SITE.whatsapp}
-        target="_blank"
-        rel="noopener noreferrer"
-        aria-label="WhatsApp"
-        className="fixed bottom-5 right-4 z-40 w-14 h-14 rounded-full bg-[#25D366] flex items-center justify-center shadow-2xl shadow-black/40 active:scale-90 transition-transform"
-      >
-        <MessageCircle size={26} className="text-app" />
-      </a>
     </>
   );
 }

@@ -73,6 +73,13 @@ describe("proxy — early returns (auth tax ZERO, lines pehle aane chahiye)", ()
     expect(authMock.getClaims).not.toHaveBeenCalled();
   });
 
+  it("/policies → passthrough, auth kabhi call nahi", async () => {
+    const res = await proxy(req("/policies"));
+    expectPassthrough(res);
+    expect(authMock.getUser).not.toHaveBeenCalled();
+    expect(authMock.getClaims).not.toHaveBeenCalled();
+  });
+
   it("/login → passthrough, auth kabhi call nahi", async () => {
     const res = await proxy(req("/login"));
     expectPassthrough(res);
