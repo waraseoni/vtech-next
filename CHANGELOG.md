@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.77.0](https://github.com/waraseoni/vtech-next/compare/v1.76.1...v1.77.0) (2026-11-08)
+
+### Features
+
+* **public-site:** DB-driven content, FAQ, GPS maps and sharing ([e1b881d](https://github.com/waraseoni/vtech-next/commit/e1b881ded9c2e587c23d873554129ad072767021))
+
 ## [1.76.1](https://github.com/waraseoni/vtech-next/compare/v1.76.0...v1.76.1) (2026-11-03)
 
 ### Performance Improvements
