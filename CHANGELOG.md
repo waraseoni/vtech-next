@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.77.3](https://github.com/waraseoni/vtech-next/compare/v1.77.2...v1.77.3) (2026-11-13)
+
+### Performance Improvements
+
+* **jobs:** stats + stale-alert RPCs, view route streaming (measured 353->76ms, 384->107ms, RSC headers 400->15ms) ([667c583](https://github.com/waraseoni/vtech-next/commit/667c5830293e8262211be5e4cb1fd3220f3ee834))
+
 ## [1.77.2](https://github.com/waraseoni/vtech-next/compare/v1.77.1...v1.77.2) (2026-11-13)
 
 ### Performance Improvements
