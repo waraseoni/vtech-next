@@ -107,9 +107,9 @@ const STATUS_WA_KEY: Record<number, string> = {
 };
 
 // ─── Types ───────────────────────────────────────────────────────────────────
-// Sprint 3 #12: list data-layer useJobList me — type + dual-era reader wahin se
-import { useJobList, type Transaction, fetchStatusChangeLogs } from "./useJobList";
-import type { JobsPageSeed } from "./jobListQueries";
+// Sprint 3 #12: list data-layer useJobList me — type wahin se
+import { useJobList, type Transaction } from "./useJobList";
+import { queryStaleJobs, type JobsPageSeed, type StaleJobItem } from "./jobListQueries";
 
 type QuickClient = {
   id: number;
@@ -130,7 +130,8 @@ const STATUS_MAP: Record<number, string> = Object.fromEntries(
   Object.entries(JOB_STATUS).map(([k, v]) => [Number(k), v.label])
 );
 
-// fetchStatusChangeLogs useJobList se aata hai (dual-era reader — docs/DATA_MIGRATION_NOTES.md)
+// fetchStatusChangeLogs future me yahin se — stale panel ka logic ab
+// jobListQueries.queryStaleJobs (RPC-first, dual-era rules) me hai.
 
 const STATUS_BORDER: Record<number, string> = {
   0: "border-l-slate-500",
@@ -389,77 +390,17 @@ function JobsListContent({
 
   const loadStale = useCallback(async () => {
     try {
-      // NOTE: transaction_list.status_changed_at column DB me exist nahi karta —
-      // stale time activity_logs se derive hota hai (dual-era helper, upar).
-      // Logs na mile to fallback date_updated (sirf stale-DETECTION ke liye).
-      const now = Date.now();
-      const cutoffIso = new Date(now - 7 * 86400000).toISOString();
-
-      const { data: cands, error: candErr } = await supabase
-        .from("transaction_list")
-        .select("id, job_id, item, uniq_id, date_created, date_updated")
-        .eq("del_status", 0)
-        .in("status", [2, 3])
-        .neq("uniq_id", "")
-        .lt("date_updated", cutoffIso)
-        .order("date_updated", { ascending: true })
-        .limit(300);
-      if (candErr) throw candErr;
-      const list = cands || [];
-      if (!list.length) {
-        return [];
-      }
-
-      // Har job ki LAST status-change time — dono yug parallel
-      const [legacyRows, modernRows] = await Promise.all([
-        fetchStatusChangeLogs(
-          "legacy",
-          list.map((t) => String(t.id))
-        ),
-        fetchStatusChangeLogs("modern", [
-          ...new Set(list.map((t) => String(t.job_id || "")).filter(Boolean)),
-        ]),
-      ]);
-      const logMap = new Map<string, string>();
-      for (const log of [...legacyRows, ...modernRows]) {
-        const k = String(log.meta_id);
-        if (!logMap.has(k)) logMap.set(k, log.date_created);
-      }
-
-      return list
-        .map((t) => {
-          const changedAt =
-            logMap.get(String(t.id)) ??
-            logMap.get(String(t.job_id)) ??
-            t.date_updated ??
-            t.date_created;
-          const ts = new Date(changedAt || "").getTime();
-          return {
-            id: t.id,
-            job_id: t.job_id,
-            item: t.item,
-            uniq_id: t.uniq_id || "",
-            ts,
-            days: Math.floor((now - ts) / 86400000),
-          };
-        })
-        .filter((it) => it.ts > 0 && now - it.ts >= 7 * 86400000)
-        .sort((a, b) => a.ts - b.ts)
-        .slice(0, 50)
-        .map((it) => ({
-          id: it.id,
-          job_id: it.job_id,
-          item: it.item,
-          uniq_id: it.uniq_id,
-          days: it.days,
-        }));
+      // RPC-first (`get_stale_jobs`) — pehle 3 requests lagti thi (300-row
+      // candidate scan + 2 activity_logs queries). RPC na ho to wahi client
+      // fallback chalta hai (dual-era rules: docs/DATA_MIGRATION_NOTES.md).
+      return await queryStaleJobs(supabase, { days: 7, limit: 50 });
     } catch (err) {
       logger.error("loadStale error:", err);
       throw err;
     }
   }, []);
 
-  const { data: staleItems = [], refetch: refetchStale } = useQuery({
+  const { data: staleItems = [], refetch: refetchStale } = useQuery<StaleJobItem[]>({
     queryKey: ["jobs-stale"],
     queryFn: loadStale,
     staleTime: 30_000,

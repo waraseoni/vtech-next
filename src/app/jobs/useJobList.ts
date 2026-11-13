@@ -13,10 +13,10 @@ import { supabase } from "@/lib/supabase";
 import { fetchOpenPartCounts } from "@/lib/requiredParts";
 import { logger } from "@/lib/logger";
 import {
-  computeJobStats,
   enrichJobRows,
   queryJobPage,
   queryJobSpots,
+  queryJobStats,
   queryStatusChangeLogs,
   searchClientsForTerm,
   seedMatchesFilters,
@@ -228,7 +228,7 @@ export function useJobList(initial?: JobsListSeed | null) {
   //    on pagination, so page changes skip the full-dataset stats scan. ──────
   const fetchStats = useCallback(async () => {
     try {
-      const s = await computeJobStats(
+      const s = await queryJobStats(
         supabase,
         {
           term: debouncedSearch.trim().toLowerCase(),

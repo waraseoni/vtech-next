@@ -4675,4 +4675,168 @@ revoke all on function public.get_due_stats() from anon;
 grant execute on function public.get_due_stats() to authenticated;
 grant execute on function public.get_due_stats() to service_role;
 
+-- ══════════════════════════════════════════════════════════════════════════════
+-- get_jobs_stats() + get_stale_jobs() (20261113_jobs_stats_stale_rpc.sql)
+-- /jobs Quick Stats ka full-dataset scan → 1 aggregate; stale alert ke 3
+-- requests → 1 RPC. Filters/dual-era rules: src/app/jobs/jobListQueries.ts.
+-- Read-only, stable, security definer. Koi data change nahi.
+-- ══════════════════════════════════════════════════════════════════════════════
+create or replace function public.get_jobs_stats(
+  p_term text default null,
+  p_date_from text default null,
+  p_date_to text default null,
+  p_hide_delivered boolean default false,
+  p_status int default null,
+  p_spot text default null
+)
+returns jsonb
+language sql
+security definer
+stable
+set search_path = public
+as $$
+  with args as (
+    select
+      case when coalesce(p_term, '') = '' then null
+           else '%' || lower(p_term) || '%' end as pat,
+      case when coalesce(p_date_from, '') = '' then null
+           else (p_date_from::timestamptz at time zone 'UTC') end as from_ts,
+      case when coalesce(p_date_to, '') = '' then null
+           else ((p_date_to || 'T23:59:59+05:30')::timestamptz at time zone 'UTC') end as to_ts,
+      coalesce(p_hide_delivered, false) as hide_delivered,
+      p_status as filt_status,
+      case when coalesce(p_spot, '') ~ '^\d+$' then p_spot::int else null end as spot_id
+  ),
+  filtered as (
+    select t.status, coalesce(t.amount, 0) as amount
+    from public.transaction_list t
+    cross join args a
+    where t.del_status = 0
+      and (a.from_ts is null or t.date_created >= a.from_ts)
+      and (a.to_ts is null or t.date_created <= a.to_ts)
+      and (not a.hide_delivered or t.status <> 5)
+      and (a.filt_status is null or t.status = a.filt_status)
+      and (a.spot_id is null or t.location_id = a.spot_id)
+      and (
+        a.pat is null
+        or t.job_id ilike a.pat
+        or t.code ilike a.pat
+        or t.item ilike a.pat
+        or t.fault ilike a.pat
+        or t.uniq_id ilike a.pat
+        or t.remark ilike a.pat
+        or t.client_name in (
+          select c.id::text
+          from public.client_list c
+          where c.firstname ilike a.pat
+             or c.middlename ilike a.pat
+             or c.lastname ilike a.pat
+             or c.contact ilike a.pat
+        )
+      )
+  )
+  select jsonb_build_object(
+    'total',     count(*),
+    'pending',   count(*) filter (where status = 0),
+    'progress',  count(*) filter (where status = 1),
+    'completed', count(*) filter (where status in (2, 3, 5)),
+    'totalAmt',  coalesce(sum(amount), 0)
+  )
+  from filtered;
+$$;
+
+revoke all on function public.get_jobs_stats(text, text, text, boolean, int, text) from public;
+revoke all on function public.get_jobs_stats(text, text, text, boolean, int, text) from anon;
+grant execute on function public.get_jobs_stats(text, text, text, boolean, int, text)
+  to authenticated;
+grant execute on function public.get_jobs_stats(text, text, text, boolean, int, text)
+  to service_role;
+
+create or replace function public.get_stale_jobs(
+  p_days int default 7,
+  p_limit int default 50
+)
+returns jsonb
+language sql
+security definer
+stable
+set search_path = public
+as $$
+  with args as (
+    select
+      greatest(coalesce(p_days, 7), 0) as days,
+      greatest(coalesce(p_limit, 50), 0) as lim,
+      now() as now_ts,
+      (now() at time zone 'UTC') as now_utc
+  ),
+  cands as (
+    select t.id, t.job_id, t.item, t.uniq_id, t.date_created, t.date_updated
+    from public.transaction_list t
+    cross join args a
+    where t.del_status = 0
+      and t.status in (2, 3)
+      and t.uniq_id <> ''
+      and t.date_updated < a.now_utc - make_interval(days => a.days)
+    order by t.date_updated asc
+    limit 300
+  ),
+  logs as (
+    select l.meta_id, max(l.date_created) as last_at
+    from public.activity_logs l
+    where (
+        l.module = 'Transactions'
+        and l.action = 'Transaction Status Changed'
+        and l.meta_id in (select c.id::text from cands c)
+      )
+      or (
+        l.module = 'Jobs'
+        and l.action = 'Updated Job Status'
+        and l.meta_id in (select c.job_id from cands c)
+      )
+    group by l.meta_id
+  ),
+  scored as (
+    select
+      c.id,
+      c.job_id,
+      c.item,
+      coalesce(c.uniq_id, '') as uniq_id,
+      coalesce(la.last_at, lb.last_at, c.date_updated, c.date_created) as changed_at,
+      c.date_updated,
+      a.now_ts,
+      a.days
+    from cands c
+    cross join args a
+    left join logs la on la.meta_id = c.id::text
+    left join logs lb on lb.meta_id = c.job_id
+  ),
+  stale as (
+    select *
+    from scored s
+    where s.changed_at is not null
+      and s.changed_at <= (s.now_ts at time zone 'UTC') - make_interval(days => s.days)
+    order by s.changed_at asc, s.date_updated asc, s.id asc
+    limit (select lim from args)
+  )
+  select coalesce(
+    jsonb_agg(
+      jsonb_build_object(
+        'id', s.id,
+        'job_id', s.job_id,
+        'item', s.item,
+        'uniq_id', s.uniq_id,
+        'days', floor(extract(epoch from (s.now_ts - (s.changed_at at time zone 'UTC'))) / 86400)::int
+      )
+      order by s.changed_at asc
+    ),
+    '[]'::jsonb
+  )
+  from stale s;
+$$;
+
+revoke all on function public.get_stale_jobs(int, int) from public;
+revoke all on function public.get_stale_jobs(int, int) from anon;
+grant execute on function public.get_stale_jobs(int, int) to authenticated;
+grant execute on function public.get_stale_jobs(int, int) to service_role;
+
 NOTIFY pgrst, 'reload schema';

@@ -1,18 +1,18 @@
-import { renderHook, act, waitFor } from "@testing-library/react";
+﻿import { renderHook, act, waitFor } from "@testing-library/react";
 import { StrictMode, type ReactNode } from "react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { useJobList } from "./useJobList";
 import type { JobsListSeed, Transaction } from "./jobListQueries";
 
-// Phase 4 P2 perf follow-up: ye test seed-gate behaviour lock karta hai —
+// Phase 4 P2 perf follow-up: ye test seed-gate behaviour lock karta hai â€”
 // mount-par seed valid ho to KOI client fetch nahi (RSC waterfall fix), aur
 // mismatch/filter-change par client refetch. StrictMode case specially covered:
-// dev me React effects do baar chalata hai (double-invoke) — purane "ek baar"
+// dev me React effects do baar chalata hai (double-invoke) â€” purane "ek baar"
 // skip-refs yahin toot jate the (doosri run phir fetch karti thi).
 const fx = vi.hoisted(() => ({
   search: "",
   queryJobPage: vi.fn(),
-  computeJobStats: vi.fn(),
+  queryJobStats: vi.fn(),
   queryJobSpots: vi.fn(),
   enrichJobRows: vi.fn(),
   searchClientsForTerm: vi.fn(),
@@ -23,7 +23,7 @@ vi.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams(fx.search),
 }));
 
-// Browser supabase is not exercised — jobListQueries calls are mocked below.
+// Browser supabase is not exercised â€” jobListQueries calls are mocked below.
 vi.mock("@/lib/supabase", () => ({ supabase: {} }));
 
 vi.mock("@/lib/logger", () => ({
@@ -41,7 +41,7 @@ vi.mock("./jobListQueries", async (importOriginal) => {
   return {
     ...actual,
     queryJobPage: fx.queryJobPage,
-    computeJobStats: fx.computeJobStats,
+    queryJobStats: fx.queryJobStats,
     queryJobSpots: fx.queryJobSpots,
     enrichJobRows: fx.enrichJobRows,
     searchClientsForTerm: fx.searchClientsForTerm,
@@ -82,7 +82,7 @@ beforeEach(() => {
   document.cookie = "jobs_hide_delivered=; max-age=0; path=/";
   localStorage.clear();
   fx.queryJobPage.mockReset().mockResolvedValue({ rows: [], count: 0 });
-  fx.computeJobStats
+  fx.queryJobStats
     .mockReset()
     .mockResolvedValue({ total: 0, pending: 0, progress: 0, completed: 0, totalAmt: 0 });
   fx.queryJobSpots.mockReset().mockResolvedValue([]);
@@ -91,8 +91,8 @@ beforeEach(() => {
   fx.fetchOpenPartCounts.mockReset().mockResolvedValue(new Map());
 });
 
-describe("useJobList — RSC seed gate", () => {
-  it("seed valid → mount par koi DB fetch nahi (stats/page/spots/openParts)", async () => {
+describe("useJobList â€” RSC seed gate", () => {
+  it("seed valid â†’ mount par koi DB fetch nahi (stats/page/spots/openParts)", async () => {
     const seed = makeSeed();
     const { result } = renderHook(() => useJobList(seed));
 
@@ -100,7 +100,7 @@ describe("useJobList — RSC seed gate", () => {
     await act(flush);
 
     expect(fx.queryJobPage).not.toHaveBeenCalled();
-    expect(fx.computeJobStats).not.toHaveBeenCalled();
+    expect(fx.queryJobStats).not.toHaveBeenCalled();
     expect(fx.queryJobSpots).not.toHaveBeenCalled();
     expect(fx.fetchOpenPartCounts).not.toHaveBeenCalled();
     // Seed data hi first paint hai
@@ -120,10 +120,10 @@ describe("useJobList — RSC seed gate", () => {
     await act(flush);
 
     expect(fx.queryJobPage).not.toHaveBeenCalled();
-    expect(fx.computeJobStats).not.toHaveBeenCalled();
+    expect(fx.queryJobStats).not.toHaveBeenCalled();
   });
 
-  it("hide_delivered cookie=1 + seed hideDelivered=false → seed drop + client fetch", async () => {
+  it("hide_delivered cookie=1 + seed hideDelivered=false â†’ seed drop + client fetch", async () => {
     document.cookie = "jobs_hide_delivered=1; path=/";
     const seed = makeSeed(false);
     const { result } = renderHook(() => useJobList(seed));
@@ -132,7 +132,7 @@ describe("useJobList — RSC seed gate", () => {
     expect(result.current.hideDelivered).toBe(true);
   });
 
-  it("seed ke baad filter change → client refetch (seed consumed)", async () => {
+  it("seed ke baad filter change â†’ client refetch (seed consumed)", async () => {
     const seed = makeSeed();
     const { result } = renderHook(() => useJobList(seed));
 

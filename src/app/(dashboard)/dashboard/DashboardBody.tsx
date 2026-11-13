@@ -750,7 +750,12 @@ export default function DashboardBody({ initial }: { initial: DashboardInitialDa
       )}
 
       {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━ CHARTS */}
-      <DeferredMount minHeightClassName="min-h-[660px] lg:min-h-[350px]">
+      {/* Perf audit (13 Nov 2026): charts ka apna lazy bundle ~572KB (decoded,
+          recharts + d3 deps) — viewport ke paas aane par hi mount hota hai.
+          Fallback timer 2.5s → 8s: below-the-fold charts ke liye cold load par
+          ye 572KB network/parse first paint se door rehta hai (IO scroll par
+          turant mount karta hai, isliye feature-loss nahi). */}
+      <DeferredMount minHeightClassName="min-h-[660px] lg:min-h-[350px]" fallbackMs={8000}>
         <DashboardCharts
           revenueData={revenueData}
           statusData={statusData}

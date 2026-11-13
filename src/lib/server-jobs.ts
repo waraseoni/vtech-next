@@ -1,9 +1,9 @@
 import { getServerSupabase } from "@/lib/api-auth";
 import {
-  computeJobStats,
   enrichJobRows,
   queryJobPage,
   queryJobSpots,
+  queryJobStats,
   searchClientsForTerm,
   type JobsPageData,
 } from "@/app/jobs/jobListQueries";
@@ -75,7 +75,7 @@ export async function fetchJobsPageData(
     try {
       const [{ rows, count }, stats] = await Promise.all([
         queryJobPage(supabase, filters, 0, PAGE_SIZE, resolveClients),
-        computeJobStats(supabase, filters, resolveClients),
+        queryJobStats(supabase, filters, resolveClients),
       ]);
       // PERF: open-part counts sirf row ids par depend karte hain — pehle
       // enrichJobRows ke BAAD sequential chalte the (ek extra RTT ~300ms).

@@ -248,6 +248,41 @@ export async function computeJobStats(
   return { total, pending, progress, completed, totalAmt };
 }
 
+/**
+ * RPC-first stats — `get_jobs_stats` (supabase/migrations/20261113_jobs_stats_stale_rpc.sql)
+ * ek hi aggregate row deta hai (koi row transfer nahi). RPC missing/failed ho to
+ * purana chunked client scan (computeJobStats) chalta rahega — behaviour same.
+ */
+export async function queryJobStats(
+  supabase: SupabaseClient,
+  filters: JobListFilters,
+  resolveClients: ClientIdsResolver = defaultResolver(supabase)
+): Promise<JobListStats> {
+  try {
+    const { data, error } = await supabase.rpc("get_jobs_stats", {
+      p_term: filters.term || null,
+      p_date_from: filters.dateFrom || null,
+      p_date_to: filters.dateTo || null,
+      p_hide_delivered: filters.hideDelivered,
+      p_status: filters.status === "" ? null : filters.status,
+      p_spot: filters.spot || null,
+    });
+    if (!error && data && typeof data === "object" && "total" in data) {
+      const d = data as Record<string, number>;
+      return {
+        total: d.total || 0,
+        pending: d.pending || 0,
+        progress: d.progress || 0,
+        completed: d.completed || 0,
+        totalAmt: d.totalAmt || 0,
+      };
+    }
+  } catch {
+    /* RPC missing/failed → client fallback */
+  }
+  return computeJobStats(supabase, filters, resolveClients);
+}
+
 /** Filtered rows ka ek page (job_id desc — newest first) + exact total count. */
 export async function queryJobPage(
   supabase: SupabaseClient,
@@ -380,6 +415,110 @@ export async function enrichJobRows(
       status_changed_at: statusDate,
     } as Transaction;
   });
+}
+
+/** Stale alert item — "Done/Paid par 7+ din se spot par pada" job. */
+export interface StaleJobItem {
+  id: number;
+  job_id: string;
+  item: string;
+  uniq_id: string;
+  days: number;
+}
+
+/**
+ * Purana 3-request client scan (fallback jab `get_stale_jobs` RPC available na
+ * ho): candidate rows → dono yug ke status logs → last-change filter.
+ * Logic 1:1 RPC (supabase/migrations/20261113_jobs_stats_stale_rpc.sql) se
+ * match karta hai — dono me badlav ek saath karo.
+ */
+export async function queryStaleJobsFallback(
+  supabase: SupabaseClient,
+  opts: { days?: number; limit?: number } = {}
+): Promise<StaleJobItem[]> {
+  const days = opts.days ?? 7;
+  const limit = opts.limit ?? 50;
+
+  // NOTE: transaction_list.status_changed_at column DB me exist nahi karta —
+  // stale time activity_logs se derive hota hai (dual-era helper, upar).
+  // Logs na mile to fallback date_updated (sirf stale-DETECTION ke liye).
+  const now = Date.now();
+  const cutoffIso = new Date(now - days * 86400000).toISOString();
+
+  const { data: cands, error: candErr } = await supabase
+    .from("transaction_list")
+    .select("id, job_id, item, uniq_id, date_created, date_updated")
+    .eq("del_status", 0)
+    .in("status", [2, 3])
+    .neq("uniq_id", "")
+    .lt("date_updated", cutoffIso)
+    .order("date_updated", { ascending: true })
+    .limit(300);
+  if (candErr) throw candErr;
+  const list = cands || [];
+  if (!list.length) return [];
+
+  // Har job ki LAST status-change time — dono yug parallel
+  const [legacyRows, modernRows] = await Promise.all([
+    queryStatusChangeLogs(
+      supabase,
+      "legacy",
+      list.map((t) => String(t.id))
+    ),
+    queryStatusChangeLogs(supabase, "modern", [
+      ...new Set(list.map((t) => String(t.job_id || "")).filter(Boolean)),
+    ]),
+  ]);
+  const logMap = new Map<string, string>();
+  for (const log of [...legacyRows, ...modernRows]) {
+    const k = String(log.meta_id);
+    if (!logMap.has(k)) logMap.set(k, log.date_created);
+  }
+
+  return list
+    .map((t) => {
+      const changedAt =
+        logMap.get(String(t.id)) ??
+        logMap.get(String(t.job_id)) ??
+        t.date_updated ??
+        t.date_created;
+      const ts = new Date(changedAt || "").getTime();
+      return {
+        id: t.id,
+        job_id: t.job_id,
+        item: t.item,
+        uniq_id: t.uniq_id || "",
+        ts,
+        days: Math.floor((now - ts) / 86400000),
+      };
+    })
+    .filter((it) => it.ts > 0 && now - it.ts >= days * 86400000)
+    .sort((a, b) => a.ts - b.ts)
+    .slice(0, limit)
+    .map((it) => ({
+      id: it.id,
+      job_id: it.job_id,
+      item: it.item,
+      uniq_id: it.uniq_id,
+      days: it.days,
+    }));
+}
+
+/** RPC-first stale jobs — 3 requests ki jagah 1 (fallback same semantics). */
+export async function queryStaleJobs(
+  supabase: SupabaseClient,
+  opts: { days?: number; limit?: number } = {}
+): Promise<StaleJobItem[]> {
+  try {
+    const { data, error } = await supabase.rpc("get_stale_jobs", {
+      p_days: opts.days ?? 7,
+      p_limit: opts.limit ?? 50,
+    });
+    if (!error && Array.isArray(data)) return data as StaleJobItem[];
+  } catch {
+    /* RPC missing/failed → client fallback */
+  }
+  return queryStaleJobsFallback(supabase, opts);
 }
 
 /** Job spots (kind='job' locations) + live occupancy counts. */
