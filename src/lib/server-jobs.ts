@@ -77,20 +77,25 @@ export async function fetchJobsPageData(
         queryJobPage(supabase, filters, 0, PAGE_SIZE, resolveClients),
         computeJobStats(supabase, filters, resolveClients),
       ]);
-      const transactions = await enrichJobRows(supabase, rows);
-      // Open-part badges — pehle client mount par ek extra RTT thi; ab server
-      // par (list ke saath) — badge first-paint me hi sahi.
-      let openPartCounts: [number, number][] = [];
-      try {
-        const counts = await fetchOpenPartCounts(
-          transactions.map((t) => t.id),
+      // PERF: open-part counts sirf row ids par depend karte hain — pehle
+      // enrichJobRows ke BAAD sequential chalte the (ek extra RTT ~300ms).
+      // Ab dono parallel; badge data same rehta hai.
+      const [transactions, openPartCountsMap] = await Promise.all([
+        enrichJobRows(supabase, rows),
+        fetchOpenPartCounts(
+          rows.map((r) => Number(r.id)),
           supabase
-        );
-        openPartCounts = [...counts.entries()];
-      } catch (e) {
-        logger.warn("Jobs openPartCounts fetch failed:", e);
-      }
-      return { transactions, totalRows: count, stats, openPartCounts };
+        ).catch((e) => {
+          logger.warn("Jobs openPartCounts fetch failed:", e);
+          return new Map<number, number>();
+        }),
+      ]);
+      return {
+        transactions,
+        totalRows: count,
+        stats,
+        openPartCounts: [...openPartCountsMap.entries()],
+      };
     } catch (e) {
       logger.warn("Jobs initial list fetch failed — body client-fetch karega:", e);
       return null;

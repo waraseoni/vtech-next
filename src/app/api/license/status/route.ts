@@ -16,6 +16,19 @@ const supabaseAdmin = getAdminSupabase();
 // sakta hai (seller ko delete/revoke ka asar jaldi dikhane ke liye).
 const RECHECK_MS = (Number(process.env.LICENSE_RECHECK_HOURS) || 24) * 60 * 60 * 1000;
 
+/**
+ * PERF: har full page load `?force=true` maarta tha → auth RTT + 3 system_info
+ * reads + remote license RPC ≈ 0.8-2.3s, aur Vercel par baaki data-fetch ko
+ * queue kar deta tha. Do guards:
+ *   1. Non-force result 20s tak cache (rapid reloads/navigations free).
+ *   2. Force ko 60s me ek hi baar remote jaane do (hard-refresh spam par bhi
+ *      sirf ek RPC) — session-level freshness client bhi control karta hai.
+ */
+const STATUS_CACHE_MS = 20_000;
+const FORCE_DEDUPE_MS = 60_000;
+let statusCache: { at: number; status: LicenseStatus } | null = null;
+let lastForcedAt = 0;
+
 async function readField(field: string): Promise<string | null> {
   const { data } = await supabaseAdmin
     .from("system_info")
@@ -48,8 +61,15 @@ export async function GET(req: NextRequest) {
 
     // ?force=true → login/hard-refresh par cache bypass karke central se
     // fresh verify karo — seller ke changes (plan, expiry, revoke) jaldi
-    // client tak pahunchen.
-    const force = req.nextUrl.searchParams.get("force") === "true";
+    // client tak pahunchen. 60s ke andar dobara force aaye to remote call skip
+    // (refresh spam se remote RPC na chale).
+    const forceParam = req.nextUrl.searchParams.get("force") === "true";
+    const force = forceParam && Date.now() - lastForcedAt > FORCE_DEDUPE_MS;
+
+    // Non-force + fresh cache → seedha wapas (auth RTT bhi bachta hai).
+    if (!force && statusCache && Date.now() - statusCache.at < STATUS_CACHE_MS) {
+      return NextResponse.json(statusCache.status);
+    }
 
     const [keyRaw, statusRaw, lastCheckedRaw] = await Promise.all([
       readField("license_key"),
@@ -189,6 +209,9 @@ export async function GET(req: NextRequest) {
       devEnabled:
         !!process.env.LICENSE_SERVICE_SERVICE_ROLE_KEY && !!process.env.DEV_PORTAL_PASSWORD,
     };
+
+    if (force) lastForcedAt = Date.now();
+    statusCache = { at: Date.now(), status };
 
     return NextResponse.json(status);
   } catch (err: unknown) {

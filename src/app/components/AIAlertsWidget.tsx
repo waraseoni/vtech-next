@@ -60,11 +60,15 @@ export default function AIAlertsWidget() {
   );
   const [error, setError] = useState(false);
 
-  const load = useCallback(async () => {
+  /**
+   * `fresh` → server cache bypass (manual Refresh). Pehla load server ke TTL
+   * cache se hi serve hota hai, isliye normal case me ~0ms.
+   */
+  const load = useCallback(async (fresh = false) => {
     setLoading(true);
     setError(false);
     try {
-      const res = await fetch("/api/ai/alerts");
+      const res = await fetch(fresh ? "/api/ai/alerts?fresh=1" : "/api/ai/alerts");
       if (!res.ok) throw new Error("unauthorized");
       const body = await res.json();
       const alerts = body?.alerts?.alerts;
@@ -76,9 +80,26 @@ export default function AIAlertsWidget() {
     }
   }, []);
 
+  // PERF: widget neeche fold me hai aur iska endpoint 2-3s leta hai — initial
+  // render ke critical data-fetch ke saath compete na kare, isliye idle par load.
   useEffect(() => {
     if (dismissed) return;
-    load();
+    const w = window as unknown as {
+      requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number;
+      cancelIdleCallback?: (id: number) => void;
+    };
+    let idleId: number | undefined;
+    const timer = window.setTimeout(() => {
+      if (typeof w.requestIdleCallback === "function") {
+        idleId = w.requestIdleCallback(() => void load(), { timeout: 2000 });
+      } else {
+        void load();
+      }
+    }, 1200);
+    return () => {
+      window.clearTimeout(timer);
+      if (idleId !== undefined && w.cancelIdleCallback) w.cancelIdleCallback(idleId);
+    };
   }, [dismissed, load]);
 
   const hide = () => {
@@ -98,7 +119,7 @@ export default function AIAlertsWidget() {
     }
     setDismissed(false);
     setOpen(true);
-    load();
+    load(true);
   };
 
   // LITE MODE: AI/automation widget lite build me nahi (bina hooks ke bytes)
@@ -156,7 +177,7 @@ export default function AIAlertsWidget() {
           />
         </button>
         <button
-          onClick={load}
+          onClick={() => load(true)}
           title="Refresh"
           className="w-8 h-8 bg-slate-50 dark:bg-panel border border-app-2 dark:border-app hover:border-muted dark:hover:border-muted rounded-xl flex items-center justify-center text-muted hover:text-app dark:hover:text-white transition-all"
         >

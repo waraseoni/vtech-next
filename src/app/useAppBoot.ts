@@ -22,6 +22,19 @@ import { initPresence, cleanupPresence } from "@/lib/presence";
 
 // License status ka minimum refresh interval (force ke alawa).
 const LICENSE_REFRESH_MIN_MS = 60_000;
+// PERF: remote license re-verify (force) session me max ek baar 30 min.
+const LICENSE_FORCE_MIN_MS = 30 * 60 * 1000;
+// Full page reloads ke beech throttle bachane ke liye (sessionStorage keys).
+const LICENSE_FETCH_AT_KEY = "vtech_license_fetched_at";
+const LICENSE_FORCED_AT_KEY = "vtech_license_forced_at";
+// Throttle ke dauran (hard reload) banner turant dikhe — last known status.
+const LICENSE_STATUS_CACHE_KEY = "vtech_license_status";
+
+// PERF: brand logo ka localStorage cache — logo rarely badalta hai, aur har
+// page load par `system_info?meta_field=logo` DB query (~400-600ms) fizool thi.
+const LOGO_CACHE_KEY = "vtech_brand_logo";
+const LOGO_CACHE_AT_KEY = "vtech_brand_logo_at";
+const LOGO_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
 
 /**
  * useAppBoot — RootClient (app shell) ka saara auth/boot state + effects.
@@ -122,18 +135,76 @@ export function useAppBoot(options: { ssrAuth?: SsrShellAuth | null } = {}) {
     // click ke baad page khulta hi nahi. Force (pehli load / activation) hamesha
     // chale; baaki max ek baar per minute.
     const now = Date.now();
-    if (!force && now - licenseFetchedAt.current < LICENSE_REFRESH_MIN_MS) return;
+
+    // PERF: `force` (remote re-verify) ab session me max ek baar 30 min — har
+    // hard refresh par 0.8-2.3s ka remote RPC band. Activation ke baad
+    // refreshLicense(true) phir bhi chalta hai (naya forcedAt likh kar).
+    let shouldForce = force;
+    if (shouldForce) {
+      let lastForced = 0;
+      try {
+        lastForced = Number(sessionStorage.getItem(LICENSE_FORCED_AT_KEY) || 0);
+      } catch {
+        /* storage blocked */
+      }
+      if (now - lastForced < LICENSE_FORCE_MIN_MS) {
+        shouldForce = false;
+      } else {
+        try {
+          sessionStorage.setItem(LICENSE_FORCED_AT_KEY, String(now));
+        } catch {
+          /* storage blocked */
+        }
+      }
+    }
+
+    if (!shouldForce) {
+      // Full page reload par bhi throttle kaam kare — sessionStorage me timestamp.
+      let lastFetch = licenseFetchedAt.current;
+      try {
+        lastFetch = Math.max(lastFetch, Number(sessionStorage.getItem(LICENSE_FETCH_AT_KEY) || 0));
+      } catch {
+        /* storage blocked */
+      }
+      if (now - lastFetch < LICENSE_REFRESH_MIN_MS) return;
+    }
+
     licenseFetchedAt.current = now;
     try {
-      const url = force ? "/api/license/status?force=true" : "/api/license/status";
+      sessionStorage.setItem(LICENSE_FETCH_AT_KEY, String(now));
+    } catch {
+      /* storage blocked */
+    }
+    try {
+      const url = shouldForce ? "/api/license/status?force=true" : "/api/license/status";
       const res = await fetch(url, { cache: "no-store" });
       if (!res.ok) {
         setLicense(null);
         return;
       }
-      setLicense(await res.json());
+      const status = (await res.json()) as LicenseStatus;
+      setLicense(status);
+      try {
+        sessionStorage.setItem(LICENSE_STATUS_CACHE_KEY, JSON.stringify(status));
+      } catch {
+        /* storage blocked */
+      }
     } catch {
       setLicense(null);
+    }
+  }, []);
+
+  // PERF: license throttle ke dauran (page reload) banner turant dikhe — last
+  // known status sessionStorage se hydrate karo. Network call phir bhi
+  // `refreshLicense` ke throttle rules par chalti hai.
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem(LICENSE_STATUS_CACHE_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as LicenseStatus;
+      if (parsed && typeof parsed === "object") setLicense(parsed);
+    } catch {
+      /* storage blocked / corrupt */
     }
   }, []);
 
@@ -281,8 +352,19 @@ export function useAppBoot(options: { ssrAuth?: SsrShellAuth | null } = {}) {
   }, []); // ← empty deps: intentional, auth only on mount
 
   // Brand logo — pehle native app first-run setup se (Capacitor plugin), warna DB se.
+  // PERF: ye DB query har page load par chalti thi (~400-600ms + 1 request).
+  // Ab localStorage cache (6h) — logo turant paint hota hai, DB sirf cache miss par.
   useEffect(() => {
     let cancelled = false;
+
+    // Cache se turant paint (fresh ho ya stale — dono me UI bhar jata hai).
+    try {
+      const cached = localStorage.getItem(LOGO_CACHE_KEY);
+      if (cached && !cancelled) setBrandLogo(cached);
+    } catch {
+      /* storage blocked */
+    }
+
     (async () => {
       let resolvedLogo: string | null = null;
       try {
@@ -316,13 +398,30 @@ export function useAppBoot(options: { ssrAuth?: SsrShellAuth | null } = {}) {
         return;
       }
 
+      // Cache fresh hai to DB round-trip skip karo (logo rarely badalta hai).
+      try {
+        const cached = localStorage.getItem(LOGO_CACHE_KEY);
+        const at = Number(localStorage.getItem(LOGO_CACHE_AT_KEY) || 0);
+        if (cached && Date.now() - at < LOGO_CACHE_TTL_MS) return;
+      } catch {
+        /* storage blocked — DB hi fallback */
+      }
+
       try {
         const { data } = await supabase
           .from("system_info")
           .select("meta_value")
           .eq("meta_field", "logo")
           .maybeSingle();
-        if (!cancelled && data?.meta_value) setBrandLogo(String(data.meta_value));
+        if (!cancelled && data?.meta_value) {
+          setBrandLogo(String(data.meta_value));
+          try {
+            localStorage.setItem(LOGO_CACHE_KEY, String(data.meta_value));
+            localStorage.setItem(LOGO_CACHE_AT_KEY, String(Date.now()));
+          } catch {
+            /* storage blocked */
+          }
+        }
       } catch {
         /* ignore */
       }
