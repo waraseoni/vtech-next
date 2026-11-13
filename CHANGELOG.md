@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.77.2](https://github.com/waraseoni/vtech-next/compare/v1.77.1...v1.77.2) (2026-11-13)
+
+### Performance Improvements
+
+* **dashboard:** due stats RPC (5 full-table scans -> 1 call) ([8479ad0](https://github.com/waraseoni/vtech-next/commit/8479ad0f2c593aceea1fc83c37dbbf252f0c9ee4))
+
 ## [1.77.1](https://github.com/waraseoni/vtech-next/compare/v1.77.0...v1.77.1) (2026-11-13)
 
 ### Performance Improvements
