@@ -4582,4 +4582,97 @@ begin
   end if;
 end $$;
 
+-- ══════════════════════════════════════════════════════════════════════════════
+-- get_due_stats() (20261113_dashboard_due_stats_rpc.sql)
+-- Dashboard "Due Reminders" widget — 5 full-table scans → 1 aggregate.
+-- Formula docs: src/lib/client-due.ts. Purana data purane rules se (client_name
+-- text → bigint, PHP convention). Read-only, stable, security definer.
+-- ══════════════════════════════════════════════════════════════════════════════
+create or replace function public.get_due_stats()
+returns jsonb
+language sql
+security definer
+stable
+set search_path = public
+as $$
+  with active_loans as (
+    select id, client_id, total_payable
+    from public.client_loans
+    where status = 1
+  ),
+  repair_agg as (
+    select client_name::bigint as client_id,
+           coalesce(sum(amount), 0) as repair_billed
+    from public.transaction_list
+    where status = 5 and client_name ~ '^\d+$'
+    group by 1
+  ),
+  direct_agg as (
+    select client_id,
+           coalesce(sum(total_amount), 0) as direct_sales_billed
+    from public.direct_sales
+    group by client_id
+  ),
+  service_pay_agg as (
+    select client_id,
+           coalesce(sum(amount + coalesce(discount, 0)), 0) as service_paid
+    from public.client_payments
+    where loan_id is null or loan_id = 0
+    group by client_id
+  ),
+  loan_given_agg as (
+    select client_id,
+           coalesce(sum(total_payable), 0) as active_loan_given
+    from active_loans
+    group by client_id
+  ),
+  loan_repaid_agg as (
+    select cp.client_id,
+           coalesce(sum(cp.amount + coalesce(cp.discount, 0)), 0) as loan_repaid
+    from public.client_payments cp
+    inner join active_loans al on al.id = cp.loan_id
+    group by cp.client_id
+  ),
+  balances as (
+    select
+      c.id,
+      c.payment_due_date,
+      coalesce(c.opening_balance, 0)
+        + coalesce(r.repair_billed, 0)
+        + coalesce(d.direct_sales_billed, 0)
+        - coalesce(sp.service_paid, 0)
+        + coalesce(lg.active_loan_given, 0)
+        - coalesce(lr.loan_repaid, 0) as balance
+    from public.client_list c
+    left join repair_agg      r  on r.client_id  = c.id
+    left join direct_agg      d  on d.client_id  = c.id
+    left join service_pay_agg sp on sp.client_id = c.id
+    left join loan_given_agg  lg on lg.client_id = c.id
+    left join loan_repaid_agg lr on lr.client_id = c.id
+    where c.delete_flag = 0
+  ),
+  dues as (
+    select
+      balance,
+      case
+        when payment_due_date is null then null
+        else payment_due_date - (now() at time zone 'Asia/Kolkata')::date
+      end as days_diff
+    from balances
+    where balance > 0.01
+  )
+  select jsonb_build_object(
+    'overdue',  count(*) filter (where days_diff < 0),
+    'today',    count(*) filter (where days_diff = 0),
+    'upcoming', count(*) filter (where days_diff between 1 and 7),
+    'amount',   coalesce(sum(balance), 0)
+  )
+  from dues;
+$$;
+
+revoke all on function public.get_due_stats() from public;
+revoke all on function public.get_due_stats() from anon;
+grant execute on function public.get_due_stats() to authenticated;
+grant execute on function public.get_due_stats() to service_role;
+
 NOTIFY pgrst, 'reload schema';

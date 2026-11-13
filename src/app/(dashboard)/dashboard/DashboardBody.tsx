@@ -228,6 +228,25 @@ export default function DashboardBody({ initial }: { initial: DashboardInitialDa
 
   // ── DUE REMINDERS WIDGET ────────────────────────────────────────────────
   const fetchDueStats = useCallback(async () => {
+    // Fast path: server-side aggregate (supabase/migrations/20261113_dashboard_due_stats_rpc.sql).
+    // Pehle ye 5 poore tables client-side padhta tha (transaction_list ke multiple
+    // 1000-row pages samet) — 400-950ms + heavy transfer. RPC migrate hone tak
+    // neeche wala fallback bilkul waisa hi chalta rahega.
+    try {
+      const { data: rpcData, error: rpcErr } = await supabase.rpc("get_due_stats");
+      if (!rpcErr && rpcData && typeof rpcData === "object" && "amount" in rpcData) {
+        const d = rpcData as Record<string, number>;
+        return {
+          overdue: d.overdue || 0,
+          today: d.today || 0,
+          upcoming: d.upcoming || 0,
+          amount: d.amount || 0,
+        };
+      }
+    } catch {
+      /* RPC missing/failed → client fallback */
+    }
+
     try {
       const [
         { data: clients },
