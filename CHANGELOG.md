@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.77.1](https://github.com/waraseoni/vtech-next/compare/v1.77.0...v1.77.1) (2026-11-13)
+
+### Performance Improvements
+
+* **boot:** cache AI alerts/license/logo, parallelize jobs parts ([5c8d3a0](https://github.com/waraseoni/vtech-next/commit/5c8d3a06ac84706be7577a4a3da3c2ae0e33dc9d))
+
 ## [1.77.0](https://github.com/waraseoni/vtech-next/compare/v1.76.1...v1.77.0) (2026-11-08)
 
 ### Features
