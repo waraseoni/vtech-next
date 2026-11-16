@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## [1.77.4](https://github.com/waraseoni/vtech-next/compare/v1.77.3...v1.77.4) (2026-11-16)
+
+### Bug Fixes
+
+* **mariadb-export:** text/blob PK columns -> VARCHAR(191) (errno 1170) ([d012d4c](https://github.com/waraseoni/vtech-next/commit/d012d4c997a8f25bc9bd317bac0ca3fc587ece1a))
+
+### Performance Improvements
+
+* **save-flows:** nav-first saves, batched activity logs, bulk writes (measured 95ms/RTT) ([13cc89e](https://github.com/waraseoni/vtech-next/commit/13cc89e3f9efb5c704e033f60177575c1fbce615))
+
 ## [1.77.3](https://github.com/waraseoni/vtech-next/compare/v1.77.2...v1.77.3) (2026-11-13)
 
 ### Performance Improvements
