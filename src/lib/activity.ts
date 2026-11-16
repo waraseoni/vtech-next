@@ -43,23 +43,33 @@ export async function logActivity(
   metaId?: string | number,
   details?: string
 ) {
+  await logActivities([{ action, module, metaId, details }]);
+}
+
+export type ActivityEntry = {
+  action: string;
+  module: string;
+  metaId?: string | number;
+  details?: string;
+};
+
+/**
+ * Batch version — bulk actions (jaise 10 jobs ka status change) pehle per-row
+ * `await logActivity()` chalate the: har call 3 serial network round-trip
+ * (getCachedUser → profiles → insert) → 10 rows = ~30 sequential RTT, modal
+ * spinner seconds tak ghumta rehta tha. Yahan profile ek hi baar padha jata
+ * hai aur saari rows ek hi insert me jaati hain (2 RTT, row count se independent).
+ */
+export async function logActivities(entries: ActivityEntry[]) {
+  if (entries.length === 0) return;
   try {
-    await withTimeout(
-      writeLog(action, module, metaId, details),
-      LOG_ACTIVITY_TIMEOUT_MS,
-      "logActivity"
-    );
+    await withTimeout(writeLogs(entries), LOG_ACTIVITY_TIMEOUT_MS, "logActivities");
   } catch (err) {
-    logger.error("Critical error in logActivity:", err);
+    logger.error("Critical error in logActivities:", err);
   }
 }
 
-async function writeLog(
-  action: string,
-  module: string,
-  metaId?: string | number,
-  details?: string
-) {
+async function writeLogs(entries: ActivityEntry[]) {
   const {
     data: { user },
   } = await getCachedUser();
@@ -83,38 +93,38 @@ async function writeLog(
   // hua kaam bilkul as-is (geo null → purana insert, purane readers safe).
   // Signature UNCHANGED — 100+ callers untouched, cache auto-read hota hai.
   const geo = takeGeoAudit();
-  const baseRow = {
+  const now = new Date().toISOString();
+  const baseRows = entries.map((e) => ({
     user_id: numericUserId,
-    action: action,
-    module: module,
-    meta_id: metaId?.toString(),
-    details: details || "",
-    date_created: new Date().toISOString(),
-  };
+    action: e.action,
+    module: e.module,
+    meta_id: e.metaId?.toString(),
+    details: e.details || "",
+    date_created: now,
+  }));
   if (!geo) {
-    const { error } = await supabase.from("activity_logs").insert(baseRow);
+    const { error } = await supabase.from("activity_logs").insert(baseRows);
     if (error) {
       logger.warn("Activity log insert failed:", error.message);
     }
     return;
   }
-  const taggedDetails =
-    `${details || ""}\n📍 Bahar ~${geo.distanceM}m se${geo.permit ? " (permit par)" : ""}`.trim();
-  const taggedRow = {
-    ...baseRow,
-    details: taggedDetails,
+  const taggedRows = baseRows.map((row) => ({
+    ...row,
+    details:
+      `${row.details}\n📍 Bahar ~${geo.distanceM}m se${geo.permit ? " (permit par)" : ""}`.trim(),
     geo_lat: geo.lat,
     geo_lng: geo.lng,
     geo_distance_m: geo.distanceM,
-  };
-  const { error } = await supabase.from("activity_logs").insert(taggedRow);
+  }));
+  const { error } = await supabase.from("activity_logs").insert(taggedRows);
   if (error) {
     // Migration abhi apply nahi hui (columns missing) → plain retry taaki
     // deploy-order safe rahe (log bache, geo skip). Baaki errors = warn.
     const missingCols =
       error.code === "42703" || /geo_lat|geo_lng|geo_distance_m/i.test(error.message);
     if (missingCols) {
-      const { error: retryErr } = await supabase.from("activity_logs").insert(baseRow);
+      const { error: retryErr } = await supabase.from("activity_logs").insert(baseRows);
       if (retryErr) logger.warn("Activity log insert failed:", retryErr.message);
     } else {
       logger.warn("Activity log insert failed:", error.message);

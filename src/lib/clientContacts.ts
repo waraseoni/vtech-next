@@ -123,34 +123,53 @@ export async function syncClientContacts(
 
   const desiredPhones = new Set(contacts.map((c) => norm(c.phone)));
 
-  for (const c of contacts) {
-    const key = norm(c.phone);
-    const row = existingByPhone.get(key);
-    if (row?.id) {
-      const { error } = await supabase
-        .from("client_contacts")
-        .update({
-          name: c.name.trim() || null,
-          label: c.label.trim() || "Mobile",
-          is_primary: c.is_primary,
-        })
-        .eq("id", row.id);
-      if (error) throw new Error(`client_contacts update fail: ${error.message}`);
-    } else {
-      const { error } = await supabase.from("client_contacts").insert({
+  // PERF + correctness: partial unique index `client_contacts_primary_uidx`
+  // ek hi primary allow karta hai. Pehle serial loop me naya primary purane
+  // primary se pehle aaya to unique violation hota tha. Ab: pehle purana
+  // primary demote (1 update), phir saari rows parallel me likho.
+  const currentPrimary = existingRows.find((r) => r.is_primary);
+  const desiredPrimary = contacts.find((c) => c.is_primary);
+  if (currentPrimary && norm(currentPrimary.phone) !== norm(desiredPrimary?.phone ?? "")) {
+    const { error } = await supabase
+      .from("client_contacts")
+      .update({ is_primary: false })
+      .eq("client_id", clientId)
+      .eq("id", currentPrimary.id);
+    if (error) throw new Error(`client_contacts primary demote fail: ${error.message}`);
+  }
+
+  // Updates + inserts ek saath (N serial round-trip → 1 concurrent burst).
+  const writeResults = await Promise.all(
+    contacts.map((c) => {
+      const key = norm(c.phone);
+      const row = existingByPhone.get(key);
+      if (row?.id) {
+        return supabase
+          .from("client_contacts")
+          .update({
+            name: c.name.trim() || null,
+            label: c.label.trim() || "Mobile",
+            is_primary: c.is_primary,
+          })
+          .eq("id", row.id);
+      }
+      return supabase.from("client_contacts").insert({
         client_id: clientId,
         name: c.name.trim() || null,
         label: c.label.trim() || "Mobile",
         phone: c.phone,
         is_primary: c.is_primary,
       });
-      if (error) throw new Error(`client_contacts insert fail: ${error.message}`);
-    }
-  }
+    })
+  );
+  const writeErr = writeResults.find((r) => r.error)?.error;
+  if (writeErr) throw new Error(`client_contacts save fail: ${writeErr.message}`);
 
-  for (const row of existingRows) {
-    if (desiredPhones.has(norm(row.phone))) continue;
-    const { error } = await supabase.from("client_contacts").delete().eq("id", row.id);
+  const staleIds = existingRows
+    .filter((row) => !desiredPhones.has(norm(row.phone)))
+    .map((row) => row.id);
+  if (staleIds.length > 0) {
+    const { error } = await supabase.from("client_contacts").delete().in("id", staleIds);
     if (error) throw new Error(`client_contacts delete fail: ${error.message}`);
   }
 

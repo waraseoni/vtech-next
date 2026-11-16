@@ -419,7 +419,8 @@ function ManageJobPageInner({ params }: { params: Promise<{ id?: string }> }) {
       setClients((prev) => [...prev, newClient]);
       pickClient(newClient);
       setShowAddClientModal(false);
-      await logActivity(
+      // Audit only — modal ko block na kare (fire-and-forget).
+      void logActivity(
         "Created Client (from Job)",
         "Clients",
         newClient.id,

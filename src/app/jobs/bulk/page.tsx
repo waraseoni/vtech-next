@@ -290,44 +290,40 @@ export default function BulkJobPage() {
       // Get fresh job counter
       const nextJobId = await getNextJobId();
 
-      let savedCount = 0;
-      for (let i = 0; i < validRows.length; i++) {
-        const row = validRows[i];
-        const code = await genCode(i);
-        const jobIdStr = String(nextJobId + i);
-        const ts = nowIST();
+      // PERF: pehle per-row `genCode(i)` (1 select) + `insert` (1 insert) awaited
+      // tha → N rows = 2N serial round-trips (10 rows ≈ 20 RTT, save seconds
+      // leta tha). Ab ek code lookup + ek multi-row insert = 2 RTT.
+      const baseCode = await genCode(0);
+      const codePrefix = baseCode.slice(0, 8);
+      const baseSeq = parseInt(baseCode.slice(8), 10) || 0;
+      const ts = nowIST();
 
-        const { error } = await supabase
-          .from("transaction_list")
-          .insert({
-            client_name: String(clientId),
-            job_id: jobIdStr,
-            code,
-            item: row.item.trim(),
-            fault: row.fault.trim(),
-            remark: row.remark.trim() || "",
-            uniq_id: row.uniq_id.trim() || "",
-            amount: 0,
-            status: 0,
-            del_status: 0,
-            mechanic_id: row.mechanic_id ? parseInt(row.mechanic_id) : null,
-            mechanic_amount: 0,
-            mechanic_commission_amount: 0,
-            user_id: userId,
-            date_created: ts,
-            date_updated: ts,
-          })
-          .select("id")
-          .single();
+      const inserts = validRows.map((row, i) => ({
+        client_name: String(clientId),
+        job_id: String(nextJobId + i),
+        code: `${codePrefix}${String(baseSeq + i).padStart(2, "0")}`,
+        item: row.item.trim(),
+        fault: row.fault.trim(),
+        remark: row.remark.trim() || "",
+        uniq_id: row.uniq_id.trim() || "",
+        amount: 0,
+        status: 0,
+        del_status: 0,
+        mechanic_id: row.mechanic_id ? parseInt(row.mechanic_id) : null,
+        mechanic_amount: 0,
+        mechanic_commission_amount: 0,
+        user_id: userId,
+        date_created: ts,
+        date_updated: ts,
+      }));
 
-        if (error) throw new Error(`Row ${i + 1} save failed: ${error.message}`);
-        savedCount++;
-      }
+      const { error } = await supabase.from("transaction_list").insert(inserts);
+      if (error) throw new Error(`Bulk save failed: ${error.message}`);
 
       // Update job_id_counter
       await bumpJobCounter(nextJobId + validRows.length - 1);
 
-      toast.success(`${savedCount} jobs saved successfully!`);
+      toast.success(`${inserts.length} jobs saved successfully!`);
       router.replace("/jobs");
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Save failed!";

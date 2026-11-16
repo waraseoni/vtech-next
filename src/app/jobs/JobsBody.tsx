@@ -81,7 +81,7 @@ const JobPreviewPanel = dynamic(() => import("./JobPreviewPanel").then((m) => m.
   ssr: false,
 });
 import { substituteTemplate, firmVars, resolveTemplate } from "@/lib/whatsapp";
-import { logActivity } from "@/lib/activity";
+import { logActivities } from "@/lib/activity";
 import { getNextJobId, bumpJobCounter } from "@/lib/jobIdCounter";
 import { safeImageSrc } from "@/lib/image-utils";
 import { JOB_STATUS } from "@/lib/status-colors";
@@ -631,24 +631,28 @@ function JobsListContent({
       setBulkDeliverDate("");
       setBulkStatus("");
       const statusName = STATUS_MAP[newStatus] || String(newStatus);
-      for (const id of ids) {
-        const txn = transactions.find((t) => t.id === id);
-        const oldStatus =
-          (txn?.status != null ? STATUS_MAP[txn.status] : null) || String(txn?.status ?? "?");
-        // Canonical PK hi meta_id — job_id string nahi (docs/DATA_MIGRATION_NOTES.md)
-        await logActivity(
-          "Updated Job Status",
-          "Jobs",
-          id,
-          `Job #${txn?.job_id || id} | ${oldStatus} → ${statusName} | ${txn?.item || ""}`
-        );
-      }
-      await logActivity(
-        "Bulk Status Update",
-        "Jobs",
-        undefined,
-        `${ids.length} job(s) updated to "${statusName}"`
-      );
+      // PERF: pehle har job par `await logActivity()` tha (3 serial RTT × N).
+      // Ab ek batch call (1 profile read + 1 insert) fire-and-forget — modal
+      // turant band, logs background me. Canonical PK hi meta_id — job_id
+      // string nahi (docs/DATA_MIGRATION_NOTES.md).
+      void logActivities([
+        ...ids.map((id) => {
+          const txn = transactions.find((t) => t.id === id);
+          const oldStatus =
+            (txn?.status != null ? STATUS_MAP[txn.status] : null) || String(txn?.status ?? "?");
+          return {
+            action: "Updated Job Status",
+            module: "Jobs",
+            metaId: id,
+            details: `Job #${txn?.job_id || id} | ${oldStatus} → ${statusName} | ${txn?.item || ""}`,
+          };
+        }),
+        {
+          action: "Bulk Status Update",
+          module: "Jobs",
+          details: `${ids.length} job(s) updated to "${statusName}"`,
+        },
+      ]);
       fetchStats();
       loadJobSpots();
       refetchStale();
@@ -679,16 +683,18 @@ function JobsListContent({
             : t
         )
       );
-      for (const id of ids) {
-        const txn = transactions.find((t) => t.id === id);
-        // Canonical PK hi meta_id — job_id string nahi (docs/DATA_MIGRATION_NOTES.md)
-        await logActivity(
-          "Moved Job Item",
-          "Jobs",
-          id,
-          `Job #${txn?.job_id || id} → ${bulkMoveName} | ${txn?.item || ""}`
-        );
-      }
+      // PERF: per-job awaited log → ek batch (fire-and-forget).
+      void logActivities(
+        ids.map((id) => {
+          const txn = transactions.find((t) => t.id === id);
+          return {
+            action: "Moved Job Item",
+            module: "Jobs",
+            metaId: id,
+            details: `Job #${txn?.job_id || id} → ${bulkMoveName} | ${txn?.item || ""}`,
+          };
+        })
+      );
       setSelectedIds(new Set());
       setBulkMoveOpen(false);
       setBulkMoveId(null);
@@ -723,12 +729,14 @@ function JobsListContent({
             : x
         )
       );
-      await logActivity(
-        "Moved Job Item",
-        "Jobs",
-        t.id,
-        `Job #${t.job_id || t.id} → ${spotPickName || "No Spot"} | ${t.item || ""}`
-      );
+      void logActivities([
+        {
+          action: "Moved Job Item",
+          module: "Jobs",
+          metaId: t.id,
+          details: `Job #${t.job_id || t.id} → ${spotPickName || "No Spot"} | ${t.item || ""}`,
+        },
+      ]);
       setSpotEditTxn(null);
       loadJobSpots();
     } else {

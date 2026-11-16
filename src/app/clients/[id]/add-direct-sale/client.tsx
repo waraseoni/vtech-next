@@ -183,13 +183,9 @@ export default function AddDirectSalePage({
       toast.success("Sale save ho gayi! ✅");
       // BUG FIX: router.replace instead of push+refresh (avoids unmount warning)
       //
-      // staleTime 30s ke andar view page purana cache serve karta tha.
-      // refetchType "all": view unmounted hai, fetch abhi karwa lo taaki
-      // mount par stale flash na dikhe.
-      await queryClient.invalidateQueries({
-        queryKey: clientDetailKey(clientId),
-        refetchType: "all",
-      });
+      // PERF: awaited refetch (8 queries) duplicate tha — view page RSC seed
+      // lata hai. Cache sync drop + turant nav.
+      queryClient.removeQueries({ queryKey: clientDetailKey(clientId) });
       router.replace(`/clients/${clientId}/view`);
     } catch (err) {
       console.error("sale error:", err instanceof Error ? err.message : JSON.stringify(err));

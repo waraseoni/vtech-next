@@ -218,14 +218,12 @@ export default function AddPaymentPage({ params }: { params: Promise<{ id: strin
       // BUG FIX 11: don't push + refresh (causes warning on unmounted component)
       // Use replace — navigates cleanly without stacking history
       //
-      // client-detail ka staleTime 30s hai — bina invalidation ke view page
-      // mount par purana payments list serve karta tha (nayi payment gayab,
-      // refresh par hi dikhti thi). refetchType "all": view unmounted hai,
-      // sirf mark karne se fetch mount par hota aur tab tak stale flash.
-      await queryClient.invalidateQueries({
-        queryKey: clientDetailKey(clientId),
-        refetchType: "all",
-      });
+      // PERF: pehle yahan `await invalidateQueries({refetchType:"all"})` tha —
+      // view page to RSC layout se fresh seed lata hai (8 queries server par),
+      // isliye browser me wahi 8 queries dobara await karna duplicate + serial
+      // kaam tha (nav 400-700ms late). Ab cache sirf synchronously drop hota
+      // hai (koi network nahi) — view mount par fresh seed use hota hai.
+      queryClient.removeQueries({ queryKey: clientDetailKey(clientId) });
       router.replace(`/clients/${clientId}/view`);
     } catch (err) {
       console.error("insert error:", err instanceof Error ? err.message : JSON.stringify(err));

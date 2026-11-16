@@ -158,13 +158,9 @@ export default function GiveLoanPage({ params }: { params: Promise<{ id: string 
       ]);
       if (error) throw error;
       toast.success("Loan save ho gaya! ✅");
-      // staleTime 30s ke andar view page purana cache serve karta tha.
-      // refetchType "all": view unmounted hai, fetch abhi karwa lo taaki
-      // mount par stale flash na dikhe.
-      await queryClient.invalidateQueries({
-        queryKey: clientDetailKey(clientId),
-        refetchType: "all",
-      });
+      // PERF: awaited refetch (8 queries) duplicate tha — view page RSC seed
+      // lata hai. Cache sync drop + turant nav (details view page comment).
+      queryClient.removeQueries({ queryKey: clientDetailKey(clientId) });
       router.replace(`/clients/${clientId}/view`);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Loan save mein galti!");

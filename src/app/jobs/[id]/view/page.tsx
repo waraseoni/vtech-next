@@ -634,7 +634,8 @@ export default function JobDetailsPage() {
       toast.error("Status update failed: " + error.message);
     } else {
       setJob({ ...job, ...updates } as JobDetail);
-      await logActivity(
+      // PERF: log sirf audit hai — modal ko block nahi karta (3 RTT fire-and-forget).
+      void logActivity(
         "Updated Job Status",
         "Jobs",
         job.job_id,
@@ -667,7 +668,7 @@ export default function JobDetailsPage() {
       toast.error("Spot update failed: " + error.message);
     } else {
       setJob({ ...job, ...updates } as JobDetail);
-      await logActivity(
+      void logActivity(
         "Moved Job Item",
         "Jobs",
         job.job_id,
@@ -703,7 +704,7 @@ export default function JobDetailsPage() {
     if (error) {
       toast.error("Payment save nahi hua: " + error.message);
     } else {
-      await logActivity(
+      void logActivity(
         "Added Job Payment",
         "Jobs",
         job.job_id,
@@ -732,7 +733,7 @@ export default function JobDetailsPage() {
       .update({ del_status: 1 })
       .eq("id", jobId);
     if (!error) {
-      await logActivity(
+      void logActivity(
         "Deleted Job",
         "Jobs",
         job?.job_id,

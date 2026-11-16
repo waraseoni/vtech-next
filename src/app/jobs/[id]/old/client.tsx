@@ -458,7 +458,10 @@ export default function ManageJobPage({ initial }: { initial?: JobsOldInitial | 
       }
 
       toast.success(isEdit ? "Job updated!" : "Job saved!");
-      setTimeout(() => router.replace(`/jobs/${txnId}/view`), 800);
+      // PERF: pehle yahan `setTimeout(..., 800)` tha — save ke baad 0.8s
+      // artificial wait, isliye nav "slow" lagta tha. Toast already dikh
+      // chuka hai — turant navigate karo.
+      router.replace(`/jobs/${txnId}/view`);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Save failed!";
       toast.error(msg);

@@ -164,7 +164,9 @@ export default function ManageClientPage() {
           .update({ ...payload, date_updated: new Date().toISOString() })
           .eq("id", clientId);
         if (error) throw error;
-        await logActivity("Updated Client Details", "Clients", clientId, `Client: ${clientName}`);
+        // Audit log save ko block na kare — fire-and-forget (logActivity ke
+        // andar 5s timeout hai; await karne se nav tak 2-3 RTT extra lagte the).
+        void logActivity("Updated Client Details", "Clients", clientId, `Client: ${clientName}`);
       } else {
         const { data, error } = await supabase
           .from("client_list")
@@ -172,7 +174,7 @@ export default function ManageClientPage() {
           .select("id")
           .single();
         if (error) throw error;
-        await logActivity("Created New Client", "Clients", data.id, `Client: ${clientName}`);
+        void logActivity("Created New Client", "Clients", data.id, `Client: ${clientName}`);
       }
       router.replace("/clients");
     } catch (err) {

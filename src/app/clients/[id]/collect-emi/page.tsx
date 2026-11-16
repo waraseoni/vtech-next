@@ -164,13 +164,9 @@ export default function CollectEMIPage({ params }: { params: Promise<{ id: strin
       const { error } = await supabase.from("client_payments").insert([paymentData]);
       if (error) throw error;
       toast.success("EMI jama ho gayi! ✅");
-      // staleTime 30s ke andar view page purana cache serve karta tha.
-      // refetchType "all": view unmounted hai, fetch abhi karwa lo taaki
-      // mount par stale flash na dikhe.
-      await queryClient.invalidateQueries({
-        queryKey: clientDetailKey(clientId),
-        refetchType: "all",
-      });
+      // PERF: awaited refetch (8 queries) duplicate tha — view page RSC seed
+      // lata hai. Cache sync drop + turant nav.
+      queryClient.removeQueries({ queryKey: clientDetailKey(clientId) });
       router.replace(`/clients/${clientId}/view`);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Payment save mein galti!");

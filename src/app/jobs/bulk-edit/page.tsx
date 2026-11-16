@@ -274,22 +274,26 @@ export default function BulkEditPage() {
 
     setSaving(true);
     try {
-      let updated = 0;
-      for (const r of rows) {
-        const payload: Record<string, unknown> = {
-          client_name: String(r.client_id),
-          item: r.item.trim(),
-          fault: r.fault.trim(),
-          uniq_id: r.uniq_id.trim() || "",
-          remark: r.remark.trim() || "",
-          date_updated: nowIST(),
-        };
-        if (r.mechanic_id) payload.mechanic_id = parseInt(r.mechanic_id);
-        else payload.mechanic_id = null;
-        const { error } = await supabase.from("transaction_list").update(payload).eq("id", r.id);
-        if (error) throw new Error(`Transaction #${r.id} update failed: ${error.message}`);
-        updated++;
-      }
+      // PERF: pehle har row ka update awaited tha (N serial round-trips).
+      // Rows independent hain → ek concurrent burst (1 RTT), phir turant nav.
+      const results = await Promise.all(
+        rows.map((r) => {
+          const payload: Record<string, unknown> = {
+            client_name: String(r.client_id),
+            item: r.item.trim(),
+            fault: r.fault.trim(),
+            uniq_id: r.uniq_id.trim() || "",
+            remark: r.remark.trim() || "",
+            date_updated: nowIST(),
+          };
+          if (r.mechanic_id) payload.mechanic_id = parseInt(r.mechanic_id);
+          else payload.mechanic_id = null;
+          return supabase.from("transaction_list").update(payload).eq("id", r.id);
+        })
+      );
+      const failed = results.find((r) => r.error);
+      if (failed?.error) throw new Error(`Transaction update failed: ${failed.error.message}`);
+      const updated = rows.length;
       toast.success(`${updated} transactions update ho gaye! ✅`);
       router.replace("/jobs");
     } catch (err: unknown) {

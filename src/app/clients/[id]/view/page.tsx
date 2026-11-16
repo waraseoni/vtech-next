@@ -66,7 +66,7 @@ import {
   toLocalStr,
   dtLocalToIST,
 } from "@/lib/dateUtils";
-import { logActivity } from "@/lib/activity";
+import { logActivities } from "@/lib/activity";
 import { firmVars } from "@/lib/whatsapp";
 import { compressImage } from "@/lib/imageCompression";
 import { openCamera } from "@/lib/nativeCamera";
@@ -597,24 +597,27 @@ export default function ViewClientProfile() {
       setBulkDeliverDate("");
       setBulkStatus("");
       const statusName = STATUS_MAP[newStatus]?.label || String(newStatus);
-      for (const id of ids) {
-        const job = jobs.find((j) => j.id === id);
-        const oldStatus =
-          (job?.status != null ? STATUS_MAP[job.status]?.label : null) ||
-          String(job?.status ?? "?");
-        await logActivity(
-          "Transaction Status Changed",
-          "Transactions",
-          id,
-          `Job #${job?.job_id || id} | ${oldStatus} → ${statusName} | ${job?.item || ""}`
-        );
-      }
-      await logActivity(
-        "Bulk Status Update",
-        "Transactions",
-        undefined,
-        `${ids.length} job(s) updated to "${statusName}"`
-      );
+      // PERF: per-job awaited log (3 serial RTT each) → ek batch, fire-and-forget
+      // (1 profile read + 1 insert). N jobs par spinner N× slow ho jata tha.
+      void logActivities([
+        ...ids.map((id) => {
+          const job = jobs.find((j) => j.id === id);
+          const oldStatus =
+            (job?.status != null ? STATUS_MAP[job.status]?.label : null) ||
+            String(job?.status ?? "?");
+          return {
+            action: "Transaction Status Changed",
+            module: "Transactions",
+            metaId: id,
+            details: `Job #${job?.job_id || id} | ${oldStatus} → ${statusName} | ${job?.item || ""}`,
+          };
+        }),
+        {
+          action: "Bulk Status Update",
+          module: "Transactions",
+          details: `${ids.length} job(s) updated to "${statusName}"`,
+        },
+      ]);
     } else {
       toast.error("Bulk update failed: " + error.message);
     }
@@ -642,15 +645,18 @@ export default function ViewClientProfile() {
         )
       );
       invalidateDetail();
-      for (const id of ids) {
-        const job = jobs.find((j) => j.id === id);
-        await logActivity(
-          "Moved Job Item",
-          "Jobs",
-          job?.job_id || id,
-          `Job #${job?.job_id || id} → ${bulkMoveName} | ${job?.item || ""}`
-        );
-      }
+      // PERF: per-job awaited log → ek batch (fire-and-forget).
+      void logActivities(
+        ids.map((id) => {
+          const job = jobs.find((j) => j.id === id);
+          return {
+            action: "Moved Job Item",
+            module: "Jobs",
+            metaId: job?.job_id || id,
+            details: `Job #${job?.job_id || id} → ${bulkMoveName} | ${job?.item || ""}`,
+          };
+        })
+      );
       setSelectedIds(new Set());
       setBulkMoveOpen(false);
       setBulkMoveId(null);
@@ -683,12 +689,14 @@ export default function ViewClientProfile() {
         )
       );
       invalidateDetail();
-      await logActivity(
-        "Moved Job Item",
-        "Jobs",
-        spotEditJob?.job_id || id,
-        `Job #${spotEditJob?.job_id || id} → ${spotPickName || "No Spot"} | ${spotEditJob?.item || ""}`
-      );
+      void logActivities([
+        {
+          action: "Moved Job Item",
+          module: "Jobs",
+          metaId: spotEditJob?.job_id || id,
+          details: `Job #${spotEditJob?.job_id || id} → ${spotPickName || "No Spot"} | ${spotEditJob?.item || ""}`,
+        },
+      ]);
       setSpotEditJob(null);
     } else {
       toast.error("Spot update failed: " + error.message);
@@ -862,12 +870,14 @@ export default function ViewClientProfile() {
       });
       invalidateDetail();
       setDueModal(false);
-      await logActivity(
-        "Set Promised Due Date",
-        "Clients",
-        client.id,
-        `Client: ${client.fullName} | Due date set`
-      );
+      void logActivities([
+        {
+          action: "Set Promised Due Date",
+          module: "Clients",
+          metaId: client.id,
+          details: `Client: ${client.fullName} | Due date set`,
+        },
+      ]);
     } catch (err) {
       toast.error("Error: " + (err instanceof Error ? err.message : String(err)));
     } finally {
