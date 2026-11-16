@@ -138,6 +138,16 @@ function mariaType(col) {
   }
 }
 
+// MariaDB TEXT/BLOB ko PRIMARY KEY me use nahi kar sakta (errno 1170) —
+// Postgres me text PK chalta hai (jaise ai_providers.provider). Aise PK
+// columns ko VARCHAR(191) banao: 191×4 = 764 bytes, purani InnoDB 767-byte
+// index limit me bhi fit.
+function mariaTypeForColumn(col, isPk) {
+  const type = mariaType(col);
+  if (isPk && (type === "TEXT" || type.startsWith("BLOB"))) return "VARCHAR(191)";
+  return type;
+}
+
 const isTsWithTz = (m) => m.type === "string" && m.format === "timestamp with time zone";
 const isTsNoTz = (m) => m.type === "string" && m.format === "timestamp without time zone";
 
@@ -186,7 +196,7 @@ async function fetchSchema() {
 
 function createTableSQL(t) {
   const parts = t.cols.map((c) => {
-    let s = `\`${c.name}\` ${mariaType(c.meta)}${c.nullable ? "" : " NOT NULL"}`;
+    let s = `\`${c.name}\` ${mariaTypeForColumn(c.meta, c.pk)}${c.nullable ? "" : " NOT NULL"}`;
     // single-column integer id → AUTO_INCREMENT (Supabase identity jaisa)
     if (
       c.pk &&
