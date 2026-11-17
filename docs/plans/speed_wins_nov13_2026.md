@@ -273,11 +273,59 @@ Browser probe (best of 3, wall — JS/hydration samet):
 
 ### 7.4 Bacha hua (next candidates)
 
-- `/jobs` RSC 239 KB payload — 25 rows ke saath enrich data; `enrichJobRows` ki 7 parallel
-  queries ek embedded/RPC round me laane se ~150-200 ms bachega (risk: bada refactor).
-- `/clients` 257 KB payload (553 clients bina pagination) — pagination/virtual list.
+- ~~`/jobs` enrich round ek RPC me~~ — try kiya, **reject** (7.5 me numbers).
+- `/clients` 257 KB payload (553 clients bina pagination) — **reject**: pagination server-side
+  karne se client-side search/tab-counts/pagination UX tootegi, aur page ke saare fields UI me
+  use hote hain (grep verified) — payload trim bhi safe nahi. Sirf client-side virtual list
+  bacha hai (render cost, TTFB nahi).
 - `/dashboard` 264 ms — `get_monthly_revenue` + low-stock chain abhi 2 waves hain.
+
+### 7.5 Try kiya, reject: `/jobs` page+enrich ek RPC round me (18 Nov 2026)
+
+Idea: `get_jobs_page(p_term, p_date_from, ..., p_limit, p_offset)` — page query + 7 enrich
+queries + exact total ek hi round-trip me. Live DB par implement, `security invoker` (RLS same),
+materialized CTEs, ordered `jsonb_agg`. **SQL side sab measure hua aur theek tha, par HTTP par
+RPC khud mehnga nikla** — isliye integration revert kiya aur function drop kiya.
+
+**SQL sahi tha (pg me, live data):**
+
+| Case (pg, `authenticated` + claims) | Result |
+| ----------------------------------- | ------ |
+| no filters | 40-44 ms (rows 25, total 2370) |
+| hideDelivered / status=2 / spot / date-range | 37-76 ms |
+| term=286 / term=1706 | 55-65 ms (pehle 5250 ms — `SubPlan loops=2267` fix) |
+| Old pipeline vs RPC, real user JWT (11 cases) | **11/11 identical** (rows, order, total, clients, billed, payments, sales, loans, logs) |
+
+**HTTP par wahi function 3x slow (PostgREST):**
+
+| Probe (HTTP, user JWT, median of 7) | Time |
+| ----------------------------------- | ---: |
+| `get_jobs_page` (invoker) | **326-343 ms** |
+| `get_jobs_page` copy as `security definer` | 331 ms |
+| trivial `select count(*)` invoker function | **323 ms** |
+| same count as definer function | 60 ms |
+| const RPC (no table) invoker | 80 ms |
+| 18 KB jsonb payload RPC (no table) | 62 ms |
+| table GET page (RLS) | 67 ms |
+| `get_jobs_stats` (definer RPC) | 53-63 ms |
+
+Root cause app-code me nahi hai: **RLS-invoker RPC par PostgREST ka fixed ~250 ms overhead**
+hai (trivial count bhi 323 ms), aur params Vars ban ke aane se planner estimate-based plan
+leta hai (definer copy 331 ms). Literal-injected dynamic SQL (plpgsql + `format`) se bhi same
+333 ms — matlab na plan, na payload; PostgREST layer hi culprit hai.
+
+**Net effect (prod build, server HTML):** `/jobs` 179 ms → **377 ms**. Revert ke baad wapas
+**175-199 ms**. Isliye: TS integration revert (`jobListQueries`/`server-jobs`/`useJobList`/
+`requiredParts`/test), live DB se function drop, migration file delete.
+
+**Seekh:** is PostgREST par RLS-heavy read RPC se round-trip bachane ka fayda nahi — RPC sirf
+tab jab wo `security definer` + **chhota scalar/aggregate** ho (jaise `get_jobs_stats`
+53-63 ms). Bade row payload ke liye PostgREST ke table endpoints hi fast hain.
 
 **Verification (is batch par):** `tsc --noEmit` ✔ · `eslint src` ✔ 0 · `npm test`
 **683/683** ✔ · `npm run build` ✔ · `schema:drift` ✔ (27 migrations) · live DB apply ke
 baad row counts unchanged.
+
+**Revert ke baad bhi wahi gates:** `tsc` ✔ · `npm test` **683/683** ✔ · `npm run build` ✔ ·
+live DB me `transaction_list` 2370 / `activity_logs` 4615 / `client_list` 564 (unchanged),
+perf/probe functions **0** bache.
