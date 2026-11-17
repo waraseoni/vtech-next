@@ -92,9 +92,10 @@ export interface JobViewSnapshot {
 }
 
 /**
- * Poora job-view snapshot — 4 waves ki jagah 1 wave: job ke saath independent
- * client/mechanic/line-items/images/due queries ek saath, phir sirf line-item
- * naam lookups (product/service ids par depend karte hain).
+ * Poora job-view snapshot — 4 waves ki jagah 2 waves: job ke saath independent
+ * client/mechanic/line-items/images/due queries ek saath. Product/service
+ * catalogs chhote hain (measured ~97 + 25 rows), isliye naam+hsn lookups bhi
+ * isi wave me (pehle line-item ids ke BAAD 3rd wave chalti thi).
  */
 export async function fetchJobViewData(
   supabase: SupabaseClient,
@@ -131,8 +132,19 @@ export async function fetchJobViewData(
   const clientId = Number(jobData.client_name);
   // Due inputs — enrichJobRows (jobs list) ke EXACT filters: sirf Delivered (5)
   // aur non-deleted jobs bill hue maane jaate hain (PHP formula).
-  const [clientRes, mechRes, prodRes, svcRes, imgRes, billedRes, paidRes, salesRes, loansRes] =
-    await Promise.all([
+  const [
+    clientRes,
+    mechRes,
+    prodRes,
+    svcRes,
+    imgRes,
+    billedRes,
+    paidRes,
+    salesRes,
+    loansRes,
+    prodListRes,
+    svcListRes,
+  ] = await Promise.all([
       supabase
         .from("client_list")
         .select("id, firstname, middlename, lastname, contact, email, address, opening_balance")
@@ -174,6 +186,9 @@ export async function fetchJobViewData(
         .select("id, client_id, total_payable")
         .eq("status", LOAN_STATUS_ACTIVE)
         .eq("client_id", clientId),
+      // Naam/hsn lookups (pehle 3rd wave) — catalog chhote hain, isliye yahin.
+      supabase.from("product_list").select("id, name, hsn"),
+      supabase.from("service_list").select("id, name, hsn"),
     ]);
 
   const dueMaps = buildDueMaps({
@@ -194,22 +209,12 @@ export async function fetchJobViewData(
   }
 
   const prods = (prodRes.data || []) as TransactionProduct[];
-  const prodIds = [...new Set(prods.map((p) => p.product_id).filter(Boolean))];
   const svcs = (svcRes.data || []) as TransactionService[];
-  const svcIds = [...new Set(svcs.map((s) => s.service_id).filter(Boolean))];
-  const [plRes, slRes] = await Promise.all([
-    prodIds.length > 0
-      ? supabase.from("product_list").select("id, name, hsn").in("id", prodIds)
-      : Promise.resolve({ data: null }),
-    svcIds.length > 0
-      ? supabase.from("service_list").select("id, name, hsn").in("id", svcIds)
-      : Promise.resolve({ data: null }),
-  ]);
 
-  const plRows = plRes.data;
+  const plRows = prodListRes.data;
   const pm = Object.fromEntries((plRows || []).map((p) => [p.id, p.name]));
   const phsn = Object.fromEntries((plRows || []).map((p) => [p.id, p.hsn]));
-  const slRows = slRes.data;
+  const slRows = svcListRes.data;
   const sm = Object.fromEntries((slRows || []).map((s) => [s.id, s.name]));
   const shsn = Object.fromEntries((slRows || []).map((s) => [s.id, s.hsn]));
 
