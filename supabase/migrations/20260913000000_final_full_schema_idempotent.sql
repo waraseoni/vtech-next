@@ -4839,4 +4839,11 @@ revoke all on function public.get_stale_jobs(int, int) from anon;
 grant execute on function public.get_stale_jobs(int, int) to authenticated;
 grant execute on function public.get_stale_jobs(int, int) to service_role;
 
+-- ── 20261117_jobs_list_sort_index.sql ────────────────────────────────────────
+-- /jobs list page query: del_status = 0 order by job_id desc limit 25.
+-- job_id TEXT par poora btree index nahi tha → har load par 2.3k-row sort.
+-- Measured (RLS): ~106 ms → ~39 ms.
+create index if not exists transaction_list_del_status_job_id_idx
+  on public.transaction_list (del_status, job_id desc);
+
 NOTIFY pgrst, 'reload schema';
