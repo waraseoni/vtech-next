@@ -58,6 +58,9 @@ const nextConfig: NextConfig = {
     // Dev me source maps off → compile ka kaam/memory kam, page load aur startup tez.
     // (Sentry build-time upload pehle hi disabled hai; runtime error tracking unchanged.)
     turbopackSourceMaps: false,
+    // `next dev` sirf security advisories wale versions par upgrade suggest kare
+    // (feature/minor bumps auto-suggest nahi honge).
+    agentUpgrade: "security",
   },
   env: {
     NEXT_PUBLIC_APP_VERSION: APP_VERSION,
