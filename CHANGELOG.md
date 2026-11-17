@@ -1,5 +1,19 @@
 # CHANGELOG
 
+## [1.77.5](https://github.com/waraseoni/vtech-next/compare/v1.77.4...v1.77.5) (2026-11-17)
+
+### Performance Improvements
+
+* **auth:** server seeds me getClaims (local) — getUser ka Auth RTT hataya ([e0f3f1f](https://github.com/waraseoni/vtech-next/commit/e0f3f1f76ae5deb775d04c0e0e9b3e88ade6a154))
+* **clients:** contacts ko client list query me embed kiya (1 round saved) ([a69fda5](https://github.com/waraseoni/vtech-next/commit/a69fda5de30b618cbd87cd9757ea9b3bafd61f9e))
+* **clients:** data fetch auth ke saath parallel (1 RTT saved) ([00e9b56](https://github.com/waraseoni/vtech-next/commit/00e9b560c59da16661b8d7c1d9a8c85113bb5a8e))
+* **dashboard:** data batches auth ke saath parallel (1 RTT saved) ([0d3287c](https://github.com/waraseoni/vtech-next/commit/0d3287c1beabdab1ec8db163f5af90f53724fa1e))
+* **db:** jobs list sort index (del_status, job_id desc) ([0b68193](https://github.com/waraseoni/vtech-next/commit/0b681930c11c0faaa0fb76de7d8299fee43fecfc))
+* **images:** above-the-fold avatars eager-load (LCP dev warning fix) ([c48ee32](https://github.com/waraseoni/vtech-next/commit/c48ee32f860befc9f08bbf83268b0af342bbdcce))
+* **job-view:** product/service naam lookups 3rd wave se 2nd wave me ([36924b4](https://github.com/waraseoni/vtech-next/commit/36924b425c8ff302d3b2b0d0e89d711df2f77e2b))
+* **jobs:** page query se exact count hataya (stats.total use) ([0f7760b](https://github.com/waraseoni/vtech-next/commit/0f7760b0333ca47a1cb5adad469d1d6c146eb999))
+* **seed:** loadStaffSeed loader auth ke saath parallel ([deb6215](https://github.com/waraseoni/vtech-next/commit/deb621559de3d6bab7fec9a3bad75067501c7fb5))
+
 ## [1.77.4](https://github.com/waraseoni/vtech-next/compare/v1.77.3...v1.77.4) (2026-11-16)
 
 ### Bug Fixes
