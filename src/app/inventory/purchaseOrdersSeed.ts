@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { getServerUser } from "@/lib/api-auth";
 
 /**
  * `/inventory/purchase-orders` ka neutral server seed — page ke fetchPos ka
@@ -120,9 +121,8 @@ export async function fetchPurchaseOrdersSeed(
 
   let ownerName = "";
   try {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    // getClaims (local) — getUser() ka Auth-server RTT bachta hai.
+    const user = await getServerUser(supabase);
     if (user) {
       const { data: prof } = await supabase
         .from("profiles")

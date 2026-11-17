@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { getServerUser } from "@/lib/api-auth";
 
 /**
  * Direct-sale form ke masters (clients, mechanics, products + stock) ka neutral
@@ -43,9 +44,8 @@ export async function fetchSaleFormSeed(
   supabase: SupabaseClient,
   saleId?: number
 ): Promise<DirectSaleFormSeed> {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // getClaims (local) — getUser() ka Auth-server RTT bachta hai.
+  const user = await getServerUser(supabase);
 
   let userRole: "admin" | "staff" = "staff";
   let mechanicId: number | null = null;

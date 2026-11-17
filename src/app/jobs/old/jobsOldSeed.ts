@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { getServerUser } from "@/lib/api-auth";
 
 /**
  * `/jobs/old` (new legacy entry) aur `/jobs/[id]/old` (edit) ka neutral server
@@ -68,8 +69,9 @@ export type JobsOldEditSeed = { masters: JobsOldMasters; job: JobsOldJob | null 
 
 /** Wahi 4 master selects + profile role (filters/order bilkul client jaise). */
 export async function fetchJobsOldMasters(supabase: SupabaseClient): Promise<JobsOldMasters> {
-  const [userRes, cRes, mRes, sRes, pRes] = await Promise.all([
-    supabase.auth.getUser(),
+  const [user, cRes, mRes, sRes, pRes] = await Promise.all([
+    // getClaims (local) — getUser() ka Auth-server RTT bachta hai.
+    getServerUser(supabase),
     supabase
       .from("client_list")
       .select("id, firstname, middlename, lastname, contact")
@@ -101,7 +103,6 @@ export async function fetchJobsOldMasters(supabase: SupabaseClient): Promise<Job
 
   let userRole = "staff";
   let userMechId: number | null = null;
-  const user = userRes.data?.user;
   if (user) {
     const { data: p } = await supabase
       .from("profiles")

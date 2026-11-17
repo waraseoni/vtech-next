@@ -1,4 +1,4 @@
-import { getServerSupabase } from "@/lib/api-auth";
+import { getServerSupabase, getServerUser } from "@/lib/api-auth";
 
 /**
  * Server-data layer for the Mechanics directory page (G3 migration).
@@ -37,9 +37,8 @@ export async function fetchMechanicsPageData(): Promise<MechanicsPageData> {
 
   let userRole = "staff";
   try {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    // getClaims (local) — getUser() ka Auth-server RTT bachta hai.
+    const user = await getServerUser(supabase);
     if (user) {
       const { data: profile } = await supabase
         .from("profiles")

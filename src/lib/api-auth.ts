@@ -197,6 +197,17 @@ async function resolveServerUser(
   }
 }
 
+/**
+ * Public wrapper: server pages/seeds jo sirf userId (ya claims) chahte hain,
+ * `getUser()` (Auth server RTT ~250 ms) ki jagah ye use karein — claims-first,
+ * network sirf expired/invalid token par.
+ */
+export async function getServerUser(
+  supabase: Awaited<ReturnType<typeof getServerSupabase>>
+): Promise<ServerUser | null> {
+  return resolveServerUser(supabase);
+}
+
 export async function requireStaff() {
   const session = await requireStaffWithRole();
   return session?.user ?? null;

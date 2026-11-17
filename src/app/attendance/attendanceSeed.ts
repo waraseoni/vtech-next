@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { getServerUser } from "@/lib/api-auth";
 
 /**
  * `/attendance` ka page-level server seed — client ke session+`profiles`
@@ -18,9 +19,8 @@ export type AttendanceSeed = {
 };
 
 export async function fetchAttendanceSeed(supabase: SupabaseClient): Promise<AttendanceSeed> {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // getClaims (local JWKS verify) — getUser() ka Auth-server RTT bachta hai.
+  const user = await getServerUser(supabase);
   if (!user) throw new Error("No session");
 
   const { data: profile } = await supabase

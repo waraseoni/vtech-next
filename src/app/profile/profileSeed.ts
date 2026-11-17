@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { getServerUser } from "@/lib/api-auth";
 
 /**
  * `/profile` ka neutral server seed — client ke pehle read-only load
@@ -20,9 +21,8 @@ export type ProfileSeed = {
 };
 
 export async function fetchProfileSeed(supabase: SupabaseClient): Promise<ProfileSeed> {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // getClaims (local) — getUser() ka Auth-server RTT bachta hai.
+  const user = await getServerUser(supabase);
   if (!user) throw new Error("No authenticated user for profile seed");
 
   const { data: profile } = await supabase

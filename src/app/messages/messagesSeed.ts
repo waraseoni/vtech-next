@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { getServerUser } from "@/lib/api-auth";
 
 /**
  * `/messages` ka neutral server seed — client ke session/profile +
@@ -50,9 +51,8 @@ const MSG_COLS =
   "id, sender_id, recipient_id, content, read_at, delivered_at, media_url, media_type, media_name, deleted_at, created_at";
 
 export async function fetchMessagesSeed(supabase: SupabaseClient): Promise<MessagesSeed> {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // getClaims (local) — getUser() ka Auth-server RTT bachta hai.
+  const user = await getServerUser(supabase);
   if (!user) throw new Error("Not authenticated");
 
   const me = user.id;
