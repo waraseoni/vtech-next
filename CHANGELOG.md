@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.77.6](https://github.com/waraseoni/vtech-next/compare/v1.77.5...v1.77.6) (2026-11-17)
+
+### Bug Fixes
+
+* **lint:** remove unused var warning in SuppliersClient sort handler ([595aa63](https://github.com/waraseoni/vtech-next/commit/595aa63d10996248a0cca6d957a4323c56d08f17))
+
 ## [1.77.5](https://github.com/waraseoni/vtech-next/compare/v1.77.4...v1.77.5) (2026-11-17)
 
 ### Performance Improvements
