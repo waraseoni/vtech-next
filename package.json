@@ -87,7 +87,7 @@
     "conventional-changelog-conventionalcommits": "^8.0.0",
     "esbuild": "^0.28.2",
     "eslint": "^9.39.5",
-    "eslint-config-next": "^16.4.2",
+    "eslint-config-next": "^16.4.6",
     "eslint-config-prettier": "^10.1.8",
     "jsdom": "^29.1.1",
     "mariadb": "^3.5.3",
