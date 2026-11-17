@@ -60,6 +60,8 @@ type ClientRow = {
   opening_balance: number | null;
   image_path: string | null;
   login_allowed: boolean | null;
+  /** Embedded contacts (client_contacts_client_fk) — null/undefined jab embed na mile. */
+  client_contacts?: ClientContactLite[] | null;
 };
 
 type RpcFinancialRow = {
@@ -126,36 +128,24 @@ function buildClientRow(c: ClientRow, fin: RpcFinancialRow | undefined): Client 
   };
 }
 
-/** Multi-contact bulk load. Migration nahi laga → graceful degrade (undefined). */
-async function fetchContacts(
-  supabase: Awaited<ReturnType<typeof getServerSupabase>>,
-  ids: number[]
-): Promise<Map<number, ClientContactLite[]> | undefined> {
-  if (ids.length === 0) return new Map();
-  try {
-    const { data, error } = await supabase
-      .from("client_contacts")
-      .select("id, client_id, name, label, phone, is_primary")
-      .in("client_id", ids)
-      .order("is_primary", { ascending: false })
-      .order("id", { ascending: true });
-    if (error) return undefined;
-    const map = new Map<number, ClientContactLite[]>();
-    for (const row of (data as (ClientContactLite & { client_id: number })[] | null) || []) {
-      const list = map.get(row.client_id) ?? [];
-      list.push({
-        id: row.id,
-        name: row.name,
-        label: row.label,
-        phone: row.phone,
-        is_primary: row.is_primary,
-      });
-      map.set(row.client_id, list);
-    }
-    return map;
-  } catch {
-    return undefined;
-  }
+/** Client list columns — shared by normal + fallback path. */
+const CLIENT_LIST_COLS =
+  "id, firstname, middlename, lastname, contact, email, address, date_created, opening_balance, image_path, login_allowed";
+
+/**
+ * Clients + unke multi-contacts ek hi round me (embed `client_contacts_client_fk`).
+ * Table/FK na ho (migration nahi laga) to contacts ke bina retry — graceful degrade,
+ * warna poora clients page error ho jata.
+ */
+async function fetchClientRows(supabase: Awaited<ReturnType<typeof getServerSupabase>>) {
+  const embedded = await supabase
+    .from("client_list")
+    .select(`${CLIENT_LIST_COLS}, client_contacts(id, name, label, phone, is_primary)`)
+    .eq("delete_flag", 0)
+    .order("is_primary", { referencedTable: "client_contacts", ascending: false })
+    .order("id", { referencedTable: "client_contacts", ascending: true });
+  if (!embedded.error) return embedded;
+  return supabase.from("client_list").select(CLIENT_LIST_COLS).eq("delete_flag", 0);
 }
 
 /** Fast path: one RPC aggregates all financial rows in PostgreSQL (see migration). */
@@ -306,12 +296,9 @@ export async function fetchClientsPageData(
 
     firmInfoPromise,
 
-    supabase
-      .from("client_list")
-      .select(
-        "id, firstname, middlename, lastname, contact, email, address, date_created, opening_balance, image_path, login_allowed"
-      )
-      .eq("delete_flag", 0),
+    // PERF: contacts embedded (client_contacts_client_fk) — pehle alag round
+    // (~100-150 ms) me `in(client_id, ids)` chalta tha; ab same response me.
+    fetchClientRows(supabase),
 
     finPromise,
   ]);
@@ -321,15 +308,14 @@ export async function fetchClientsPageData(
     return { clients: [], firmInfo, userRole };
   }
 
-  const clientRows = cls as ClientRow[];
+  const clientRows = cls as unknown as ClientRow[];
   const ids = clientRows.map((c) => c.id);
 
   const finMap = finResult ?? (await fetchFinancialsLegacy(supabase, ids));
-  const contactsMap = await fetchContacts(supabase, ids);
 
   const built = clientRows.map((c) => {
     const row = buildClientRow(c, finMap.get(c.id));
-    if (contactsMap && contactsMap.has(c.id)) row.contacts = contactsMap.get(c.id);
+    if (c.client_contacts?.length) row.contacts = c.client_contacts;
     return row;
   });
   built.sort((a, b) => b.balance - a.balance);
