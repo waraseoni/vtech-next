@@ -259,9 +259,16 @@ const FIRM_INFO_KEYS = [
   "wp_default_whatsapp_greeting",
 ];
 
-export async function fetchClientsPageData(
-  options: FetchClientsPageOptions = {}
-): Promise<ClientsPageData> {
+export type ClientsPageBatches = {
+  clients: Client[];
+  firmInfo: Record<string, string>;
+};
+
+/**
+ * Page ka data (role ke bina) — page isse auth ke SAATH parallel start kar
+ * sakta hai; `userRole` sirf UI gate ke liye chahiye hota hai.
+ */
+export async function fetchClientsBatches(): Promise<ClientsPageBatches> {
   const supabase = await getServerSupabase();
 
   const finPromise = fetchFinancialsViaRpc(supabase).catch(() => null);
@@ -274,26 +281,7 @@ export async function fetchClientsPageData(
     return picked;
   });
 
-  const [userRole, firmInfo, clsResult, finResult] = await Promise.all([
-    options.userRole
-      ? Promise.resolve(options.userRole)
-      : (async () => {
-          try {
-            const {
-              data: { user },
-            } = await supabase.auth.getUser();
-            if (!user) return "staff";
-            const { data: profile } = await supabase
-              .from("profiles")
-              .select("role")
-              .eq("id", user.id)
-              .maybeSingle();
-            return profile?.role ?? "staff";
-          } catch {
-            return "staff";
-          }
-        })(),
-
+  const [firmInfo, clsResult, finResult] = await Promise.all([
     firmInfoPromise,
 
     // PERF: contacts embedded (client_contacts_client_fk) — pehle alag round
@@ -305,7 +293,7 @@ export async function fetchClientsPageData(
 
   const cls = clsResult.data;
   if (!cls?.length) {
-    return { clients: [], firmInfo, userRole };
+    return { clients: [], firmInfo };
   }
 
   const clientRows = cls as unknown as ClientRow[];
@@ -320,5 +308,34 @@ export async function fetchClientsPageData(
   });
   built.sort((a, b) => b.balance - a.balance);
 
-  return { clients: built, firmInfo, userRole };
+  return { clients: built, firmInfo };
+}
+
+/** Auth fallback jab caller role pass nahi karta. */
+async function fetchUserRole(): Promise<string> {
+  const supabase = await getServerSupabase();
+  try {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return "staff";
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .maybeSingle();
+    return profile?.role ?? "staff";
+  } catch {
+    return "staff";
+  }
+}
+
+export async function fetchClientsPageData(
+  options: FetchClientsPageOptions = {}
+): Promise<ClientsPageData> {
+  const [userRole, batches] = await Promise.all([
+    options.userRole ? Promise.resolve(options.userRole) : fetchUserRole(),
+    fetchClientsBatches(),
+  ]);
+  return { ...batches, userRole };
 }
