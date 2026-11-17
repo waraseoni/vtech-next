@@ -671,8 +671,8 @@ function BalanceSheetContent({ initialData, initialRange, initialFilter }: Balan
         </div>
         <p className="mt-2 text-[10px] text-muted-2 leading-relaxed">
           अवधि आय-व्यय (P&amp;L) के लिए है; चिट्ठा{" "}
-          <span className="font-bold text-muted">{asOnLabel}</span> तक की स्थिति दिखाता है। स्थिति
-          तिथि बदलने पर चिट्ठा उसी तारीख तक बनेगा।
+          <span className="font-bold text-muted">{asOnLabel}</span> तक की स्थिति दिखाता है। स्थिति तिथि
+          बदलने पर चिट्ठा उसी तारीख तक बनेगा।
         </p>
       </div>
 
@@ -769,8 +769,8 @@ function BalanceSheetContent({ initialData, initialRange, initialFilter }: Balan
           </div>
         </div>
         <p className="px-4 pb-3 text-[10px] leading-relaxed text-muted-2">
-          संपत्ति = देनदारी + पूंजी · नकद/बैंक शेष अनुमानित है (owner capital/drawings और
-          paid-purchase records इस अनुमान से बाहर हैं)।
+          संपत्ति = देनदारी + पूंजी · नकद/बैंक शेष अनुमानित है (owner capital/drawings और paid-purchase
+          records इस अनुमान से बाहर हैं)।
         </p>
       </div>
 
@@ -969,22 +969,16 @@ function CustomerTab({
       <table className="w-full tabular-nums">
         <thead>
           <tr className="bg-panel-2">
-            {[
-              "ग्राहक नाम",
-              "संपर्क",
-              "पिछला बैलेंस",
-              "मरम्मत राशि",
-              "भुगतान",
-              "वर्तमान बैलेंस",
-              "क्रिया",
-            ].map((c) => (
-              <th
-                key={c}
-                className="px-3 py-2.5 text-[10px] font-black uppercase text-muted-2 tracking-widest text-left whitespace-nowrap"
-              >
-                {c}
-              </th>
-            ))}
+            {["ग्राहक नाम", "संपर्क", "पिछला बैलेंस", "मरम्मत राशि", "भुगतान", "वर्तमान बैलेंस", "क्रिया"].map(
+              (c) => (
+                <th
+                  key={c}
+                  className="px-3 py-2.5 text-[10px] font-black uppercase text-muted-2 tracking-widest text-left whitespace-nowrap"
+                >
+                  {c}
+                </th>
+              )
+            )}
           </tr>
         </thead>
         <tbody>
@@ -1040,9 +1034,7 @@ function CustomerTab({
                 </tr>
               ))}
               <tr className="border-t-2 border-blue-500/30 bg-blue-500/5">
-                <td className="px-3 py-2.5 text-xs font-black text-blue-400">
-                  कुल ({data.length})
-                </td>
+                <td className="px-3 py-2.5 text-xs font-black text-blue-400">कुल ({data.length})</td>
                 <td />
                 <td
                   className={`px-3 py-2.5 text-xs text-right font-black ${totals.totOB >= 0 ? "text-blue-400" : "text-red-400"}`}
@@ -1171,9 +1163,7 @@ function InventoryTab({ data }: { data: StockRow[] }) {
                 </tr>
               ))}
               <tr className="border-t-2 border-blue-500/30 bg-blue-500/5">
-                <td className="px-3 py-2.5 text-xs font-black text-blue-400">
-                  कुल ({data.length})
-                </td>
+                <td className="px-3 py-2.5 text-xs font-black text-blue-400">कुल ({data.length})</td>
                 <td />
                 <td />
                 <td />
@@ -1477,9 +1467,7 @@ function ClientLoanTab({ data }: { data: ClientLoanRow[] }) {
 
 function CashTab({ data }: { data: CashFlow | null }) {
   if (!data) {
-    return (
-      <div className="text-center py-12 text-muted-2 text-xs font-bold">नकद डेटा नहीं मिला</div>
-    );
+    return <div className="text-center py-12 text-muted-2 text-xs font-bold">नकद डेटा नहीं मिला</div>;
   }
   return (
     <div className="space-y-3">

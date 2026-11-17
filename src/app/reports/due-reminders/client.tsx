@@ -320,10 +320,7 @@ function DueRemindersContent({ initial }: { initial?: DueRemindersSeed | null })
       ...firmVars(firmInfo),
     });
     if (dueInfo)
-      msg = msg.replace(
-        "आपका समय देने के लिए धन्यवाद!",
-        `${dueInfo}\n\nआपका समय देने के लिए धन्यवाद!`
-      );
+      msg = msg.replace("आपका समय देने के लिए धन्यवाद!", `${dueInfo}\n\nआपका समय देने के लिए धन्यवाद!`);
     setWaPreview({ row: r, phone: clean, msg });
   };
 

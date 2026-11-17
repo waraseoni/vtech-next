@@ -524,7 +524,9 @@ export function SuppliersClient({
                 searchQuery={search}
                 setSearchQuery={setSearch}
                 totalItems={filtered.length}
-                onSort={(field) => { void field; }}
+                onSort={(field) => {
+                  void field;
+                }}
               />
             )}
 

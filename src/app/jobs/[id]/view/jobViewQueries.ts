@@ -145,51 +145,51 @@ export async function fetchJobViewData(
     prodListRes,
     svcListRes,
   ] = await Promise.all([
-      supabase
-        .from("client_list")
-        .select("id, firstname, middlename, lastname, contact, email, address, opening_balance")
-        .eq("id", clientId)
-        .single(),
-      jobData.mechanic_id
-        ? supabase
-            .from("mechanic_list")
-            .select("id, firstname, middlename, lastname, designation, contact")
-            .eq("id", jobData.mechanic_id)
-            .single()
-        : Promise.resolve({ data: null }),
-      supabase
-        .from("transaction_products")
-        .select("transaction_id, product_id, product_name, qty, price")
-        .eq("transaction_id", numId),
-      supabase
-        .from("transaction_services")
-        .select("transaction_id, service_id, service_name, price")
-        .eq("transaction_id", numId),
-      supabase
-        .from("transaction_images")
-        .select("id, transaction_id, image_path, date_created")
-        .eq("transaction_id", numId)
-        .order("date_created", { ascending: false }),
-      supabase
-        .from("transaction_list")
-        .select("client_name, amount")
-        .eq("status", JOB_STATUS_DELIVERED)
-        .neq("del_status", 1)
-        .eq("client_name", String(clientId)),
-      supabase
-        .from("client_payments")
-        .select("client_id, amount, discount, loan_id")
-        .eq("client_id", clientId),
-      supabase.from("direct_sales").select("client_id, total_amount").eq("client_id", clientId),
-      supabase
-        .from("client_loans")
-        .select("id, client_id, total_payable")
-        .eq("status", LOAN_STATUS_ACTIVE)
-        .eq("client_id", clientId),
-      // Naam/hsn lookups (pehle 3rd wave) — catalog chhote hain, isliye yahin.
-      supabase.from("product_list").select("id, name, hsn"),
-      supabase.from("service_list").select("id, name, hsn"),
-    ]);
+    supabase
+      .from("client_list")
+      .select("id, firstname, middlename, lastname, contact, email, address, opening_balance")
+      .eq("id", clientId)
+      .single(),
+    jobData.mechanic_id
+      ? supabase
+          .from("mechanic_list")
+          .select("id, firstname, middlename, lastname, designation, contact")
+          .eq("id", jobData.mechanic_id)
+          .single()
+      : Promise.resolve({ data: null }),
+    supabase
+      .from("transaction_products")
+      .select("transaction_id, product_id, product_name, qty, price")
+      .eq("transaction_id", numId),
+    supabase
+      .from("transaction_services")
+      .select("transaction_id, service_id, service_name, price")
+      .eq("transaction_id", numId),
+    supabase
+      .from("transaction_images")
+      .select("id, transaction_id, image_path, date_created")
+      .eq("transaction_id", numId)
+      .order("date_created", { ascending: false }),
+    supabase
+      .from("transaction_list")
+      .select("client_name, amount")
+      .eq("status", JOB_STATUS_DELIVERED)
+      .neq("del_status", 1)
+      .eq("client_name", String(clientId)),
+    supabase
+      .from("client_payments")
+      .select("client_id, amount, discount, loan_id")
+      .eq("client_id", clientId),
+    supabase.from("direct_sales").select("client_id, total_amount").eq("client_id", clientId),
+    supabase
+      .from("client_loans")
+      .select("id, client_id, total_payable")
+      .eq("status", LOAN_STATUS_ACTIVE)
+      .eq("client_id", clientId),
+    // Naam/hsn lookups (pehle 3rd wave) — catalog chhote hain, isliye yahin.
+    supabase.from("product_list").select("id, name, hsn"),
+    supabase.from("service_list").select("id, name, hsn"),
+  ]);
 
   const dueMaps = buildDueMaps({
     repairs: billedRes.data,

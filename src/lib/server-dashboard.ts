@@ -507,9 +507,6 @@ export async function fetchDashboardProfile(opts: FetchDashboardOptions): Promis
 export async function fetchDashboardInitialData(
   opts: FetchDashboardOptions
 ): Promise<DashboardInitialData> {
-  const [profile, rest] = await Promise.all([
-    fetchDashboardProfile(opts),
-    fetchDashboardBatches(),
-  ]);
+  const [profile, rest] = await Promise.all([fetchDashboardProfile(opts), fetchDashboardBatches()]);
   return { profile, ...rest };
 }
