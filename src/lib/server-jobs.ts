@@ -73,8 +73,11 @@ export async function fetchJobsPageData(
 
   const listP = (async () => {
     try {
-      const [{ rows, count }, stats] = await Promise.all([
-        queryJobPage(supabase, filters, 0, PAGE_SIZE, resolveClients),
+      // PERF: exact count server par alag ~200 ms leta hai; `get_jobs_stats` ka
+      // `total` bilkul yahi filters (del_status=0 + term/date/status/spot) count
+      // karta hai, isliye page query count ke bina chalti hai aur total wahin se.
+      const [{ rows }, stats] = await Promise.all([
+        queryJobPage(supabase, filters, 0, PAGE_SIZE, resolveClients, { withCount: false }),
         queryJobStats(supabase, filters, resolveClients),
       ]);
       // PERF: open-part counts sirf row ids par depend karte hain — pehle
@@ -92,7 +95,7 @@ export async function fetchJobsPageData(
       ]);
       return {
         transactions,
-        totalRows: count,
+        totalRows: stats.total,
         stats,
         openPartCounts: [...openPartCountsMap.entries()],
       };
