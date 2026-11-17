@@ -213,3 +213,71 @@ ab wo **nav ke baad background** me chalta hai — user wait nahi karta.
 **683/683** (677 + 6 naye) ✔ · `next build` ✔ · `prettier --check` (changed files) ✔ ·
 `activity_logs` multi-row insert live schema par transaction ke andar test kiya, rollback ke
 baad rows **4615 → 4615** (koi data change nahi).
+
+---
+
+## 7. Batch 5 — list/detail first paint (17 Nov 2026, measured)
+
+User: "page loading ko aur fast kar sakte ho kya". Sab kuch prod build
+(`npx next start -p 3100`) par naapa gaya — pehle browser probe (best of 3),
+phir server-side HTML fetch (8 runs, median; browser jitter hatane ke liye).
+
+### 7.1 Kya-kya badla
+
+| #   | Change                                                                                                                                       | File                                                       |
+| --- | -------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
+| 1   | `/jobs` page query se `count: "exact"` hataya — total `get_jobs_stats().total` se (bilkul wahi filters)                                      | `src/app/jobs/jobListQueries.ts`, `src/lib/server-jobs.ts` |
+| 2   | **Live DB index** `transaction_list_del_status_job_id_idx (del_status, job_id DESC)`                                                         | `supabase/migrations/20261117_jobs_list_sort_index.sql`    |
+| 3   | `/clients`: contacts `client_contacts_client_fk` se embed (alag round khatam); embed fail ho to graceful degrade                             | `src/lib/server-clients.ts`                                |
+| 4   | `/jobs/[id]/view`: product/service naam+hsn lookups 3rd wave → 2nd wave (catalogs 97 + 25 rows)                                              | `src/app/jobs/[id]/view/jobViewQueries.ts`                 |
+| 5   | `/dashboard`: data batches auth ke saath parallel (sirf profile widget auth ke baad)                                                         | `src/lib/server-dashboard.ts`, dashboard page              |
+| 6   | `/clients`: data fetch auth ke saath parallel                                                                                                | `src/lib/server-clients.ts`, clients page                  |
+| 7   | `loadStaffSeed`: seed loader auth ke saath parallel (60+ seed routes)                                                                        | `src/lib/server-seed.ts`                                   |
+| 8   | Server seeds me `getClaims()` (local) — `getUser()` ka Auth RTT hataya (attendance, profile, messages, PO, jobs/old, direct-sale, mechanics) | `src/lib/api-auth.ts` + seeds                              |
+
+### 7.2 DB index (live apply, data untouched)
+
+`job_id` TEXT par poora btree index nahi tha (sirf partial unique `job_id >= 28101`),
+isliye har `/jobs` load par ~2.3k rows ka sort hota tha.
+
+| Step                                                               | Result                                    |
+| ------------------------------------------------------------------ | ----------------------------------------- |
+| Same query RLS ke saath, index se pehle                            | **106 ms** (4 runs, med)                  |
+| Index ke baad                                                      | **39 ms** (Index Scan, execution 0.98 ms) |
+| Apply (transaction me create + analyze + plan verify, phir commit) | **353 ms**                                |
+| Index size                                                         | 72 kB                                     |
+| `transaction_list` rows before → after                             | **2370 → 2370**                           |
+
+### 7.3 Measured (prod build, server-side HTML, median of 8)
+
+| Route                          |        Before |          After | Note                   |
+| ------------------------------ | ------------: | -------------: | ---------------------- |
+| `/dashboard`                   |    294-304 ms | **235-264 ms** | auth+data parallel     |
+| `/jobs`                        | 620 ms (html) |     **179 ms** | count hata + index     |
+| `/clients`                     |        224 ms |     **178 ms** | embed + auth parallel  |
+| `/attendance`                  |    227-259 ms |  **66-126 ms** | seed parallel + claims |
+| `/jobs/[id]/view` (items wale) |    251-291 ms | **206-230 ms** | 3 waves → 2            |
+| `/profile`                     |        250 ms |     **132 ms** | claims + seed parallel |
+| `/messages`                    |        251 ms |     **138 ms** | claims + seed parallel |
+| `/clients/[id]/view`           |             — |     **140 ms** | unchanged pipeline     |
+
+Browser probe (best of 3, wall — JS/hydration samet):
+
+| Route             | Before |      After |
+| ----------------- | -----: | ---------: |
+| `/jobs`           | 715 ms | **356 ms** |
+| `/attendance`     | 283 ms | **149 ms** |
+| `/dashboard`      | 344 ms | **291 ms** |
+| `/clients`        | 420 ms | **357 ms** |
+| `/jobs/2461/view` | 402 ms | **307 ms** |
+
+### 7.4 Bacha hua (next candidates)
+
+- `/jobs` RSC 239 KB payload — 25 rows ke saath enrich data; `enrichJobRows` ki 7 parallel
+  queries ek embedded/RPC round me laane se ~150-200 ms bachega (risk: bada refactor).
+- `/clients` 257 KB payload (553 clients bina pagination) — pagination/virtual list.
+- `/dashboard` 264 ms — `get_monthly_revenue` + low-stock chain abhi 2 waves hain.
+
+**Verification (is batch par):** `tsc --noEmit` ✔ · `eslint src` ✔ 0 · `npm test`
+**683/683** ✔ · `npm run build` ✔ · `schema:drift` ✔ (27 migrations) · live DB apply ke
+baad row counts unchanged.
