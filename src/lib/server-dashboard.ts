@@ -451,15 +451,17 @@ async function fetchWidgetsBatch(supabase: Sb): Promise<{
 }
 
 // ── orchestrator ─────────────────────────────────────────────────────────────
-export async function fetchDashboardInitialData(
-  opts: FetchDashboardOptions
-): Promise<DashboardInitialData> {
+/**
+ * Dashboard ke saare data batches (profile ke bina). Page isse auth ke SAATH
+ * parallel start kar sakta hai — profile ke liye auth ka user id chahiye,
+ * baaki sab RLS cookie se hi chal jata hai (jobs page wala hi pattern).
+ */
+export async function fetchDashboardBatches(): Promise<Omit<DashboardInitialData, "profile">> {
   const supabase = await getServerSupabase();
 
   // Paanch batches sab independent hain → ek saath (pehle client par
   // yahi sab waterfall tha; ab total = max(batch) naaki sum).
-  const [profile, statsBatch, revenueData, widgets, waitingSummary] = await Promise.all([
-    fetchProfile(supabase, opts),
+  const [statsBatch, revenueData, widgets, waitingSummary] = await Promise.all([
     fetchStatsBatch(supabase).catch((e: unknown) => {
       logger.warn("Dashboard stats batch failed:", e);
       return { stats: STATS_EMPTY, statusData: [] as StatusPoint[] };
@@ -486,7 +488,6 @@ export async function fetchDashboardInitialData(
   ]);
 
   return {
-    profile,
     stats: { ...statsBatch.stats, lowStock: widgets.lowStockCount },
     statusData: statsBatch.statusData,
     revenueData,
@@ -495,4 +496,20 @@ export async function fetchDashboardInitialData(
     lowStockItems: widgets.lowStockItems,
     waitingSummary,
   };
+}
+
+/** Profile widget — auth ke baad (userId chahiye). */
+export async function fetchDashboardProfile(opts: FetchDashboardOptions): Promise<Profile> {
+  const supabase = await getServerSupabase();
+  return fetchProfile(supabase, opts);
+}
+
+export async function fetchDashboardInitialData(
+  opts: FetchDashboardOptions
+): Promise<DashboardInitialData> {
+  const [profile, rest] = await Promise.all([
+    fetchDashboardProfile(opts),
+    fetchDashboardBatches(),
+  ]);
+  return { profile, ...rest };
 }
