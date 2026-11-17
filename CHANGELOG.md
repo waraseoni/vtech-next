@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.78.0](https://github.com/waraseoni/vtech-next/compare/v1.77.6...v1.78.0) (2026-11-17)
+
+### Features
+
+* **jobs:** add custom services, quick master add for services/products, and realtime bill sync ([437d229](https://github.com/waraseoni/vtech-next/commit/437d2297a7e95803325a7965bce7a92d1a1ca7c8))
+
 ## [1.77.6](https://github.com/waraseoni/vtech-next/compare/v1.77.5...v1.77.6) (2026-11-17)
 
 ### Bug Fixes
