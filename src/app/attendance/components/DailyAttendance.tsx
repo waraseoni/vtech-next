@@ -70,10 +70,13 @@ const MechAvatar = ({
   image,
   name,
   cls = "w-8 h-8 text-xs",
+  eager = false,
 }: {
   image?: string | null;
   name: string;
   cls?: string;
+  /** Above-the-fold row/card ke liye: LCP warning se bachne ke liye eager load. */
+  eager?: boolean;
 }) =>
   image ? (
     <ZoomableImage
@@ -81,6 +84,7 @@ const MechAvatar = ({
       alt={name}
       width={32}
       height={32}
+      loading={eager ? "eager" : undefined}
       className={`${cls} rounded-full object-cover flex-shrink-0 border border-white/10 ring-1 ring-blue-500/10`}
       onError={(e) => {
         (e.currentTarget as HTMLImageElement).style.display = "none";
@@ -649,7 +653,7 @@ export default function DailyAttendance({
             {/* Staff Identity */}
             <div className="flex items-center gap-3 min-w-0">
               <div className="relative flex-shrink-0">
-                <MechAvatar image={selfImage} name={selfName} cls="w-11 h-11 text-base" />
+                <MechAvatar image={selfImage} name={selfName} cls="w-11 h-11 text-base" eager />
                 <span
                   className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-white dark:border-app ${selfBadge.dot}`}
                 />
@@ -995,6 +999,7 @@ export default function DailyAttendance({
                               image={mech.image}
                               name={mech.name}
                               cls="w-7 h-7 text-[10px]"
+                              eager={idx < 4}
                             />
                             <div className="min-w-0 truncate">
                               <p className="text-white font-bold text-xs truncate">{mech.name}</p>
@@ -1118,7 +1123,7 @@ export default function DailyAttendance({
 
           {/* ── MOBILE CARDS (< md) ── */}
           <div className="md:hidden space-y-3 pb-24">
-            {mechanics.map((mech) => {
+            {mechanics.map((mech, idx) => {
               const st = attendance[mech.id];
               const t = times[mech.id];
               const tIn = t?.timeIn ?? "";
@@ -1133,7 +1138,12 @@ export default function DailyAttendance({
                   {/* Card Header */}
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2.5 min-w-0">
-                      <MechAvatar image={mech.image} name={mech.name} cls="w-9 h-9 text-xs" />
+                      <MechAvatar
+                        image={mech.image}
+                        name={mech.name}
+                        cls="w-9 h-9 text-xs"
+                        eager={idx < 2}
+                      />
                       <div className="min-w-0">
                         <p className="text-white font-black text-sm truncate">{mech.name}</p>
                         <p className="text-[10px] text-muted font-medium">{mech.designation}</p>

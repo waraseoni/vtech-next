@@ -1857,6 +1857,7 @@ export default function RootClient({
                     alt={displayName}
                     width={36}
                     height={36}
+                    loading="eager"
                     className="w-9 h-9 rounded-xl object-cover shadow-md flex-shrink-0 border border-white/10"
                     onDoubleClick={(e) => {
                       e.stopPropagation();
