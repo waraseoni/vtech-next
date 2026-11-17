@@ -133,6 +133,32 @@ export default function ManageJobPage({ params }: { params: Promise<{ id?: strin
   const [customName, setCustomName] = useState("");
   const [customPrice, setCustomPrice] = useState("");
 
+  // Custom (non-catalog) service
+  const [showCustomService, setShowCustomService] = useState(false);
+  const [customServiceName, setCustomServiceName] = useState("");
+  const [customServicePrice, setCustomServicePrice] = useState("");
+
+  // Quick Add Master Modals
+  const [showAddServiceModal, setShowAddServiceModal] = useState(false);
+  const [newServiceForm, setNewServiceForm] = useState({
+    name: "",
+    description: "",
+    price: "",
+    hsn: "",
+  });
+  const [savingService, setSavingService] = useState(false);
+
+  const [showAddProductModal, setShowAddProductModal] = useState(false);
+  const [newProductForm, setNewProductForm] = useState({
+    name: "",
+    description: "",
+    price: "",
+    cost_price: "",
+    hsn: "",
+    alert_quantity: "5",
+  });
+  const [savingProduct, setSavingProduct] = useState(false);
+
   // Add New Client Modal
   const [showAddClientModal, setShowAddClientModal] = useState(false);
   const [newClientForm, setNewClientForm] = useState({
@@ -404,6 +430,100 @@ export default function ManageJobPage({ params }: { params: Promise<{ id?: strin
     }
   };
 
+  // ── QUICK ADD MASTER SERVICE ───────────────────────────────────────────
+  const handleSaveNewService = async () => {
+    const nm = newServiceForm.name.trim();
+    if (!nm) {
+      toast.error("Service ka naam zaroori hai!");
+      return;
+    }
+    const price = parseFloat(newServiceForm.price) || 0;
+    setSavingService(true);
+    try {
+      const { data, error } = await supabase
+        .from("service_list")
+        .insert({
+          name: nm,
+          description: newServiceForm.description.trim(),
+          price,
+          hsn: newServiceForm.hsn.trim(),
+          status: 1,
+        })
+        .select("id, name, price")
+        .single();
+      if (error) throw error;
+      if (data) {
+        const created: Service = { id: data.id, name: data.name, price: Number(data.price) || 0 };
+        setServices((prev) => [...prev, created]);
+        // Also auto-add to current job
+        addService(created.id);
+        setShowAddServiceModal(false);
+        setNewServiceForm({ name: "", description: "", price: "", hsn: "" });
+        toast.success("Nayi service master list me save ho gayi! ✅");
+      }
+    } catch (e) {
+      logger.error("save service error:", e instanceof Error ? e.message : e);
+      toast.error("Service save nahi hui: " + (e instanceof Error ? e.message : "Unknown error"));
+    } finally {
+      setSavingService(false);
+    }
+  };
+
+  // ── QUICK ADD MASTER PRODUCT ───────────────────────────────────────────
+  const handleSaveNewProduct = async () => {
+    const nm = newProductForm.name.trim();
+    if (!nm) {
+      toast.error("Product ka naam zaroori hai!");
+      return;
+    }
+    const price = parseFloat(newProductForm.price) || 0;
+    const costPrice = parseFloat(newProductForm.cost_price) || 0;
+    const alertQty = parseInt(newProductForm.alert_quantity, 10) || 5;
+    setSavingProduct(true);
+    try {
+      const { data, error } = await supabase
+        .from("product_list")
+        .insert({
+          name: nm,
+          description: newProductForm.description.trim(),
+          price,
+          cost_price: costPrice,
+          hsn: newProductForm.hsn.trim(),
+          alert_quantity: alertQty,
+          status: 1,
+        })
+        .select("id, name, price")
+        .single();
+      if (error) throw error;
+      if (data) {
+        const created: Product = {
+          id: data.id,
+          name: data.name,
+          price: Number(data.price) || 0,
+          available_stock: 0,
+        };
+        setProducts((prev) => [...prev, created]);
+        // Also auto-add to current job
+        addProduct(created.id);
+        setShowAddProductModal(false);
+        setNewProductForm({
+          name: "",
+          description: "",
+          price: "",
+          cost_price: "",
+          hsn: "",
+          alert_quantity: "5",
+        });
+        toast.success("Naya product master list me save ho gaya! ✅");
+      }
+    } catch (e) {
+      logger.error("save product error:", e instanceof Error ? e.message : e);
+      toast.error("Product save nahi hua: " + (e instanceof Error ? e.message : "Unknown error"));
+    } finally {
+      setSavingProduct(false);
+    }
+  };
+
   // ── AUTO JOB CODE (new mode) ──────────────────────────────────────────
   // PHP format: code = YYYYMMDD + 2-digit daily sequence (e.g. "2025102401")
   //             job_id = sequential number across all jobs (e.g. "27270")
@@ -457,6 +577,32 @@ export default function ManageJobPage({ params }: { params: Promise<{ id?: strin
         price: svc.price,
       },
     ]);
+  };
+
+  // Custom service (labor charge — service_list me nahi, direct ad-hoc)
+  const addServiceCustom = () => {
+    const nm = customServiceName.trim();
+    if (!nm) {
+      toast.error("Service ka naam do!");
+      return;
+    }
+    const price = parseFloat(customServicePrice) || 0;
+    // Generate negative synthetic service_id (-1, -2, etc.) for PK uniqueness
+    const minExistingId = serviceRows.reduce((min, r) => Math.min(min, r.service_id), 0);
+    const syntheticId = minExistingId <= 0 ? minExistingId - 1 : -1;
+
+    setServiceRows((prev) => [
+      ...prev,
+      {
+        tempId: ++tempIdRef.current,
+        service_id: syntheticId,
+        service_name: nm,
+        price,
+      },
+    ]);
+    setCustomServiceName("");
+    setCustomServicePrice("");
+    setShowCustomService(false);
   };
 
   const removeService = (tempId: number) =>
@@ -859,6 +1005,258 @@ export default function ManageJobPage({ params }: { params: Promise<{ id?: strin
         </div>
       )}
 
+      {/* Quick Add Master Service Modal */}
+      {showAddServiceModal && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-panel border border-app rounded-2xl w-full max-w-md shadow-2xl">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-5 border-b border-app">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-700 rounded-xl flex items-center justify-center">
+                  <Wrench size={18} className="text-white" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-white">Nayi Service Master me banayein</h3>
+                  <p className="text-xs text-muted">
+                    Aage ke sabhi jobs ke liye catalog me save ho jayegi
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowAddServiceModal(false)}
+                className="w-8 h-8 flex items-center justify-center bg-panel-2 hover:bg-panel-2 rounded-lg text-muted hover:text-white transition-all"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-5 space-y-4">
+              <div>
+                <label className={labelCls}>
+                  Service Name <span className="text-red-400">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={newServiceForm.name}
+                  onChange={(e) => setNewServiceForm((p) => ({ ...p, name: e.target.value }))}
+                  placeholder="e.g. Battery Balancing & Cell Revival"
+                  className={inputCls}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className={labelCls}>Labor Price (₹) *</label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={newServiceForm.price}
+                    onChange={(e) => setNewServiceForm((p) => ({ ...p, price: e.target.value }))}
+                    placeholder="500"
+                    className={inputCls}
+                  />
+                </div>
+                <div>
+                  <label className={labelCls}>HSN / SAC Code</label>
+                  <input
+                    type="text"
+                    value={newServiceForm.hsn}
+                    onChange={(e) => setNewServiceForm((p) => ({ ...p, hsn: e.target.value }))}
+                    placeholder="9987"
+                    className={inputCls}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className={labelCls}>Description (Optional)</label>
+                <textarea
+                  value={newServiceForm.description}
+                  onChange={(e) =>
+                    setNewServiceForm((p) => ({ ...p, description: e.target.value }))
+                  }
+                  placeholder="Service details ya scope..."
+                  rows={2}
+                  className={`${inputCls} resize-none`}
+                />
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="flex items-center gap-3 p-5 border-t border-app">
+              <button
+                type="button"
+                onClick={handleSaveNewService}
+                disabled={savingService}
+                className="flex-1 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all disabled:opacity-50"
+              >
+                {savingService ? (
+                  <>
+                    <Loader2 size={16} className="animate-spin" />
+                    Saving…
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 size={16} />
+                    Save & Add to Job
+                  </>
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowAddServiceModal(false)}
+                className="px-6 py-2.5 bg-panel-2 hover:bg-panel-2 border border-app text-muted hover:text-white rounded-xl font-bold text-sm transition-all"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Quick Add Master Product Modal */}
+      {showAddProductModal && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-panel border border-app rounded-2xl w-full max-w-md shadow-2xl">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-5 border-b border-app">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-emerald-700 rounded-xl flex items-center justify-center">
+                  <Package size={18} className="text-white" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-white">Naya Product Master me banayein</h3>
+                  <p className="text-xs text-muted">
+                    Aage ke sabhi jobs aur inventory ke liye catalog me save ho jayega
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowAddProductModal(false)}
+                className="w-8 h-8 flex items-center justify-center bg-panel-2 hover:bg-panel-2 rounded-lg text-muted hover:text-white transition-all"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-5 space-y-4">
+              <div>
+                <label className={labelCls}>
+                  Product Name <span className="text-red-400">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={newProductForm.name}
+                  onChange={(e) => setNewProductForm((p) => ({ ...p, name: e.target.value }))}
+                  placeholder="e.g. 48V DC Motor Controller"
+                  className={inputCls}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className={labelCls}>Selling Price (₹) *</label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={newProductForm.price}
+                    onChange={(e) => setNewProductForm((p) => ({ ...p, price: e.target.value }))}
+                    placeholder="1200"
+                    className={inputCls}
+                  />
+                </div>
+                <div>
+                  <label className={labelCls}>Cost Price (₹)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={newProductForm.cost_price}
+                    onChange={(e) =>
+                      setNewProductForm((p) => ({ ...p, cost_price: e.target.value }))
+                    }
+                    placeholder="850"
+                    className={inputCls}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className={labelCls}>HSN Code</label>
+                  <input
+                    type="text"
+                    value={newProductForm.hsn}
+                    onChange={(e) => setNewProductForm((p) => ({ ...p, hsn: e.target.value }))}
+                    placeholder="8504"
+                    className={inputCls}
+                  />
+                </div>
+                <div>
+                  <label className={labelCls}>Alert Quantity</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={newProductForm.alert_quantity}
+                    onChange={(e) =>
+                      setNewProductForm((p) => ({ ...p, alert_quantity: e.target.value }))
+                    }
+                    placeholder="5"
+                    className={inputCls}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className={labelCls}>Description (Optional)</label>
+                <textarea
+                  value={newProductForm.description}
+                  onChange={(e) =>
+                    setNewProductForm((p) => ({ ...p, description: e.target.value }))
+                  }
+                  placeholder="Specifications, model compatibility..."
+                  rows={2}
+                  className={`${inputCls} resize-none`}
+                />
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="flex items-center gap-3 p-5 border-t border-app">
+              <button
+                type="button"
+                onClick={handleSaveNewProduct}
+                disabled={savingProduct}
+                className="flex-1 py-2.5 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all disabled:opacity-50"
+              >
+                {savingProduct ? (
+                  <>
+                    <Loader2 size={16} className="animate-spin" />
+                    Saving…
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 size={16} />
+                    Save & Add to Job
+                  </>
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowAddProductModal(false)}
+                className="px-6 py-2.5 bg-panel-2 hover:bg-panel-2 border border-app text-muted hover:text-white rounded-xl font-bold text-sm transition-all"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="max-w-5xl mx-auto p-4 md:p-6 space-y-4">
         {/* ── PAGE HEADER ─────────────────────────────────────────────── */}
         <div className="relative overflow-hidden bg-panel rounded-3xl border border-app p-5">
@@ -1072,9 +1470,18 @@ export default function ManageJobPage({ params }: { params: Promise<{ id?: strin
                   Services
                 </p>
               </div>
-              <span className="text-[10px] font-black text-blue-400">
-                Total: {inr(serviceTotal)}
-              </span>
+              <div className="flex items-center gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => setShowAddServiceModal(true)}
+                  className="text-[10px] font-bold text-blue-400 hover:text-blue-300 underline underline-offset-2 transition-colors flex items-center gap-1"
+                >
+                  <Plus size={11} /> Master me banayein
+                </button>
+                <span className="text-[10px] font-black text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded-lg border border-blue-500/20">
+                  Total: {inr(serviceTotal)}
+                </span>
+              </div>
             </div>
 
             {/* Add service */}
@@ -1088,6 +1495,61 @@ export default function ManageJobPage({ params }: { params: Promise<{ id?: strin
                 emptyText="Koi service nahi mili"
               />
             </div>
+
+            {/* Custom service — catalog me nahi, ad-hoc add */}
+            {!showCustomService ? (
+              <button
+                type="button"
+                onClick={() => setShowCustomService(true)}
+                className="w-full mb-3 text-xs bg-blue-600/10 text-blue-300 border border-dashed border-blue-500/40 px-3 py-2 rounded-xl hover:bg-blue-600/20 transition-all inline-flex items-center justify-center gap-1.5"
+              >
+                <Plus size={13} /> Custom service add karo (ad-hoc / non-catalog)
+              </button>
+            ) : (
+              <div className="mb-3 border border-app rounded-xl bg-panel-2 p-3 grid grid-cols-1 sm:grid-cols-[1fr_100px_auto] gap-2 items-end">
+                <div>
+                  <label className={labelCls}>Service ka naam *</label>
+                  <input
+                    value={customServiceName}
+                    onChange={(e) => setCustomServiceName(e.target.value)}
+                    placeholder="e.g. Panel Dent Repair, Custom Wiring..."
+                    className={inputCls}
+                  />
+                </div>
+                <div>
+                  <label className={labelCls}>Charge (₹)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={customServicePrice}
+                    onChange={(e) => setCustomServicePrice(e.target.value)}
+                    placeholder="0"
+                    className={inputCls}
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={addServiceCustom}
+                    className="bg-blue-600/20 text-blue-300 border border-blue-600/40 px-3 py-2 rounded-xl hover:bg-blue-600/30 transition-all text-xs font-bold inline-flex items-center gap-1"
+                  >
+                    <Plus size={12} /> Add
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowCustomService(false);
+                      setCustomServiceName("");
+                      setCustomServicePrice("");
+                    }}
+                    className="px-2.5 py-2 text-muted hover:text-white transition-colors"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* Service table */}
             <div className="space-y-0 border border-app rounded-xl overflow-hidden">
@@ -1142,9 +1604,18 @@ export default function ManageJobPage({ params }: { params: Promise<{ id?: strin
                   Products
                 </p>
               </div>
-              <span className="text-[10px] font-black text-emerald-400">
-                Total: {inr(productTotal)}
-              </span>
+              <div className="flex items-center gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => setShowAddProductModal(true)}
+                  className="text-[10px] font-bold text-emerald-400 hover:text-emerald-300 underline underline-offset-2 transition-colors flex items-center gap-1"
+                >
+                  <Plus size={11} /> Master me banayein
+                </button>
+                <span className="text-[10px] font-black text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-lg border border-emerald-500/20">
+                  Total: {inr(productTotal)}
+                </span>
+              </div>
             </div>
 
             {/* Add product */}
