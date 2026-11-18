@@ -2,6 +2,7 @@ import "./globals.css";
 import Script from "next/script";
 import RootClient from "./RootClient";
 import Providers from "./Providers";
+import WebVitals from "@/components/WebVitals";
 import { isSsrShellEnabled, type SsrShellAuth } from "@/lib/ssr-shell";
 import { readSsrShellAuth } from "@/lib/server-ssr-auth";
 import type { Metadata, Viewport } from "next";
@@ -132,6 +133,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           dangerouslySetInnerHTML={{ __html: BOOT_GUARD }}
         />
         <Providers>
+          <WebVitals />
           <RootClient ssrShellAuth={ssrShellAuth}>{children}</RootClient>
         </Providers>
       </body>

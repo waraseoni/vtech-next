@@ -4916,4 +4916,143 @@ grant execute on function public.get_dashboard_low_stock() to service_role;
 create index if not exists client_payments_date_id_idx
   on public.client_payments (payment_date desc, id desc);
 
+-- ---- 20261119_dashboard_widget_rpcs.sql ------------------------------------
+-- Dashboard recents (2 rounds -> 1) + waiting summary (2 -> 1), both
+-- read-only definer RPCs with the same is_frontend_staff() guard.
+create or replace function public.get_dashboard_recents()
+returns jsonb
+language sql
+security definer
+stable
+set search_path = public
+as $$
+  with rj as (
+    select t.id, t.job_id, t.client_name, t.item, t.amount, t.status,
+           nullif(regexp_replace(t.client_name, '\D', '', 'g'), '')::bigint as client_pk
+    from public.transaction_list t
+    where t.del_status = 0
+      and public.is_frontend_staff()
+    order by t.id desc
+    limit 5
+  ),
+  rp as (
+    select p.id, p.amount, p.payment_mode, p.payment_date, p.client_id
+    from public.client_payments p
+    where public.is_frontend_staff()
+    order by p.payment_date desc, p.id desc
+    limit 10
+  )
+  select jsonb_build_object(
+    'recentJobs', coalesce((
+      select jsonb_agg(
+        jsonb_build_object(
+          'id', rj.id,
+          'job_id', rj.job_id,
+          'client_name', coalesce(
+            nullif(btrim(concat_ws(' ', c.firstname, c.lastname)), ''),
+            'Walk-in'
+          ),
+          'item', rj.item,
+          'amount', rj.amount,
+          'status', rj.status
+        )
+        order by rj.id desc
+      )
+      from rj
+      left join public.client_list c on c.id = rj.client_pk
+    ), '[]'::jsonb),
+    'recentPayments', coalesce((
+      select jsonb_agg(
+        jsonb_build_object(
+          'id', rp.id,
+          'amount', rp.amount,
+          'payment_mode', coalesce(rp.payment_mode::text, 'Cash'),
+          'payment_date', rp.payment_date,
+          'client_name', coalesce(
+            nullif(btrim(concat_ws(' ', c2.firstname, c2.lastname)), ''),
+            'Unknown'
+          )
+        )
+        order by rp.payment_date desc, rp.id desc
+      )
+      from rp
+      left join public.client_list c2 on c2.id = rp.client_id
+    ), '[]'::jsonb)
+  );
+$$;
+
+create or replace function public.get_dashboard_waiting()
+returns jsonb
+language sql
+security definer
+stable
+set search_path = public
+as $$
+  with parts as (
+    select p.transaction_id, p.status, p.date_created
+    from public.job_required_parts p
+    where p.status in (0, 1, 2)
+      and public.is_frontend_staff()
+  ),
+  jobs as (
+    select t.id, t.job_id
+    from public.transaction_list t
+    where t.id in (select transaction_id from parts)
+      and t.status in (0, 1, 2, 3)
+      and t.del_status = 0
+  ),
+  active_parts as (
+    select p.transaction_id, p.status, p.date_created
+    from parts p
+    where p.transaction_id in (select id from jobs)
+  ),
+  agg as (
+    select
+      count(*)::int as waiting_parts,
+      count(*) filter (where ap.status = 1)::int as ordered_count,
+      count(*) filter (where ap.status <> 1)::int as waiting_count,
+      min(ap.date_created) as oldest_at,
+      (array_agg(ap.transaction_id order by ap.date_created asc, ap.transaction_id asc))[1]
+        as oldest_txn
+    from active_parts ap
+  )
+  select case
+    when (select waiting_parts from agg) = 0 then
+      jsonb_build_object(
+        'waitingJobs', 0,
+        'waitingParts', 0,
+        'orderedCount', 0,
+        'waitingCount', 0,
+        'oldestDays', 0,
+        'oldestJobId', null
+      )
+    else
+      jsonb_build_object(
+        'waitingJobs', (select count(*)::int from jobs),
+        'waitingParts', a.waiting_parts,
+        'orderedCount', a.ordered_count,
+        'waitingCount', a.waiting_count,
+        'oldestDays', greatest(
+          0,
+          floor(extract(epoch from (now() - a.oldest_at)) / 86400)::int
+        ),
+        'oldestJobId', coalesce(
+          (select nullif(j.job_id, '') from jobs j where j.id = a.oldest_txn),
+          '#' || a.oldest_txn::text
+        )
+      )
+  end
+  from agg a;
+$$;
+
+revoke all on function public.get_dashboard_recents() from public;
+revoke all on function public.get_dashboard_recents() from anon;
+grant execute on function public.get_dashboard_recents() to authenticated;
+grant execute on function public.get_dashboard_recents() to service_role;
+
+revoke all on function public.get_dashboard_waiting() from public;
+revoke all on function public.get_dashboard_waiting() from anon;
+grant execute on function public.get_dashboard_waiting() to authenticated;
+grant execute on function public.get_dashboard_waiting() to service_role;
+
 NOTIFY pgrst, 'reload schema';

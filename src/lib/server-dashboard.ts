@@ -400,15 +400,68 @@ async function fetchLowStock(
   return { count: builtLow.length, items: builtLow.slice(0, 12) };
 }
 
-// ── recents + low stock + waiting (widgets batch) ────────────────────────────
-async function fetchWidgetsBatch(supabase: Sb): Promise<{
+// ── recents (1 definer RPC; legacy 2-round chain only as fallback) ───────────
+type RecentsRpcPayload = {
+  recentJobs?: {
+    id: number;
+    job_id: string | null;
+    client_name: string;
+    item: string;
+    amount: number | string;
+    status: number;
+  }[];
+  recentPayments?: {
+    id: number;
+    amount: number | string;
+    payment_mode: string | null;
+    payment_date: string;
+    client_name: string;
+  }[];
+};
+
+/**
+ * Recent jobs + recent payments (client names samet).
+ *
+ * Fast path (migration 20261119_dashboard_widget_rpcs.sql): dono queries ka
+ * naam lookup server par hota hai → 1 RPC. Measured (HTTP, staff JWT):
+ * 2 rounds ~101 ms → 1 call ~44 ms.
+ *
+ * Fallback: purani 2-round chain (rows → client_list names) — behaviour same.
+ */
+async function fetchRecents(supabase: Sb): Promise<{
   recentJobs: RecentJob[];
   recentPayments: RecentPayment[];
-  lowStockItems: LowStockItem[];
-  lowStockCount: number;
 }> {
-  const [lowStock, rjR, rpR] = await Promise.all([
-    fetchLowStock(supabase),
+  try {
+    const { data, error } = await supabase.rpc("get_dashboard_recents");
+    if (!error && data && typeof data === "object") {
+      const payload = data as RecentsRpcPayload;
+      if (Array.isArray(payload.recentJobs) && Array.isArray(payload.recentPayments)) {
+        return {
+          recentJobs: payload.recentJobs.map((t) => ({
+            id: t.id,
+            job_id: t.job_id,
+            client_name: t.client_name,
+            item: t.item,
+            amount: toNum(t.amount),
+            status: t.status,
+          })),
+          recentPayments: payload.recentPayments.map((p) => ({
+            id: p.id,
+            amount: toNum(p.amount),
+            payment_mode: p.payment_mode ?? "Cash",
+            payment_date: p.payment_date,
+            client_name: p.client_name,
+          })),
+        };
+      }
+    }
+    logger.warn("Dashboard recents RPC failed — legacy chain fallback:", error?.message);
+  } catch (e) {
+    logger.warn("Dashboard recents RPC threw — legacy chain fallback:", e);
+  }
+
+  const [rjR, rpR] = await Promise.all([
     supabase
       .from("transaction_list")
       .select("id, job_id, client_name, item, amount, status")
@@ -453,7 +506,6 @@ async function fetchWidgetsBatch(supabase: Sb): Promise<{
     ? [...new Set(paymentsRaw.map((p) => p.client_id).filter(Boolean))]
     : [];
 
-  // Independent chains — sab ek saath (lightning B1).
   const [clsJobs, clsPays] = await Promise.all([
     cIds.length
       ? supabase.from("client_list").select("id, firstname, lastname").in("id", cIds)
@@ -493,12 +545,70 @@ async function fetchWidgetsBatch(supabase: Sb): Promise<{
     }));
   }
 
+  return { recentJobs, recentPayments };
+}
+
+// ── recents + low stock (widgets batch) ─────────────────────────────────────
+async function fetchWidgetsBatch(supabase: Sb): Promise<{
+  recentJobs: RecentJob[];
+  recentPayments: RecentPayment[];
+  lowStockItems: LowStockItem[];
+  lowStockCount: number;
+}> {
+  // Dono ab 1-1 rpc call hain — pehle har ek 2 rounds leta tha.
+  const [lowStock, recents] = await Promise.all([
+    fetchLowStock(supabase),
+    fetchRecents(supabase),
+  ]);
+
   return {
-    recentJobs,
-    recentPayments,
+    recentJobs: recents.recentJobs,
+    recentPayments: recents.recentPayments,
     lowStockItems: lowStock.items,
     lowStockCount: lowStock.count,
   };
+}
+
+// ── waiting summary (1 definer RPC; legacy 2-query chain as fallback) ────────
+type WaitingRpcPayload = {
+  waitingJobs?: number | string;
+  waitingParts?: number | string;
+  orderedCount?: number | string;
+  waitingCount?: number | string;
+  oldestDays?: number | string;
+  oldestJobId?: string | null;
+};
+
+/**
+ * Waiting / required-parts summary.
+ *
+ * Fast path (migration 20261119_dashboard_widget_rpcs.sql): parts + jobs join
+ * server par → 1 RPC. Measured (HTTP, staff JWT): 2 sequential queries
+ * ~97 ms → 1 call ~45-50 ms.
+ *
+ * Fallback: `fetchWaitingSummary()` (purani 2-query chain) — behaviour same.
+ */
+async function fetchWaiting(supabase: Sb): Promise<WaitingSummary> {
+  try {
+    const { data, error } = await supabase.rpc("get_dashboard_waiting");
+    if (!error && data && typeof data === "object") {
+      const d = data as WaitingRpcPayload;
+      if (d.waitingParts !== undefined) {
+        return {
+          waitingJobs: toNum(d.waitingJobs),
+          waitingParts: toNum(d.waitingParts),
+          orderedCount: toNum(d.orderedCount),
+          waitingCount: toNum(d.waitingCount),
+          oldestDays: toNum(d.oldestDays),
+          oldestJobId: d.oldestJobId ?? null,
+        };
+      }
+    }
+    logger.warn("Dashboard waiting RPC failed — legacy chain fallback:", error?.message);
+  } catch (e) {
+    logger.warn("Dashboard waiting RPC threw — legacy chain fallback:", e);
+  }
+  return fetchWaitingSummary(supabase);
 }
 
 // ── orchestrator ─────────────────────────────────────────────────────────────
@@ -530,12 +640,10 @@ export async function fetchDashboardBatches(): Promise<Omit<DashboardInitialData
         lowStockCount: 0,
       };
     }),
-    fetchWaitingSummary(supabase)
-      .then((s) => s)
-      .catch((e: unknown) => {
-        logger.warn("Dashboard waiting summary failed:", e);
-        return WAITING_EMPTY;
-      }),
+    fetchWaiting(supabase).catch((e: unknown) => {
+      logger.warn("Dashboard waiting summary failed:", e);
+      return WAITING_EMPTY;
+    }),
   ]);
 
   return {

@@ -379,3 +379,48 @@ nahi badalta.
 **683/683** ✔ · `npm run build` ✔ · `schema:drift` ✔ (29 migrations) · live DB row counts
 unchanged (`transaction_list` 2384 / `activity_logs` 4631 / `client_list` 564 /
 `client_payments` 839) · old-vs-new equivalence 5/5 identical.
+
+### 7.7 Dashboard recents + waiting RPCs, and web-vitals sink (19 Nov 2026, measured)
+
+Plan ke Phase 2c + Phase 6 (`docs/plans/perf_fastest_plan_2026.md`).
+
+**1) Recents batch: 2 rounds -> 1 (`get_dashboard_recents()`)**
+
+| Step (HTTP, staff JWT) | Median |
+| ---------------------- | -----: |
+| `transaction_list` recent-5 + `client_payments` recent-10 (parallel) | 51 ms |
+| phir `client_list` naam lookup (doosra round) | 50 ms |
+| **Old chain total** | **~101 ms** |
+| **Naya `get_dashboard_recents()`** | **~44 ms** |
+
+**2) Waiting batch: 2 sequential queries -> 1 (`get_dashboard_waiting()`)**
+
+| Step | Median |
+| ---- | -----: |
+| `job_required_parts` (open) | 49 ms |
+| phir `transaction_list .in(ids)` | 48 ms |
+| **Old chain total** | **~97 ms** |
+| **Naya `get_dashboard_waiting()`** | **45-50 ms** |
+
+Dono RPCs read-only (`stable`, `security definer`, `is_frontend_staff()` guard).
+Equivalence: canonical JSON compare me **identical** (recents 5 jobs + 10 payments, waiting 6
+fields). TS me legacy chains fallback ke roop me bache hue hain.
+
+**Net:** `/dashboard` **~180 -> ~115-125 ms** (9 x 8 runs). Ab page auth + DB RTT floor par hai;
+dashboard par code-level headroom khatam.
+
+**3) Web-vitals sink (Phase 6)**
+
+- `src/components/WebVitals.tsx`: `useReportWebVitals` (`next/web-vitals`, naya dep nahi),
+  5 core metrics, `sendBeacon` + `fetch keepalive` fallback, pathname-only (no PII, no query string).
+- `src/app/api/vitals/route.ts`: always-204, rate limit 120/min/IP, 1 KB cap, metric allow-list,
+  per-metric plausibility cap (`TTFB/FCP/LCP/INP <= 60 s`, `CLS <= 10`) — backgrounded tab ke
+  100s+ artifacts drop.
+- Sentry `metrics.distribution("web_vitals", ...)` (DSN ho to) + structured `[web-vitals]` log.
+- Prod build par verified: `/login` FCP 656 / LCP 708 / INP 40 ms, `/dashboard` TTFB 31-395 ms;
+  absurd (>=60 s) reports **0**.
+
+**Verification (is batch par):** `tsc --noEmit` OK, `eslint` 0 warnings, `npm test` **688/688**,
+`npm run build` OK, `schema:drift` OK (30 migrations), live DB row counts unchanged
+(`transaction_list` 2384 / `activity_logs` 4631 / `client_list` 564 / `client_payments` 839 /
+`job_required_parts` 3 / `product_list` 97).
