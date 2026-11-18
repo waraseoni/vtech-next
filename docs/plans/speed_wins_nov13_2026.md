@@ -329,3 +329,53 @@ baad row counts unchanged.
 **Revert ke baad bhi wahi gates:** `tsc` ✔ · `npm test` **683/683** ✔ · `npm run build` ✔ ·
 live DB me `transaction_list` 2370 / `activity_logs` 4615 / `client_list` 564 (unchanged),
 perf/probe functions **0** bache.
+
+### 7.6 Dashboard Low Stock RPC + `client_payments` index (19 Nov 2026, measured)
+
+Plan ka Phase 2 (`docs/plans/perf_fastest_plan_2026.md`). Do changes, dono additive/read-only.
+
+**1) `get_dashboard_low_stock()` — 3 sequential calls → 1 definer RPC**
+
+Pehle `fetchWidgetsBatch` teen SEQUENTIAL HTTP calls karta tha:
+
+| Step (HTTP, staff JWT, RLS on) | Median |
+| ------------------------------ | -----: |
+| `GET product_list` (candidates) | 171 ms |
+| `RPC get_inventory_stock(ids)` (parallel) | 71 ms |
+| `GET product_locations` (parallel) | 52 ms |
+| **Chain total** | **115-140 ms** |
+| **Naya `get_dashboard_low_stock()`** | **54-60 ms** (578 bytes) |
+
+Equivalence: old chain vs naya RPC — **5/5 rows identical** (name, alert, available, place,
+order). Stock formula duplicate nahi hui — RPC andar `get_inventory_stock()` ko hi call karta
+hai, aur `is_frontend_staff()` guard RLS-jaisa access deta hai (client-portal users ko 0 rows).
+
+**2) Asli hot spot `client_payments` tha, low-stock chain nahi**
+
+Sirf RPC lagane ke baad page-level number **nahi badla** (261-299 → 265-294 ms). Batch-wise
+measure karne par pata chala:
+
+| Batch (parallel) | Median |
+| ---------------- | -----: |
+| stats (`get_dashboard_stats`) | 53 ms |
+| revenue (`get_monthly_revenue`) | 63 ms |
+| widgets | **~180 ms** = `client_payments` **132** + client-name lookup ~50 |
+| waiting (2 seq queries) | ~103 ms |
+
+`client_payments` ka `order by payment_date desc, id desc limit 10` ke liye index nahi tha →
+Seq Scan + Sort, aur RLS `is_frontend_staff()` har row par (839 rows × ~27µs = **23 ms DB**,
+HTTP **132-141 ms**). Index `client_payments_date_id_idx` ke baad: Index Scan + early stop →
+**2.9 ms DB**, HTTP ~47-104 ms.
+
+**Net (prod build, server HTML, 9 × 8 runs median):** `/dashboard` **~270 → ~180 ms** (−90 ms,
+−33%). Baaki routes par koi change nahi (`/jobs` 223-245, `/clients` 211-222 — wahi run-to-run
+noise jo pehle tha).
+
+**Seekh:** RPC se round-trip bachana tab hi page par dikhta hai jab wahi batch **critical path**
+ho. Isliye pehle per-batch measure karo, phir optimize karo — warna "kaam ho gaya" par number
+nahi badalta.
+
+**Verification (is batch par):** `tsc --noEmit` ✔ · `eslint` ✔ 0 warnings · `npm test`
+**683/683** ✔ · `npm run build` ✔ · `schema:drift` ✔ (29 migrations) · live DB row counts
+unchanged (`transaction_list` 2384 / `activity_logs` 4631 / `client_list` 564 /
+`client_payments` 839) · old-vs-new equivalence 5/5 identical.

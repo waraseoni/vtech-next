@@ -324,6 +324,82 @@ async function fetchPlaces(supabase: Sb, ids: number[]): Promise<Map<number, str
   return out;
 }
 
+// ── low stock (1 definer RPC; legacy 3-call chain only as fallback) ──────────
+type LowStockRpcRow = {
+  product_id: number | string;
+  name: string;
+  alert_quantity: number | string;
+  available: number | string;
+  place: string | null;
+};
+
+/**
+ * Dashboard low-stock list.
+ *
+ * Fast path (migration 20261119_dashboard_low_stock_rpc.sql): ek definer RPC
+ * jo product_list + get_inventory_stock + product_locations sab server par
+ * jodta hai — measured 3 sequential PostgREST calls (~115-140 ms) → 1 call
+ * (~60 ms). Stock formula duplicate nahi hota: RPC andar get_inventory_stock()
+ * ko hi call karta hai.
+ *
+ * Fallback: agar RPC exist nahi (purana project / migration apply nahi hui) to
+ * wahi 3-step chain jo pehle thi — behaviour identical.
+ */
+async function fetchLowStock(
+  supabase: Sb
+): Promise<{ items: LowStockItem[]; count: number }> {
+  try {
+    const { data, error } = await supabase.rpc("get_dashboard_low_stock");
+    if (!error && Array.isArray(data)) {
+      const rows = data as LowStockRpcRow[];
+      return {
+        count: rows.length,
+        // RPC already deficit-ascending sorted (sabse zyada kami pehle).
+        items: rows.slice(0, 12).map((r) => ({
+          name: r.name,
+          quantity: toNum(r.available),
+          place: r.place || "—",
+          alert: toNum(r.alert_quantity),
+        })),
+      };
+    }
+    logger.warn("Dashboard low-stock RPC failed — legacy chain fallback:", error?.message);
+  } catch (e) {
+    logger.warn("Dashboard low-stock RPC threw — legacy chain fallback:", e);
+  }
+
+  const lpR = await pageAll(
+    supabase
+      .from("product_list")
+      .select("id, name, alert_quantity")
+      .eq("delete_flag", 0)
+      .gt("alert_quantity", 0)
+  );
+  const lowProds = lpR.data as { id: number; name: string; alert_quantity: number }[] | null;
+  if (!(lowProds || []).length) return { items: [], count: 0 };
+
+  const lowProdIds = (lowProds || []).map((p) => p.id);
+  const [stockM, placeMap] = await Promise.all([
+    fetchStockByProducts(lowProdIds, supabase).catch((e: unknown) => {
+      logger.warn("Dashboard inventory stock fetch failed:", e);
+      return new Map<number, StockRow>();
+    }),
+    fetchPlaces(supabase, lowProdIds),
+  ]);
+
+  const builtLow = (lowProds || [])
+    .map((p) => ({
+      name: p.name,
+      quantity: stockM.get(p.id)?.available ?? 0,
+      place: placeMap.get(p.id) || "—",
+      alert: toNum(p.alert_quantity),
+    }))
+    .filter((x) => x.quantity < x.alert)
+    .sort((a, b) => a.quantity - a.alert - (b.quantity - b.alert));
+
+  return { count: builtLow.length, items: builtLow.slice(0, 12) };
+}
+
 // ── recents + low stock + waiting (widgets batch) ────────────────────────────
 async function fetchWidgetsBatch(supabase: Sb): Promise<{
   recentJobs: RecentJob[];
@@ -331,14 +407,8 @@ async function fetchWidgetsBatch(supabase: Sb): Promise<{
   lowStockItems: LowStockItem[];
   lowStockCount: number;
 }> {
-  const [lpR, rjR, rpR] = await Promise.all([
-    pageAll(
-      supabase
-        .from("product_list")
-        .select("id, name, alert_quantity")
-        .eq("delete_flag", 0)
-        .gt("alert_quantity", 0)
-    ),
+  const [lowStock, rjR, rpR] = await Promise.all([
+    fetchLowStock(supabase),
     supabase
       .from("transaction_list")
       .select("id, job_id, client_name, item, amount, status")
@@ -352,7 +422,6 @@ async function fetchWidgetsBatch(supabase: Sb): Promise<{
       .order("id", { ascending: false })
       .limit(10),
   ]);
-  const lowProds = lpR.data as { id: number; name: string; alert_quantity: number }[] | null;
   const recentTransRaw = rjR.data as
     | {
         id: number;
@@ -383,22 +452,15 @@ async function fetchWidgetsBatch(supabase: Sb): Promise<{
   const cIds2 = paymentsRaw?.length
     ? [...new Set(paymentsRaw.map((p) => p.client_id).filter(Boolean))]
     : [];
-  const lowProdIds = (lowProds || []).map((p) => p.id);
 
   // Independent chains — sab ek saath (lightning B1).
-  const [stockM, clsJobs, clsPays, placeMap] = await Promise.all([
-    fetchStockByProducts(lowProdIds, supabase).catch((e: unknown) => {
-      // Stock RPC fail → low-stock card khaali + warn (recents bach rahe hain).
-      logger.warn("Dashboard inventory stock fetch failed:", e);
-      return new Map<number, StockRow>();
-    }),
+  const [clsJobs, clsPays] = await Promise.all([
     cIds.length
       ? supabase.from("client_list").select("id, firstname, lastname").in("id", cIds)
       : Promise.resolve({ data: [] }),
     cIds2.length
       ? supabase.from("client_list").select("id, firstname, lastname").in("id", cIds2)
       : Promise.resolve({ data: [] }),
-    fetchPlaces(supabase, lowProdIds),
   ]);
 
   let recentJobs: RecentJob[] = [];
@@ -431,23 +493,12 @@ async function fetchWidgetsBatch(supabase: Sb): Promise<{
     }));
   }
 
-  let lowStockItems: LowStockItem[] = [];
-  let lowStockCount = 0;
-  if ((lowProds || []).length) {
-    const builtLow = (lowProds || [])
-      .map((p) => ({
-        name: p.name,
-        quantity: stockM.get(p.id)?.available ?? 0,
-        place: placeMap.get(p.id) || "—",
-        alert: toNum(p.alert_quantity),
-      }))
-      .filter((x) => x.quantity < x.alert)
-      .sort((a, b) => a.quantity - a.alert - (b.quantity - b.alert));
-    lowStockCount = builtLow.length;
-    lowStockItems = builtLow.slice(0, 12);
-  }
-
-  return { recentJobs, recentPayments, lowStockItems, lowStockCount };
+  return {
+    recentJobs,
+    recentPayments,
+    lowStockItems: lowStock.items,
+    lowStockCount: lowStock.count,
+  };
 }
 
 // ── orchestrator ─────────────────────────────────────────────────────────────

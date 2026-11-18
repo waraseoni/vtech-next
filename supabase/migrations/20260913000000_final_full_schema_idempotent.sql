@@ -4846,4 +4846,74 @@ grant execute on function public.get_stale_jobs(int, int) to service_role;
 create index if not exists transaction_list_del_status_job_id_idx
   on public.transaction_list (del_status, job_id desc);
 
+-- ---- 20261119_dashboard_low_stock_rpc.sql -----------------------------------
+-- Dashboard "Low Stock" widget: 3 sequential PostgREST calls
+-- (product_list -> get_inventory_stock + product_locations) -> 1 definer RPC.
+-- Stock formula does NOT get duplicated: it calls get_inventory_stock().
+create or replace function public.get_dashboard_low_stock()
+returns table(
+  product_id     bigint,
+  name           text,
+  alert_quantity integer,
+  available      bigint,
+  place          text,
+  deficit        bigint
+)
+language sql
+security definer
+stable
+set search_path = public
+as $$
+  with lp as (
+    select p.id, p.name, p.alert_quantity
+    from public.product_list p
+    where p.delete_flag = 0
+      and p.alert_quantity > 0
+      and public.is_frontend_staff()
+  ),
+  st as (
+    select s.product_id, s.available
+    from public.get_inventory_stock(array(select l.id::bigint from lp l)) s
+  ),
+  loc as (
+    select distinct on (pl.product_id)
+           pl.product_id,
+           l.zone, l.rack, l.bin, l.box
+    from public.product_locations pl
+    inner join public.locations l on l.id = pl.location_id
+    where pl.product_id in (select l2.id from lp l2)
+    order by pl.product_id
+  )
+  select
+    lp.id::bigint                            as product_id,
+    lp.name                                  as name,
+    lp.alert_quantity                        as alert_quantity,
+    coalesce(st.available, 0)::bigint        as available,
+    case
+      when loc.product_id is null then null
+      else nullif(
+        concat_ws(' ▸ ', loc.zone, loc.rack, loc.bin, loc.box),
+        ''
+      )
+    end                                      as place,
+    (lp.alert_quantity::bigint - coalesce(st.available, 0)) as deficit
+  from lp
+  left join st  on st.product_id = lp.id::bigint
+  left join loc on loc.product_id = lp.id
+  where coalesce(st.available, 0) < lp.alert_quantity
+  order by (coalesce(st.available, 0) - lp.alert_quantity::bigint) asc, lp.id asc;
+$$;
+
+revoke all on function public.get_dashboard_low_stock() from public;
+revoke all on function public.get_dashboard_low_stock() from anon;
+grant execute on function public.get_dashboard_low_stock() to authenticated;
+grant execute on function public.get_dashboard_low_stock() to service_role;
+
+-- ---- 20261119_client_payments_recent_index.sql ------------------------------
+-- Dashboard "Recent Payments" / payments page default sort:
+-- order by payment_date desc, id desc limit 10. RLS (is_frontend_staff) per row
+-- ke saath Seq Scan + Sort ~23 ms DB time (HTTP ~141 ms) → Index Scan ~3 ms.
+create index if not exists client_payments_date_id_idx
+  on public.client_payments (payment_date desc, id desc);
+
 NOTIFY pgrst, 'reload schema';
