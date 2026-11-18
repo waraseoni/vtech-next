@@ -345,9 +345,7 @@ type LowStockRpcRow = {
  * Fallback: agar RPC exist nahi (purana project / migration apply nahi hui) to
  * wahi 3-step chain jo pehle thi — behaviour identical.
  */
-async function fetchLowStock(
-  supabase: Sb
-): Promise<{ items: LowStockItem[]; count: number }> {
+async function fetchLowStock(supabase: Sb): Promise<{ items: LowStockItem[]; count: number }> {
   try {
     const { data, error } = await supabase.rpc("get_dashboard_low_stock");
     if (!error && Array.isArray(data)) {
@@ -556,10 +554,7 @@ async function fetchWidgetsBatch(supabase: Sb): Promise<{
   lowStockCount: number;
 }> {
   // Dono ab 1-1 rpc call hain — pehle har ek 2 rounds leta tha.
-  const [lowStock, recents] = await Promise.all([
-    fetchLowStock(supabase),
-    fetchRecents(supabase),
-  ]);
+  const [lowStock, recents] = await Promise.all([fetchLowStock(supabase), fetchRecents(supabase)]);
 
   return {
     recentJobs: recents.recentJobs,
