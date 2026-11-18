@@ -1,14 +1,11 @@
+import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { getServerSupabase, requireStaffWithRole } from "@/lib/api-auth";
 import { fetchBalanceSheetData, type BalanceSheetPayload } from "@/lib/balance-sheet-data";
 import { logger } from "@/lib/logger";
 import { endOfMonthIST, startOfMonthIST, todayIST } from "@/lib/dateUtils";
 import BalancesheetBody from "./BalancesheetBody";
-
-// RSC first paint: report data server par render-time par compute hota hai
-// (cookie+RLS server client — service-role NEVER), taaki client hydration ke
-// baad alag API round-trip ka intezaar na kare. Date/filter change par body
-// wahi purana API use karta hai.
+import { BalancesheetSkeleton } from "./BalancesheetSkeleton";
 
 const DAY_RE = /^\d{4}-\d{2}-\d{2}$/;
 const isDay = (v: string) => DAY_RE.test(v) && !Number.isNaN(Date.parse(`${v}T00:00:00Z`));
@@ -23,16 +20,7 @@ type SearchParams = Record<string, string | string[] | undefined>;
 
 export const dynamic = "force-dynamic";
 
-export default async function BalanceSheetPage({
-  searchParams,
-}: {
-  searchParams: Promise<SearchParams>;
-}) {
-  const session = await requireStaffWithRole();
-  if (!session) redirect("/login");
-  if (session.role !== "admin" && session.role !== "developer") redirect("/dashboard");
-
-  const sp = await searchParams;
+async function BalancesheetContent({ sp }: { sp: SearchParams }) {
   const today = todayIST();
   const defaultYear = parseInt(today.slice(0, 4), 10);
   const defaultMonth = parseInt(today.slice(5, 7), 10);
@@ -76,5 +64,23 @@ export default async function BalanceSheetPage({
       initialRange={{ from, to, asOnInput }}
       initialFilter={{ filterType, year, month }}
     />
+  );
+}
+
+export default async function BalanceSheetPage({
+  searchParams,
+}: {
+  searchParams: Promise<SearchParams>;
+}) {
+  const session = await requireStaffWithRole();
+  if (!session) redirect("/login");
+  if (session.role !== "admin" && session.role !== "developer") redirect("/dashboard");
+
+  const sp = await searchParams;
+
+  return (
+    <Suspense fallback={<BalancesheetSkeleton />}>
+      <BalancesheetContent sp={sp} />
+    </Suspense>
   );
 }

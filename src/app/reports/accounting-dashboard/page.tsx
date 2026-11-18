@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { getServerSupabase, requireStaffWithRole } from "@/lib/api-auth";
 import {
@@ -7,10 +8,7 @@ import {
 import { logger } from "@/lib/logger";
 import { startOfMonthIST, todayIST } from "@/lib/dateUtils";
 import AccountingDashboardBody from "./AccountingDashboardBody";
-
-// RSC first paint: dashboard aggregates server par bante hain (cookie+RLS
-// client, service-role NEVER). Date filter change par body client-side wahi
-// shared module chalati hai.
+import { AccountingDashboardSkeleton } from "./AccountingDashboardSkeleton";
 
 const DAY_RE = /^\d{4}-\d{2}-\d{2}$/;
 const isDay = (v: string) => DAY_RE.test(v) && !Number.isNaN(Date.parse(`${v}T00:00:00Z`));
@@ -20,15 +18,7 @@ type SearchParams = Record<string, string | string[] | undefined>;
 
 export const dynamic = "force-dynamic";
 
-export default async function AccountingDashboardPage({
-  searchParams,
-}: {
-  searchParams: Promise<SearchParams>;
-}) {
-  const session = await requireStaffWithRole();
-  if (!session) redirect("/login");
-
-  const sp = await searchParams;
+async function AccountingDashboardContent({ sp }: { sp: SearchParams }) {
   const fromParam = one(sp.from);
   const toParam = one(sp.to);
   const from = isDay(fromParam) ? fromParam : startOfMonthIST();
@@ -44,4 +34,21 @@ export default async function AccountingDashboardPage({
   }
 
   return <AccountingDashboardBody initialData={data} initialRange={{ from, to }} />;
+}
+
+export default async function AccountingDashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<SearchParams>;
+}) {
+  const session = await requireStaffWithRole();
+  if (!session) redirect("/login");
+
+  const sp = await searchParams;
+
+  return (
+    <Suspense fallback={<AccountingDashboardSkeleton />}>
+      <AccountingDashboardContent sp={sp} />
+    </Suspense>
+  );
 }
