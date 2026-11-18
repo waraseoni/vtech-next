@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.78.2](https://github.com/waraseoni/vtech-next/compare/v1.78.1...v1.78.2) (2026-11-18)
+
+### Performance Improvements
+
+* stream client detail view and add 1-year immutable cache for static assets ([f4ea968](https://github.com/waraseoni/vtech-next/commit/f4ea968f424f1b71de33e044460f4bd85d9f990b))
+
 ## [1.78.1](https://github.com/waraseoni/vtech-next/compare/v1.78.0...v1.78.1) (2026-11-18)
 
 ### Performance Improvements
