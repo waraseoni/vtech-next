@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## [1.78.4](https://github.com/waraseoni/vtech-next/compare/v1.78.3...v1.78.4) (2026-11-18)
+
+### Performance Improvements
+
+* **dashboard:** low-stock definer RPC + client_payments recent index ([f9ee99f](https://github.com/waraseoni/vtech-next/commit/f9ee99fd43bf13c925721f081d362ca6de680310))
+* **dashboard:** recents + waiting RPCs (2 rounds -> 1) + web-vitals sink ([8ccb985](https://github.com/waraseoni/vtech-next/commit/8ccb985c6a45b3be501408ea4dc118e779ca1c54))
+
 ## [1.78.3](https://github.com/waraseoni/vtech-next/compare/v1.78.2...v1.78.3) (2026-11-18)
 
 ### Performance Improvements
