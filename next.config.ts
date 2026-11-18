@@ -67,6 +67,7 @@ const nextConfig: NextConfig = {
     NEXT_PUBLIC_APP_COMMIT: APP_COMMIT,
   },
   images: {
+    formats: ["image/avif", "image/webp"],
     remotePatterns: [
       {
         protocol: "https",

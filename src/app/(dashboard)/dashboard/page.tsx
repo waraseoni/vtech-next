@@ -1,30 +1,20 @@
-import { requireStaffWithRole } from "@/lib/api-auth";
+import { Suspense } from "react";
+import { requireStaffWithRole, type ServerUser } from "@/lib/api-auth";
 import { redirect } from "next/navigation";
 import { fetchDashboardBatches, fetchDashboardProfile } from "@/lib/server-dashboard";
 import DashboardBody from "./DashboardBody";
+import { DashboardSkeleton } from "./DashboardSkeleton";
 
-// Phase 4 P1 (docs/plans/rsc_phase4_plan.md): dashboard pehle poora client
-// page tha — hydration ke BAAD 5-6 sequential fetch batches chalte the
-// (waterfall). Ab first-paint data server par render-time par aata hai
-// (cookie+RLS server client — service-role NEVER), phir DashboardBody
-// (client) interactive UI ko props ke roop me leta hai. Logged-out par
-// requireStaffWithRole khud /login redirect karta hai.
-//
-// PERF (17 Nov 2026): data batches auth ke SAATH parallel start hote hain —
-// pehle auth (getClaims + profiles RTT) ke BAAD hi batches shuru hoti thin.
-// Sirf profile widget ko userId chahiye, isliye wo auth ke baad chalta hai.
 export const dynamic = "force-dynamic";
 
-export default async function DashboardPage() {
-  const batchesPromise = fetchDashboardBatches();
-  // Redirect path par bhi rejection handled rahe (warna unhandled warning).
-  void batchesPromise.catch(() => {});
+type SessionInfo = {
+  user: ServerUser;
+  role: string;
+};
 
-  const session = await requireStaffWithRole();
-  if (!session) redirect("/login");
-
+async function DashboardContent({ session }: { session: SessionInfo }) {
   const [batches, profile] = await Promise.all([
-    batchesPromise,
+    fetchDashboardBatches(),
     fetchDashboardProfile({
       userId: session.user.id,
       userRole: session.role,
@@ -34,4 +24,15 @@ export default async function DashboardPage() {
   ]);
 
   return <DashboardBody initial={{ profile, ...batches }} />;
+}
+
+export default async function DashboardPage() {
+  const session = await requireStaffWithRole();
+  if (!session) redirect("/login");
+
+  return (
+    <Suspense fallback={<DashboardSkeleton />}>
+      <DashboardContent session={session} />
+    </Suspense>
+  );
 }
