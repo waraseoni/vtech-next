@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.78.3](https://github.com/waraseoni/vtech-next/compare/v1.78.2...v1.78.3) (2026-11-18)
+
+### Performance Improvements
+
+* **admin:** implement RSC suspense streaming for balancesheet, accounting dashboard, and mechanics ([22d8406](https://github.com/waraseoni/vtech-next/commit/22d8406af1b4f274af036c1f7b191187f8e28d8e))
+
 ## [1.78.2](https://github.com/waraseoni/vtech-next/compare/v1.78.1...v1.78.2) (2026-11-18)
 
 ### Performance Improvements
