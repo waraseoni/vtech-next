@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.78.1](https://github.com/waraseoni/vtech-next/compare/v1.78.0...v1.78.1) (2026-11-18)
+
+### Performance Improvements
+
+* implement RSC suspense streaming, Mumbai region pinning, and AVIF image compression ([6abc74f](https://github.com/waraseoni/vtech-next/commit/6abc74f445569572ffb772723fcab767f939be76))
+
 ## [1.78.0](https://github.com/waraseoni/vtech-next/compare/v1.77.6...v1.78.0) (2026-11-17)
 
 ### Features
