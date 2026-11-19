@@ -309,7 +309,7 @@ export default function LedgerPrintPage({ params }: { params: Promise<{ id: stri
         broughtFwd = (cd?.opening_balance || 0) + preRepairs + preSales + preLoans - prePay;
       }
 
-      // ── Filtered data ─────────────────────────────────────────────────
+      // ── Filtered data (parallel fetch — pehle 4 sequential RTT waste tha) ──
       const ledger: LedgerRow[] = [];
 
       // Brought forward row
@@ -329,119 +329,179 @@ export default function LedgerPrintPage({ params }: { params: Promise<{ id: stri
         });
       }
 
+      // Parallel fetch of all row sources
+      const fetchJobs =
+        showAllRepairs || repairStatuses.length > 0
+          ? (async () => {
+              let q = supabase
+                .from("transaction_list")
+                .select("id, job_id, item, amount, status, remark, date_created, date_completed")
+                .eq("client_name", String(clientId))
+                .eq("del_status", 0);
+              if (!showAllRepairs && repairStatuses.length > 0) q = q.in("status", repairStatuses);
+              if (from) q = q.gte("date_created", from);
+              if (to) q = q.lte("date_created", to);
+              const { data } = await q;
+              return data || [];
+            })()
+          : Promise.resolve([]);
+
+      const fetchSales = showSales
+        ? (async () => {
+            let q = supabase
+              .from("direct_sales")
+              .select("id, sale_code, total_amount, remarks, date_created")
+              .eq("client_id", clientId);
+            if (from) q = q.gte("date_created", from);
+            if (to) q = q.lte("date_created", to);
+            const { data } = await q;
+            return data || [];
+          })()
+        : Promise.resolve([]);
+
+      const fetchLoans = showLoans
+        ? (async () => {
+            let q = supabase
+              .from("client_loans")
+              .select("id, total_payable, remarks, loan_date")
+              .eq("client_id", clientId);
+            if (from) q = q.gte("loan_date", from);
+            if (to) q = q.lte("loan_date", to);
+            const { data } = await q;
+            return data || [];
+          })()
+        : Promise.resolve([]);
+
+      const fetchPays = showPayments
+        ? (async () => {
+            let q = supabase
+              .from("client_payments")
+              .select(
+                "id, amount, discount, net_amount, payment_date, payment_mode, bill_no, remarks"
+              )
+              .eq("client_id", clientId)
+              .or("loan_id.is.null,loan_id.eq.0");
+            if (from) q = q.gte("payment_date", from);
+            if (to) q = q.lte("payment_date", to);
+            const { data } = await q;
+            return data || [];
+          })()
+        : Promise.resolve([]);
+
+      const [jobs, sales, loans, pays] = await Promise.all([
+        fetchJobs,
+        fetchSales,
+        fetchLoans,
+        fetchPays,
+      ]);
+
       // Repair jobs
-      if (showAllRepairs || repairStatuses.length > 0) {
-        let q = supabase
-          .from("transaction_list")
-          .select("id, job_id, item, amount, status, remark, date_created, date_completed")
-          .eq("client_name", String(clientId))
-          .eq("del_status", 0);
-        if (!showAllRepairs && repairStatuses.length > 0) q = q.in("status", repairStatuses);
-        if (from) q = q.gte("date_created", from);
-        if (to) q = q.lte("date_created", to);
-        const { data: jobs } = await q;
-        (jobs || []).forEach((j) =>
-          ledger.push({
-            date: j.date_created,
-            desc: `Job: ${j.item || "—"}`,
-            ref: j.job_id || `JOB-${j.id}`,
-            statusKey: j.status,
-            remark: j.remark || "",
-            debit: j.amount || 0,
-            credit: 0,
-            discount: 0,
-            effectiveCr: 0,
-            balance: 0,
-            deliveredDate: j.status === 5 ? j.date_completed : undefined,
-            isBroughtFwd: false,
-          })
-        );
-      }
+      (
+        jobs as {
+          id: number;
+          job_id: string | null;
+          item: string | null;
+          amount: number | null;
+          status: number;
+          remark: string | null;
+          date_created: string;
+          date_completed: string | null;
+        }[]
+      ).forEach((j) =>
+        ledger.push({
+          date: j.date_created,
+          desc: `Job: ${j.item || "—"}`,
+          ref: j.job_id || `JOB-${j.id}`,
+          statusKey: j.status,
+          remark: j.remark || "",
+          debit: j.amount || 0,
+          credit: 0,
+          discount: 0,
+          effectiveCr: 0,
+          balance: 0,
+          deliveredDate: j.status === 5 ? (j.date_completed ?? undefined) : undefined,
+          isBroughtFwd: false,
+        })
+      );
 
       // Direct sales
-      if (showSales) {
-        let q = supabase
-          .from("direct_sales")
-          .select("id, sale_code, total_amount, remarks, date_created")
-          .eq("client_id", clientId);
-        if (from) q = q.gte("date_created", from);
-        if (to) q = q.lte("date_created", to);
-        const { data: sales } = await q;
-        (sales || []).forEach((s) =>
-          ledger.push({
-            date: s.date_created,
-            desc: "Direct Sale",
-            ref: s.sale_code,
-            statusKey: "direct_sale",
-            remark: s.remarks || "",
-            debit: s.total_amount || 0,
-            credit: 0,
-            discount: 0,
-            effectiveCr: 0,
-            balance: 0,
-            isBroughtFwd: false,
-          })
-        );
-      }
+      (
+        sales as {
+          id: number;
+          sale_code: string | null;
+          total_amount: number | null;
+          remarks: string | null;
+          date_created: string;
+        }[]
+      ).forEach((s) =>
+        ledger.push({
+          date: s.date_created,
+          desc: "Direct Sale",
+          ref: s.sale_code || `SALE-${s.id}`,
+          statusKey: "direct_sale",
+          remark: s.remarks || "",
+          debit: s.total_amount || 0,
+          credit: 0,
+          discount: 0,
+          effectiveCr: 0,
+          balance: 0,
+          isBroughtFwd: false,
+        })
+      );
 
       // Loans
-      if (showLoans) {
-        let q = supabase
-          .from("client_loans")
-          .select("id, total_payable, remarks, loan_date")
-          .eq("client_id", clientId);
-        if (from) q = q.gte("loan_date", from);
-        if (to) q = q.lte("loan_date", to);
-        const { data: loans } = await q;
-        (loans || []).forEach((l) =>
-          ledger.push({
-            date: l.loan_date,
-            desc: "Loan Disbursement",
-            ref: `LN-${String(l.id).padStart(5, "0")}`,
-            statusKey: "loan",
-            remark: l.remarks || "",
-            debit: l.total_payable || 0,
-            credit: 0,
-            discount: 0,
-            effectiveCr: 0,
-            balance: 0,
-            isBroughtFwd: false,
-          })
-        );
-      }
+      (
+        loans as {
+          id: number;
+          total_payable: number | null;
+          remarks: string | null;
+          loan_date: string;
+        }[]
+      ).forEach((l) =>
+        ledger.push({
+          date: l.loan_date,
+          desc: "Loan Disbursement",
+          ref: `LN-${String(l.id).padStart(5, "0")}`,
+          statusKey: "loan",
+          remark: l.remarks || "",
+          debit: l.total_payable || 0,
+          credit: 0,
+          discount: 0,
+          effectiveCr: 0,
+          balance: 0,
+          isBroughtFwd: false,
+        })
+      );
 
       // Payments
-      if (showPayments) {
-        let q = supabase
-          .from("client_payments")
-          .select("id, amount, discount, net_amount, payment_date, payment_mode, bill_no, remarks")
-          .eq("client_id", clientId)
-          .or("loan_id.is.null,loan_id.eq.0");
-        if (from) q = q.gte("payment_date", from);
-        if (to) q = q.lte("payment_date", to);
-        const { data: pays } = await q;
-        (pays || []).forEach((p) => {
-          const disc = p.discount || 0;
-          const amt = p.amount || 0;
-          // CORRECT: effectiveCr = cash paid + discount given
-          // DB net_amount = amount - discount — DO NOT use it (wrong formula)
-          // e.g. paid=1300, discount=200 → effectiveCr=1500 → clears bill of 1500
-          const effCr = amt + disc;
-          ledger.push({
-            date: p.payment_date,
-            desc: "Payment Received",
-            ref: p.bill_no ? `BILL-${p.bill_no}` : `PAY-${p.id}`,
-            statusKey: "payment",
-            remark: p.remarks || p.payment_mode || "",
-            debit: 0,
-            credit: amt,
-            discount: disc,
-            effectiveCr: effCr,
-            balance: 0,
-            isBroughtFwd: false,
-          });
+      (
+        pays as {
+          id: number;
+          amount: number | null;
+          discount: number | null;
+          payment_date: string;
+          payment_mode: string | null;
+          bill_no: string | null;
+          remarks: string | null;
+        }[]
+      ).forEach((p) => {
+        const disc = p.discount || 0;
+        const amt = p.amount || 0;
+        const effCr = amt + disc;
+        ledger.push({
+          date: p.payment_date,
+          desc: "Payment Received",
+          ref: p.bill_no ? `BILL-${p.bill_no}` : `PAY-${p.id}`,
+          statusKey: "payment",
+          remark: p.remarks || p.payment_mode || "",
+          debit: 0,
+          credit: amt,
+          discount: disc,
+          effectiveCr: effCr,
+          balance: 0,
+          isBroughtFwd: false,
         });
-      }
+      });
 
       // Sort by date
       ledger.sort((a, b) => {
