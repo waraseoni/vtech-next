@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.82.0](https://github.com/waraseoni/vtech-next/compare/v1.81.0...v1.82.0) (2026-11-19)
+
+### Features
+
+* **reports:** parts-vs-service UX polish ([fd7712c](https://github.com/waraseoni/vtech-next/commit/fd7712cd947bccbf8a56ab05a440270b3a97503b))
+
 ## [1.81.0](https://github.com/waraseoni/vtech-next/compare/v1.80.0...v1.81.0) (2026-11-19)
 
 ### Features
