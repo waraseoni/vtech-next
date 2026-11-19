@@ -98,6 +98,16 @@ const REPORTS: ReportItem[] = [
     isNew: true,
   },
   {
+    title: "Parts vs Service (Client)",
+    description:
+      "Client ke jobs me lage spares (products) vs services ka amount — all or selected jobs.",
+    href: "/reports/client-parts-service",
+    icon: <Wrench size={16} />,
+    category: "Job Reports",
+    color: "from-violet-500 to-purple-600",
+    isNew: true,
+  },
+  {
     title: "Supplier Dues",
     description: "Supplier outstanding balances — billed, paid, due.",
     href: "/reports/supplier-dues",

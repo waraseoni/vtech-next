@@ -927,6 +927,16 @@ function SidebarNav({
                       Custom Service
                     </Link>
                   </li>
+                  <li>
+                    <Link
+                      href="/reports/client-parts-service"
+                      className={subLinkCls(pathname === "/reports/client-parts-service")}
+                      onClick={onNavClick}
+                    >
+                      <Wrench size={12} className="text-violet-400" />
+                      Parts vs Service
+                    </Link>
+                  </li>
 
                   <li className="text-[8px] font-black uppercase text-muted-2 tracking-widest px-3 pt-3 pb-0.5 select-none">
                     Audit
