@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.82.1](https://github.com/waraseoni/vtech-next/compare/v1.82.0...v1.82.1) (2026-11-19)
+
+### Performance Improvements
+
+* **clients:** parallelize ledger-print row fetches (4 RTT -> 1) ([e61b3e0](https://github.com/waraseoni/vtech-next/commit/e61b3e049cf211c413a34394c2b8087945beaa53))
+
 ## [1.82.0](https://github.com/waraseoni/vtech-next/compare/v1.81.0...v1.82.0) (2026-11-19)
 
 ### Features
