@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.81.0](https://github.com/waraseoni/vtech-next/compare/v1.80.0...v1.81.0) (2026-11-19)
+
+### Features
+
+* **reports:** Parts vs Service (Client) report with searchable filters ([656352e](https://github.com/waraseoni/vtech-next/commit/656352e0718c8266b729c1e2898af6a84bc5750f))
+
 ## [1.80.0](https://github.com/waraseoni/vtech-next/compare/v1.79.0...v1.80.0) (2026-11-19)
 
 ### Features
