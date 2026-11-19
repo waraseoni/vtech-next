@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.79.0](https://github.com/waraseoni/vtech-next/compare/v1.78.5...v1.79.0) (2026-11-19)
+
+### Features
+
+* **clients:** ledger summary shows only meaningful (non-zero) lines ([dd2c2cb](https://github.com/waraseoni/vtech-next/commit/dd2c2cb77a5695d12688e164e77bcddd1ccd9b0d))
+
 ## [1.78.5](https://github.com/waraseoni/vtech-next/compare/v1.78.4...v1.78.5) (2026-11-19)
 
 ### Bug Fixes
