@@ -97,6 +97,7 @@ type ClientInfo = {
 };
 type Totals = {
   repairs: number;
+  pendingRepairs: number;
   sales: number;
   loans: number;
   payments: number;
@@ -107,8 +108,11 @@ type Totals = {
 // STATUS FILTER OPTIONS (matching PHP status_arr)
 // ─────────────────────────────────────────────────────────────────────────────
 const FILTER_OPTIONS: { key: string | number; label: string }[] = [
-  // Sirf Delivered jobs statement me aate hain — baaki statuses abhi bill nahi
-  // hue (canonical due formula bhi sirf status=5 count karta hai).
+  { key: 0, label: "Pending" },
+  { key: 1, label: "In Progress" },
+  { key: 2, label: "Done" },
+  { key: 3, label: "Paid" },
+  { key: 4, label: "Cancelled" },
   { key: 5, label: "Delivered" },
   { key: "payment", label: "Payments" },
   { key: "direct_sale", label: "Direct Sale" },
@@ -155,6 +159,7 @@ export default function LedgerPrintPage({ params }: { params: Promise<{ id: stri
   const [totals, setTotals] = useState<Totals>(
     seed?.totals ?? {
       repairs: 0,
+      pendingRepairs: 0,
       sales: 0,
       loans: 0,
       payments: 0,
@@ -205,8 +210,7 @@ export default function LedgerPrintPage({ params }: { params: Promise<{ id: stri
       const from = fromDate ? `${fromDate}T00:00:00+05:30` : null;
       const to = toDate ? `${toDate}T23:59:59+05:30` : null;
 
-      // Determine what to show — reps ka statement sirf billed (Delivered)
-      // jobs dikhata hai; payments / direct sales / loans alag rows hain.
+      // Determine what to show (matching PHP logic)
       const repairStatuses: number[] = [];
       let showPayments = activeStatuses.length === 0;
       let showSales = activeStatuses.length === 0;
@@ -218,7 +222,7 @@ export default function LedgerPrintPage({ params }: { params: Promise<{ id: stri
           if (s === "payment") showPayments = true;
           else if (s === "direct_sale") showSales = true;
           else if (s === "loan") showLoans = true;
-          else if (typeof s === "number" && s === 5) repairStatuses.push(5);
+          else if (typeof s === "number") repairStatuses.push(s);
         });
         if (repairStatuses.length > 0) showAllRepairs = false;
         else if (!showPayments && !showSales && !showLoans) showAllRepairs = false;
@@ -228,20 +232,33 @@ export default function LedgerPrintPage({ params }: { params: Promise<{ id: stri
       // Billed = sirf Delivered (status 5) aur non-deleted jobs — canonical
       // due formula (src/lib/client-due.ts) ke bilkul mutabik. Pending/Done
       // jobs abhi bill nahi hue, isliye statement ke totals/balance me nahi.
-      const [{ data: allJobs }, { data: allSales }, { data: allLoans }, { data: allPays }] =
-        await Promise.all([
-          supabase
-            .from("transaction_list")
-            .select("amount")
-            .eq("client_name", String(clientId))
-            .eq("status", 5)
-            .eq("del_status", 0),
-          supabase.from("direct_sales").select("total_amount").eq("client_id", clientId),
-          supabase.from("client_loans").select("total_payable").eq("client_id", clientId),
-          supabase.from("client_payments").select("amount, discount").eq("client_id", clientId),
-        ]);
+      const [
+        { data: allJobs },
+        { data: pendingJobs },
+        { data: allSales },
+        { data: allLoans },
+        { data: allPays },
+      ] = await Promise.all([
+        supabase
+          .from("transaction_list")
+          .select("amount")
+          .eq("client_name", String(clientId))
+          .eq("status", 5)
+          .eq("del_status", 0),
+        // Pending / Done / In-Progress / Paid — not yet delivered, not cancelled
+        supabase
+          .from("transaction_list")
+          .select("amount")
+          .eq("client_name", String(clientId))
+          .in("status", [0, 1, 2, 3])
+          .eq("del_status", 0),
+        supabase.from("direct_sales").select("total_amount").eq("client_id", clientId),
+        supabase.from("client_loans").select("total_payable").eq("client_id", clientId),
+        supabase.from("client_payments").select("amount, discount").eq("client_id", clientId),
+      ]);
 
       const totalRepairs = (allJobs || []).reduce((s, r) => s + (r.amount || 0), 0);
+      const totalPendingRepairs = (pendingJobs || []).reduce((s, r) => s + (r.amount || 0), 0);
       const totalSales = (allSales || []).reduce((s, r) => s + (r.total_amount || 0), 0);
       const totalLoans = (allLoans || []).reduce((s, r) => s + (r.total_payable || 0), 0);
       // CORRECT: settled = cash received + discount given (both clear the balance)
@@ -251,6 +268,7 @@ export default function LedgerPrintPage({ params }: { params: Promise<{ id: stri
       const totalSettled = totalPaid + totalDisc; // total that clears the balance
       setTotals({
         repairs: totalRepairs,
+        pendingRepairs: totalPendingRepairs,
         sales: totalSales,
         loans: totalLoans,
         payments: totalSettled,
@@ -318,8 +336,7 @@ export default function LedgerPrintPage({ params }: { params: Promise<{ id: stri
           .select("id, job_id, item, amount, status, remark, date_created, date_completed")
           .eq("client_name", String(clientId))
           .eq("del_status", 0);
-        if (showAllRepairs) q = q.eq("status", 5);
-        else if (repairStatuses.length > 0) q = q.in("status", repairStatuses);
+        if (!showAllRepairs && repairStatuses.length > 0) q = q.in("status", repairStatuses);
         if (from) q = q.gte("date_created", from);
         if (to) q = q.lte("date_created", to);
         const { data: jobs } = await q;
@@ -1017,6 +1034,11 @@ ${el.innerHTML}
                   ? "Credit balance — amount to pay"
                   : "Account fully settled ✓"}
             </div>
+            {totals.pendingRepairs > 0.005 && (
+              <div style={{ fontSize: 9, color: "#b26a00", marginTop: 4, fontWeight: 600 }}>
+                + {inr(totals.pendingRepairs)} pending (not yet delivered)
+              </div>
+            )}
           </div>
         </div>
 
@@ -1075,6 +1097,12 @@ ${el.innerHTML}
             {[
               { label: "Opening Balance", val: openingBal, cls: "text-muted", always: true },
               { label: "Total Repairs", val: totals.repairs, cls: "text-red-400", always: true },
+              {
+                label: "Pending (Not Delivered)",
+                val: totals.pendingRepairs,
+                cls: "text-amber-400",
+                always: false,
+              },
               {
                 label: "Total Direct Sales",
                 val: totals.sales,

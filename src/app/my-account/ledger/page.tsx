@@ -68,7 +68,14 @@ type LedgerData = {
   client: { id: number; name: string; contact: string; email: string; opening_balance: number };
   firm: { name: string; address: string; contact: string; email: string };
   due: number;
-  totals: { repairs: number; sales: number; loans: number; payments: number; discount: number };
+  totals: {
+    repairs: number;
+    pendingRepairs: number;
+    sales: number;
+    loans: number;
+    payments: number;
+    discount: number;
+  };
   rows: LedgerRow[];
 };
 
@@ -356,6 +363,16 @@ ${el.innerHTML}
           <p className="text-[10px] font-black uppercase tracking-widest text-muted">Repairs</p>
           <p className="text-2xl font-black mt-1 text-white">{inr(data?.totals.repairs ?? 0)}</p>
         </div>
+        {(data?.totals.pendingRepairs ?? 0) > 0.005 && (
+          <div className="bg-panel border border-app rounded-2xl p-4">
+            <p className="text-[10px] font-black uppercase tracking-widest text-muted">
+              Pending (Not Delivered)
+            </p>
+            <p className="text-2xl font-black mt-1 text-amber-400">
+              {inr(data?.totals.pendingRepairs ?? 0)}
+            </p>
+          </div>
+        )}
         <div className="bg-panel border border-app rounded-2xl p-4">
           <p className="text-[10px] font-black uppercase tracking-widest text-muted">Sales</p>
           <p className="text-2xl font-black mt-1 text-white">{inr(data?.totals.sales ?? 0)}</p>

@@ -131,23 +131,29 @@ par filter code me hai hi nahi (future-proofing chahiye).
 
 ### Applied fix
 
-Chaaron jagah billable repairs ab canonical filter use karte hain:
+Chaaron jagah billable repairs (totals/outstanding/brought-forward) ab canonical
+filter use karte hain:
 
 ```ts
 .eq("status", 5)      // sirf Delivered
 .eq("del_status", 0)  // deleted jobs nahi
 ```
 
+Lekin **row-level list me saare transactions (Pending/Done/Delivered/Cancelled
++ Payments + Direct Sales + Loans) dikhte hain** — history aur status filter ke
+liye. Sirf *totals* aur *outstanding* delivered-only hain. Is tarah user ko full
+history milti hai aur balance canonical (delivered-only) rehta hai.
+
 Details:
 
-1. `ledger-print` page + server seed: all-time totals, brought-forward aur
-   row list — teeno delivered-only. Statement ab sirf billed (delivered) jobs
-   dikhata hai, isliye running balance aur outstanding canonical se match karta hai.
-2. Filter dropdown se Pending / In Progress / Done / Paid / Cancelled options
-   hata diye (ab sirf Delivered + Payments / Direct Sale / Loan). Pending jobs
-   statement ka part nahi hain, isliye unka filter bhi nahi.
-3. `api/print-client-ledger`: Total Billed + repair rows delivered-only.
-4. `api/client/ledger` (client portal): totals + rows delivered-only.
+1. `ledger-print` page + server seed: all-time totals, brought-forward delivered-only;
+   row list ALL non-deleted jobs (status filter dropdown se filter kar sakte hain).
+2. Filter dropdown me sab statuses wapas: Pending / In Progress / Done / Paid /
+   Cancelled / Delivered + Payments / Direct Sale / Loan.
+3. `api/print-client-ledger`: Total Billed = sum of delivered jobs only; repair
+   history table shows all non-deleted jobs (status column ke saath).
+4. `api/client/ledger` (client portal): totals + brought-forward delivered-only;
+   rows ALL non-deleted jobs.
 
 ### Verification (fix ke baad, live dev server)
 
@@ -266,3 +272,6 @@ Payments ₹1,400 / Discount ₹100 / outstanding ₹0.
    hamesha dikhengi. Label "Total Payments" → "Total Payments (Cash)" aur
    Outstanding line summary me bhi add ki (balance box ke alawa). Print route
    (`/api/print-client-ledger`) ke stat tiles bhi same conditional logic.
+   Naya: **"Pending (Not Delivered)"** line + balance box me "+ ₹X pending
+   (not yet delivered)" note — client ko turant pata chale delivered ka kitna
+   due hai aur kitna amount tab aayega jab pending jobs deliver honge.

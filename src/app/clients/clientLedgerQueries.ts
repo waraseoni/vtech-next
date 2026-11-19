@@ -36,6 +36,7 @@ export type LedgerClientInfo = {
 
 export type LedgerTotals = {
   repairs: number;
+  pendingRepairs: number;
   sales: number;
   loans: number;
   payments: number;
@@ -85,22 +86,36 @@ export async function fetchClientLedgerSeed(
     firmInfo.email = m.email || "";
   }
 
-  const [{ data: allJobs }, { data: allSales }, { data: allLoans }, { data: allPays }] =
-    await Promise.all([
-      // Billed = sirf Delivered (status 5) aur non-deleted jobs — canonical
-      // due formula (src/lib/client-due.ts) ke mutabik.
-      supabase
-        .from("transaction_list")
-        .select("amount")
-        .eq("client_name", String(clientId))
-        .eq("status", 5)
-        .eq("del_status", 0),
-      supabase.from("direct_sales").select("total_amount").eq("client_id", clientId),
-      supabase.from("client_loans").select("total_payable").eq("client_id", clientId),
-      supabase.from("client_payments").select("amount, discount").eq("client_id", clientId),
-    ]);
+  const [
+    { data: allJobs },
+    { data: pendingJobs },
+    { data: allSales },
+    { data: allLoans },
+    { data: allPays },
+  ] = await Promise.all([
+    // Billed = sirf Delivered (status 5) aur non-deleted jobs.
+    supabase
+      .from("transaction_list")
+      .select("amount")
+      .eq("client_name", String(clientId))
+      .eq("status", 5)
+      .eq("del_status", 0),
+    supabase
+      .from("transaction_list")
+      .select("amount")
+      .eq("client_name", String(clientId))
+      .in("status", [0, 1, 2, 3])
+      .eq("del_status", 0),
+    supabase.from("direct_sales").select("total_amount").eq("client_id", clientId),
+    supabase.from("client_loans").select("total_payable").eq("client_id", clientId),
+    supabase.from("client_payments").select("amount, discount").eq("client_id", clientId),
+  ]);
 
   const totalRepairs = (allJobs || []).reduce(
+    (s: number, r: { amount: number }) => s + (r.amount || 0),
+    0
+  );
+  const totalPendingRepairs = (pendingJobs || []).reduce(
     (s: number, r: { amount: number }) => s + (r.amount || 0),
     0
   );
@@ -122,14 +137,12 @@ export async function fetchClientLedgerSeed(
   );
   const totalSettled = totalPaid + totalDisc;
 
-  // Default view: koi filter nahi — sara ledger, par repairs sirf Delivered
-  // (status 5) + non-deleted, kyunki wahi bill hote hain (canonical formula).
+  // Default view: koi filter nahi — saare repairs/sales/loans/payments.
   const [{ data: jobs }, { data: sales }, { data: loans }, { data: pays }] = await Promise.all([
     supabase
       .from("transaction_list")
       .select("id, job_id, item, amount, status, remark, date_created, date_completed")
       .eq("client_name", String(clientId))
-      .eq("status", 5)
       .eq("del_status", 0),
     supabase
       .from("direct_sales")
@@ -229,6 +242,7 @@ export async function fetchClientLedgerSeed(
     rows,
     totals: {
       repairs: totalRepairs,
+      pendingRepairs: totalPendingRepairs,
       sales: totalSales,
       loans: totalLoans,
       payments: totalSettled,

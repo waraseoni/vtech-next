@@ -56,20 +56,32 @@ export async function GET(request: NextRequest) {
 
   // ── All-time totals (due hamesha full history se — filter kabhi nahi) ─
   // Billed = sirf Delivered (status 5) + non-deleted jobs (canonical formula).
-  const [{ data: allJobs }, { data: allSales }, { data: allLoans }, { data: allPays }] =
-    await Promise.all([
-      supabaseAdmin
-        .from("transaction_list")
-        .select("amount")
-        .eq("client_name", String(cid))
-        .eq("status", 5)
-        .eq("del_status", 0),
-      supabaseAdmin.from("direct_sales").select("total_amount").eq("client_id", cid),
-      supabaseAdmin.from("client_loans").select("total_payable").eq("client_id", cid),
-      supabaseAdmin.from("client_payments").select("amount, discount").eq("client_id", cid),
-    ]);
+  const [
+    { data: allJobs },
+    { data: pendingJobs },
+    { data: allSales },
+    { data: allLoans },
+    { data: allPays },
+  ] = await Promise.all([
+    supabaseAdmin
+      .from("transaction_list")
+      .select("amount")
+      .eq("client_name", String(cid))
+      .eq("status", 5)
+      .eq("del_status", 0),
+    supabaseAdmin
+      .from("transaction_list")
+      .select("amount")
+      .eq("client_name", String(cid))
+      .in("status", [0, 1, 2, 3])
+      .eq("del_status", 0),
+    supabaseAdmin.from("direct_sales").select("total_amount").eq("client_id", cid),
+    supabaseAdmin.from("client_loans").select("total_payable").eq("client_id", cid),
+    supabaseAdmin.from("client_payments").select("amount, discount").eq("client_id", cid),
+  ]);
 
   const totalRepairs = sum(allJobs, "amount");
+  const totalPendingRepairs = sum(pendingJobs, "amount");
   const totalSales = sum(allSales, "total_amount");
   const totalLoans = sum(allLoans, "total_payable");
   const totalPaid = sum(allPays, "amount");
@@ -138,7 +150,6 @@ export async function GET(request: NextRequest) {
       .from("transaction_list")
       .select("id, job_id, item, amount, status, remark, date_created, date_completed")
       .eq("client_name", String(cid))
-      .eq("status", 5)
       .eq("del_status", 0);
     if (from) q = q.gte("date_created", from);
     if (to) q = q.lte("date_created", to);
@@ -278,6 +289,7 @@ export async function GET(request: NextRequest) {
     due,
     totals: {
       repairs: totalRepairs,
+      pendingRepairs: totalPendingRepairs,
       sales: totalSales,
       loans: totalLoans,
       payments: totalSettled,

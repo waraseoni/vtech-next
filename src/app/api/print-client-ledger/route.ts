@@ -67,9 +67,6 @@ export async function GET(request: NextRequest) {
           .from("transaction_list")
           .select("id, job_id, code, item, fault, remark, amount, status, date_created")
           .eq("client_name", parseInt(clientId))
-          // Sirf Delivered (status 5) + non-deleted jobs billed hain — canonical
-          // due formula (src/lib/client-due.ts) ke mutabik.
-          .eq("status", 5)
           .eq("del_status", 0)
           .order("date_created", { ascending: false })
       ),
@@ -105,7 +102,13 @@ export async function GET(request: NextRequest) {
   const loansList = loans || [];
   const directSalesList = directSales || [];
 
-  const totalBilled = repairsList.reduce((s, r) => s + toNum(r.amount), 0);
+  const totalBilled = repairsList
+    .filter((r) => r.status === 5)
+    .reduce((s, r) => s + toNum(r.amount), 0);
+  // Pending (not yet delivered, not cancelled) — informational only, not billed
+  const totalPending = repairsList
+    .filter((r) => [0, 1, 2, 3].includes(r.status))
+    .reduce((s, r) => s + toNum(r.amount), 0);
   // Cash received aur discount alag rakho (settled = cash + discount se balance clear hota hai).
   const totalPaid = paymentsList.reduce((s, p) => s + toNum(p.amount), 0);
   const totalDiscount = paymentsList.reduce((s, p) => s + toNum(p.discount), 0);
@@ -190,6 +193,11 @@ export async function GET(request: NextRequest) {
   statTiles.push(
     `<div class="stat"><div class="stat-num" style="color:#c0392b">${inr(totalBilled)}</div><div class="stat-label">Total Billed</div></div>`
   );
+  if (Math.abs(totalPending) > 0.005) {
+    statTiles.push(
+      `<div class="stat"><div class="stat-num" style="color:#e67e22">${inr(totalPending)}</div><div class="stat-label">Pending (Not Delivered)</div></div>`
+    );
+  }
   if (Math.abs(directSalesTotal) > 0.005) {
     statTiles.push(
       `<div class="stat"><div class="stat-num" style="color:#c0392b">${inr(directSalesTotal)}</div><div class="stat-label">Direct Sales</div></div>`
