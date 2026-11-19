@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.80.0](https://github.com/waraseoni/vtech-next/compare/v1.79.0...v1.80.0) (2026-11-19)
+
+### Features
+
+* **clients:** show pending (not-delivered) jobs separately in ledger ([2db82da](https://github.com/waraseoni/vtech-next/commit/2db82da1a2106f0fbb490c8987bc0d1675cdba10))
+
 ## [1.79.0](https://github.com/waraseoni/vtech-next/compare/v1.78.5...v1.79.0) (2026-11-19)
 
 ### Features
