@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useEffect, useMemo, useState, useCallback } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import AdminPage from "@/app/components/AdminPage";
 import { supabase } from "@/lib/supabase";
-import { formatIST, startOfMonthIST, endOfMonthIST } from "@/lib/dateUtils";
+import { startOfMonthIST, endOfMonthIST } from "@/lib/dateUtils";
+import { JOB_STATUS } from "@/lib/status-colors";
 
 type Client = { id: number; name: string };
 
@@ -14,10 +15,12 @@ type JobRow = {
   code: string | null;
   item: string | null;
   client_name: string;
+  mechanic_id: number | null;
   status: number;
   amount: number;
   date_created: string;
   date_completed: string | null;
+  date_updated: string | null;
 };
 
 type ProductLine = {
@@ -70,11 +73,20 @@ async function fetchClients(): Promise<Client[]> {
     .eq("delete_flag", 0)
     .order("firstname", { ascending: true });
   if (error) throw error;
-  return (data || []).map((c: any) => ({
-    id: c.id,
-    name:
-      [c.firstname, c.middlename, c.lastname].filter(Boolean).join(" ").trim() || `Client #${c.id}`,
-  }));
+  return (data || []).map((c) => {
+    const row = c as {
+      id: number;
+      firstname: string | null;
+      middlename: string | null;
+      lastname: string | null;
+    };
+    return {
+      id: row.id,
+      name:
+        [row.firstname, row.middlename, row.lastname].filter(Boolean).join(" ").trim() ||
+        `Client #${row.id}`,
+    };
+  });
 }
 
 async function fetchReport(params: {
@@ -85,7 +97,9 @@ async function fetchReport(params: {
 }): Promise<{ jobs: JobRow[]; products: ProductLine[]; services: ServiceLine[] }> {
   let q = supabase
     .from("transaction_list")
-    .select("id, job_id, code, item, client_name, status, amount, date_created, date_completed")
+    .select(
+      "id, job_id, code, item, client_name, mechanic_id, status, amount, date_created, date_completed, date_updated"
+    )
     .eq("del_status", 0)
     .order("date_created", { ascending: false });
 
@@ -158,6 +172,24 @@ export default function ClientPartsServiceReportPage() {
     staleTime: 60_000,
   });
 
+  const { data: mechanics = [] } = useQuery({
+    queryKey: ["mechanics-list-min"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("mechanic_list")
+        .select("id, firstname, middlename, lastname")
+        .eq("delete_flag", 0);
+      if (error) throw error;
+      return (data || []) as {
+        id: number;
+        firstname: string | null;
+        middlename: string | null;
+        lastname: string | null;
+      }[];
+    },
+    staleTime: 60_000,
+  });
+
   // default month range on first load
   useEffect(() => {
     if (!fromDate && !toDate) {
@@ -168,12 +200,20 @@ export default function ClientPartsServiceReportPage() {
 
   const params = applied || { clientId, from: fromDate, to: toDate, status };
 
-  const { data, isLoading, error, refetch } = useQuery({
+  const { data, isLoading, error } = useQuery({
     queryKey: ["client-parts-service", params.clientId, params.from, params.to, params.status],
     queryFn: () => fetchReport(params),
     enabled: !!applied || true,
     staleTime: 15_000,
   });
+
+  const clientMap = useMemo(() => new Map(clients.map((c) => [c.id, c.name])), [clients]);
+  const mechanicName = (id: number | null) => {
+    if (!id) return "—";
+    const m = mechanics.find((x) => x.id === id);
+    if (!m) return `#${id}`;
+    return [m.firstname, m.middlename, m.lastname].filter(Boolean).join(" ").trim() || `#${id}`;
+  };
 
   const agg: AggRow[] = useMemo(() => {
     if (!data) return [];
@@ -214,7 +254,8 @@ export default function ClientPartsServiceReportPage() {
         total: p.amount + s.amount,
       };
     });
-  }, [data]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data, clients, mechanics]);
 
   const totals = useMemo(() => {
     return agg.reduce(
@@ -240,7 +281,9 @@ export default function ClientPartsServiceReportPage() {
       "Code",
       "Item",
       "Client",
+      "Mechanic",
       "Status",
+      "Status Date",
       "Date",
       "Spares (₹)",
       "Spares Qty",
@@ -255,8 +298,13 @@ export default function ClientPartsServiceReportPage() {
           r.job.job_id || r.job.id,
           r.job.code || "",
           `"${(r.job.item || "").replace(/"/g, '""')}"`,
-          r.job.client_name,
+          `"${(clientMap.get(Number(r.job.client_name)) || r.job.client_name || "").replace(/"/g, '""')}"`,
+          `"${mechanicName(r.job.mechanic_id).replace(/"/g, '""')}"`,
           STATUS_LABEL[r.job.status] || r.job.status,
+          (r.job.status === 5
+            ? r.job.date_completed
+            : r.job.date_updated || r.job.date_created
+          )?.slice(0, 10) || "",
           r.job.date_created?.slice(0, 10) || "",
           r.sparesAmount.toFixed(2),
           r.sparesQty,
@@ -543,12 +591,12 @@ export default function ClientPartsServiceReportPage() {
                 <tr className="text-left text-[10px] font-black uppercase tracking-widest text-muted">
                   <th className="px-3 py-3">Job ID</th>
                   <th className="px-3 py-3">Date</th>
-                  <th className="px-3 py-3">Item / Client</th>
-                  <th className="px-3 py-3">Status</th>
+                  <th className="px-3 py-3">Item</th>
+                  <th className="px-3 py-3">Client</th>
+                  <th className="px-3 py-3">Mechanic</th>
+                  <th className="px-3 py-3">Status (Date)</th>
                   <th className="px-3 py-3 text-right">Spares (₹)</th>
-                  <th className="px-3 py-3 text-right">Qty</th>
                   <th className="px-3 py-3 text-right">Services (₹)</th>
-                  <th className="px-3 py-3 text-right">Svc #</th>
                   <th className="px-3 py-3 text-right">Total (₹)</th>
                 </tr>
               </thead>
@@ -581,28 +629,54 @@ export default function ClientPartsServiceReportPage() {
                       }
                     >
                       <td className="px-3 py-2 font-mono text-xs">
-                        {expanded.has(r.job.id) ? "▾" : "▸"} {r.job.job_id || r.job.id}
+                        <a
+                          href={`/jobs/${r.job.id}/view`}
+                          className="text-blue-400 hover:underline"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          {expanded.has(r.job.id) ? "▾" : "▸"} {r.job.job_id || r.job.id}
+                        </a>
                       </td>
                       <td className="px-3 py-2 text-xs">{r.job.date_created?.slice(0, 10)}</td>
-                      <td className="px-3 py-2">
-                        <div className="font-semibold text-xs truncate max-w-[220px]">
-                          {r.job.item || "—"}
-                        </div>
-                        <div className="text-[10px] text-muted truncate max-w-[220px]">
-                          {r.job.client_name}
-                        </div>
+                      <td className="px-3 py-2 text-xs truncate max-w-[160px]">
+                        {r.job.item || "—"}
                       </td>
                       <td className="px-3 py-2 text-xs">
-                        {STATUS_LABEL[r.job.status] || r.job.status}
+                        <a
+                          href={`/clients/${Number(r.job.client_name)}/view`}
+                          className="text-violet-400 hover:underline"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          {clientMap.get(Number(r.job.client_name)) || r.job.client_name || "—"}
+                        </a>
+                      </td>
+                      <td className="px-3 py-2 text-xs text-muted">
+                        {mechanicName(r.job.mechanic_id)}
+                      </td>
+                      <td className="px-3 py-2 text-xs">
+                        <span
+                          className={`inline-block px-2 py-0.5 rounded-full border text-[10px] font-bold ${
+                            JOB_STATUS[r.job.status]?.cls ||
+                            "bg-muted/10 text-muted border-muted/20"
+                          }`}
+                        >
+                          {JOB_STATUS[r.job.status]?.label ||
+                            STATUS_LABEL[r.job.status] ||
+                            r.job.status}
+                        </span>
+                        <div className="text-[10px] text-muted mt-1">
+                          {(r.job.status === 5
+                            ? r.job.date_completed
+                            : r.job.date_updated || r.job.date_created
+                          )?.slice(0, 10)}
+                        </div>
                       </td>
                       <td className="px-3 py-2 text-right text-amber-400 font-semibold">
                         {fmt(r.sparesAmount)}
                       </td>
-                      <td className="px-3 py-2 text-right text-xs text-muted">{r.sparesQty}</td>
                       <td className="px-3 py-2 text-right text-blue-400 font-semibold">
                         {fmt(r.servicesAmount)}
                       </td>
-                      <td className="px-3 py-2 text-right text-xs text-muted">{r.servicesCount}</td>
                       <td className="px-3 py-2 text-right text-emerald-400 font-bold">
                         {fmt(r.total)}
                       </td>
@@ -682,15 +756,13 @@ export default function ClientPartsServiceReportPage() {
                 <tfoot className="bg-panel-2 font-bold">
                   <tr>
                     <td
-                      colSpan={4}
+                      colSpan={6}
                       className="px-3 py-2 text-xs uppercase tracking-widest text-muted"
                     >
                       Total ({totals.jobs} jobs)
                     </td>
                     <td className="px-3 py-2 text-right text-amber-400">{fmt(totals.spares)}</td>
-                    <td className="px-3 py-2 text-right text-xs text-muted">{totals.sparesQty}</td>
                     <td className="px-3 py-2 text-right text-blue-400">{fmt(totals.services)}</td>
-                    <td className="px-3 py-2" />
                     <td className="px-3 py-2 text-right text-emerald-400">{fmt(totals.grand)}</td>
                   </tr>
                 </tfoot>
