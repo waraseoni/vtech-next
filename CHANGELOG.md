@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.78.5](https://github.com/waraseoni/vtech-next/compare/v1.78.4...v1.78.5) (2026-11-19)
+
+### Bug Fixes
+
+* **clients:** ledger Total Payments shows cash received, not settled ([a231e45](https://github.com/waraseoni/vtech-next/commit/a231e457beed4a06daa51249fce546004dce9139))
+
 ## [1.78.4](https://github.com/waraseoni/vtech-next/compare/v1.78.3...v1.78.4) (2026-11-18)
 
 ### Performance Improvements
