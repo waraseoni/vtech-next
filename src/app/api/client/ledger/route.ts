@@ -55,12 +55,14 @@ export async function GET(request: NextRequest) {
   const to = toDate ? `${toDate}T23:59:59+05:30` : null;
 
   // ── All-time totals (due hamesha full history se — filter kabhi nahi) ─
+  // Billed = sirf Delivered (status 5) + non-deleted jobs (canonical formula).
   const [{ data: allJobs }, { data: allSales }, { data: allLoans }, { data: allPays }] =
     await Promise.all([
       supabaseAdmin
         .from("transaction_list")
         .select("amount")
         .eq("client_name", String(cid))
+        .eq("status", 5)
         .eq("del_status", 0),
       supabaseAdmin.from("direct_sales").select("total_amount").eq("client_id", cid),
       supabaseAdmin.from("client_loans").select("total_payable").eq("client_id", cid),
@@ -84,6 +86,7 @@ export async function GET(request: NextRequest) {
         .from("transaction_list")
         .select("amount")
         .eq("client_name", String(cid))
+        .eq("status", 5)
         .eq("del_status", 0)
         .lt("date_created", from),
       supabaseAdmin
@@ -135,6 +138,7 @@ export async function GET(request: NextRequest) {
       .from("transaction_list")
       .select("id, job_id, item, amount, status, remark, date_created, date_completed")
       .eq("client_name", String(cid))
+      .eq("status", 5)
       .eq("del_status", 0);
     if (from) q = q.gte("date_created", from);
     if (to) q = q.lte("date_created", to);
@@ -214,7 +218,7 @@ export async function GET(request: NextRequest) {
       .from("client_payments")
       .select("id, amount, discount, net_amount, payment_date, payment_mode, bill_no, remarks")
       .eq("client_id", cid)
-      .is("loan_id", null);
+      .or("loan_id.is.null,loan_id.eq.0");
     if (from) q = q.gte("payment_date", from);
     if (to) q = q.lte("payment_date", to);
     const { data: pays } = await q;

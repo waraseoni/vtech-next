@@ -67,6 +67,10 @@ export async function GET(request: NextRequest) {
           .from("transaction_list")
           .select("id, job_id, code, item, fault, remark, amount, status, date_created")
           .eq("client_name", parseInt(clientId))
+          // Sirf Delivered (status 5) + non-deleted jobs billed hain — canonical
+          // due formula (src/lib/client-due.ts) ke mutabik.
+          .eq("status", 5)
+          .eq("del_status", 0)
           .order("date_created", { ascending: false })
       ),
       pageAll(
@@ -102,9 +106,12 @@ export async function GET(request: NextRequest) {
   const directSalesList = directSales || [];
 
   const totalBilled = repairsList.reduce((s, r) => s + toNum(r.amount), 0);
-  const totalPaid = paymentsList.reduce((s, p) => s + toNum(p.amount) + toNum(p.discount), 0);
+  // Cash received aur discount alag rakho (settled = cash + discount se balance clear hota hai).
+  const totalPaid = paymentsList.reduce((s, p) => s + toNum(p.amount), 0);
+  const totalDiscount = paymentsList.reduce((s, p) => s + toNum(p.discount), 0);
   const directSalesTotal = directSalesList.reduce((s, d) => s + toNum(d.total_amount), 0);
-  const netBalance = (client.opening_balance || 0) + totalBilled + directSalesTotal - totalPaid;
+  const netBalance =
+    (client.opening_balance || 0) + totalBilled + directSalesTotal - (totalPaid + totalDiscount);
 
   const repairRows =
     repairsList.length > 0
@@ -174,6 +181,33 @@ export async function GET(request: NextRequest) {
 
   const SHOP = await getPrintShop();
 
+  // Sirf non-zero (ya baseline) stat tiles dikhao — zero-value tiles clutter
+  // karte hain (jaise Direct Sales 0, Discount 0).
+  const statTiles: string[] = [];
+  statTiles.push(
+    `<div class="stat"><div class="stat-num">${inr(toNum(client.opening_balance))}</div><div class="stat-label">Opening</div></div>`
+  );
+  statTiles.push(
+    `<div class="stat"><div class="stat-num" style="color:#c0392b">${inr(totalBilled)}</div><div class="stat-label">Total Billed</div></div>`
+  );
+  if (Math.abs(directSalesTotal) > 0.005) {
+    statTiles.push(
+      `<div class="stat"><div class="stat-num" style="color:#c0392b">${inr(directSalesTotal)}</div><div class="stat-label">Direct Sales</div></div>`
+    );
+  }
+  statTiles.push(
+    `<div class="stat"><div class="stat-num" style="color:#28a745">${inr(totalPaid)}</div><div class="stat-label">Total Paid (Cash)</div></div>`
+  );
+  if (Math.abs(totalDiscount) > 0.005) {
+    statTiles.push(
+      `<div class="stat"><div class="stat-num" style="color:#e67e22">${inr(totalDiscount)}</div><div class="stat-label">Total Discount</div></div>`
+    );
+  }
+  statTiles.push(
+    `<div class="stat"><div class="stat-num" style="color:${netBalance >= 0 ? "#c0392b" : "#28a745"}">${inr(netBalance)}</div><div class="stat-label">Net Balance</div></div>`
+  );
+  const statsHtml = `<div class="stats">${statTiles.join("")}</div>`;
+
   const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -225,28 +259,7 @@ export async function GET(request: NextRequest) {
       <div class="client-name">${name}</div>
       <div class="client-detail">Contact: ${client.contact || "-"} | Email: ${client.email || "-"} | Address: ${client.address || "-"}</div>
     </div>
-    <div class="stats">
-      <div class="stat">
-        <div class="stat-num">${inr(toNum(client.opening_balance))}</div>
-        <div class="stat-label">Opening</div>
-      </div>
-      <div class="stat">
-        <div class="stat-num" style="color:#c0392b">${inr(totalBilled)}</div>
-        <div class="stat-label">Total Billed</div>
-      </div>
-      <div class="stat">
-        <div class="stat-num" style="color:#c0392b">${inr(directSalesTotal)}</div>
-        <div class="stat-label">Direct Sales</div>
-      </div>
-      <div class="stat">
-        <div class="stat-num" style="color:#28a745">${inr(totalPaid)}</div>
-        <div class="stat-label">Total Paid</div>
-      </div>
-      <div class="stat">
-        <div class="stat-num" style="color:${netBalance >= 0 ? "#c0392b" : "#28a745"}">${inr(netBalance)}</div>
-        <div class="stat-label">Net Balance</div>
-      </div>
-    </div>
+    ${statsHtml}
   </div>
 
   ${

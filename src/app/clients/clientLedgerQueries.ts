@@ -87,7 +87,14 @@ export async function fetchClientLedgerSeed(
 
   const [{ data: allJobs }, { data: allSales }, { data: allLoans }, { data: allPays }] =
     await Promise.all([
-      supabase.from("transaction_list").select("amount").eq("client_name", String(clientId)),
+      // Billed = sirf Delivered (status 5) aur non-deleted jobs — canonical
+      // due formula (src/lib/client-due.ts) ke mutabik.
+      supabase
+        .from("transaction_list")
+        .select("amount")
+        .eq("client_name", String(clientId))
+        .eq("status", 5)
+        .eq("del_status", 0),
       supabase.from("direct_sales").select("total_amount").eq("client_id", clientId),
       supabase.from("client_loans").select("total_payable").eq("client_id", clientId),
       supabase.from("client_payments").select("amount, discount").eq("client_id", clientId),
@@ -115,12 +122,15 @@ export async function fetchClientLedgerSeed(
   );
   const totalSettled = totalPaid + totalDisc;
 
-  // Default view: koi filter nahi — saare repairs/sales/loans/payments.
+  // Default view: koi filter nahi — sara ledger, par repairs sirf Delivered
+  // (status 5) + non-deleted, kyunki wahi bill hote hain (canonical formula).
   const [{ data: jobs }, { data: sales }, { data: loans }, { data: pays }] = await Promise.all([
     supabase
       .from("transaction_list")
       .select("id, job_id, item, amount, status, remark, date_created, date_completed")
-      .eq("client_name", String(clientId)),
+      .eq("client_name", String(clientId))
+      .eq("status", 5)
+      .eq("del_status", 0),
     supabase
       .from("direct_sales")
       .select("id, sale_code, total_amount, remarks, date_created")
@@ -133,7 +143,7 @@ export async function fetchClientLedgerSeed(
       .from("client_payments")
       .select("id, amount, discount, net_amount, payment_date, payment_mode, bill_no, remarks")
       .eq("client_id", clientId)
-      .is("loan_id", null),
+      .or("loan_id.is.null,loan_id.eq.0"),
   ]);
 
   const rows: LedgerRowSeed[] = [];

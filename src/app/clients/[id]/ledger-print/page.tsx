@@ -107,11 +107,8 @@ type Totals = {
 // STATUS FILTER OPTIONS (matching PHP status_arr)
 // ─────────────────────────────────────────────────────────────────────────────
 const FILTER_OPTIONS: { key: string | number; label: string }[] = [
-  { key: 0, label: "Pending" },
-  { key: 1, label: "In Progress" },
-  { key: 2, label: "Done" },
-  { key: 3, label: "Paid" },
-  { key: 4, label: "Cancelled" },
+  // Sirf Delivered jobs statement me aate hain — baaki statuses abhi bill nahi
+  // hue (canonical due formula bhi sirf status=5 count karta hai).
   { key: 5, label: "Delivered" },
   { key: "payment", label: "Payments" },
   { key: "direct_sale", label: "Direct Sale" },
@@ -208,7 +205,8 @@ export default function LedgerPrintPage({ params }: { params: Promise<{ id: stri
       const from = fromDate ? `${fromDate}T00:00:00+05:30` : null;
       const to = toDate ? `${toDate}T23:59:59+05:30` : null;
 
-      // Determine what to show (matching PHP logic)
+      // Determine what to show — reps ka statement sirf billed (Delivered)
+      // jobs dikhata hai; payments / direct sales / loans alag rows hain.
       const repairStatuses: number[] = [];
       let showPayments = activeStatuses.length === 0;
       let showSales = activeStatuses.length === 0;
@@ -220,16 +218,24 @@ export default function LedgerPrintPage({ params }: { params: Promise<{ id: stri
           if (s === "payment") showPayments = true;
           else if (s === "direct_sale") showSales = true;
           else if (s === "loan") showLoans = true;
-          else if (typeof s === "number") repairStatuses.push(s);
+          else if (typeof s === "number" && s === 5) repairStatuses.push(5);
         });
         if (repairStatuses.length > 0) showAllRepairs = false;
         else if (!showPayments && !showSales && !showLoans) showAllRepairs = false;
       }
 
       // ── ALL-TIME totals (for current outstanding — never filtered) ───
+      // Billed = sirf Delivered (status 5) aur non-deleted jobs — canonical
+      // due formula (src/lib/client-due.ts) ke bilkul mutabik. Pending/Done
+      // jobs abhi bill nahi hue, isliye statement ke totals/balance me nahi.
       const [{ data: allJobs }, { data: allSales }, { data: allLoans }, { data: allPays }] =
         await Promise.all([
-          supabase.from("transaction_list").select("amount").eq("client_name", String(clientId)),
+          supabase
+            .from("transaction_list")
+            .select("amount")
+            .eq("client_name", String(clientId))
+            .eq("status", 5)
+            .eq("del_status", 0),
           supabase.from("direct_sales").select("total_amount").eq("client_id", clientId),
           supabase.from("client_loans").select("total_payable").eq("client_id", clientId),
           supabase.from("client_payments").select("amount, discount").eq("client_id", clientId),
@@ -259,6 +265,8 @@ export default function LedgerPrintPage({ params }: { params: Promise<{ id: stri
             .from("transaction_list")
             .select("amount")
             .eq("client_name", String(clientId))
+            .eq("status", 5)
+            .eq("del_status", 0)
             .lt("date_created", from),
           supabase
             .from("direct_sales")
@@ -308,8 +316,10 @@ export default function LedgerPrintPage({ params }: { params: Promise<{ id: stri
         let q = supabase
           .from("transaction_list")
           .select("id, job_id, item, amount, status, remark, date_created, date_completed")
-          .eq("client_name", String(clientId));
-        if (!showAllRepairs && repairStatuses.length > 0) q = q.in("status", repairStatuses);
+          .eq("client_name", String(clientId))
+          .eq("del_status", 0);
+        if (showAllRepairs) q = q.eq("status", 5);
+        else if (repairStatuses.length > 0) q = q.in("status", repairStatuses);
         if (from) q = q.gte("date_created", from);
         if (to) q = q.lte("date_created", to);
         const { data: jobs } = await q;
@@ -389,7 +399,7 @@ export default function LedgerPrintPage({ params }: { params: Promise<{ id: stri
           .from("client_payments")
           .select("id, amount, discount, net_amount, payment_date, payment_mode, bill_no, remarks")
           .eq("client_id", clientId)
-          .is("loan_id", null);
+          .or("loan_id.is.null,loan_id.eq.0");
         if (from) q = q.gte("payment_date", from);
         if (to) q = q.lte("payment_date", to);
         const { data: pays } = await q;
@@ -1063,19 +1073,48 @@ ${el.innerHTML}
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 8 }}>
             {[
-              { label: "Opening Balance", val: openingBal },
-              { label: "Total Repairs", val: totals.repairs },
-              { label: "Total Direct Sales", val: totals.sales },
-              { label: "Total Loans", val: totals.loans },
+              { label: "Opening Balance", val: openingBal, cls: "text-muted", always: true },
+              { label: "Total Repairs", val: totals.repairs, cls: "text-red-400", always: true },
+              {
+                label: "Total Direct Sales",
+                val: totals.sales,
+                cls: "text-red-400",
+                always: false,
+              },
+              { label: "Total Loans", val: totals.loans, cls: "text-red-400", always: false },
               // totals.payments = totalSettled = cash + discount (balance calculation ke liye)
               // Display ke liye: actual cash received = totalSettled - discount
-              { label: "Total Payments", val: totals.payments - totals.discount },
-              { label: "Total Discount Given", val: totals.discount },
-            ].map((item) => (
-              <div key={item.label} className="theme-heading" style={{ fontSize: 10 }}>
-                <span className="text-muted">{item.label}:</span> <strong>{inr(item.val)}</strong>
-              </div>
-            ))}
+              {
+                label: "Total Payments (Cash)",
+                val: totals.payments - totals.discount,
+                cls: "text-emerald-400",
+                always: true,
+              },
+              {
+                label: "Total Discount Given",
+                val: totals.discount,
+                cls: "text-amber-400",
+                always: false,
+              },
+              {
+                label: "Current Outstanding",
+                val: currentOutstanding,
+                cls:
+                  balanceType === "debit"
+                    ? "text-red-400"
+                    : balanceType === "credit"
+                      ? "text-emerald-400"
+                      : "text-muted",
+                always: true,
+              },
+            ]
+              .filter((item) => item.always || Math.abs(item.val) > 0.005)
+              .map((item) => (
+                <div key={item.label} className="theme-heading" style={{ fontSize: 10 }}>
+                  <span className="text-muted">{item.label}:</span>{" "}
+                  <strong className={item.cls}>{inr(item.val)}</strong>
+                </div>
+              ))}
           </div>
         </div>
 
