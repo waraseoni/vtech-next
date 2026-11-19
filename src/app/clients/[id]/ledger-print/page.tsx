@@ -1067,7 +1067,9 @@ ${el.innerHTML}
               { label: "Total Repairs", val: totals.repairs },
               { label: "Total Direct Sales", val: totals.sales },
               { label: "Total Loans", val: totals.loans },
-              { label: "Total Payments", val: totals.payments + totals.discount },
+              // totals.payments = totalSettled = cash + discount (balance calculation ke liye)
+              // Display ke liye: actual cash received = totalSettled - discount
+              { label: "Total Payments", val: totals.payments - totals.discount },
               { label: "Total Discount Given", val: totals.discount },
             ].map((item) => (
               <div key={item.label} className="theme-heading" style={{ fontSize: 10 }}>
