@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.84.0](https://github.com/waraseoni/vtech-next/compare/v1.83.0...v1.84.0) (2026-11-20)
+
+### Features
+
+* **login:** a11y, OTP boxes, password reset, passkey QA and deep links ([f4a384d](https://github.com/waraseoni/vtech-next/commit/f4a384daca8a59a1af975ce96a114fe1694fea3a))
+
 ## [1.83.0](https://github.com/waraseoni/vtech-next/compare/v1.82.1...v1.83.0) (2026-11-20)
 
 ### Features
