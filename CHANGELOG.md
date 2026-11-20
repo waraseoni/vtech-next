@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.83.0](https://github.com/waraseoni/vtech-next/compare/v1.82.1...v1.83.0) (2026-11-20)
+
+### Features
+
+* friendly login UX, RSC seed for client-parts report, plan status updates ([4e5cf66](https://github.com/waraseoni/vtech-next/commit/4e5cf66560aecda65f25afd170fc0ff0befc0da9))
+
 ## [1.82.1](https://github.com/waraseoni/vtech-next/compare/v1.82.0...v1.82.1) (2026-11-19)
 
 ### Performance Improvements
