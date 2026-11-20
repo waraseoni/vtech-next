@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.85.0](https://github.com/waraseoni/vtech-next/compare/v1.84.1...v1.85.0) (2026-11-20)
+
+### Features
+
+* **cache:** in-app Clear Cache button with full SW and query wipe ([d376164](https://github.com/waraseoni/vtech-next/commit/d376164a713aa24d6d598644cc5bb05f0a16b600))
+
 ## [1.84.1](https://github.com/waraseoni/vtech-next/compare/v1.84.0...v1.84.1) (2026-11-20)
 
 ### Bug Fixes
