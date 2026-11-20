@@ -7,6 +7,7 @@ import Link from "next/link";
 import Image from "next/image";
 import dynamic from "next/dynamic";
 import DeferredMount from "@/components/DeferredMount";
+import PasskeyNudge from "@/components/PasskeyNudge";
 
 const DashboardCharts = dynamic(() => import("./DashboardCharts"), {
   ssr: false,
@@ -596,6 +597,9 @@ export default function DashboardBody({ initial }: { initial: DashboardInitialDa
           </div>
         </div>
       </header>
+
+      {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━ PASSKEY NUDGE */}
+      <PasskeyNudge />
 
       {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━ LICENSE */}
       <LicenseInfoCard />

@@ -86,6 +86,13 @@ describe("proxy — early returns (auth tax ZERO, lines pehle aane chahiye)", ()
     expect(authMock.getUser).not.toHaveBeenCalled();
     expect(authMock.getClaims).not.toHaveBeenCalled();
   });
+
+  it("/reset-password → passthrough (recovery link anonymous hota hai)", async () => {
+    const res = await proxy(req("/reset-password"));
+    expectPassthrough(res);
+    expect(authMock.getUser).not.toHaveBeenCalled();
+    expect(authMock.getClaims).not.toHaveBeenCalled();
+  });
 });
 
 describe("proxy — protected routes: getClaims fast path + getUser fallback", () => {

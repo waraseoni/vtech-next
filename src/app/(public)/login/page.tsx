@@ -1,7 +1,7 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, type ClipboardEvent, type KeyboardEvent } from "react";
 import { supabase, invalidateCachedUser } from "@/lib/supabase";
-import { useRouter } from "next/navigation";
+import { detectPasskeySupport } from "@/lib/passkey-support";
 import {
   LogIn,
   Mail,
@@ -23,16 +23,15 @@ import {
 } from "lucide-react";
 import {
   startAuthentication,
-  browserSupportsWebAuthn,
   browserSupportsWebAuthnAutofill,
   type AuthenticationResponseJSON,
 } from "@simplewebauthn/browser";
 import { usePublicSiteContent } from "../components/public-content-provider";
 import { APP_VERSION_LABEL, APP_VERSION_FULL } from "@/lib/app-version";
 import PullToRefresh from "@/components/PullToRefresh";
-import { isNativeApp } from "@/lib/nativeApp";
 
 type Tab = "staff" | "client";
+const OTP_LEN = 6;
 
 // ── Passkey fetch helpers (server: /api/auth/login) ────────────────────────
 // begin: challenge options laata hai. Email khaali → usernameless (discoverable).
@@ -43,12 +42,25 @@ async function beginPasskey(email: string) {
     body: JSON.stringify({ mode: "passkey-begin", email }),
   });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.error || "Passkey login shuru nahi ho paaya");
+  if (!res.ok) {
+    const err = new Error(data.error || "Passkey login shuru nahi ho paaya") as Error & {
+      code?: string;
+    };
+    // Server 404 bhejta hai jab us email par koi credential hi registered nahi.
+    if (res.status === 404 && /passkey registered/i.test(String(data.error ?? ""))) {
+      err.code = "NO_PASSKEY";
+    }
+    throw err;
+  }
   return data.options;
 }
 
 // verify: assertion bhejta hai, session set hota hai, phir full reload.
-async function verifyAssertion(email: string, assertion: AuthenticationResponseJSON) {
+async function verifyAssertion(
+  email: string,
+  assertion: AuthenticationResponseJSON,
+  next = "/dashboard"
+) {
   const res = await fetch("/api/auth/login", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -61,8 +73,20 @@ async function verifyAssertion(email: string, assertion: AuthenticationResponseJ
     localStorage.setItem("vtech_remember", "true");
   }
   // Intentional full reload: login ke baad RootClient session state fresh init hoti hai
-  // eslint-disable-next-line @next/next/no-location-assign-relative-destination
-  window.location.href = "/dashboard";
+  window.location.href = next;
+}
+
+/** `?next=` sirf same-origin path ho to hi accept karo (open-redirect se bachao). */
+function safeNextPath(raw: string | null): string {
+  if (!raw) return "";
+  try {
+    const url = new URL(raw, window.location.origin);
+    if (url.origin !== window.location.origin) return "";
+    const path = `${url.pathname}${url.search}${url.hash}`;
+    return path.startsWith("/") && !path.startsWith("//") && !path.includes("\\") ? path : "";
+  } catch {
+    return "";
+  }
 }
 
 function TabButton({
@@ -106,7 +130,6 @@ function friendlyName(email: string) {
 
 export default function LoginPage() {
   const content = usePublicSiteContent();
-  useRouter();
   const [tab, setTab] = useState<Tab>("staff");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -120,8 +143,17 @@ export default function LoginPage() {
   // (WebView WebAuthn support karta nahi) — message alag dikhana hai isliye
   // alag state.
   const [inNativeApp, setInNativeApp] = useState(false);
+  const [insecureContext, setInsecureContext] = useState(false);
+  const [passkeyMissing, setPasskeyMissing] = useState(false);
+  const [nextPath, setNextPath] = useState("");
   const [condNonce, setCondNonce] = useState(0);
   const [condActive, setCondActive] = useState(false);
+
+  // Self-service password reset (staff)
+  const [resetOpen, setResetOpen] = useState(false);
+  const [resetEmail, setResetEmail] = useState("");
+  const [resetBusy, setResetBusy] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
 
   // Client OTP state
   const [clientEmail, setClientEmail] = useState("");
@@ -130,6 +162,7 @@ export default function LoginPage() {
   const [info, setInfo] = useState("");
   // Resend cooldown — OTP flood rokne ke liye (sirf UI gate, API pehle se throttle hai).
   const [resendIn, setResendIn] = useState(0);
+  const otpRefs = useRef<Array<HTMLInputElement | null>>([]);
 
   // ── Load saved email ───────────────────────────────────────────────────
   useEffect(() => {
@@ -143,35 +176,17 @@ export default function LoginPage() {
   }, []);
 
   // ── Passkey (biometric) support detect ─────────────────────────────────
+  // Detection ab pure helper me hai (unit-tested). PC par bina authenticator
+  // ke false, native WebView me false, HTTP/LAN me false — sirf HTTPS par
+  // actual fingerprint / Face / Hello / PIN hone par true.
   useEffect(() => {
-    // `browserSupportsWebAuthn()` sirf `PublicKeyCredential` ki presence
-    // check karta hai — PC par bina biometric device ke bhi true deta hai.
-    // Isliye ASLI platform authenticator (fingerprint / Face / Hello) ka
-    // availability check zaroori hai. WebAuthn secure-context (HTTPS ya
-    // localhost) me hi chalega; LAN HTTP par browser API hi nahi deta.
-    //
-    // Android WebView me `PublicKeyCredential` defined hota hai par platform
-    // authenticator wired nahi — tap karne par kuch nahi hota. Isliye native
-    // app me passkey abhi ke liye band rakhte hain.
     let cancelled = false;
     (async () => {
-      const native = isNativeApp();
+      const support = await detectPasskeySupport();
       if (cancelled) return;
-      setInNativeApp(native);
-      if (native || !window.isSecureContext || !browserSupportsWebAuthn()) {
-        setPasskeyReady(false);
-        return;
-      }
-      try {
-        const available =
-          typeof PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable === "function"
-            ? await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable()
-            : false;
-        if (!cancelled) setPasskeyReady(available);
-      } catch {
-        // API block/permission denial = gracefully password-only.
-        if (!cancelled) setPasskeyReady(false);
-      }
+      setPasskeyReady(support.ready);
+      setInNativeApp(support.inNativeApp);
+      setInsecureContext(support.insecureContext);
     })();
     return () => {
       cancelled = true;
@@ -181,6 +196,7 @@ export default function LoginPage() {
   // ── Auto-logoff reason (revoked access / idle timeout) ────────────────
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
+    setNextPath(safeNextPath(params.get("next")));
     const reason = params.get("reason");
     if (reason === "revoked") {
       // URL params sirf browser me hote hain; render me read nahi kar sakte
@@ -224,9 +240,12 @@ export default function LoginPage() {
       localStorage.removeItem("vtech_remember");
     }
 
+    // Passkey support hone par one-time enrollment nudge flag set karo; dashboard
+    // khud check karega ki device already added to nahi hai.
+    if (passkeyReady) localStorage.setItem("vtech_passkey_nudge", "1");
+
     // Intentional full reload: login ke baad RootClient session state fresh initialize hota hai
-    // eslint-disable-next-line @next/next/no-location-assign-relative-destination
-    window.location.href = "/dashboard";
+    window.location.href = nextPath || "/dashboard";
   };
 
   // ─── Passkey login handler (explicit button)
@@ -238,9 +257,18 @@ export default function LoginPage() {
     try {
       const options = await beginPasskey(em);
       const assertion = await startAuthentication({ optionsJSON: options });
-      await verifyAssertion(em, assertion);
+      await verifyAssertion(em, assertion, nextPath || "/dashboard");
     } catch (e) {
-      const cancelled = e instanceof Error && e.name === "NotAllowedError";
+      const err = e as Error & { code?: string };
+      if (err.code === "NO_PASSKEY") {
+        // Server ne bataya ki is email par koi credential registered hi nahi —
+        // user ko generic "fail" message dene ki jagah clear next-step do.
+        setPasskeyMissing(true);
+        setError("");
+        setPasskeyLoading(false);
+        return;
+      }
+      const cancelled = err.name === "NotAllowedError";
       setError(
         cancelled
           ? "Passkey cancel ho gaya ya timeout. Dobara try karein ya password se login karein."
@@ -274,7 +302,7 @@ export default function LoginPage() {
           useBrowserAutofill: true,
         });
         if (cancelled) return;
-        await verifyAssertion("", assertion);
+        await verifyAssertion("", assertion, nextPath || "/dashboard");
       } catch (err) {
         const name = err instanceof Error ? err.name : "";
         // Abort (button/tab-switch/nonce-refresh) = normal, ignore.
@@ -295,11 +323,28 @@ export default function LoginPage() {
       setCondActive(false);
       window.clearTimeout(timer);
     };
-  }, [passkeyReady, tab, condNonce]);
+  }, [passkeyReady, tab, condNonce, nextPath]);
+
+  // ── Staff password reset (self-service) ────────────────────────────────
+  const handleReset = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setResetBusy(true);
+    const to = (resetEmail || email).trim().toLowerCase();
+    const { error: resetError } = await supabase.auth.resetPasswordForEmail(to, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    setResetBusy(false);
+    if (resetError) {
+      setError(resetError.message || "Reset link bhejna fail hua. Dobara try karein.");
+      return;
+    }
+    // Generic message — account existence reveal nahi karta.
+    setResetSent(true);
+  };
 
   // ── Client OTP: send code ──────────────────────────────────────────────
-  const handleSendOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const requestOtp = async () => {
     setError("");
     setInfo("");
     setLoading(true);
@@ -320,7 +365,55 @@ export default function LoginPage() {
     setInfo("OTP aapke email par bheja gaya hai — spam folder bhi check karlein.");
     setOtpStep("verify");
     setResendIn(30);
+    setOtp("");
     setLoading(false);
+    window.setTimeout(() => otpRefs.current[0]?.focus(), 0);
+  };
+
+  const handleSendOtp = (e: React.FormEvent) => {
+    e.preventDefault();
+    void requestOtp();
+  };
+
+  // ── OTP 6-box helpers ───────────────────────────────────────────────────
+  const focusOtp = (i: number) => otpRefs.current[i]?.focus();
+
+  const setOtpAt = (i: number, value: string) => {
+    const chars = Array.from({ length: OTP_LEN }, (_, idx) => otp[idx] ?? "");
+    chars[i] = value;
+    setOtp(chars.join(""));
+  };
+
+  const handleOtpChange = (i: number, raw: string) => {
+    const digit = raw.replace(/\D/g, "").slice(-1);
+    setOtpAt(i, digit);
+    if (digit && i < OTP_LEN - 1) focusOtp(i + 1);
+  };
+
+  const handleOtpPaste = (e: ClipboardEvent<HTMLInputElement>) => {
+    const digits = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, OTP_LEN);
+    if (!digits) return;
+    e.preventDefault();
+    setOtp(digits);
+    focusOtp(Math.min(digits.length, OTP_LEN - 1));
+  };
+
+  const handleOtpKeyDown = (i: number, e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Backspace") {
+      e.preventDefault();
+      if (otp[i]) {
+        setOtpAt(i, "");
+      } else if (i > 0) {
+        setOtpAt(i - 1, "");
+        focusOtp(i - 1);
+      }
+    } else if (e.key === "ArrowLeft" && i > 0) {
+      e.preventDefault();
+      focusOtp(i - 1);
+    } else if (e.key === "ArrowRight" && i < OTP_LEN - 1) {
+      e.preventDefault();
+      focusOtp(i + 1);
+    }
   };
 
   // Resend countdown — 1s ticks, cleanup par timer band (StrictMode safe).
@@ -368,8 +461,7 @@ export default function LoginPage() {
     }
 
     // Intentional full reload: onboarding ke baad RootClient session state fresh initialize hota hai
-    // eslint-disable-next-line @next/next/no-location-assign-relative-destination
-    window.location.href = "/my-account";
+    window.location.href = nextPath || "/my-account";
   };
 
   const switchTab = (t: Tab) => {
@@ -379,6 +471,9 @@ export default function LoginPage() {
     setOtpStep("request");
     setOtp("");
     setResendIn(0);
+    setPasskeyMissing(false);
+    setResetOpen(false);
+    setResetSent(false);
   };
 
   return (
@@ -444,7 +539,10 @@ export default function LoginPage() {
 
             {/* Error message */}
             {error && (
-              <div className="flex items-center gap-2.5 bg-red-500/10 border border-red-500/30 text-red-400 text-sm font-semibold px-4 py-3 rounded-xl mb-5">
+              <div
+                role="alert"
+                className="flex items-center gap-2.5 bg-red-500/10 border border-red-500/30 text-red-400 text-sm font-semibold px-4 py-3 rounded-xl mb-5"
+              >
                 <AlertCircle size={15} className="flex-shrink-0" />
                 {error}
               </div>
@@ -452,7 +550,10 @@ export default function LoginPage() {
 
             {/* Info message */}
             {info && (
-              <div className="flex items-start gap-2.5 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-sm font-semibold px-4 py-3 rounded-xl mb-5">
+              <div
+                role="status"
+                className="flex items-start gap-2.5 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-sm font-semibold px-4 py-3 rounded-xl mb-5"
+              >
                 <KeyRound size={15} className="flex-shrink-0 mt-0.5" />
                 {info}
               </div>
@@ -491,11 +592,28 @@ export default function LoginPage() {
                       </span>
                       <div className="h-px flex-1 bg-app" />
                     </div>
+                    {passkeyMissing && (
+                      <p
+                        role="status"
+                        className="rounded-xl bg-amber-500/10 border border-amber-500/25 px-3 py-2.5 text-[11px] font-semibold text-amber-300"
+                      >
+                        Is email par abhi passkey saved nahi hai. Password se login karke Profile →
+                        Devices me add karein.
+                      </p>
+                    )}
                   </>
                 )}
-                <form onSubmit={handleLogin} className="space-y-4">
+                {insecureContext && import.meta.env.DEV && (
+                  <p className="text-center text-[11px] font-semibold text-amber-300">
+                    Passkey ke liye HTTPS chahiye — abhi password se login karein.
+                  </p>
+                )}
+                <form onSubmit={handleLogin} className="space-y-4" aria-busy={loading}>
                   <div>
-                    <label className="block text-[10px] font-black uppercase tracking-wider text-muted mb-1.5">
+                    <label
+                      htmlFor="staff-email"
+                      className="block text-[10px] font-black uppercase tracking-wider text-muted mb-1.5"
+                    >
                       Email Address
                     </label>
                     <div className="relative">
@@ -504,10 +622,15 @@ export default function LoginPage() {
                         className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-2 pointer-events-none"
                       />
                       <input
+                        id="staff-email"
                         type="email"
                         placeholder="staff@vtech.com"
                         value={email}
-                        onChange={(e) => setEmail(e.target.value)}
+                        onChange={(e) => {
+                          setEmail(e.target.value);
+                          setPasskeyMissing(false);
+                        }}
+                        disabled={loading}
                         required
                         // "webauthn" autocomplete = conditional UI (passkey autofill) ke liye zaroori
                         autoComplete="username webauthn"
@@ -517,7 +640,10 @@ export default function LoginPage() {
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-black uppercase tracking-wider text-muted mb-1.5">
+                    <label
+                      htmlFor="staff-password"
+                      className="block text-[10px] font-black uppercase tracking-wider text-muted mb-1.5"
+                    >
                       Password
                     </label>
                     <div className="relative">
@@ -526,17 +652,22 @@ export default function LoginPage() {
                         className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-2 pointer-events-none"
                       />
                       <input
+                        id="staff-password"
                         type={showPass ? "text" : "password"}
                         placeholder="••••••••"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
+                        disabled={loading}
+                        autoComplete="current-password"
                         required
                         className="w-full pl-10 pr-11 py-3 bg-panel-2 border border-app rounded-xl text-sm text-white font-medium placeholder:text-app outline-none focus:border-blue-500/60 focus:ring-1 focus:ring-blue-500/20 transition-all"
                       />
                       <button
                         type="button"
                         onClick={() => setShowPass((v) => !v)}
-                        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-2 hover:text-muted transition-colors"
+                        aria-label={showPass ? "Password chhupayein" : "Password dikhayein"}
+                        aria-pressed={showPass}
+                        className="absolute right-3.5 top-1/2 -translate-y-1/2 min-h-[44px] min-w-[44px] flex items-center justify-center text-muted-2 hover:text-muted transition-colors"
                       >
                         {showPass ? <EyeOff size={15} /> : <Eye size={15} />}
                       </button>
@@ -547,6 +678,8 @@ export default function LoginPage() {
                     <button
                       type="button"
                       onClick={() => setRememberMe((v) => !v)}
+                      aria-label="Mera email yaad rakhein"
+                      aria-pressed={rememberMe}
                       className={`w-9 h-5 rounded-full transition-all duration-200 flex-shrink-0 relative ${
                         rememberMe ? "bg-blue-600" : "bg-panel-2"
                       }`}
@@ -593,25 +726,81 @@ export default function LoginPage() {
                   )}
                 </form>
 
-                <a
-                  href={content.contact.whatsappHref || content.contact.phoneHref}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="flex items-center justify-center gap-2 min-h-[44px] text-xs font-bold text-muted hover:text-white transition-colors"
-                >
-                  <HelpCircle size={14} />
-                  Password bhool gaye? Admin se sampark karein
-                  <MessageCircle size={13} className="text-muted-2" />
-                </a>
+                <div className="pt-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setResetOpen((v) => !v);
+                      setError("");
+                    }}
+                    aria-expanded={resetOpen}
+                    className="flex items-center justify-center gap-2 w-full min-h-[44px] text-xs font-bold text-muted hover:text-white transition-colors"
+                  >
+                    <HelpCircle size={14} /> Password bhool gaye?
+                  </button>
+
+                  {resetOpen && (
+                    <div className="mt-3 rounded-xl bg-panel-2 border border-app p-3.5 space-y-3">
+                      {resetSent ? (
+                        <p role="status" className="text-xs font-semibold text-emerald-400">
+                          Agar email registered hai to reset link bhej diya gaya. Spam folder bhi
+                          check karlein.
+                        </p>
+                      ) : (
+                        <form onSubmit={handleReset} className="space-y-3" aria-busy={resetBusy}>
+                          <label
+                            htmlFor="reset-email"
+                            className="block text-[10px] font-black uppercase tracking-wider text-muted"
+                          >
+                            Registered staff email
+                          </label>
+                          <input
+                            id="reset-email"
+                            type="email"
+                            placeholder={email || "staff@vtech.com"}
+                            value={resetEmail || email}
+                            onChange={(e) => setResetEmail(e.target.value)}
+                            disabled={resetBusy}
+                            required
+                            className="w-full min-h-[44px] px-3 bg-panel border border-app rounded-xl text-sm text-white outline-none focus:border-blue-500/60"
+                          />
+                          <button
+                            type="submit"
+                            disabled={resetBusy || !(resetEmail || email).trim()}
+                            className="w-full min-h-[44px] rounded-xl bg-blue-600 hover:bg-blue-500 disabled:opacity-60 text-white text-xs font-black flex items-center justify-center gap-2"
+                          >
+                            {resetBusy ? (
+                              <Loader2 size={15} className="animate-spin" />
+                            ) : (
+                              <Mail size={15} />
+                            )}
+                            Reset link bhejein
+                          </button>
+                        </form>
+                      )}
+                      <a
+                        href={content.contact.whatsappHref || content.contact.phoneHref}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="flex items-center justify-center gap-2 min-h-[44px] text-[11px] font-bold text-muted hover:text-white transition-colors"
+                      >
+                        <MessageCircle size={13} /> Ya admin se sampark karein
+                      </a>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 
             {tab === "client" && (
               <div className="space-y-4">
                 {otpStep === "request" ? (
-                  <form onSubmit={handleSendOtp} className="space-y-4">
+                  <form onSubmit={handleSendOtp} className="space-y-4" aria-busy={loading}>
                     <div>
-                      <label className="block text-[10px] font-black uppercase tracking-wider text-muted mb-1.5">
+                      <label
+                        htmlFor="client-email"
+                        className="block text-[10px] font-black uppercase tracking-wider text-muted mb-1.5"
+                      >
                         Apna Register Email
                       </label>
                       <div className="relative">
@@ -620,10 +809,12 @@ export default function LoginPage() {
                           className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-2 pointer-events-none"
                         />
                         <input
+                          id="client-email"
                           type="email"
                           placeholder="aapka@email.com"
                           value={clientEmail}
                           onChange={(e) => setClientEmail(e.target.value)}
+                          disabled={loading}
                           required
                           className="w-full pl-10 pr-4 py-3 bg-panel-2 border border-app rounded-xl text-sm text-white font-medium placeholder:text-app outline-none focus:border-blue-500/60 focus:ring-1 focus:ring-blue-500/20 transition-all"
                         />
@@ -651,41 +842,55 @@ export default function LoginPage() {
                     </button>
                   </form>
                 ) : (
-                  <form onSubmit={handleVerifyOtp} className="space-y-4">
+                  <form onSubmit={handleVerifyOtp} className="space-y-4" aria-busy={loading}>
                     <button
                       type="button"
                       onClick={() => setOtpStep("request")}
-                      className="flex items-center gap-1.5 text-xs font-bold text-muted hover:text-app-2 transition-colors"
+                      className="flex items-center gap-1.5 min-h-[44px] text-xs font-bold text-muted hover:text-app-2 transition-colors"
                     >
                       <ArrowLeft size={13} /> {clientEmail} — change
                     </button>
 
                     <div>
-                      <label className="block text-[10px] font-black uppercase tracking-wider text-muted mb-1.5">
+                      <label
+                        htmlFor="otp-0"
+                        className="block text-[10px] font-black uppercase tracking-wider text-muted mb-1.5"
+                      >
                         OTP Code
                       </label>
-                      <div className="relative">
-                        <KeyRound
-                          size={15}
-                          className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-2 pointer-events-none"
-                        />
-                        <input
-                          type="text"
-                          inputMode="numeric"
-                          autoComplete="one-time-code"
-                          placeholder="••••••"
-                          value={otp}
-                          onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 8))}
-                          required
-                          className="w-full min-h-[48px] pl-10 pr-4 py-3 bg-panel-2 border border-app rounded-xl text-center text-lg font-black tracking-[0.35em] text-white placeholder:tracking-normal placeholder:text-app outline-none focus:border-blue-500/60 focus:ring-1 focus:ring-blue-500/20 transition-all"
-                        />
+                      <div
+                        className="flex items-center justify-between gap-1.5 sm:gap-2"
+                        role="group"
+                        aria-label="OTP code"
+                      >
+                        {Array.from({ length: OTP_LEN }, (_, i) => (
+                          <input
+                            key={i}
+                            id={i === 0 ? "otp-0" : undefined}
+                            ref={(el) => {
+                              otpRefs.current[i] = el;
+                            }}
+                            type="text"
+                            inputMode="numeric"
+                            pattern="[0-9]*"
+                            maxLength={1}
+                            value={otp[i] ?? ""}
+                            onChange={(e) => handleOtpChange(i, e.target.value)}
+                            onPaste={handleOtpPaste}
+                            onKeyDown={(e) => handleOtpKeyDown(i, e)}
+                            autoComplete={i === 0 ? "one-time-code" : "off"}
+                            aria-label={`OTP digit ${i + 1}`}
+                            disabled={loading}
+                            className="w-full min-w-0 min-h-[52px] text-center text-xl font-black text-white bg-panel-2 border border-app rounded-xl outline-none focus:border-blue-500/60 focus:ring-1 focus:ring-blue-500/20 transition-all disabled:opacity-60"
+                          />
+                        ))}
                       </div>
                     </div>
 
                     <button
                       type="submit"
-                      disabled={loading}
-                      className="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-60 text-white py-3 rounded-xl font-black text-sm flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg shadow-blue-900/30"
+                      disabled={loading || otp.length !== OTP_LEN}
+                      className="w-full min-h-[48px] bg-blue-600 hover:bg-blue-500 disabled:opacity-60 text-white py-3 rounded-xl font-black text-sm flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg shadow-blue-900/30"
                     >
                       {loading ? (
                         <>
@@ -700,7 +905,11 @@ export default function LoginPage() {
 
                     <button
                       type="button"
-                      onClick={handleSendOtp}
+                      onClick={() => {
+                        setOtp("");
+                        focusOtp(0);
+                        void requestOtp();
+                      }}
                       disabled={loading || resendIn > 0}
                       className="w-full min-h-[44px] py-2.5 bg-panel-2 border border-app rounded-xl text-xs font-bold text-muted hover:text-white transition-all disabled:opacity-50"
                     >

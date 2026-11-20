@@ -6,7 +6,11 @@
 // nahi karta, browser me undefined milta hai.
 
 const APP_VERSION = (process.env.NEXT_PUBLIC_APP_VERSION || "0.0.0").trim();
-const COMMIT = (process.env.NEXT_PUBLIC_APP_COMMIT || "").trim();
+// Dev me git HEAD badalte hi server aur client chunks alag commit hash pakad
+// sakte hain → hydration mismatch. Isliye commit suffix sirf production build
+// me dikhao; dev me version label hi kaafi hai.
+const COMMIT =
+  process.env.NODE_ENV === "production" ? (process.env.NEXT_PUBLIC_APP_COMMIT || "").trim() : "";
 
 /** Display version string, e.g. "v1.2.3" (optionally + short commit). */
 export const APP_VERSION_LABEL = APP_VERSION ? `v${APP_VERSION}` : "dev";
