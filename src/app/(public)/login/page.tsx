@@ -27,11 +27,14 @@ import {
   type AuthenticationResponseJSON,
 } from "@simplewebauthn/browser";
 import { usePublicSiteContent } from "../components/public-content-provider";
+import { buildWhatsAppLink } from "@/lib/public-site-defaults";
 import { APP_VERSION_LABEL, APP_VERSION_FULL } from "@/lib/app-version";
 import PullToRefresh from "@/components/PullToRefresh";
 
 type Tab = "staff" | "client";
-const OTP_LEN = 6;
+// Supabase/custom SMTP ka email template 8-digit OTP bhejta hai (dekho
+// docs/plans/changelog_aug2026.md). Template badle to yahi badalna hai.
+const OTP_LEN = 8;
 
 // ── Passkey fetch helpers (server: /api/auth/login) ────────────────────────
 // begin: challenge options laata hai. Email khaali → usernameless (discoverable).
@@ -87,6 +90,18 @@ function safeNextPath(raw: string | null): string {
   } catch {
     return "";
   }
+}
+
+/** Staff reset request — WhatsApp me prefilled message; bhejne se pehle edit kiya ja sakta hai. */
+function passwordResetRequestMessage(email: string): string {
+  return [
+    "Namaste Admin,",
+    "",
+    `Mera staff login email: ${email.trim() || "[apna email yahan likhein]"}`,
+    "Is account ka password bhool gaya hoon. Kripya password reset karke naya password set kar dein.",
+    "",
+    "Dhanyavaad",
+  ].join("\n");
 }
 
 function TabButton({
@@ -148,12 +163,6 @@ export default function LoginPage() {
   const [nextPath, setNextPath] = useState("");
   const [condNonce, setCondNonce] = useState(0);
   const [condActive, setCondActive] = useState(false);
-
-  // Self-service password reset (staff)
-  const [resetOpen, setResetOpen] = useState(false);
-  const [resetEmail, setResetEmail] = useState("");
-  const [resetBusy, setResetBusy] = useState(false);
-  const [resetSent, setResetSent] = useState(false);
 
   // Client OTP state
   const [clientEmail, setClientEmail] = useState("");
@@ -325,24 +334,6 @@ export default function LoginPage() {
     };
   }, [passkeyReady, tab, condNonce, nextPath]);
 
-  // ── Staff password reset (self-service) ────────────────────────────────
-  const handleReset = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-    setResetBusy(true);
-    const to = (resetEmail || email).trim().toLowerCase();
-    const { error: resetError } = await supabase.auth.resetPasswordForEmail(to, {
-      redirectTo: `${window.location.origin}/reset-password`,
-    });
-    setResetBusy(false);
-    if (resetError) {
-      setError(resetError.message || "Reset link bhejna fail hua. Dobara try karein.");
-      return;
-    }
-    // Generic message — account existence reveal nahi karta.
-    setResetSent(true);
-  };
-
   // ── Client OTP: send code ──────────────────────────────────────────────
   const requestOtp = async () => {
     setError("");
@@ -375,7 +366,7 @@ export default function LoginPage() {
     void requestOtp();
   };
 
-  // ── OTP 6-box helpers ───────────────────────────────────────────────────
+  // ── OTP box helpers ─────────────────────────────────────────────────────
   const focusOtp = (i: number) => otpRefs.current[i]?.focus();
 
   const setOtpAt = (i: number, value: string) => {
@@ -472,9 +463,12 @@ export default function LoginPage() {
     setOtp("");
     setResendIn(0);
     setPasskeyMissing(false);
-    setResetOpen(false);
-    setResetSent(false);
   };
+
+  const resetRequestHref =
+    buildWhatsAppLink(content, passwordResetRequestMessage(email)) ||
+    content.contact.whatsappHref ||
+    content.contact.phoneHref;
 
   return (
     <PullToRefresh className="min-h-screen">
@@ -629,6 +623,7 @@ export default function LoginPage() {
                         onChange={(e) => {
                           setEmail(e.target.value);
                           setPasskeyMissing(false);
+                          setError("");
                         }}
                         disabled={loading}
                         required
@@ -726,68 +721,29 @@ export default function LoginPage() {
                   )}
                 </form>
 
-                <div className="pt-1">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setResetOpen((v) => !v);
-                      setError("");
+                <div className="pt-1 text-center">
+                  <a
+                    href={resetRequestHref}
+                    target="_blank"
+                    rel="noreferrer"
+                    onClick={(e) => {
+                      if (email.trim()) return;
+                      e.preventDefault();
+                      setError(
+                        "Pehle upar apna staff email bharlein — admin ko email ke saath message jayega."
+                      );
+                      document.getElementById("staff-email")?.focus();
                     }}
-                    aria-expanded={resetOpen}
                     className="flex items-center justify-center gap-2 w-full min-h-[44px] text-xs font-bold text-muted hover:text-white transition-colors"
                   >
-                    <HelpCircle size={14} /> Password bhool gaye?
-                  </button>
-
-                  {resetOpen && (
-                    <div className="mt-3 rounded-xl bg-panel-2 border border-app p-3.5 space-y-3">
-                      {resetSent ? (
-                        <p role="status" className="text-xs font-semibold text-emerald-400">
-                          Agar email registered hai to reset link bhej diya gaya. Spam folder bhi
-                          check karlein.
-                        </p>
-                      ) : (
-                        <form onSubmit={handleReset} className="space-y-3" aria-busy={resetBusy}>
-                          <label
-                            htmlFor="reset-email"
-                            className="block text-[10px] font-black uppercase tracking-wider text-muted"
-                          >
-                            Registered staff email
-                          </label>
-                          <input
-                            id="reset-email"
-                            type="email"
-                            placeholder={email || "staff@vtech.com"}
-                            value={resetEmail || email}
-                            onChange={(e) => setResetEmail(e.target.value)}
-                            disabled={resetBusy}
-                            required
-                            className="w-full min-h-[44px] px-3 bg-panel border border-app rounded-xl text-sm text-white outline-none focus:border-blue-500/60"
-                          />
-                          <button
-                            type="submit"
-                            disabled={resetBusy || !(resetEmail || email).trim()}
-                            className="w-full min-h-[44px] rounded-xl bg-blue-600 hover:bg-blue-500 disabled:opacity-60 text-white text-xs font-black flex items-center justify-center gap-2"
-                          >
-                            {resetBusy ? (
-                              <Loader2 size={15} className="animate-spin" />
-                            ) : (
-                              <Mail size={15} />
-                            )}
-                            Reset link bhejein
-                          </button>
-                        </form>
-                      )}
-                      <a
-                        href={content.contact.whatsappHref || content.contact.phoneHref}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="flex items-center justify-center gap-2 min-h-[44px] text-[11px] font-bold text-muted hover:text-white transition-colors"
-                      >
-                        <MessageCircle size={13} /> Ya admin se sampark karein
-                      </a>
-                    </div>
-                  )}
+                    <HelpCircle size={14} /> Password bhool gaye? Admin se sampark karein
+                    <MessageCircle size={13} className="text-muted-2" />
+                  </a>
+                  <p className="text-[10px] font-semibold text-muted-2">
+                    Staff email IDs internal hain — email par reset link nahi aata. Message me aapka
+                    email aur reset request pehle se likha hoga; bhejne se pehle edit kar sakte
+                    hain.
+                  </p>
                 </div>
               </div>
             )}
