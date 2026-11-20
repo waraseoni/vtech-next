@@ -4,6 +4,8 @@ Har kaam ke liye: plan + todo banate hain, jo complete ho jata hai use mark kart
 
 - `[ ]` = pending / `[x]` = complete
 - Commits: `docs/COMMITS.md` (agar bana ho) — warna neeche "Deployed" section.
+- **Saare pending items ek jagah:** `docs/plans/pending_work_2026-11-20.md`
+  (20 Nov 2026 scan — user action, perf/RSC, security, data, features).
 
 ---
 
