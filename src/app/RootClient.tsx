@@ -71,6 +71,7 @@ import { useAppBoot } from "./useAppBoot";
 import { hardReload } from "@/lib/hardRefresh";
 import { App } from "@capacitor/app";
 import PullToRefresh from "@/components/PullToRefresh";
+import ClearCacheButton from "@/components/ClearCacheButton";
 import { ThemeToggle } from "@/app/components/ui/ThemeToggle";
 import { DensityToggle } from "@/app/components/ui/DensityToggle";
 import { useDensity } from "@/hooks/useDensity";
@@ -1036,6 +1037,9 @@ function SidebarNav({
                   Images
                 </Link>
               </li>
+              <li>
+                <ClearCacheButton compact onBeforeClear={onNavClick} />
+              </li>
             </SubMenu>
 
             {/* ══ DEVELOPER ════════════════════════════════════════════════ */}
@@ -1912,6 +1916,9 @@ export default function RootClient({
                       </Link>
                     )}
                     <div className="border-t border-app-2 dark:border-app-2 mt-1 pt-1">
+                      <div className="px-1 pb-1">
+                        <ClearCacheButton onBeforeClear={() => setDropdownOpen(false)} />
+                      </div>
                       <button
                         onClick={handleLogout}
                         className="w-full flex items-center gap-3 px-3 py-2.5 text-xs font-bold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-xl transition-all"
