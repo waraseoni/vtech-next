@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.84.1](https://github.com/waraseoni/vtech-next/compare/v1.84.0...v1.84.1) (2026-11-20)
+
+### Bug Fixes
+
+* **login:** 8-digit OTP, admin reset fallback and prefilled WhatsApp request ([1979ee8](https://github.com/waraseoni/vtech-next/commit/1979ee8afc7fb825bd6a3c5850169426e8869158))
+
 ## [1.84.0](https://github.com/waraseoni/vtech-next/compare/v1.83.0...v1.84.0) (2026-11-20)
 
 ### Features
