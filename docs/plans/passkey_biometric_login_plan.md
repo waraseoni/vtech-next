@@ -1,6 +1,6 @@
 # Staff Passkey / Biometric Login — Design Doc + Implementation Plan
 
-Created: 2026-09-17 · Status: **DESIGN LOCKED — code COMPLETE (Option B custom WebAuthn, 18 Oct 2026) — pending migration apply + device QA**
+Created: 2026-09-17 · Status: **DESIGN LOCKED — code COMPLETE (Option B custom WebAuthn, 18 Oct 2026) — migration APPLIED ✅ (20 Nov 2026) — device QA + release tag pending**
 Scope: Staff/admin/developer ke liye password ke saath **optional WebAuthn (passkey) fast-login**.
 PIN **rejected** (decision record §3). Client portal untouched.
 
@@ -32,29 +32,29 @@ PIN **rejected** (decision record §3). Client portal untouched.
 
 ## 2. Existing building blocks (reuse)
 
-| Cheez | File | Note |
-|---|---|---|
-| Login API (modes: password/otp/verify-otp) | `src/app/api/auth/login/route.ts` | Isi me passkey modes add honge |
-| Cookie server client | `src/lib/api-auth.ts` `getServerSupabase()` | @supabase/ssr, cookie+RLS |
-| Login throttle (email+ip lockout) | `src/lib/login-throttle.ts` (via login route) | Passkey attempts bhi iske through |
-| Login UI | `src/app/(public)/login/page.tsx` | Passkey button yahi |
-| Roles | `profiles.role` — `admin`/`developer`/`staff`/`client` | `requireStaffWithRole` pattern |
-| Settings page | `src/app/settings/page.tsx` | Device management UI yahan ya alag |
+| Cheez                                      | File                                                   | Note                               |
+| ------------------------------------------ | ------------------------------------------------------ | ---------------------------------- |
+| Login API (modes: password/otp/verify-otp) | `src/app/api/auth/login/route.ts`                      | Isi me passkey modes add honge     |
+| Cookie server client                       | `src/lib/api-auth.ts` `getServerSupabase()`            | @supabase/ssr, cookie+RLS          |
+| Login throttle (email+ip lockout)          | `src/lib/login-throttle.ts` (via login route)          | Passkey attempts bhi iske through  |
+| Login UI                                   | `src/app/(public)/login/page.tsx`                      | Passkey button yahi                |
+| Roles                                      | `profiles.role` — `admin`/`developer`/`staff`/`client` | `requireStaffWithRole` pattern     |
+| Settings page                              | `src/app/settings/page.tsx`                            | Device management UI yahan ya alag |
 
 ## 3. Decision Record (locked)
 
-| # | Decision | Choice | Rationale |
-|---|---|---|---|
-| D1 | PIN vs Biometric | **Biometric (WebAuthn/passkey). PIN REJECTED.** | PIN = 4–6 digit = chhota brute-force space; phishable; browser ke paas built-in PIN unlock nahi. Passkey = phishing-resistant, device-level (fingerprint/face/PIN OS se), fatigue khatam. |
-| D2 | Password role | **Password = primary ka hamesha. Passkey = optional fast-login.** | Device lost / new device / OS reset par fallback zaroori. Passkey kabhi sole-auth nahi. |
-| D3 | Who | **Sirf `staff`/`admin`/`developer`.** Client portal untouched (alag flow, alag risk). | Client = low re-login frequency; spec keep small. |
-| D4 | Enrollment | **Self-service, password re-auth ke saath.** Har user apni device passkey register kare. Admin list/remove bhi kar sake. | Staff ki device management admin par dump mat karo. |
-| D5 | User verification | `userVerification: "preferred"` | Fingerprint nahi hua to device PIN/pass fallback (convenience). `required` = 100% biometric, par shared/weak devices par friction. Quick-login use-case me preferred theek. |
-| D6 | Attestation | `none` (privacy), authenticator = `platform` preferred + `cross-platform` allowed | AOP's device attestation ki zarurat nahi. |
-| D7 | **Discoverable + Conditional UI** | `residentKey: "required"` → usernameless (email optional). Explicit button + **conditional UI** (`useBrowserAutofill` — browser autofill me passkey dikhata hai; finger rakhne par seedha login, bina button) | Fingerprint bina email, bina button bhi chale. |
-| D8 | Session issue (passkey verify ke baad) | **`admin.generateLink({type:'recovery', email})` → `getServerSupabase().auth.verifyOtp({type:'recovery', token_hash})`** — service-role + server cookie client | **Naya (spike 18 Oct 2026):** `admin.createSession` available nahi tha. generateLink token response me deta hai (**email send nahi hoti**), server-side one-time consume → dummy-email/free-tier safe. `email_confirm:true` safety fallback (§8). |
-| D9 | Throttle | Passkey login bhi `checkLockout` + `recordFailure`. Email diya → email key; usernameless → `ip:<ip>` key | Abusive attempts same hi door se rukenge. |
-| D10 | Clone protection | `sign_count` stored + monotonic check; mismatch → verify reject + log | Device clone / fingerprint replay guard. |
+| #   | Decision                               | Choice                                                                                                                                                                                                        | Rationale                                                                                                                                                                                                                                         |
+| --- | -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| D1  | PIN vs Biometric                       | **Biometric (WebAuthn/passkey). PIN REJECTED.**                                                                                                                                                               | PIN = 4–6 digit = chhota brute-force space; phishable; browser ke paas built-in PIN unlock nahi. Passkey = phishing-resistant, device-level (fingerprint/face/PIN OS se), fatigue khatam.                                                         |
+| D2  | Password role                          | **Password = primary ka hamesha. Passkey = optional fast-login.**                                                                                                                                             | Device lost / new device / OS reset par fallback zaroori. Passkey kabhi sole-auth nahi.                                                                                                                                                           |
+| D3  | Who                                    | **Sirf `staff`/`admin`/`developer`.** Client portal untouched (alag flow, alag risk).                                                                                                                         | Client = low re-login frequency; spec keep small.                                                                                                                                                                                                 |
+| D4  | Enrollment                             | **Self-service, password re-auth ke saath.** Har user apni device passkey register kare. Admin list/remove bhi kar sake.                                                                                      | Staff ki device management admin par dump mat karo.                                                                                                                                                                                               |
+| D5  | User verification                      | `userVerification: "preferred"`                                                                                                                                                                               | Fingerprint nahi hua to device PIN/pass fallback (convenience). `required` = 100% biometric, par shared/weak devices par friction. Quick-login use-case me preferred theek.                                                                       |
+| D6  | Attestation                            | `none` (privacy), authenticator = `platform` preferred + `cross-platform` allowed                                                                                                                             | AOP's device attestation ki zarurat nahi.                                                                                                                                                                                                         |
+| D7  | **Discoverable + Conditional UI**      | `residentKey: "required"` → usernameless (email optional). Explicit button + **conditional UI** (`useBrowserAutofill` — browser autofill me passkey dikhata hai; finger rakhne par seedha login, bina button) | Fingerprint bina email, bina button bhi chale.                                                                                                                                                                                                    |
+| D8  | Session issue (passkey verify ke baad) | **`admin.generateLink({type:'recovery', email})` → `getServerSupabase().auth.verifyOtp({type:'recovery', token_hash})`** — service-role + server cookie client                                                | **Naya (spike 18 Oct 2026):** `admin.createSession` available nahi tha. generateLink token response me deta hai (**email send nahi hoti**), server-side one-time consume → dummy-email/free-tier safe. `email_confirm:true` safety fallback (§8). |
+| D9  | Throttle                               | Passkey login bhi `checkLockout` + `recordFailure`. Email diya → email key; usernameless → `ip:<ip>` key                                                                                                      | Abusive attempts same hi door se rukenge.                                                                                                                                                                                                         |
+| D10 | Clone protection                       | `sign_count` stored + monotonic check; mismatch → verify reject + log                                                                                                                                         | Device clone / fingerprint replay guard.                                                                                                                                                                                                          |
 
 ## 4. Data model (migration — apply post-season)
 
@@ -120,18 +120,18 @@ create index user_passkeys_credential_idx on user_passkeys(credential_id);
 
 ## 6. Files (likely touched)
 
-| Area | File |
-|---|---|
-| Deps (ADD) | `@simplewebauthn/server`, `@simplewebauthn/browser` |
-| WebAuthn lib | `src/lib/passkeys.ts` (new) — options/verify wrappers, challenge cookie helpers |
+| Area                                  | File                                                                                  |
+| ------------------------------------- | ------------------------------------------------------------------------------------- |
+| Deps (ADD)                            | `@simplewebauthn/server`, `@simplewebauthn/browser`                                   |
+| WebAuthn lib                          | `src/lib/passkeys.ts` (new) — options/verify wrappers, challenge cookie helpers       |
 | Admin supabase client (session issue) | `src/lib/api-auth.ts` ya `src/lib/admin.ts` — `getServerSupabaseAdmin()` service role |
-| Login API | `src/app/api/auth/login/route.ts` — modes `passkey-begin`, `passkey-verify` |
-| Enroll API | `src/app/api/passkey/register-begin/route.ts` + `register-finish/route.ts` (new) |
-| Device mgmt API | `src/app/api/passkey/devices/route.ts` (new) — list/rename/delete (+admin delete-all) |
-| Migration | `supabase/migrations/YYYYMMDD_passkey_login.sql` (new) + full-schema fold-in |
-| Login UI | `src/app/(public)/login/page.tsx` — passkey button + error states |
-| Settings UI | `src/app/settings/page.tsx` (ya `/settings/devices`) — enroll + list + manage |
-| Tests | `src/**/*.test.ts` — throttle-path unit tests; webauthn verification mocked |
+| Login API                             | `src/app/api/auth/login/route.ts` — modes `passkey-begin`, `passkey-verify`           |
+| Enroll API                            | `src/app/api/passkey/register-begin/route.ts` + `register-finish/route.ts` (new)      |
+| Device mgmt API                       | `src/app/api/passkey/devices/route.ts` (new) — list/rename/delete (+admin delete-all) |
+| Migration                             | `supabase/migrations/YYYYMMDD_passkey_login.sql` (new) + full-schema fold-in          |
+| Login UI                              | `src/app/(public)/login/page.tsx` — passkey button + error states                     |
+| Settings UI                           | `src/app/settings/page.tsx` (ya `/settings/devices`) — enroll + list + manage         |
+| Tests                                 | `src/**/*.test.ts` — throttle-path unit tests; webauthn verification mocked           |
 
 ## 7. Non-goals / out-of-scope
 
@@ -143,15 +143,15 @@ create index user_passkeys_credential_idx on user_passkeys(credential_id);
 
 ## 8. Risks & Mitigations
 
-| Risk | Likelihood | Impact | Mitigation |
-|---|---|---|---|
-| `admin.createSession` available nahi (SPIKE CONFIRMED) | **HIT** | High | Naya D8: `generateLink(recovery)` + `verifyOtp(token_hash)` (§0/§8). Fallback: `magiclink` type, ya dummy users par `admin.updateUserById(uid,{email_confirm:true})`. |
-| Shared office PCs — multiple passkeys boundary | High | Medium | Har user apni device par enroll; `allowedCredentials` scoped to that email's user_id; remove on staff exit |
-| Device lost / OS reset | Medium | Medium | Password hamesha fallback; stale credential remove |
-| Fingerprint rejections on dirty/cheap readers | Medium | Low | `userVerification: "preferred"`; device PIN fallback OS-level |
-| Throttle bypass via passkey endpoint | Medium | Medium | Same `checkLockout`/`recordFailure` reuse |
-| Replay / clone | Low | High | sign_count monotonic + challenge cookie one-time expiry |
-| RLS write from browser client | Medium | High | INSERT/DELETE sirf service-role API; browser par SELECT-only policy |
+| Risk                                                   | Likelihood | Impact | Mitigation                                                                                                                                                            |
+| ------------------------------------------------------ | ---------- | ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `admin.createSession` available nahi (SPIKE CONFIRMED) | **HIT**    | High   | Naya D8: `generateLink(recovery)` + `verifyOtp(token_hash)` (§0/§8). Fallback: `magiclink` type, ya dummy users par `admin.updateUserById(uid,{email_confirm:true})`. |
+| Shared office PCs — multiple passkeys boundary         | High       | Medium | Har user apni device par enroll; `allowedCredentials` scoped to that email's user_id; remove on staff exit                                                            |
+| Device lost / OS reset                                 | Medium     | Medium | Password hamesha fallback; stale credential remove                                                                                                                    |
+| Fingerprint rejections on dirty/cheap readers          | Medium     | Low    | `userVerification: "preferred"`; device PIN fallback OS-level                                                                                                         |
+| Throttle bypass via passkey endpoint                   | Medium     | Medium | Same `checkLockout`/`recordFailure` reuse                                                                                                                             |
+| Replay / clone                                         | Low        | High   | sign_count monotonic + challenge cookie one-time expiry                                                                                                               |
+| RLS write from browser client                          | Medium     | High   | INSERT/DELETE sirf service-role API; browser par SELECT-only policy                                                                                                   |
 
 ## 9. Implementation phases + todo
 
@@ -159,10 +159,12 @@ create index user_passkeys_credential_idx on user_passkeys(credential_id);
 > Execution window: **post-season** (G3 SAFE-no abhi).
 
 ### Phase 0 — Decisions — DONE (locked in this doc §3)
+
 - [x] Design decisions D1–D10 locked (PIN rejected, passkey optional, preferred user-verification).
 - [x] WebAuthn standard flow agreed (challenge cookie + admin.createSession).
 
-### Phase 1 — Foundations (spike + deps)  ~2–3 h
+### Phase 1 — Foundations (spike + deps) ~2–3 h
+
 - [ ] Spike: verify `supabase.auth.admin.createSession` exists in pinned `@supabase/supabase-js`.
       (If not: `docs/plans/passkey_biometric_login_plan.md` §8 fallback follow + update decision D8.)
 - [ ] `npm i @simplewebauthn/server @simplewebauthn/browser`
@@ -171,23 +173,27 @@ create index user_passkeys_credential_idx on user_passkeys(credential_id);
       (httpOnly, signed, 5 min, one-time), base64url helpers.
 
 ### Phase 2 — Enrollment ~3 h
-- [ ] Migration `supabase/migrations/YYYYMMDD_passkey_login.sql` (table + RLS + grants + trigger)
-      + full-schema fold-in (`20260913000000_final_full_schema_idempotent.sql`).
+
+- [x] Migration `supabase/migrations/20261018_passkey_login.sql` (table + RLS + grants + trigger) + full-schema fold-in — **APPLIED ✅ 20 Nov 2026** (object-level verify; tracking table absent).
+      `docs/TODO.md` §Phase 2 also updated.
 - [ ] `POST /api/passkey/register-begin` (auth + password re-auth + challenge cookie).
 - [ ] `POST /api/passkey/register-finish` (verify, INSERT service-role, dup-credential reject).
 - [ ] Device mgmt `src/app/api/passkey/devices/route.ts` — GET/PATCH(rename)/DELETE (self) +
       DELETE?user_id= (admin revoke-all).
 
 ### Phase 3 — Login flow ~3 h
+
 - [x] `POST /api/auth/login` mode=`passkey-begin` (email optional; allowedCredentials ya usernameless `[]`, challenge cookie).
 - [x] `POST /api/auth/login` mode=`passkey-verify` (verify + sign_count + session mint `generateLink`→`verifyOtp` + cookies + throttle).
 
 ### Phase 4 — UI ~3–4 h
+
 - [x] Login page: "Fingerprint se login karein" button (staff section ke under) + **email optional** (usernameless) + error/loading states + "support nahi" fallback.
 - [x] /profile → "Devices (Fingerprint Login)": enroll button, device list (name/last_used), rename, remove. (`src/components/PasskeyDevices.tsx`)
 - [ ] Hindi messages: consistent with existing auth error style.
 
 ### Phase 5 — Tests + QA ~3–4 h
+
 - [ ] Unit: throttle path in passkey modes (locked/left attempts), challenge cookie expiry/one-time.
 - [ ] Unit: `sign_count` monotonic reject (mocked webauthn verify).
 - [ ] Manual matrix:
@@ -201,6 +207,7 @@ create index user_passkeys_credential_idx on user_passkeys(credential_id);
   - [ ] `npx tsc --noEmit` + `npx eslint` + `npx vitest run` + `npm run build` green.
 
 ### Phase 6 — Deploy gate (post-season)
+
 - [ ] README / deployment note: passkey needs HTTPS + stable rpID (custom domain prefer; Vercel URL bhi chalega par domain change = passkeys invalid).
 - [ ] User applies migration via Supabase SQL Editor (idempotent; ui report SELECT confirm).
 - [ ] Release tag + CHANGELOG entry (repo convention).

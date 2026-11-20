@@ -64,17 +64,17 @@ Commit: `test(passkey): QA matrix sign-off + docs sync`
 
 ## Sprint P6 — Deploy gate (USER + release, post-season)
 
-- [ ] USER: migration apply (Supabase SQL Editor, idempotent) + REST probe confirm
+- [x] USER: migration apply — **DONE ✅ 20 Nov 2026** (object-level verify: `user_passkeys` table + RLS + indexes + trigger; REST probe ab redundant)
 - [ ] USER: HTTPS + **stable rpID** confirm (custom domain prefer; **domain change = passkeys invalid**)
 - [ ] Prod deploy sirf G3 SAFE-no ke baad + release tag + CHANGELOG
 
 ## Risks (top 3)
 
-| Risk | Kab | Mitigation |
-|---|---|---|
-| `createSession` missing pinned me | P1 first | STOP + D8 fallback update — code continue nahi |
-| Shared office PC, multiple passkeys | P4 | allowCredentials per-user scoped; staff exit par admin revoke |
-| rpID localhost vs prod domain | P6 | env-driven rpID + deploy note |
+| Risk                                | Kab      | Mitigation                                                    |
+| ----------------------------------- | -------- | ------------------------------------------------------------- |
+| `createSession` missing pinned me   | P1 first | STOP + D8 fallback update — code continue nahi                |
+| Shared office PC, multiple passkeys | P4       | allowCredentials per-user scoped; staff exit par admin revoke |
+| rpID localhost vs prod domain       | P6       | env-driven rpID + deploy note                                 |
 
 ## Out of scope (design §7)
 
@@ -89,6 +89,7 @@ but this backend returns `404 passkey_disabled` (no dashboard toggle) → **Opti
 `verifyOtp({token_hash})`, fallback `magiclink` → `updateUserById({email_confirm})`.
 
 Delivered:
+
 - `src/lib/passkeys.ts` (RP config, signed 5-min one-time challenge cookie, base64url, `isCounterAcceptable`) + `src/lib/passkeys.test.ts` (13 tests).
 - `supabase/migrations/20261018_passkey_login.sql` — `user_passkeys` + FK cascade + unique `credential_id` + touch trigger + RLS (own SELECT / staff SELECT) + grants + `NOTIFY pgrst`.
 - APIs: `register-begin`, `register-finish` (dup → 409), `devices` (GET/PATCH/DELETE + admin `?user_id=` revoke-all).
@@ -98,5 +99,6 @@ Delivered:
 Gates: `tsc` 0 · `eslint` (touched) 0 · `vitest` passkeys 13/13 (full suite at close).
 
 Pending (user):
+
 - P6: migration apply + REST probe; HTTPS + stable rpID.
 - P5 manual device matrix (Windows Hello mandatory; Android/iOS best-effort; lost-device → password → remove; RLS probe; password regression).

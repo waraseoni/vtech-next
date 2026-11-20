@@ -10,30 +10,34 @@
 
 ## 0. At a glance
 
-| Category                                          | Items | Sabse pehla kaam                                     |
-| ------------------------------------------------- | ----: | ---------------------------------------------------- |
-| A. User action (live DB / device / visual verify) |     9 | Passkey migration apply + device QA                  |
-| B. Code work — perf/RSC                           |     6 | RSC Phase A (`/reports/client-parts-service`)        |
-| C. Security debt                                  |     1 | RPC grants hardening (migration likhna)              |
-| D. Data correctness                               |     2 | Loans status alignment (low priority)                |
-| E. Planned features (not started)                 |     3 | Login UX / multi-brand / RQ rollout — owner decision |
+| Category                                          | Items | Sabse pehla kaam                                  |
+| ------------------------------------------------- | ----: | ------------------------------------------------- |
+| A. User action (live DB / device / visual verify) |     8 | Passkey device QA (migration ✅ applied)          |
+| B. Code work — perf/RSC                           |     6 | RSC Phase B (3 reports) — Phase A ✅ local done   |
+| C. Security debt                                  |     1 | RPC grants hardening (migration likhna)           |
+| D. Data correctness                               |     2 | Loans status alignment (low priority)             |
+| E. Planned features (not started)                 |     3 | Login UX ✅ local done; multi-brand / RQ decision |
 
 ---
 
 ## A. User action pending (code ready, verify/apply baaki)
 
-### A1. Passkey / Biometric login (WebAuthn) — 🔴 highest owner dependency
+### A1. Passkey / Biometric login (WebAuthn) — 🟠 device QA baaki
 
-- **Status:** code complete (Option B custom WebAuthn), UI live.
-- [ ] Migration apply: `supabase/migrations/20261018_passkey_login.sql`
-      (`user_passkeys` + RLS + grants + trigger). Verify: REST probe table 200.
+- **Status:** code complete (Option B custom WebAuthn), UI live, **migration APPLIED ✅**
+  (20 Nov 2026 object-level verify: `user_passkeys` table 10 cols, 2 RLS
+  policies, 4 indexes, touch trigger, grants, 1 live row).
+- [x] Migration apply: `supabase/migrations/20261018_passkey_login.sql` — **DONE**
+      (tracking table absent tha, objects se confirm).
 - [ ] Manual device matrix: Windows Hello · Android fingerprint · iOS Face ID ·
       password regression · lost-device/revoke · RLS probe (anon ko 0 rows).
 - [ ] Final gates: `tsc` · `eslint` · `vitest` · `build`.
 - [ ] Deploy gate: HTTPS + stable rpID note (domain change = passkeys invalid),
       release tag + CHANGELOG.
-- **Source:** `docs/TODO.md` §Staff Passkey (Phase 5/6).
-- **Note:** migration na lage to feature silently off (graceful) — koi crash nahi.
+- **Source:** `docs/TODO.md` §Staff Passkey (Phase 5/6),
+  `docs/plans/rsc_implementation_best_plan_2026.md` §SQL migrations.
+- **Note:** migration ab applied hai; graceful-off fallback ab sirf safety net
+  hai. Device QA ke bina release tag mat lagana.
 
 ### A2. Public site DB content — WS-8d/8e optional
 
@@ -88,11 +92,20 @@
 
 ## B. Code work — Perf / RSC (no DB risk)
 
-### B1. RSC Phase A — `/reports/client-parts-service` seed 🟢 recommended next
+> **Audit (20 Nov):** `/clients/*` (10 pages) aur `/jobs/*` (11 pages) me
+> **sab data-backed pages pehle se RSC-seeded hain** (server page ya server
+> layout + `*SeedProvider`). Redirect-only aur `clients/new` form ko chhod kar
+> koi RSC gap nahi. Detail: `rsc_implementation_best_plan_2026.md` §1.
 
-- [ ] `src/lib/server-client-parts-service.ts` + server `page.tsx` + client body split.
-- [ ] Seed-aware hook (skip-flags + `seedMatchesFilters`), zero logic change.
-- Effort ~2.5-3 h · risk low (fresh page, rollback = revert `page.tsx`).
+### B1. RSC Phase A — `/reports/client-parts-service` seed ✅ LOCAL DONE (uncommitted)
+
+- [x] `src/lib/client-parts-service-data.ts` (neutral query layer) + server
+      `page.tsx` + client `ClientPartsServiceBody.tsx` split; 3 reads ek wave.
+- [x] Seed-aware `initialData` (key match par hi), graceful `null` fallback.
+- [x] Gates: tsc 0 · eslint 0 · prettier OK · vitest 688/688 · `next build` ✓.
+- [ ] **User visual verify** (filters, month nav, expand, CSV) authenticated session me.
+- [ ] Commit/push — user ne rokha hai (approval ke baad).
+- Effort ~2.5 h · risk low (rollback = 3 files revert, koi DB change nahi).
 - **Source:** `docs/plans/rsc_implementation_best_plan_2026.md` §5 Phase A.
 
 ### B2. RSC Phase B — 3 report pages (client-fetch abhi bhi)
@@ -168,13 +181,18 @@
 
 ## E. Planned features — not started (owner decision chahiye)
 
-### E1. Login page friendly UX revamp
+### E1. Login page friendly UX revamp ✅ LOCAL DONE (uncommitted)
 
-- Current login still `Tab = "staff" | "client"` (2 tabs, friction).
-- Plan ready: staff-first default, client OTP alag card, biometric messaging
-  friendlier, "Track job without login" banner.
-- **Source:** `docs/plans/login_page_friendly_ux_plan.md`.
-- Effort ~1 session · risk low (public page, no DB).
+- [x] Pill switcher (staff-first), hero passkey card (`passkeyReady` gate),
+      negative disclaimers cleanup, welcome chip, admin help link, OTP polish,
+      44px touch targets, track-job gradient card.
+- [x] Gates: tsc 0 · eslint 0 · prettier OK · vitest 688/688 · browser smoke
+      (login 200, tab switch OK, console errors 0).
+- [ ] **User visual QA** real device par (fingerprint button, mobile keyboard,
+      OTP resend countdown).
+- [ ] Commit/push — user ne rokha hai.
+- Auth/API/DB logic unchanged; rollback = `login/page.tsx` revert.
+- **Source:** `docs/plans/login_page_friendly_ux_plan.md` §6.
 
 ### E2. Multi-brand architecture (service + job ID sequencing)
 
@@ -212,10 +230,11 @@
 
 ## G. Suggested order (next 3 sessions)
 
-1. **B1 (RSC pilot)** — 3 h, zero risk, measurable win; template bhi ban jayega.
+1. ✅ **B1 (RSC pilot)** — local done (uncommitted); visual verify baaki.
 2. **C (RPC grants)** — security debt, high value; migration + read-only sim pehle,
    apply owner approval ke baad.
-3. **A1 (passkey)** — user ke paas 15 min ka kaam (migration + ek device), phir
-   release tag.
+3. **A1 (passkey)** — migration ✅ done; user ke paas ab device QA + HTTPS/rpID
+   check (15 min), phir release tag.
 
-Baaki (B2/B3, E1) tab jab owner bole.
+Abhi **commit/push nahi** — user ne rokha hai. Visual verify ke baad commit,
+phir B2 (3 reports) ya C (RPC grants), jo owner bole.

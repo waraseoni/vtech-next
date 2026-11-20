@@ -423,8 +423,9 @@ Base messenger already live (`30aae41`). Ye round un requested features add kart
 > Design locked — `docs/plans/passkey_biometric_login_plan.md`. PIN REJECTED (weak).
 > Password = hamesha primary; passkey = optional fast-login (Windows Hello / Touch ID / Face ID /
 > Android fingerprint). Client portal untouched. **Status: Option B (custom WebAuthn) implemented** — native Supabase
-> passkeys blocked (`passkey_disabled`, no dashboard toggle). Manual device QA + migration apply pending.
-> Total ≈ 12–16 h dev + migration apply/QA.
+> passkeys blocked (`passkey_disabled`, no dashboard toggle). **Migration APPLIED ✅**
+> (20 Nov 2026, object-level verify — `user_passkeys` + RLS + indexes + trigger).
+> Manual device QA pending. Total ≈ 12–16 h dev + migration apply/QA.
 
 ### Phase 1 — Foundations (spike + deps)
 
@@ -435,7 +436,7 @@ Base messenger already live (`30aae41`). Ye round un requested features add kart
 
 ### Phase 2 — Enrollment
 
-- [x] Migration `supabase/migrations/20261018_passkey_login.sql` (user_passkeys + RLS + grants + trigger) — **apply pending (user)**
+- [x] Migration `supabase/migrations/20261018_passkey_login.sql` (user_passkeys + RLS + grants + trigger) — **APPLIED ✅ 20 Nov 2026** (live: 10 cols, 2 policies, 4 indexes, 1 trigger, 1 row)
 - [x] `POST /api/passkey/register-begin` (auth + password re-auth + challenge)
 - [x] `POST /api/passkey/register-finish` (verify + INSERT service-role, dup reject → 409)
 - [x] Device mgmt `src/app/api/passkey/devices/route.ts` — list/rename/delete + admin revoke-all
@@ -457,7 +458,7 @@ Base messenger already live (`30aae41`). Ye round un requested features add kart
 
 ### Phase 6 — Deploy gate (post-season)
 
-- [ ] HTTPS + stable rpID note (domain change = passkeys invalid); migration apply (user); release tag + CHANGELOG
+- [ ] HTTPS + stable rpID note (domain change = passkeys invalid); release tag + CHANGELOG (migration ✅ done)
 
 ---
 

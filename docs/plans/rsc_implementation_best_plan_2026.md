@@ -1,6 +1,7 @@
 # RSC Implementation — Best Plan (2026)
 
-> **Status:** Plan only — execution pending user approval per phase.
+> **Status:** Phase A (pilot) local implemented — commit/push user approval ke
+> baad; Phase B/C plan only.
 > **Audit date:** 20 Nov 2026 · **Repo:** vtech-next (Next.js, cookie-auth staff app)
 > **Cross-ref:** `docs/plans/rsc_phase4_plan.md` (P1 dashboard ✅, P2 jobs ✅, P3 optional),
 > `docs/plans/perf_fastest_plan_2026.md` (Phase 3 backlog, Phase 4c rejected),
@@ -58,6 +59,44 @@ Admin/tools: developer, back-office, backup, `settings/*`, sync, images,
 
 **Exception (RSC candidate):** 9 list/report pages jo client hain aur mount par
 khud fetch karte hain — §4 dekho.
+
+### `/clients/*` aur `/jobs/*` — full page audit (20 Nov 2026)
+
+**Verdict: dono sections me har data-backed page RSC-seeded hai. Koi naya RSC
+kaam nahi bacha.** 21 `page.tsx` milaye (10 clients + 11 jobs):
+
+| Bucket                                                       | Pages                                                                                                                                                                        | RSC status                                                                                         |
+| ------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| Direct server page + fetch                                   | `clients/page.tsx`, `jobs/page.tsx`                                                                                                                                          | ✅ server, `force-dynamic`, first-paint data                                                       |
+| Server **layout** se seed (client body)                      | `clients/[id]/{add-direct-sale,add-payment,collect-emi,edit,give-loan,ledger-print,view}`, `jobs/[id]/{edit,view}`, `jobs/{bulk,bulk-edit,combined-invoice,new,spot-labels}` | ✅ `loadClientSeed`/`loadJobsAuxSeed`/`fetchJobFormSeed` + `*SeedProvider`, `force-dynamic` layout |
+| Server redirect-only (koi data nahi)                         | `clients/[id]/page.tsx`, `jobs/[id]/page.tsx`                                                                                                                                | ✅ server `redirect()` — seed ki zarurat nahi                                                      |
+| Client-only create form (pahle se koi first-paint data nahi) | `clients/new/page.tsx`                                                                                                                                                       | ⚪ interactive form — RSC seed applicable nahi                                                     |
+| Server archive pages                                         | `jobs/old/page.tsx`, `jobs/[id]/old/page.tsx`                                                                                                                                | ✅ server, `force-dynamic`                                                                         |
+
+> Seed proper **server layout** me hota hai (client page khud fetch nahi karti
+> pehle paint par). `jobs/[id]/view` aur `clients/[id]/view` Suspense streaming
+> use karte hain (shell turant, seed boundary me resolve). Isliye §4 ki 9-page
+> list me inme se **koi page nahi** — sirf reports/admin lists target hain.
+
+### SQL migrations — live status (20 Nov 2026)
+
+- Disk par **64** migration files (`.sql`, `- Copy` chhod kar).
+- Live DB me `supabase_migrations.schema_migrations` table **maujood nahi** —
+  migrations SQL Editor / custom scripts se apply kiye gaye, isliye version-based
+  tracking available nahi. **Best practice:** verify object-level (tables,
+  functions, indexes, policies, triggers), version-row par bharosa mat karo.
+- Object-level audit: sab migrations ke objects live me hain. Jo 6 "missing"
+  dikhe the wo false-positive hain:
+  - 4 policies `storage.objects` schema me hain (`media_staff_*`,
+    `supplier_photos_staff_*`) — audit `public` schema tak hi dekh raha tha. ✅ live me hain.
+  - `inventory_sync_place_path()` + `product/inventory_list_*_place_zone_idx`
+    deliberately DROP kiye gaye `20260925_i6_phase2_place_drop.sql` se (columns
+    bhi drop). Absence expected, migration **applied** hai. ✅
+- **Passkey (`20261018_passkey_login.sql`) APPLIED ✅** — `public.user_passkeys`
+  (10 cols), 2 RLS policies, 4 indexes, 1 touch trigger, grants; 1 row live.
+  Tracking-row `NO` hai par objects evidence kaafi hain. Feature ab gracefully-off
+  nahi — device QA baaki (docs/TODO.md §Passkey).
+- Code + DB ab aligned hain; koi naya migration apply karne ki zarurat nahi.
 
 ---
 
@@ -145,18 +184,31 @@ action pages, `inventory/[id]`, `suppliers/[id]`, `settings/*`, `backup`,
 
 ## 5. Phased execution plan
 
-### Phase A — Template + 1 pilot (1 session)
+### Phase A — Template + 1 pilot — ✅ IMPLEMENTED LOCAL (20 Nov 2026, commit/push Nahi)
 
-- Pick **`/reports/client-parts-service`** (fresh page, low risk) as the validation page.
-- Create `src/lib/server-client-parts-service.ts` (`fetchClientPartsServiceData(sp)`).
-- Split: `page.tsx` server + `ClientPartsServiceBody.tsx` client (move existing UI verbatim).
-- Seed-aware `useClientPartsService` hook with skip-flags + `seedMatchesFilters`.
-- Gates: tsc ✓ · eslint ✓ · prettier ✓ · vitest ✓ · build ✓ · visual verify (filters, expand, CSV).
-- **Deliverable:** reusable template documented in this file §2.
+Files (uncommitted, user approval ke baad commit):
+
+- `src/app/reports/client-parts-service/page.tsx` — ab **server component**
+  (`requireStaffWithRole()` → `getServerSupabase()` → 3 parallel reads → `<ClientPartsServiceBody seed>`; `force-dynamic`; seed fail = graceful `null`).
+- `src/lib/client-parts-service-data.ts` (NEW) — neutral query layer
+  (`fetchClientsList`, `fetchMechanicsList`, `fetchClientPartsServiceReport` +
+  types + seed type). Query logic pure move, zero filter/behaviour change.
+- `src/app/reports/client-parts-service/ClientPartsServiceBody.tsx` (NEW) —
+  poora UI verbatim, `"use client"`. Seed-aware: state defaults seed se,
+  `initialData` for clients/mechanics, report query ka `initialData` sirf tab
+  jab `seedKeyOf(params) === seedKeyOf(seed.filters)`. Filter change par normal
+  client refetch. Purana no-op `enabled: !!applied || true` hata diya.
+
+Gates: `tsc` 0 · `eslint` 0 · `prettier` OK · `vitest` **688/688** ·
+`next build` ✓ (route dynamic ƒ) · dev smoke: report 307 (auth), login 200.
+
+**Pending:** authenticated visual verify (filters, month nav, expand, CSV) —
+user action. **Rollback:** 3 files revert karo, koi DB change nahi.
 
 ### Phase B — Remaining Tier 1 reports (2 sessions, 2 pages/session)
 
-- `/reports/client-payment`, `/reports/daily-sales`, `/reports/daily-service` (+ pilot ke baad `client-parts-service`).
+- `/reports/client-payment`, `/reports/daily-sales`, `/reports/daily-service`.
+  Phase A wala `/reports/client-parts-service` ab done hai — isi template ko copy karo.
 - Each: server lib + page + body split. Zero logic change. Shared query layer extraction where duplicated (jobs pattern).
 - Gates per page: tsc · eslint · prettier · vitest · build · visual.
 
