@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.85.1](https://github.com/waraseoni/vtech-next/compare/v1.85.0...v1.85.1) (2026-11-21)
+
+### Bug Fixes
+
+* **login:** WhatsApp reset link ab Capacitor WebView me bhi khulta hai ([7cf3dc6](https://github.com/waraseoni/vtech-next/commit/7cf3dc6277a99d9b7498d5aec518f21aa4042da8))
+
 ## [1.85.0](https://github.com/waraseoni/vtech-next/compare/v1.84.1...v1.85.0) (2026-11-20)
 
 ### Features
