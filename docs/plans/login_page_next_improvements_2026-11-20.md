@@ -125,7 +125,13 @@ Vitest cases: insecure context, native WebView, API missing, authenticator unava
       inline reset form nahi, admin/WhatsApp fallback dikh raha hai. `/reset-password` ab
       307 (deleted → protected redirect), expected.
 - [x] OTP length bug fix: live email me 8-digit code aaya, UI 6 boxes tha → `OTP_LEN = 8`.
-- [ ] User QA + commit/push approval.
+- [x] WebView WhatsApp link fix (21 Nov): `<a target="_blank">` Capacitor WebView me no-op tha
+      (`onCreateWindow` nahi hota). `src/lib/externalLink.ts` ab browser me nayi tab, native me
+      external `ACTION_VIEW` navigation karta hai — `window.open` patch ke load hone ka intezaar
+      nahi karta. `<a href>` SSR me preserved (JS-free fallback), 3 unit tests.
+- [x] Commit/push approval — user ne 22 Nov ko "commit push kar do" bola; ye
+      session me push ho raha hai (WebView fix + dono plan docs + tracker sync).
+- [ ] User QA (real device par WhatsApp link tap) — baaki.
 
 ### External prerequisites / deferred
 

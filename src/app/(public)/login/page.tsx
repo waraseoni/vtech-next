@@ -28,6 +28,7 @@ import {
 } from "@simplewebauthn/browser";
 import { usePublicSiteContent } from "../components/public-content-provider";
 import { buildWhatsAppLink } from "@/lib/public-site-defaults";
+import { openExternalLink } from "@/lib/externalLink";
 import { APP_VERSION_LABEL, APP_VERSION_FULL } from "@/lib/app-version";
 import PullToRefresh from "@/components/PullToRefresh";
 
@@ -727,12 +728,17 @@ export default function LoginPage() {
                     target="_blank"
                     rel="noreferrer"
                     onClick={(e) => {
-                      if (email.trim()) return;
+                      // Plain <a target="_blank"> WebView me khulta nahi — browser me
+                      // nayi tab, native me external app (detail: openExternalLink).
                       e.preventDefault();
-                      setError(
-                        "Pehle upar apna staff email bharlein — admin ko email ke saath message jayega."
-                      );
-                      document.getElementById("staff-email")?.focus();
+                      if (!email.trim()) {
+                        setError(
+                          "Pehle upar apna staff email bharlein — admin ko email ke saath message jayega."
+                        );
+                        document.getElementById("staff-email")?.focus();
+                        return;
+                      }
+                      openExternalLink(resetRequestHref);
                     }}
                     className="flex items-center justify-center gap-2 w-full min-h-[44px] text-xs font-bold text-muted hover:text-white transition-colors"
                   >
