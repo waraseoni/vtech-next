@@ -5,6 +5,10 @@
 > **Rule:** jo DONE ho use `docs/plans/completed_tasks.md` me move karo; yahan
 > sirf zinda items rakho.
 > **Scan date:** 20 Nov 2026 · repo `vtech-next` @ `8f0bc34` (release 1.82.1).
+> **Synced:** 22 Nov 2026 · repo @ `d376164` (release 1.84.1) — B1/E1 committed
+> (`4e5cf66`), login OTP/reset + WebView WhatsApp fix shipped, vitest **702/702**,
+> naya `service_center_data_model_plan_2026-11-21.md` (v2 — 3 modes, coverage
+> audit §15, G1–G3 adopted).
 
 ---
 
@@ -97,14 +101,14 @@
 > layout + `*SeedProvider`). Redirect-only aur `clients/new` form ko chhod kar
 > koi RSC gap nahi. Detail: `rsc_implementation_best_plan_2026.md` §1.
 
-### B1. RSC Phase A — `/reports/client-parts-service` seed ✅ LOCAL DONE (uncommitted)
+### B1. RSC Phase A — `/reports/client-parts-service` seed ✅ DONE (committed `4e5cf66`)
 
 - [x] `src/lib/client-parts-service-data.ts` (neutral query layer) + server
       `page.tsx` + client `ClientPartsServiceBody.tsx` split; 3 reads ek wave.
 - [x] Seed-aware `initialData` (key match par hi), graceful `null` fallback.
-- [x] Gates: tsc 0 · eslint 0 · prettier OK · vitest 688/688 · `next build` ✓.
+- [x] Gates: tsc 0 · eslint 0 · prettier OK · vitest green · `next build` ✓.
+- [x] Commit/push — `4e5cf66` (21 Nov 2026).
 - [ ] **User visual verify** (filters, month nav, expand, CSV) authenticated session me.
-- [ ] Commit/push — user ne rokha hai (approval ke baad).
 - Effort ~2.5 h · risk low (rollback = 3 files revert, koi DB change nahi).
 - **Source:** `docs/plans/rsc_implementation_best_plan_2026.md` §5 Phase A.
 
@@ -181,26 +185,42 @@
 
 ## E. Planned features — not started (owner decision chahiye)
 
-### E1. Login page friendly UX revamp ✅ LOCAL DONE (uncommitted)
+### E1. Login page friendly UX revamp ✅ DONE (committed `4e5cf66`)
 
 - [x] Pill switcher (staff-first), hero passkey card (`passkeyReady` gate),
       negative disclaimers cleanup, welcome chip, admin help link, OTP polish,
       44px touch targets, track-job gradient card.
-- [x] Gates: tsc 0 · eslint 0 · prettier OK · vitest 688/688 · browser smoke
+- [x] Gates: tsc 0 · eslint 0 · prettier OK · vitest green · browser smoke
       (login 200, tab switch OK, console errors 0).
+- [x] Commit/push — `4e5cf66` (21 Nov 2026). 8-digit OTP + admin WhatsApp reset
+      follow-ups `1979ee8` me gaye.
 - [ ] **User visual QA** real device par (fingerprint button, mobile keyboard,
       OTP resend countdown).
-- [ ] Commit/push — user ne rokha hai.
 - Auth/API/DB logic unchanged; rollback = `login/page.tsx` revert.
 - **Source:** `docs/plans/login_page_friendly_ux_plan.md` §6.
 
-### E2. Multi-brand architecture (service + job ID sequencing)
+### E1b. Login WebView WhatsApp link fix ✅ DONE (uncommitted → 22 Nov push me)
+
+- [x] `src/lib/externalLink.ts` — browser me `window.open(...,_blank,noopener)`,
+      Capacitor WebView me `location.assign(url)` (ACTION_VIEW host-mismatch path),
+      non-http(s) block; login anchor `e.preventDefault()` + empty-email guard.
+- [x] Unit tests (3) + browser smoke (prefilled URL, console errors 0).
+- [x] Gates: prettier · tsc 0 · eslint 0 · vitest **702/702**.
+- **Source:** `docs/plans/login_page_next_improvements_2026-11-20.md`.
+
+### E2. Multi-brand / service-center data model — plan ✅ v2 READY (implement pending)
 
 - **Status:** plan only. Code me `brand_id`/`brandId` refs = **0**, koi
   `*brand*` migration nahi. Implement shuru nahi hua.
-- Decision pending: Vikalp B (dual-identity: global `job_id` + brand prefix).
-- Phase 5 (brand-wise dashboard/pending/reports filters) sabse bada kaam.
-- **Source:** `docs/plans/multi_brand_service_architecture_plan.md`,
+- **Ab wahi plan `service_center_data_model_plan_2026-11-21.md` (v2) me hai:**
+  brand/item/model/serial split + service type + **3 modes** (autonomous /
+  single-brand / multi-brand) + reports-integrity guarantees (§12) + coverage
+  audit (§15, G1–G3 adopted) + risks R1–R18. P0 owner decisions §9 pending
+  (default mode, brand required, seed lists, live-apply approval).
+- Decision pending: Vikalp B (dual-identity: global `job_id` + brand prefix) = plan ka P4.
+- Phase 5/4 (brand-wise dashboard/pending/reports filters) sabse bada kaam.
+- **Source:** `docs/plans/service_center_data_model_plan_2026-11-21.md` (primary),
+  `docs/plans/multi_brand_service_architecture_plan.md`,
   `docs/plans/multi_brand_job_id_sequencing_plan.md`.
 
 ### E3. React Query completion / RHF rollout
@@ -230,11 +250,13 @@
 
 ## G. Suggested order (next 3 sessions)
 
-1. ✅ **B1 (RSC pilot)** — local done (uncommitted); visual verify baaki.
+1. ✅ **B1 (RSC pilot)** — committed `4e5cf66`; visual verify baaki.
 2. **C (RPC grants)** — security debt, high value; migration + read-only sim pehle,
-   apply owner approval ke baad.
+   apply owner approval ke baad. (Service-center plan ke P1 ke saath ek window me
+   karne ki suggestion hai — §8 of that plan.)
 3. **A1 (passkey)** — migration ✅ done; user ke paas ab device QA + HTTPS/rpID
    check (15 min), phir release tag.
 
-Abhi **commit/push nahi** — user ne rokha hai. Visual verify ke baad commit,
-phir B2 (3 reports) ya C (RPC grants), jo owner bole.
+**Status (22 Nov):** login OTP/reset + WebView fix aur dono plan docs push ho chuke
+hain. Aage **service-center plan ka P0 (owner decisions §9) → P1 (migration +
+settings page)** — user ne bola "implement bad me karenge".
