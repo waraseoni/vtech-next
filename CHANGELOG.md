@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.85.2](https://github.com/waraseoni/vtech-next/compare/v1.85.1...v1.85.2) (2026-11-22)
+
+### Bug Fixes
+
+* **profiles:** symmetric RLS WITH CHECK - /profile self-save 42501 block ([0f61d88](https://github.com/waraseoni/vtech-next/commit/0f61d884c36ece368aeb8af138c153c968b2e510))
+
 ## [1.85.1](https://github.com/waraseoni/vtech-next/compare/v1.85.0...v1.85.1) (2026-11-21)
 
 ### Bug Fixes
