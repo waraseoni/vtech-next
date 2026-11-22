@@ -2202,13 +2202,13 @@ DROP POLICY IF EXISTS rlslock_profiles_client_self ON public.profiles;
 CREATE POLICY rlslock_profiles_client_self ON public.profiles FOR SELECT TO authenticated USING ((id = auth.uid()));
 
 DROP POLICY IF EXISTS rlslock_profiles_client_self_update ON public.profiles;
-CREATE POLICY rlslock_profiles_client_self_update ON public.profiles FOR UPDATE TO authenticated USING ((id = auth.uid())) WITH CHECK ((id = auth.uid()) AND (coalesce(role, '') = public.get_my_role()) AND (coalesce(client_id, '-1'::bigint) IS NOT DISTINCT FROM public.get_my_client_id()));
+CREATE POLICY rlslock_profiles_client_self_update ON public.profiles FOR UPDATE TO authenticated USING ((id = auth.uid())) WITH CHECK ((id = auth.uid()) AND (role IS NOT DISTINCT FROM public.get_my_role()) AND (client_id IS NOT DISTINCT FROM public.get_my_client_id()));
 
 DROP POLICY IF EXISTS rlslock_profiles_staff ON public.profiles;
 CREATE POLICY rlslock_profiles_staff ON public.profiles FOR SELECT TO authenticated USING (public.is_frontend_staff());
 
 DROP POLICY IF EXISTS rlslock_profiles_staff_update ON public.profiles;
-CREATE POLICY rlslock_profiles_staff_update ON public.profiles FOR UPDATE TO authenticated USING ((id = auth.uid())) WITH CHECK ((id = auth.uid()) AND public.is_frontend_staff() AND (coalesce(role, '') = public.get_my_role()) AND (coalesce(client_id, '-1'::bigint) IS NOT DISTINCT FROM public.get_my_client_id()));
+CREATE POLICY rlslock_profiles_staff_update ON public.profiles FOR UPDATE TO authenticated USING ((id = auth.uid())) WITH CHECK ((id = auth.uid()) AND public.is_frontend_staff() AND (role IS NOT DISTINCT FROM public.get_my_role()) AND (client_id IS NOT DISTINCT FROM public.get_my_client_id()));
 
 DROP POLICY IF EXISTS rlslock_service_list_staff ON public.service_list;
 CREATE POLICY rlslock_service_list_staff ON public.service_list TO authenticated USING (public.is_frontend_staff()) WITH CHECK (public.is_frontend_staff());
