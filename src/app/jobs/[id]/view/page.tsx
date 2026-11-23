@@ -47,6 +47,7 @@ import PageLoader from "@/components/PageLoader";
 import WaPreviewModal from "@/components/WaPreviewModal";
 import Lightbox from "@/components/Lightbox";
 import JobSpotPicker from "@/components/JobSpotPicker";
+import DeviceIdentity from "@/components/DeviceIdentity";
 import JobRequiredParts from "@/components/JobRequiredParts";
 import WaitingPartsBadge from "@/components/WaitingPartsBadge";
 import { fetchOpenPartCounts } from "@/lib/requiredParts";
@@ -992,6 +993,7 @@ ${svcHtml}${prodHtml}
                       label="Item / Model"
                       value={<span className="font-semibold">{job.item}</span>}
                     />
+                    <DeviceIdentity job={job} className="mb-3" />
                     <div className="mb-1.5 text-sm">
                       <span className="font-semibold text-muted">Fault Reported:</span>
                       <p className="mt-0.5 text-app-2 whitespace-pre-line">{job.fault}</p>

@@ -25,6 +25,9 @@ export type JobsOldMechanic = {
 };
 export type JobsOldService = { id: number; name: string; price: number };
 export type JobsOldProduct = { id: number; name: string; price: number };
+export type JobsOldBrand = { id: number; name: string; code: string | null };
+export type JobsOldDeviceModel = { id: number; name: string; brand_id: number | null };
+export type JobsOldIdentifier = { id: number; value: string };
 export type JobsOldSelService = { service_id: number; service_name: string; price: number };
 export type JobsOldSelProduct = {
   product_id: number;
@@ -38,6 +41,10 @@ export type JobsOldMasters = {
   mechanics: JobsOldMechanic[];
   services: JobsOldService[];
   products: JobsOldProduct[];
+  /** Device identity masters (P3) — migration na ho to khali array. */
+  brands: JobsOldBrand[];
+  deviceModels: JobsOldDeviceModel[];
+  deviceIdentifiers: JobsOldIdentifier[];
   // `fetchMaster()` ka profile part — Assign Technician panel isi par depend
   // karta hai, isliye pehla paint bhi isse seed hota hai (warna admin ko
   // panel hi nahi dikhega).
@@ -51,6 +58,10 @@ export type JobsOldJobRow = {
   job_id: string | null;
   date_created: string | null;
   item: string | null;
+  /** Naye nullable columns — select("*") se aate hain. */
+  brand_id: number | null;
+  model: string | null;
+  serial_no: string | null;
   fault: string | null;
   uniq_id: string | null;
   remark: string | null;
@@ -101,6 +112,14 @@ export async function fetchJobsOldMasters(supabase: SupabaseClient): Promise<Job
   if (sRes.error) throw sRes.error;
   if (pRes.error) throw pRes.error;
 
+  // Naye master tables abhi live DB me na hon to bhi purana form chalna chahiye
+  // (migration owner approval ke baad hi apply hoti hai) — errors ignore.
+  const [brandRes, modelRes, identRes] = await Promise.all([
+    supabase.from("brands").select("id, name, code").eq("is_active", true).order("name"),
+    supabase.from("device_models").select("id, name, brand_id").eq("is_active", true).order("name"),
+    supabase.from("device_identifiers").select("id, value").eq("is_active", true).order("value"),
+  ]);
+
   let userRole = "staff";
   let userMechId: number | null = null;
   if (user) {
@@ -118,6 +137,9 @@ export async function fetchJobsOldMasters(supabase: SupabaseClient): Promise<Job
     mechanics: (mRes.data || []) as JobsOldMechanic[],
     services: (sRes.data || []) as JobsOldService[],
     products: (pRes.data || []) as JobsOldProduct[],
+    brands: (brandRes.data || []) as JobsOldBrand[],
+    deviceModels: (modelRes.data || []) as JobsOldDeviceModel[],
+    deviceIdentifiers: (identRes.data || []) as JobsOldIdentifier[],
     userRole,
     userMechId,
   };

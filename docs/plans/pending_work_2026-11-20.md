@@ -9,6 +9,9 @@
 > (`4e5cf66`), login OTP/reset + WebView WhatsApp fix shipped, vitest **702/702**,
 > naya `service_center_data_model_plan_2026-11-21.md` (v2 — 3 modes, coverage
 > audit §15, G1–G3 adopted).
+> **Synced:** 24 Nov 2026 · repo @ `0f61d88` (release 1.85.1, tree dirty) — E2
+> service-center **P1–P5 code complete, uncommitted**; vitest **712/712**, build ✓,
+> schema:drift ✓; live DB untouched (owner approval ke baad hi apply + commit).
 
 ---
 
@@ -208,10 +211,11 @@
 - [x] Gates: prettier · tsc 0 · eslint 0 · vitest **702/702**.
 - **Source:** `docs/plans/login_page_next_improvements_2026-11-20.md`.
 
-### E2. Multi-brand / service-center data model — plan ✅ v2 READY (implement pending)
+### E2. Multi-brand / service-center data model — 🟢 P1–P5 code done (uncommitted)
 
-- **Status:** plan only. Code me `brand_id`/`brandId` refs = **0**, koi
-  `*brand*` migration nahi. Implement shuru nahi hua.
+- **Status:** P0 owner sign-off + live migration apply + commit/push baaki.
+  Code local complete hai (Hinglish details ux plan §7 "Implementation status").
+  Commit/push **mat karna** — naya explicit approval chahiye.
 - **Ab wahi plan `service_center_data_model_plan_2026-11-21.md` (v2) me hai:**
   brand/item/model/serial split + service type + **3 modes** (autonomous /
   single-brand / multi-brand) + reports-integrity guarantees (§12) + coverage
@@ -222,6 +226,17 @@
 - **Source:** `docs/plans/service_center_data_model_plan_2026-11-21.md` (primary),
   `docs/plans/multi_brand_service_architecture_plan.md`,
   `docs/plans/multi_brand_job_id_sequencing_plan.md`.
+- **🆕 UX companion (24 Nov 2026, Rev 2):** `docs/plans/job_device_identity_ux_plan_2026-11-24.md`
+  — Brand/Model ke searchable dropdown + inline "add new" (`JobSpotPicker` pattern),
+  **Identifier = optional free text** (unique hota hai, dropdown nahi), field kram
+  **Item → Brand → Model → Identifier**, aur item dikhne wali **40+ verify ki gayi
+  jagahon** par sahi display contract (`deviceIdentity.ts` + `<DeviceIdentity />`).
+  Bulk/bulk-edit me **per-row 4 alag fields** (global override hata diya). `/settings/service-center`
+  ka direct sidebar link bhi add hua; `/jobs/new` ka React Compiler `useWatch` TDZ error
+  `"use no memo"` se fix. Ye ux plan upper data-model plan ka P2–P5 ko detail karta hai —
+  implement shuru karne se pehle dono padho.
+- **Rev 2 gates:** prettier · tsc 0 · eslint 0 · vitest **712/712** · schema:drift **32 OK** ·
+  build ✓ (137 pages). Live DB abhi bhi untouched; commit/push ke liye naya approval chahiye.
 
 ### E3. React Query completion / RHF rollout
 
@@ -257,6 +272,8 @@
 3. **A1 (passkey)** — migration ✅ done; user ke paas ab device QA + HTTPS/rpID
    check (15 min), phir release tag.
 
-**Status (22 Nov):** login OTP/reset + WebView fix aur dono plan docs push ho chuke
-hain. Aage **service-center plan ka P0 (owner decisions §9) → P1 (migration +
-settings page)** — user ne bola "implement bad me karenge".
+**Status (24 Nov):** login OTP/reset + WebView fix + profile RLS push ho chuke
+(`0f61d88`). Service-center **P1–P5 code local complete** (migration, master CRUD,
+3 pickers, old/bulk forms, display + search), sab gates green, par **uncommitted**
+aur **live DB untouched**. Agla step: owner se P0 decisions + migration apply
+approval lena, phir browser smoke/report parity, phir explicit approval par commit.

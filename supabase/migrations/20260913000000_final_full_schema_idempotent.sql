@@ -5055,4 +5055,156 @@ revoke all on function public.get_dashboard_waiting() from anon;
 grant execute on function public.get_dashboard_waiting() to authenticated;
 grant execute on function public.get_dashboard_waiting() to service_role;
 
+-- ════════════════════════════════════════════════════════════════════════════
+-- FOLD-IN: 20261122_service_center_fields.sql (device identity + masters)
+-- Har object yahin bhi hona chahiye — warna npm run schema:drift fail hota hai.
+-- `item` text NOT NULL unchanged; sab naye columns NULLABLE; anon deny.
+-- ════════════════════════════════════════════════════════════════════════════
+
+CREATE TABLE IF NOT EXISTS public.brands (
+  id serial PRIMARY KEY,
+  name text NOT NULL UNIQUE,
+  code varchar(10) UNIQUE,
+  is_authorized boolean NOT NULL DEFAULT false,
+  authorized_no text,
+  logo_url text,
+  support_phone text,
+  support_email text,
+  is_active boolean NOT NULL DEFAULT true,
+  date_created timestamptz DEFAULT now(),
+  date_updated timestamptz DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS public.service_types (
+  id serial PRIMARY KEY,
+  name text NOT NULL UNIQUE,
+  sort_order smallint NOT NULL DEFAULT 0,
+  is_active boolean NOT NULL DEFAULT true
+);
+
+CREATE TABLE IF NOT EXISTS public.brand_job_counters (
+  brand_id integer PRIMARY KEY REFERENCES public.brands(id) ON DELETE CASCADE,
+  last_sequence_number integer NOT NULL DEFAULT 0,
+  prefix varchar(10) NOT NULL,
+  date_updated timestamptz DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS public.device_models (
+  id serial PRIMARY KEY,
+  name text NOT NULL,
+  brand_id integer REFERENCES public.brands(id) ON DELETE RESTRICT,
+  is_active boolean NOT NULL DEFAULT true,
+  date_created timestamptz DEFAULT now(),
+  date_updated timestamptz DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS public.device_identifiers (
+  id serial PRIMARY KEY,
+  value text NOT NULL UNIQUE,
+  note text,
+  is_active boolean NOT NULL DEFAULT true,
+  last_used timestamptz,
+  date_created timestamptz DEFAULT now(),
+  date_updated timestamptz DEFAULT now()
+);
+
+ALTER TABLE public.transaction_list ADD COLUMN IF NOT EXISTS brand_id integer REFERENCES public.brands(id) ON DELETE SET NULL;
+ALTER TABLE public.transaction_list ADD COLUMN IF NOT EXISTS item_category text;
+ALTER TABLE public.transaction_list ADD COLUMN IF NOT EXISTS model text;
+ALTER TABLE public.transaction_list ADD COLUMN IF NOT EXISTS serial_no text;
+ALTER TABLE public.transaction_list ADD COLUMN IF NOT EXISTS service_type_id integer REFERENCES public.service_types(id) ON DELETE SET NULL;
+ALTER TABLE public.transaction_list ADD COLUMN IF NOT EXISTS warranty_status text;
+ALTER TABLE public.transaction_list ADD COLUMN IF NOT EXISTS warranty_until date;
+ALTER TABLE public.transaction_list ADD COLUMN IF NOT EXISTS warranty_claim_no text;
+ALTER TABLE public.transaction_list ADD COLUMN IF NOT EXISTS warranty_claim_status text;
+
+CREATE INDEX IF NOT EXISTS transaction_list_brand_id_idx
+  ON public.transaction_list (brand_id) WHERE brand_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS device_models_active_brand_idx
+  ON public.device_models (brand_id, name) WHERE is_active;
+CREATE UNIQUE INDEX IF NOT EXISTS device_models_active_name_uniq
+  ON public.device_models (coalesce(brand_id, 0), lower(btrim(name))) WHERE is_active;
+CREATE UNIQUE INDEX IF NOT EXISTS device_identifiers_value_norm_uniq
+  ON public.device_identifiers (upper(btrim(value)));
+
+INSERT INTO public.service_types (name, sort_order) VALUES
+  ('Repair', 0), ('New Installation', 10), ('Warranty Claim', 20),
+  ('AMC / Service Visit', 30), ('PDI / Delivery', 40), ('Inspection / Estimate', 50)
+ON CONFLICT (name) DO NOTHING;
+
+INSERT INTO public.brands (name, code, is_authorized, is_active)
+VALUES ('General / Unbranded', 'GEN', false, true)
+ON CONFLICT (name) DO NOTHING;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM public.system_info WHERE meta_field = 'service_center_mode') THEN
+    INSERT INTO public.system_info (meta_field, meta_value) VALUES ('service_center_mode', 'autonomous');
+  END IF;
+END $$;
+
+ALTER TABLE public.brands ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.service_types ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.brand_job_counters ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.device_models ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.device_identifiers ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS rlslock_brands_staff ON public.brands;
+CREATE POLICY rlslock_brands_staff ON public.brands TO authenticated
+  USING (public.is_frontend_staff()) WITH CHECK (public.is_frontend_staff());
+DROP POLICY IF EXISTS rlslock_service_types_staff ON public.service_types;
+CREATE POLICY rlslock_service_types_staff ON public.service_types TO authenticated
+  USING (public.is_frontend_staff()) WITH CHECK (public.is_frontend_staff());
+DROP POLICY IF EXISTS rlslock_brand_job_counters_staff ON public.brand_job_counters;
+CREATE POLICY rlslock_brand_job_counters_staff ON public.brand_job_counters TO authenticated
+  USING (public.is_frontend_staff()) WITH CHECK (public.is_frontend_staff());
+DROP POLICY IF EXISTS rlslock_device_models_staff ON public.device_models;
+CREATE POLICY rlslock_device_models_staff ON public.device_models TO authenticated
+  USING (public.is_frontend_staff()) WITH CHECK (public.is_frontend_staff());
+DROP POLICY IF EXISTS rlslock_device_identifiers_staff ON public.device_identifiers;
+CREATE POLICY rlslock_device_identifiers_staff ON public.device_identifiers TO authenticated
+  USING (public.is_frontend_staff()) WITH CHECK (public.is_frontend_staff());
+
+REVOKE ALL ON TABLE public.brands FROM anon;
+GRANT ALL ON TABLE public.brands TO authenticated;
+GRANT ALL ON TABLE public.brands TO service_role;
+REVOKE ALL ON SEQUENCE public.brands_id_seq FROM anon;
+GRANT ALL ON SEQUENCE public.brands_id_seq TO authenticated;
+GRANT ALL ON SEQUENCE public.brands_id_seq TO service_role;
+
+REVOKE ALL ON TABLE public.service_types FROM anon;
+GRANT ALL ON TABLE public.service_types TO authenticated;
+GRANT ALL ON TABLE public.service_types TO service_role;
+REVOKE ALL ON SEQUENCE public.service_types_id_seq FROM anon;
+GRANT ALL ON SEQUENCE public.service_types_id_seq TO authenticated;
+GRANT ALL ON SEQUENCE public.service_types_id_seq TO service_role;
+
+REVOKE ALL ON TABLE public.brand_job_counters FROM anon;
+GRANT ALL ON TABLE public.brand_job_counters TO authenticated;
+GRANT ALL ON TABLE public.brand_job_counters TO service_role;
+
+REVOKE ALL ON TABLE public.device_models FROM anon;
+GRANT ALL ON TABLE public.device_models TO authenticated;
+GRANT ALL ON TABLE public.device_models TO service_role;
+REVOKE ALL ON SEQUENCE public.device_models_id_seq FROM anon;
+GRANT ALL ON SEQUENCE public.device_models_id_seq TO authenticated;
+GRANT ALL ON SEQUENCE public.device_models_id_seq TO service_role;
+
+REVOKE ALL ON TABLE public.device_identifiers FROM anon;
+GRANT ALL ON TABLE public.device_identifiers TO authenticated;
+GRANT ALL ON TABLE public.device_identifiers TO service_role;
+REVOKE ALL ON SEQUENCE public.device_identifiers_id_seq FROM anon;
+GRANT ALL ON SEQUENCE public.device_identifiers_id_seq TO authenticated;
+GRANT ALL ON SEQUENCE public.device_identifiers_id_seq TO service_role;
+
+DROP TRIGGER IF EXISTS update_brands_timestamp ON public.brands;
+CREATE TRIGGER update_brands_timestamp BEFORE UPDATE ON public.brands
+  FOR EACH ROW EXECUTE FUNCTION extensions.moddatetime('date_updated');
+DROP TRIGGER IF EXISTS update_device_models_timestamp ON public.device_models;
+CREATE TRIGGER update_device_models_timestamp BEFORE UPDATE ON public.device_models
+  FOR EACH ROW EXECUTE FUNCTION extensions.moddatetime('date_updated');
+DROP TRIGGER IF EXISTS update_device_identifiers_timestamp ON public.device_identifiers;
+CREATE TRIGGER update_device_identifiers_timestamp BEFORE UPDATE ON public.device_identifiers
+  FOR EACH ROW EXECUTE FUNCTION extensions.moddatetime('date_updated');
+
 NOTIFY pgrst, 'reload schema';

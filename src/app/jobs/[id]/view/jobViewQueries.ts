@@ -17,6 +17,13 @@ export interface JobDetail {
   code: string;
   client_name: string;
   item: string;
+  /** Naye nullable device columns (migration se pehle undefined — UI safe). */
+  brand_id?: number | null;
+  brand_name?: string | null;
+  model?: string | null;
+  serial_no?: string | null;
+  warranty_status?: string | null;
+  warranty_until?: string | null;
   fault: string;
   remark: string;
   uniq_id: string;
@@ -106,7 +113,7 @@ export async function fetchJobViewData(
     supabase
       .from("transaction_list")
       .select(
-        "id, job_id, code, client_name, item, fault, remark, uniq_id, amount, mechanic_amount, mechanic_commission_amount, mechanic_id, user_id, del_status, status, location_id, date_created, date_updated, date_completed"
+        "id, job_id, code, client_name, item, brand_id, model, serial_no, warranty_status, warranty_until, fault, remark, uniq_id, amount, mechanic_amount, mechanic_commission_amount, mechanic_id, user_id, del_status, status, location_id, date_created, date_updated, date_completed"
       )
       .eq("id", numId)
       .eq("del_status", 0)
@@ -144,6 +151,7 @@ export async function fetchJobViewData(
     loansRes,
     prodListRes,
     svcListRes,
+    brandRes,
   ] = await Promise.all([
     supabase
       .from("client_list")
@@ -189,6 +197,8 @@ export async function fetchJobViewData(
     // Naam/hsn lookups (pehle 3rd wave) — catalog chhote hain, isliye yahin.
     supabase.from("product_list").select("id, name, hsn"),
     supabase.from("service_list").select("id, name, hsn"),
+    // Nayi brand master abhi na ho to error ignore (migration approval pending).
+    supabase.from("brands").select("id, name"),
   ]);
 
   const dueMaps = buildDueMaps({
@@ -220,7 +230,13 @@ export async function fetchJobViewData(
 
   return {
     userRole,
-    job: jobData as JobDetail,
+    job: {
+      ...(jobData as JobDetail),
+      brand_name:
+        (brandRes.data as Array<{ id: number; name: string }> | null)?.find(
+          (b) => b.id === jobData.brand_id
+        )?.name ?? null,
+    },
     prevJob: (prevRes.data?.[0] as { id: number; job_id: string } | null) ?? null,
     nextJob: (nextRes.data?.[0] as { id: number; job_id: string } | null) ?? null,
     client: clientRes.data ? (clientRes.data as Client) : null,

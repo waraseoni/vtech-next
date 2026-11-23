@@ -10,12 +10,25 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { buildDueMaps } from "@/lib/client-due";
 
+/**
+ * Job free-text search — EK hi `.or()` filter dono query paths ke liye
+ * (stats + page). Naye device columns bhi yahin add karo, warna drift.
+ * `brand` naam `item` derived label me already hota hai, isliye alag clause nahi.
+ */
+function jobSearchFilter(term: string, matchedClientIds: string): string {
+  return `job_id.ilike.%${term}%,code.ilike.%${term}%,item.ilike.%${term}%,model.ilike.%${term}%,serial_no.ilike.%${term}%,fault.ilike.%${term}%,uniq_id.ilike.%${term}%,remark.ilike.%${term}%,client_name.in.(${matchedClientIds})`;
+}
+
 export interface Transaction {
   id: number;
   job_id: string;
   code: string | null;
   client_name: number;
   item: string;
+  /** Naye nullable device columns — select("*") se aate hain. */
+  brand_id?: number | null;
+  model?: string | null;
+  serial_no?: string | null;
   fault: string;
   remark: string | null; // BUG FIX: was missing
   uniq_id: string | null;
@@ -188,10 +201,7 @@ function applyFilters(
   if (filters.hideDelivered) q = q.neq("status", 5);
   if (filters.status !== "") q = q.eq("status", filters.status);
   if (filters.spot) q = q.eq("location_id", parseInt(filters.spot));
-  if (filters.term)
-    q = q.or(
-      `job_id.ilike.%${filters.term}%,code.ilike.%${filters.term}%,item.ilike.%${filters.term}%,fault.ilike.%${filters.term}%,uniq_id.ilike.%${filters.term}%,remark.ilike.%${filters.term}%,client_name.in.(${matchedClientIds})`
-    );
+  if (filters.term) q = q.or(jobSearchFilter(filters.term, matchedClientIds));
   return q;
 }
 
@@ -310,11 +320,7 @@ export async function queryJobPage(
   if (filters.hideDelivered) query = query.neq("status", 5);
   if (filters.status !== "") query = query.eq("status", filters.status);
   if (filters.spot) query = query.eq("location_id", parseInt(filters.spot));
-  if (term) {
-    query = query.or(
-      `job_id.ilike.%${term}%,code.ilike.%${term}%,item.ilike.%${term}%,fault.ilike.%${term}%,uniq_id.ilike.%${term}%,remark.ilike.%${term}%,client_name.in.(${matchedClientIds})`
-    );
-  }
+  if (term) query = query.or(jobSearchFilter(term, matchedClientIds));
 
   const from = pageIndex * pageSize;
   const to = from + pageSize - 1;

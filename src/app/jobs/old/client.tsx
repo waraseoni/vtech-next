@@ -21,6 +21,8 @@ import {
 import PageLoader from "@/components/PageLoader";
 import SearchableSelect from "@/components/SearchableSelect";
 import { toast } from "@/lib/toast";
+import DeviceIdentityFields from "@/components/DeviceIdentityFields";
+import { type DeviceFieldValues, resolveDeviceItem } from "@/lib/deviceIdentity";
 import type { JobsOldJob, JobsOldMasters } from "./jobsOldSeed";
 
 // ─── IST Helpers ─────────────────────────────────────────────────────────────
@@ -145,6 +147,14 @@ export default function ManageJobPage({ initial }: { initial?: JobsOldInitial | 
   const [mechanics, setMechanics] = useState<Mechanic[]>(seedMasters?.mechanics ?? []);
   const [services, setServices] = useState<Service[]>(seedMasters?.services ?? []);
   const [products, setProducts] = useState<Product[]>(seedMasters?.products ?? []);
+  const [deviceMasters, setDeviceMasters] = useState({
+    brands: seedMasters?.brands ?? [],
+    models: seedMasters?.deviceModels ?? [],
+    identifiers: seedMasters?.deviceIdentifiers ?? [],
+  });
+  // fetchJob fallback ke liye brand lookup — ref sirf handler me update hoti hai
+  // (render me nahi), aur isse useCallback deps stabilize rehte hain.
+  const brandsRef = useRef<JobsOldMasters["brands"]>(seedMasters?.brands ?? []);
   const [userRole, setUserRole] = useState(seedMasters?.userRole ?? "staff");
   const [, setUserMechId] = useState<number | null>(seedMasters?.userMechId ?? null);
 
@@ -154,7 +164,14 @@ export default function ManageJobPage({ initial }: { initial?: JobsOldInitial | 
     seedJob ? jobDateValue(seedJob.job.date_created) : todayISTDateTime()
   );
   const [jobId, setJobId] = useState(seedJob?.job.job_id ?? "");
-  const [item, setItem] = useState(seedJob?.job.item ?? "");
+  const [device, setDevice] = useState<DeviceFieldValues>({
+    brandId: seedJob?.job.brand_id ?? null,
+    brandName: (seedMasters?.brands ?? []).find((b) => b.id === seedJob?.job.brand_id)?.name ?? "",
+    model: seedJob?.job.model ?? "",
+    serial: seedJob?.job.serial_no ?? "",
+    item: seedJob?.job.item ?? "",
+    customMode: false,
+  });
   const [fault, setFault] = useState(seedJob?.job.fault ?? "");
   const [uniqId, setUniqId] = useState(seedJob?.job.uniq_id ?? "");
   const [remark, setRemark] = useState(seedJob?.job.remark ?? "");
@@ -215,6 +232,23 @@ export default function ManageJobPage({ initial }: { initial?: JobsOldInitial | 
     setServices(sRes.data || []);
     setProducts(pRes.data || []);
 
+    // Device masters — naye tables na hon to error ignore (migration pending).
+    const [bRes, mdRes, idRes] = await Promise.all([
+      supabase.from("brands").select("id, name, code").eq("is_active", true).order("name"),
+      supabase
+        .from("device_models")
+        .select("id, name, brand_id")
+        .eq("is_active", true)
+        .order("name"),
+      supabase.from("device_identifiers").select("id, value").eq("is_active", true).order("value"),
+    ]);
+    brandsRef.current = (bRes.data || []) as JobsOldMasters["brands"];
+    setDeviceMasters({
+      brands: brandsRef.current,
+      models: (mdRes.data || []) as JobsOldMasters["deviceModels"],
+      identifiers: (idRes.data || []) as JobsOldMasters["deviceIdentifiers"],
+    });
+
     // Old entry page: Job ID manually entered by user — do NOT auto-fill from counter
   }, []);
 
@@ -250,7 +284,14 @@ export default function ManageJobPage({ initial }: { initial?: JobsOldInitial | 
             .replace(",", "T")
         : todayISTDateTime()
     );
-    setItem(job.item || "");
+    setDevice((d) => ({
+      ...d,
+      brandId: job.brand_id ?? null,
+      brandName: brandsRef.current.find((b) => b.id === job.brand_id)?.name ?? "",
+      model: job.model ?? "",
+      serial: job.serial_no ?? "",
+      item: job.item ?? "",
+    }));
     setFault(job.fault || "");
     setUniqId(job.uniq_id || "");
     setRemark(job.remark || "");
@@ -291,6 +332,19 @@ export default function ManageJobPage({ initial }: { initial?: JobsOldInitial | 
   const svcTotal = selServices.reduce((s, r) => s + r.price, 0);
   const prodTotal = selProducts.reduce((s, r) => s + r.price * r.qty, 0);
   const totalAmount = svcTotal + prodTotal;
+
+  const brandOptions = deviceMasters.brands.map((b) => ({
+    id: b.id,
+    label: b.name,
+    sub: b.code ?? undefined,
+  }));
+  const modelOptions = deviceMasters.models
+    .filter((m) => !device.brandId || m.brand_id === device.brandId)
+    .map((m) => ({
+      id: m.id,
+      label: m.name,
+      sub: deviceMasters.brands.find((b) => b.id === m.brand_id)?.name,
+    }));
 
   // ── Auto-calc mechanic amount from commission ──────────────────────────────
   // Rule: commission = services total ONLY (spare parts excluded) × DB rate
@@ -358,7 +412,7 @@ export default function ManageJobPage({ initial }: { initial?: JobsOldInitial | 
       toast.error("Client select karo!");
       return;
     }
-    if (!item.trim()) {
+    if (!resolveDeviceItem(device).trim()) {
       toast.error("Item naam likho!");
       return;
     }
@@ -391,7 +445,10 @@ export default function ManageJobPage({ initial }: { initial?: JobsOldInitial | 
       const txnData = {
         client_name: String(clientId),
         job_id: jobId,
-        item: item.trim(),
+        item: resolveDeviceItem(device),
+        brand_id: device.brandId,
+        model: device.model.trim() || null,
+        serial_no: device.serial.trim() || null,
         fault: fault.trim(),
         remark: remark.trim() || "",
         uniq_id: uniqId.trim() || "",
@@ -485,7 +542,7 @@ export default function ManageJobPage({ initial }: { initial?: JobsOldInitial | 
             </div>
             <div>
               <h1 className="text-lg font-black text-white">
-                {isEdit ? `Edit Transaction — ${item || editId}` : "Old Job Entry (Manual)"}
+                {isEdit ? `Edit Transaction — ${device.item || editId}` : "Old Job Entry (Manual)"}
               </h1>
               <p className="text-[10px] text-muted uppercase tracking-wider">
                 {isEdit
@@ -584,17 +641,14 @@ export default function ManageJobPage({ initial }: { initial?: JobsOldInitial | 
           <h3 className="text-xs font-black uppercase tracking-wider text-muted mb-4 flex items-center gap-2">
             <Package size={13} /> Item Details
           </h3>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
-            <div>
-              <label className={lCls}>Item / Model *</label>
-              <input
-                type="text"
-                value={item}
-                onChange={(e) => setItem(e.target.value)}
-                placeholder="e.g. Sharpy 10R Axis"
-                className={iCls}
-              />
-            </div>
+          <DeviceIdentityFields
+            value={device}
+            onChange={setDevice}
+            brandOptions={brandOptions}
+            modelOptions={modelOptions}
+            compact
+          />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
             <div>
               <label className={lCls}>Fault Reported *</label>
               <input

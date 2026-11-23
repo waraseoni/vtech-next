@@ -29,11 +29,22 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import PageLoader from "@/components/PageLoader";
 import { logActivity } from "@/lib/activity";
 import { fetchClientDue, dueLabel } from "@/lib/client-due";
-import { buildAvailableStock } from "@/app/jobs/jobFormQueries";
+import {
+  buildAvailableStock,
+  type JobFormBrand,
+  type JobFormDeviceModel,
+} from "@/app/jobs/jobFormQueries";
 import { useJobFormSeed } from "@/app/jobs/JobFormSeedProvider";
 import { getNextJobId, peekNextJobId, bumpJobCounter } from "@/lib/jobIdCounter";
 import SearchableSelect from "@/components/SearchableSelect";
 import JobSpotPicker from "@/components/JobSpotPicker";
+import DeviceFieldPicker from "@/components/DeviceFieldPicker";
+import {
+  clampJobItemLabel,
+  composeJobItemLabel,
+  labelShrinks,
+  normalizeIdentifier,
+} from "@/lib/deviceIdentity";
 import { logger } from "@/lib/logger";
 import { toast } from "@/lib/toast";
 import { emptyJobForm, jobFormSchema, type JobFormValues } from "@/lib/validation/schemas/job";
@@ -94,6 +105,10 @@ export default function ManageJobPage({ params }: { params: Promise<{ id?: strin
 }
 
 function ManageJobPageInner({ params }: { params: Promise<{ id?: string }> }) {
+  // React Compiler `useWatch` (react-hook-form) ko unknown hook maan kar uski
+  // calls reorder kar deta tha → derived label `brandName` se pehle chalta tha
+  // (ReferenceError: TDZ). Is component ke liye compiler optimization band.
+  "use no memo";
   const resolvedParams = use(params);
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -135,6 +150,7 @@ function ManageJobPageInner({ params }: { params: Promise<{ id?: string }> }) {
     reset,
     trigger,
     setValue,
+    getValues,
     clearErrors,
     formState: { errors },
   } = useForm<JobFormValues>({
@@ -148,6 +164,46 @@ function ManageJobPageInner({ params }: { params: Promise<{ id?: string }> }) {
   const mechanicId = useWatch({ control, name: "mechanic_id" });
   const itemValue = useWatch({ control, name: "item" });
   const faultValue = useWatch({ control, name: "fault" });
+  const brandId = useWatch({ control, name: "brand_id" });
+  const brandName = useWatch({ control, name: "brand_name" });
+  const modelValue = useWatch({ control, name: "model" });
+  const serialValue = useWatch({ control, name: "serial_no" });
+  const customItem = useWatch({ control, name: "custom_item" });
+
+  // Device identity masters — server seed se (0 extra request).
+  // Inline add kiya hua brand picker ke andar auto-select hota hai; uska naam
+  // RHF `brand_name` me aata hai (seed lookup fail hone par bhi label sahi).
+  const brandSeed: JobFormBrand[] = formSeed?.brands ?? [];
+  const modelSeed: JobFormDeviceModel[] = formSeed?.deviceModels ?? [];
+
+  const brandOptions = brandSeed.map((b) => ({
+    id: b.id,
+    label: b.name,
+    sub: b.code ?? undefined,
+  }));
+  const modelOptions = modelSeed
+    .filter((m) => !brandId || m.brand_id === brandId)
+    .map((m) => ({
+      id: m.id,
+      label: m.name,
+      sub: brandSeed.find((b) => b.id === m.brand_id)?.name,
+    }));
+  const composedItem = composeJobItemLabel({
+    brand: brandName,
+    model: modelValue,
+    identifier: serialValue,
+  });
+  const finalItem = clampJobItemLabel(
+    customItem ? (itemValue ?? "") : composedItem || itemValue || ""
+  );
+  const showShrinkWarning =
+    !customItem &&
+    labelShrinks({
+      brand: brandName,
+      model: modelValue,
+      identifier: serialValue,
+      legacyItem: itemValue,
+    });
 
   // Form fields (object/derived state)
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
@@ -352,6 +408,11 @@ function ManageJobPageInner({ params }: { params: Promise<{ id?: string }> }) {
           client_id: null,
           mechanic_id: String(data.mechanic_id || ""),
           item: data.item || "",
+          custom_item: false,
+          brand_id: data.brand_id ?? null,
+          brand_name: formSeed?.brands?.find((b) => b.id === data.brand_id)?.name ?? "",
+          model: data.model ?? "",
+          serial_no: data.serial_no ?? "",
           fault: data.fault || "",
           location_id: data.location_id ?? null,
           location_name: data.location_id ? data.uniq_id || "" : "", // dual-write: naam = uniq_id
@@ -415,7 +476,7 @@ function ManageJobPageInner({ params }: { params: Promise<{ id?: string }> }) {
       }
     };
     loadJob();
-  }, [jobId, isEdit, pickClient, reset, router]);
+  }, [jobId, isEdit, pickClient, reset, router, formSeed]);
 
   // ── ADD NEW CLIENT ─────────────────────────────────────────────────────
   const saveNewClient = handleClientSubmit(async (values) => {
@@ -746,6 +807,18 @@ function ManageJobPageInner({ params }: { params: Promise<{ id?: string }> }) {
         setJobCode(finalJobCode);
       }
 
+      // Device identity → item derived label. Custom escape sab ko override karta
+      // hai (UX plan §4.4) — purana free-text kabhi silently nahi chhuppa.
+      const current = getValues();
+      const composed = composeJobItemLabel({
+        brand: current.brand_name,
+        model: current.model,
+        identifier: current.serial_no,
+      });
+      const savedItem = clampJobItemLabel(
+        current.custom_item ? current.item : composed || current.item
+      );
+
       const payload = {
         // user_id = logged-in user's numeric id (profiles.mechanic_id → old PHP users.id)
         user_id: currentUserId,
@@ -753,7 +826,10 @@ function ManageJobPageInner({ params }: { params: Promise<{ id?: string }> }) {
         mechanic_id: parseInt(values.mechanic_id),
         code: txnCode, // YYYYMMDD+seq e.g. "2025102401"
         job_id: finalJobCode, // global seq e.g. "27270
-        item: values.item,
+        item: savedItem,
+        brand_id: current.brand_id,
+        model: current.model.trim() || null,
+        serial_no: current.serial_no.trim() || null,
         fault: values.fault,
         // dual-write: location ho to spot naam, warna legacy text
         uniq_id: (values.location_id ? values.location_name : values.legacy_uniq_id) || "",
@@ -1492,18 +1568,101 @@ function ManageJobPageInner({ params }: { params: Promise<{ id?: string }> }) {
               <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-2 mb-4">
                 2. Device Information
               </p>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className={labelCls}>
-                    <Smartphone size={13} className="text-blue-400" />
-                    Item / Model <span className="text-red-400">*</span>
-                  </label>
-                  <input
-                    {...register("item")}
-                    placeholder="e.g. iPhone 15 Pro, Samsung S24"
-                    className={inputCls}
-                  />
+              {/* ── Device Identity: Item → Brand → Model → Identifier ────── */}
+              <div className="rounded-xl border border-app bg-panel-2/40 p-4 mb-5">
+                <div className="flex items-center justify-between flex-wrap gap-2 mb-3">
+                  <p className="text-[10px] font-black uppercase tracking-[0.18em] text-blue-300 flex items-center gap-1.5">
+                    <Smartphone size={13} /> Device Identity
+                  </p>
+                  <span className="text-[10px] text-muted-2">
+                    Item → Brand → Model → Identifier · list me na ho to &quot;+&quot; se add karo
+                  </span>
                 </div>
+
+                {/* 1) ITEM */}
+                <div className="mb-4">
+                  <div className="flex items-center justify-between gap-3 flex-wrap">
+                    <label className={labelCls + " mb-0"}>
+                      <Smartphone size={13} className="text-blue-400" />
+                      Item * (auto / custom)
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setValue("custom_item", !customItem)}
+                      className="text-[11px] font-bold text-blue-400 hover:text-blue-300 underline underline-offset-2"
+                    >
+                      {customItem ? "Wapas auto banayein" : "Apna text likhein"}
+                    </button>
+                  </div>
+                  {customItem ? (
+                    <input
+                      {...register("item")}
+                      placeholder="Apna item text likhein…"
+                      className={`${inputCls} mt-1.5`}
+                    />
+                  ) : (
+                    <input
+                      readOnly
+                      value={finalItem}
+                      placeholder="Brand · Model · Identifier se auto banega"
+                      className={`${inputCls} mt-1.5 opacity-90`}
+                    />
+                  )}
+                  <p className="text-[10px] text-muted-2 mt-1">
+                    Ye label bill, WhatsApp aur reports me dikhega.
+                  </p>
+                  {showShrinkWarning && (
+                    <p className="text-[11px] text-amber-400 mt-1 flex items-start gap-1.5">
+                      <AlertCircle size={12} className="mt-0.5 shrink-0" />
+                      Purana item text chhota ho jayega — zaroori dikhe to &quot;Apna text
+                      likhein&quot; dabayein.
+                    </p>
+                  )}
+                </div>
+
+                {/* 2) BRAND → 3) MODEL → 4) IDENTIFIER (free text, optional) */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-3 border-t border-app">
+                  <div>
+                    <label className={labelCls}>Brand</label>
+                    <DeviceFieldPicker
+                      kind="brand"
+                      value={brandId}
+                      options={brandOptions}
+                      onSelect={(id, label) => {
+                        const nextId = typeof id === "number" ? id : null;
+                        if (brandId && nextId !== brandId && modelValue) {
+                          setValue("model", "");
+                          toast.info("Brand badla — model clear kar diya.");
+                        }
+                        setValue("brand_id", nextId);
+                        setValue("brand_name", label);
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <label className={labelCls}>Model</label>
+                    <DeviceFieldPicker
+                      kind="model"
+                      value={modelValue}
+                      brandId={brandId}
+                      options={modelOptions}
+                      onSelect={(_v, label) => setValue("model", label)}
+                    />
+                  </div>
+                  <div>
+                    <label className={labelCls}>Identifier (Serial / IMEI) — optional</label>
+                    <input
+                      {...register("serial_no")}
+                      onBlur={(e) => setValue("serial_no", normalizeIdentifier(e.target.value))}
+                      placeholder="Type karein (har item ka unique)"
+                      maxLength={120}
+                      className={inputCls}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className={labelCls}>
                     <AlertCircle size={13} className="text-red-400" />
@@ -1922,7 +2081,7 @@ function ManageJobPageInner({ params }: { params: Promise<{ id?: string }> }) {
             </Link>
             <div className="flex-1 text-xs text-muted-2 font-bold hidden lg:block truncate text-right">
               {selectedClient ? `Client: ${selectedClient.fullname}` : "Client select karo"} ·{" "}
-              {itemValue || "Item?"} · {faultValue || "Fault?"}
+              {finalItem || "Item?"} · {faultValue || "Fault?"}
             </div>
             <button
               type="button"

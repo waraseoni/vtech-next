@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, type ReactNode } from "react";
 import { supabase, getCachedUser } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -19,6 +19,8 @@ import PageLoader from "@/components/PageLoader";
 import SearchableSelect from "@/components/SearchableSelect";
 import { getNextJobId, peekNextJobId, bumpJobCounter } from "@/lib/jobIdCounter";
 import { toast } from "@/lib/toast";
+import DeviceFieldPicker from "@/components/DeviceFieldPicker";
+import { clampJobItemLabel, composeJobItemLabel, normalizeIdentifier } from "@/lib/deviceIdentity";
 import { useJobAuxSeed } from "../JobAuxSeed";
 
 // ─── IST Helper ───────────────────────────────────────────────────────────────
@@ -75,19 +77,72 @@ interface Mechanic {
 interface BulkRow {
   id: number; // local key only
   estJobId: number; // estimated job id (display)
+  /** Item = Brand · Model · Identifier se auto label; customMode par free text. */
   item: string;
+  brandId: number | null;
+  brandName: string;
+  model: string;
+  serial: string;
+  customItem: boolean;
   fault: string;
   mechanic_id: string;
   uniq_id: string;
   remark: string;
 }
 
+/** Har nayi row ka empty shape — ek hi jagah se (seed/fetch/add deto same). */
+const emptyBulkRow = (id: number, estJobId: number, mechanicId = ""): BulkRow => ({
+  id,
+  estJobId,
+  item: "",
+  brandId: null,
+  brandName: "",
+  model: "",
+  serial: "",
+  customItem: false,
+  fault: "",
+  mechanic_id: mechanicId,
+  uniq_id: "",
+  remark: "",
+});
+
+// Sabhi controls (input / SearchableSelect / DeviceFieldPicker) ki height aur
+// radius ek hi jaisa — isi se row ke boxes symmetrical dikhte hain.
 const iCls =
-  "w-full px-2.5 py-2 bg-app border border-app rounded-lg text-xs text-white outline-none focus:border-blue-500/60 transition-all";
+  "w-full min-h-[42px] px-3 py-2.5 bg-app border border-app rounded-xl text-xs text-white outline-none focus:border-blue-500/60 transition-all placeholder:text-muted-2";
 const iClsErr =
-  "w-full px-2.5 py-2 bg-app border border-red-500/60 rounded-lg text-xs text-white outline-none focus:border-red-400 transition-all";
-const lCls = "block text-[9px] font-bold uppercase tracking-wider text-muted mb-1";
+  "w-full min-h-[42px] px-3 py-2.5 bg-app border border-red-500/60 rounded-xl text-xs text-white outline-none focus:border-red-400 transition-all placeholder:text-red-300/60";
+const lCls = "block min-h-[14px] text-[9px] font-black uppercase tracking-wider text-muted mb-1.5";
 const fieldErr = (fields: string[] | undefined, key: string) => fields?.includes(key);
+
+/** Label + control ka ek hi wrapper — har field me label same jagah. */
+function BulkField({
+  label,
+  required,
+  error,
+  action,
+  children,
+}: {
+  label: string;
+  required?: boolean;
+  error?: boolean;
+  action?: ReactNode;
+  children: ReactNode;
+}) {
+  return (
+    <div className="min-w-0">
+      <div className="flex items-center justify-between gap-2">
+        <label className={lCls}>
+          {label}
+          {required && <span className="text-red-400 ml-0.5">*</span>}
+          {error && <span className="text-red-400 ml-1 normal-case">· missing</span>}
+        </label>
+        {action}
+      </div>
+      {children}
+    </div>
+  );
+}
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function BulkJobPage() {
@@ -100,23 +155,15 @@ export default function BulkJobPage() {
   const [clients, setClients] = useState<Client[]>(seed?.clients ?? []);
   const [mechanics, setMechanics] = useState<Mechanic[]>(seed?.mechanics ?? []);
   const [clientId, setClientId] = useState("");
+  // Device identity ab per-row hai — global override nahi. Har job ke liye
+  // alag Item → Brand → Model → Identifier (user ka maanga hua kram).
   const [globalMech, setGlobalMech] = useState("");
   // Global mechanic ka hamesha-fresh mirror — searchable dropdown se select ke
   // baad addRow ko latest value mile (stale closure se bachne ke liye).
   const globalMechRef = useRef("");
   const [baseJobId, setBaseJobId] = useState(seed?.nextJobId ?? 0);
   const [rows, setRows] = useState<BulkRow[]>(
-    seed
-      ? [0, 1, 2].map((i) => ({
-          id: i,
-          estJobId: seed.nextJobId + i,
-          item: "",
-          fault: "",
-          mechanic_id: "",
-          uniq_id: "",
-          remark: "",
-        }))
-      : []
+    seed ? [0, 1, 2].map((i) => emptyBulkRow(i, seed.nextJobId + i)) : []
   );
   const [rowKey, setRowKey] = useState(seed ? 3 : 100); // unique key counter
   const [loading, setLoading] = useState(!seed);
@@ -126,6 +173,34 @@ export default function BulkJobPage() {
   const savingRef = useRef(false);
   // Row-wise validation errors (missing fields) — save-block warning ke liye
   const [rowErrs, setRowErrs] = useState<Record<number, string[]>>({});
+
+  // Device masters — brand dropdown + row-wala model (brand-linked) options.
+  const deviceMasters = seed?.deviceMasters;
+  const brandOptions = (deviceMasters?.brands ?? []).map((b) => ({
+    id: b.id,
+    label: b.name,
+    sub: b.code ?? undefined,
+  }));
+  const modelOptionsFor = (brandId: number | null) =>
+    (deviceMasters?.models ?? [])
+      .filter((m) => !brandId || m.brand_id === brandId)
+      .map((m) => ({
+        id: m.id,
+        label: m.name,
+        sub: deviceMasters?.brands.find((b) => b.id === m.brand_id)?.name,
+      }));
+
+  /** Row ka final `item` — new/edit ke saath ek hi compose rule. */
+  const itemOf = (r: BulkRow) =>
+    clampJobItemLabel(
+      composeJobItemLabel({
+        brand: r.brandName,
+        model: r.model,
+        identifier: r.serial,
+        customItem: r.customItem ? r.item : undefined,
+        legacyItem: r.item,
+      })
+    );
 
   // ── Fetch master data ──────────────────────────────────────────────────────
   const fetchMaster = useCallback(async () => {
@@ -147,15 +222,7 @@ export default function BulkJobPage() {
     const nextId = await peekNextJobId(); // preview only — no claim
     setBaseJobId(nextId);
     // Start with 3 empty rows
-    const initial: BulkRow[] = [0, 1, 2].map((i) => ({
-      id: i,
-      estJobId: nextId + i,
-      item: "",
-      fault: "",
-      mechanic_id: "",
-      uniq_id: "",
-      remark: "",
-    }));
+    const initial: BulkRow[] = [0, 1, 2].map((i) => emptyBulkRow(i, nextId + i));
     setRows(initial);
     setRowKey(3);
     setLoading(false);
@@ -169,18 +236,7 @@ export default function BulkJobPage() {
   // ── Add row ────────────────────────────────────────────────────────────────
   const addRow = () => {
     const newEstJobId = baseJobId + rows.length;
-    setRows((prev) => [
-      ...prev,
-      {
-        id: rowKey,
-        estJobId: newEstJobId,
-        item: "",
-        fault: "",
-        mechanic_id: globalMechRef.current,
-        uniq_id: "",
-        remark: "",
-      },
-    ]);
+    setRows((prev) => [...prev, emptyBulkRow(rowKey, newEstJobId, globalMechRef.current)]);
     setRowKey((k) => k + 1);
   };
 
@@ -198,12 +254,12 @@ export default function BulkJobPage() {
   };
 
   // ── Update row field ───────────────────────────────────────────────────────
-  const updateRow = (id: number, field: keyof BulkRow, val: string) => {
-    setRows((prev) => prev.map((r) => (r.id === id ? { ...r, [field]: val } : r)));
+  const updateRow = (id: number, patch: Partial<BulkRow>) => {
+    setRows((prev) => prev.map((r) => (r.id === id ? { ...r, ...patch } : r)));
     // Live re-validate — field bharte hi us row ka error turant hat jaye
     setRowErrs((prevErrs) => {
       if (!prevErrs[id]) return prevErrs;
-      const updatedRows = rows.map((r) => (r.id === id ? { ...r, [field]: val } : r));
+      const updatedRows = rows.map((r) => (r.id === id ? { ...r, ...patch } : r));
       const single = buildRowValidation(updatedRows)[id];
       const next = { ...prevErrs };
       if (single) next[id] = single;
@@ -232,10 +288,10 @@ export default function BulkJobPage() {
     const errs: Record<number, string[]> = {};
     list.forEach((r) => {
       const miss: string[] = [];
-      if (!r.item.trim()) miss.push("Item / Model");
+      if (!itemOf(r)) miss.push("Item / Model");
       if (!r.fault.trim()) miss.push("Fault Reported");
       // Mechanic sirf unhi rows me mandatory hai jo save hongi (item+fault filled)
-      if (r.item.trim() && r.fault.trim() && !r.mechanic_id) miss.push("Mechanic");
+      if (itemOf(r) && r.fault.trim() && !r.mechanic_id) miss.push("Mechanic");
       if (miss.length) errs[r.id] = miss;
     });
     return errs;
@@ -268,7 +324,7 @@ export default function BulkJobPage() {
     setRowErrs({});
 
     // Filter valid rows
-    const validRows = rows.filter((r) => r.item.trim() && r.fault.trim() && r.mechanic_id);
+    const validRows = rows.filter((r) => itemOf(r) && r.fault.trim() && r.mechanic_id);
     if (validRows.length === 0) {
       toast.error("Kam se kam ek row mein item, fault aur mechanic fill karo!");
       return;
@@ -302,7 +358,10 @@ export default function BulkJobPage() {
         client_name: String(clientId),
         job_id: String(nextJobId + i),
         code: `${codePrefix}${String(baseSeq + i).padStart(2, "0")}`,
-        item: row.item.trim(),
+        item: itemOf(row),
+        brand_id: row.brandId,
+        model: row.model.trim() || null,
+        serial_no: normalizeIdentifier(row.serial) || null,
         fault: row.fault.trim(),
         remark: row.remark.trim() || "",
         uniq_id: row.uniq_id.trim() || "",
@@ -345,11 +404,12 @@ export default function BulkJobPage() {
     if (!firstId) return;
     const el = visibleEls(`[data-bulk-row="${firstId}"]`)[0];
     el?.scrollIntoView({ behavior: "smooth", block: "center" });
-    // Pehla missing field focus karo (item → fault → mechanic)
+    // Pehla missing field focus karo (item → brand → fault → mechanic)
+    // Item auto-label hai — uski jagah Brand picker focus karna zyada useful hai.
     const errFields = errs[firstId] || [];
     setTimeout(() => {
       const sel = errFields.includes("Item / Model")
-        ? `[data-bulk-input-item="${firstId}"]`
+        ? `[data-bulk-input-brand="${firstId}"] button`
         : errFields.includes("Fault Reported")
           ? `[data-bulk-input-fault="${firstId}"]`
           : errFields.includes("Mechanic")
@@ -456,6 +516,18 @@ export default function BulkJobPage() {
           </div>
         </div>
 
+        {/* ── Device identity ab per-row hai (global override hata diya) ── */}
+        <div className="bg-panel/60 border border-app rounded-xl px-4 py-2.5">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-muted">
+            Device details har row me alag-alag bharo — kram: Item → Brand → Model → Identifier
+          </p>
+          <p className="text-[9px] text-muted-2 mt-0.5">
+            Item automatically &quot;Brand · Model · Identifier&quot; banega. Apna text chahiye to
+            row me &quot;Apna text&quot; dabayein. Identifier optional hai — har item ka unique hota
+            hai, isliye type karke bharo.
+          </p>
+        </div>
+
         {/* ── Validation Warning Banner ── */}
         {Object.keys(rowErrs).length > 0 && (
           <div className="flex items-start gap-3 bg-red-500/10 border border-red-500/30 rounded-2xl px-4 py-3">
@@ -476,237 +548,188 @@ export default function BulkJobPage() {
           </div>
         )}
 
-        {/* ── Desktop Table View ── */}
-        <div className="hidden md:block bg-panel border border-app rounded-2xl overflow-hidden">
-          <table className="w-full text-xs">
-            <thead>
-              <tr className="bg-emerald-900/40 border-b border-app">
-                <th className="px-3 py-3 text-center text-[9px] font-black text-emerald-300 uppercase w-10">
-                  #
-                </th>
-                <th className="px-3 py-3 text-center text-[9px] font-black text-emerald-300 uppercase w-24">
-                  Job ID (Est.)
-                </th>
-                <th className="px-3 py-3 text-left text-[9px] font-black text-emerald-300 uppercase">
-                  Item / Model <span className="text-red-400">*</span>
-                </th>
-                <th className="px-3 py-3 text-left text-[9px] font-black text-emerald-300 uppercase">
-                  Fault Reported <span className="text-red-400">*</span>
-                </th>
-                <th className="px-3 py-3 text-left text-[9px] font-black text-emerald-300 uppercase w-40">
-                  Assign To
-                </th>
-                <th className="px-3 py-3 text-left text-[9px] font-black text-emerald-300 uppercase w-28">
-                  Unique ID
-                </th>
-                <th className="px-3 py-3 text-left text-[9px] font-black text-emerald-300 uppercase w-32">
-                  Remarks
-                </th>
-                <th className="px-3 py-3 text-center w-10"></th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#21293d]">
-              {rows.map((row, i) => {
-                const rErrs = rowErrs[row.id];
-                return (
-                  <tr
-                    key={row.id}
-                    data-bulk-row={row.id}
-                    className={`transition-colors ${
-                      rErrs ? "bg-red-500/[0.05]" : "hover:bg-white/[0.015]"
-                    }`}
-                  >
-                    <td className="px-3 py-2.5 text-center text-muted-2 font-bold">
-                      {i + 1}
-                      {rErrs && (
-                        <span className="block text-[8px] text-red-400 font-black uppercase">
-                          missing
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-3 py-2.5">
-                      <div className="flex items-center gap-1 bg-app border border-app rounded-lg px-2.5 py-1.5 justify-center">
-                        <Hash size={10} className="text-muted-2" />
-                        <span className="text-amber-400 font-black text-xs">{row.estJobId}</span>
-                      </div>
-                    </td>
-                    <td className="px-3 py-2.5">
-                      <input
-                        type="text"
-                        data-bulk-input-item={row.id}
-                        value={row.item}
-                        onChange={(e) => updateRow(row.id, "item", e.target.value)}
-                        placeholder="Item / Model"
-                        className={fieldErr(rErrs, "Item / Model") ? iClsErr : iCls}
-                        required
-                      />
-                    </td>
-                    <td className="px-3 py-2.5">
-                      <input
-                        type="text"
-                        data-bulk-input-fault={row.id}
-                        value={row.fault}
-                        onChange={(e) => updateRow(row.id, "fault", e.target.value)}
-                        placeholder="Fault"
-                        className={fieldErr(rErrs, "Fault Reported") ? iClsErr : iCls}
-                        required
-                      />
-                    </td>
-                    <td className="px-3 py-2.5">
-                      <div
-                        data-bulk-mech={row.id}
-                        className={
-                          fieldErr(rErrs, "Mechanic") ? "rounded-xl ring-2 ring-red-500/60" : ""
-                        }
-                      >
-                        <SearchableSelect
-                          value={row.mechanic_id}
-                          options={mechOptions.map((m) => ({ id: m.id, label: m.name }))}
-                          onSelect={(v) => updateRow(row.id, "mechanic_id", v)}
-                          placeholder="Select"
-                          clearLabel="Select"
-                        />
-                      </div>
-                      {fieldErr(rErrs, "Mechanic") && (
-                        <span className="block text-[9px] text-red-400 font-bold mt-0.5">
-                          Mechanic select karo
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-3 py-2.5">
-                      <input
-                        type="text"
-                        value={row.uniq_id}
-                        onChange={(e) => updateRow(row.id, "uniq_id", e.target.value)}
-                        placeholder="Location/ID"
-                        className={iCls}
-                      />
-                    </td>
-                    <td className="px-3 py-2.5">
-                      <input
-                        type="text"
-                        value={row.remark}
-                        onChange={(e) => updateRow(row.id, "remark", e.target.value)}
-                        placeholder="Notes"
-                        className={iCls}
-                      />
-                    </td>
-                    <td className="px-3 py-2.5 text-center">
-                      <button
-                        onClick={() => removeRow(row.id)}
-                        className="w-7 h-7 flex items-center justify-center bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-lg transition-colors"
-                      >
-                        <Trash2 size={11} />
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-
-        {/* ── Mobile Card View ── */}
-        <div className="md:hidden space-y-3">
+        {/* ── Rows — ek hi uniform grid (desktop 2×4, mobile 4×2) ── */}
+        <div className="space-y-3">
           {rows.map((row, i) => {
             const rErrs = rowErrs[row.id];
+            const itemErr = fieldErr(rErrs, "Item / Model");
+            const faultErr = fieldErr(rErrs, "Fault Reported");
+            const mechErr = fieldErr(rErrs, "Mechanic");
             return (
               <div
                 key={row.id}
                 data-bulk-row={row.id}
-                className={`bg-panel border rounded-2xl p-4 relative ${
-                  rErrs
-                    ? "border-red-500/60 border-l-4 border-l-red-500"
-                    : "border-app border-l-4 border-l-emerald-500"
+                className={`bg-panel border rounded-2xl overflow-hidden ${
+                  rErrs ? "border-red-500/50" : "border-app"
                 }`}
               >
-                <span className="absolute top-3 right-4 text-app font-black text-lg">#{i + 1}</span>
-                {rErrs && (
-                  <span className="inline-block text-[9px] text-red-400 font-black uppercase bg-red-500/10 border border-red-500/30 rounded-md px-1.5 py-0.5 mb-2">
-                    {rErrs.join(", ")} missing
-                  </span>
-                )}
-                <div className="grid grid-cols-2 gap-3 mb-3">
-                  <div>
-                    <label className={lCls}>Job ID (Est.)</label>
-                    <div className="flex items-center gap-1 bg-app border border-app rounded-lg px-2.5 py-2">
-                      <Hash size={10} className="text-muted-2" />
-                      <span className="text-amber-400 font-black text-xs">{row.estJobId}</span>
+                {/* Row header */}
+                <div
+                  className={`flex items-center justify-between gap-3 px-4 py-2.5 border-b ${
+                    rErrs ? "bg-red-500/10 border-red-500/30" : "bg-panel-2/50 border-app"
+                  }`}
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <span className="w-7 h-7 flex-shrink-0 rounded-lg bg-emerald-500/15 text-emerald-300 flex items-center justify-center text-[11px] font-black">
+                      {i + 1}
+                    </span>
+                    <div>
+                      <p className="text-[8px] font-black uppercase tracking-wider text-muted-2">
+                        Job ID (Est.)
+                      </p>
+                      <p className="flex items-center gap-1 text-xs font-black text-amber-400">
+                        <Hash size={10} /> {row.estJobId}
+                      </p>
                     </div>
+                    {rErrs && (
+                      <span className="text-[9px] font-bold text-red-400 bg-red-500/10 border border-red-500/30 rounded-md px-2 py-1 truncate">
+                        {rErrs.join(", ")} missing
+                      </span>
+                    )}
                   </div>
-                  <div>
-                    <label className={lCls}>Unique ID</label>
+                  <button
+                    type="button"
+                    onClick={() => removeRow(row.id)}
+                    title="Is row ko hatao"
+                    className="flex-shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-red-500/20 text-red-400 hover:bg-red-500/10 transition-colors"
+                  >
+                    <Trash2 size={12} />
+                    <span className="hidden sm:inline text-[10px] font-bold">Remove</span>
+                  </button>
+                </div>
+
+                {/* 8 fields — same label + same control height */}
+                <div className="p-4 grid grid-cols-2 lg:grid-cols-4 gap-3">
+                  {/* 1) ITEM */}
+                  <BulkField
+                    label="Item"
+                    required
+                    error={itemErr}
+                    action={
+                      <button
+                        type="button"
+                        onClick={() => updateRow(row.id, { customItem: !row.customItem })}
+                        className="text-[8px] font-bold text-blue-400 hover:text-blue-300 underline whitespace-nowrap mb-2"
+                      >
+                        {row.customItem ? "Auto" : "Apna text"}
+                      </button>
+                    }
+                  >
+                    {row.customItem ? (
+                      <input
+                        type="text"
+                        data-bulk-input-item={row.id}
+                        value={row.item}
+                        onChange={(e) => updateRow(row.id, { item: e.target.value })}
+                        placeholder="Apna item text"
+                        className={itemErr ? iClsErr : iCls}
+                      />
+                    ) : (
+                      <input
+                        readOnly
+                        data-bulk-input-item={row.id}
+                        value={itemOf(row)}
+                        placeholder="Brand · Model · Identifier"
+                        className={`${iCls} truncate opacity-90`}
+                      />
+                    )}
+                  </BulkField>
+
+                  {/* 2) BRAND */}
+                  <BulkField label="Brand" error={itemErr}>
+                    <div data-bulk-input-brand={row.id}>
+                      <DeviceFieldPicker
+                        kind="brand"
+                        value={row.brandId}
+                        options={brandOptions}
+                        onSelect={(id, label) => {
+                          const nextId = typeof id === "number" ? id : null;
+                          updateRow(row.id, {
+                            brandId: nextId,
+                            brandName: label,
+                            model: row.brandId && nextId !== row.brandId ? "" : row.model,
+                          });
+                        }}
+                      />
+                    </div>
+                  </BulkField>
+
+                  {/* 3) MODEL */}
+                  <BulkField label="Model">
+                    <DeviceFieldPicker
+                      kind="model"
+                      value={row.model}
+                      brandId={row.brandId}
+                      options={modelOptionsFor(row.brandId)}
+                      onSelect={(_v, label) => updateRow(row.id, { model: label })}
+                    />
+                  </BulkField>
+
+                  {/* 4) IDENTIFIER — optional free text */}
+                  <BulkField label="Identifier">
                     <input
                       type="text"
-                      value={row.uniq_id}
-                      onChange={(e) => updateRow(row.id, "uniq_id", e.target.value)}
-                      placeholder="Location/ID"
+                      value={row.serial}
+                      onChange={(e) => updateRow(row.id, { serial: e.target.value })}
+                      onBlur={(e) =>
+                        updateRow(row.id, { serial: normalizeIdentifier(e.target.value) })
+                      }
+                      placeholder="Optional · S/N / IMEI"
+                      maxLength={120}
                       className={iCls}
                     />
-                  </div>
-                </div>
-                <div className="space-y-2.5">
-                  <div>
-                    <label className={lCls}>Item / Model *</label>
-                    <input
-                      type="text"
-                      data-bulk-input-item={row.id}
-                      value={row.item}
-                      onChange={(e) => updateRow(row.id, "item", e.target.value)}
-                      placeholder="Item Name / Model"
-                      className={fieldErr(rErrs, "Item / Model") ? iClsErr : iCls}
-                    />
-                  </div>
-                  <div>
-                    <label className={lCls}>Fault Reported *</label>
+                  </BulkField>
+
+                  {/* 5) FAULT */}
+                  <BulkField label="Fault Reported" required error={faultErr}>
                     <input
                       type="text"
                       data-bulk-input-fault={row.id}
                       value={row.fault}
-                      onChange={(e) => updateRow(row.id, "fault", e.target.value)}
-                      placeholder="Reported Fault"
-                      className={fieldErr(rErrs, "Fault Reported") ? iClsErr : iCls}
+                      onChange={(e) => updateRow(row.id, { fault: e.target.value })}
+                      placeholder="Reported fault"
+                      className={faultErr ? iClsErr : iCls}
                     />
-                  </div>
-                  <div>
-                    <label className={lCls}>Assign To</label>
+                  </BulkField>
+
+                  {/* 6) ASSIGN TO */}
+                  <BulkField label="Assign To" error={mechErr}>
                     <div
                       data-bulk-mech={row.id}
-                      className={
-                        fieldErr(rErrs, "Mechanic") ? "rounded-xl ring-2 ring-red-500/60" : ""
-                      }
+                      className={mechErr ? "rounded-xl ring-2 ring-red-500/60" : ""}
                     >
                       <SearchableSelect
                         value={row.mechanic_id}
                         options={mechOptions.map((m) => ({ id: m.id, label: m.name }))}
-                        onSelect={(v) => updateRow(row.id, "mechanic_id", v)}
-                        placeholder="Select Mechanic"
-                        clearLabel="Select Mechanic"
+                        onSelect={(v) => updateRow(row.id, { mechanic_id: v })}
+                        placeholder="Select mechanic"
+                        clearLabel="Select mechanic"
                       />
                     </div>
-                    {fieldErr(rErrs, "Mechanic") && (
-                      <span className="block text-[9px] text-red-400 font-bold mt-0.5">
-                        Mechanic select karo
-                      </span>
-                    )}
-                  </div>
-                  <div>
-                    <label className={lCls}>Remarks</label>
+                  </BulkField>
+
+                  {/* 7) UNIQUE ID */}
+                  <BulkField label="Unique ID">
+                    <input
+                      type="text"
+                      value={row.uniq_id}
+                      onChange={(e) => updateRow(row.id, { uniq_id: e.target.value })}
+                      placeholder="Location / ID"
+                      className={iCls}
+                    />
+                  </BulkField>
+
+                  {/* 8) REMARKS */}
+                  <BulkField label="Remarks">
                     <input
                       type="text"
                       value={row.remark}
-                      onChange={(e) => updateRow(row.id, "remark", e.target.value)}
+                      onChange={(e) => updateRow(row.id, { remark: e.target.value })}
                       placeholder="Additional notes"
                       className={iCls}
                     />
-                  </div>
+                  </BulkField>
                 </div>
-                <button
-                  onClick={() => removeRow(row.id)}
-                  className="mt-3 w-full flex items-center justify-center gap-1.5 py-2 border border-red-500/20 text-red-400 hover:bg-red-500/10 rounded-xl text-xs font-bold transition-colors"
-                >
-                  <Trash2 size={12} /> Remove This Item
-                </button>
               </div>
             );
           })}
@@ -722,8 +745,7 @@ export default function BulkJobPage() {
           </button>
           <div className="flex items-center gap-3">
             <span className="text-xs text-muted-2">
-              {rows.filter((r) => r.item.trim() && r.fault.trim()).length} / {rows.length} rows
-              filled
+              {rows.filter((r) => itemOf(r) && r.fault.trim()).length} / {rows.length} rows filled
             </span>
             <button
               onClick={handleSaveAll}

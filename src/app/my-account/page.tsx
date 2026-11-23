@@ -30,6 +30,9 @@ type Job = {
   job_id: string;
   code?: string | null;
   item?: string | null;
+  brand_id?: number | null;
+  model?: string | null;
+  serial_no?: string | null;
   fault?: string | null;
   remark?: string | null;
   status: number;
@@ -241,6 +244,11 @@ export default function MyAccountPage() {
                 </div>
 
                 <p className="text-app-2 font-bold text-sm mt-3">{j.item || "Item nahi likha"}</p>
+                {(j.model || j.serial_no) && (
+                  <p className="text-[10px] text-muted-2 mt-0.5">
+                    {[j.model, j.serial_no && `S/N ${j.serial_no}`].filter(Boolean).join(" · ")}
+                  </p>
+                )}
                 {j.fault && <p className="text-muted text-xs mt-1">{j.fault}</p>}
                 {j.remark && <p className="text-muted-2 text-xs mt-1 italic">{j.remark}</p>}
 

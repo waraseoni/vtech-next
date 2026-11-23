@@ -27,15 +27,38 @@ export type JobMechanicRow = {
 
 export type JobSpotRow = { id: number; name: string };
 
+/** Device identity masters — bulk screens ka shared override isi se bharte hain. */
+export type DeviceMasterSeed = {
+  brands: Array<{ id: number; name: string; code: string | null }>;
+  models: Array<{ id: number; name: string; brand_id: number | null }>;
+  identifiers: Array<{ id: number; value: string }>;
+};
+
+/** Migration apply se pehle tables na hon to khali — errors deliberately ignore. */
+async function fetchDeviceMasterSeed(supabase: SupabaseClient): Promise<DeviceMasterSeed> {
+  const [bRes, mRes, iRes] = await Promise.all([
+    supabase.from("brands").select("id, name, code").eq("is_active", true).order("name"),
+    supabase.from("device_models").select("id, name, brand_id").eq("is_active", true).order("name"),
+    supabase.from("device_identifiers").select("id, value").eq("is_active", true).order("value"),
+  ]);
+  return {
+    brands: (bRes.data || []) as DeviceMasterSeed["brands"],
+    models: (mRes.data || []) as DeviceMasterSeed["models"],
+    identifiers: (iRes.data || []) as DeviceMasterSeed["identifiers"],
+  };
+}
+
 export type BulkJobSeed = {
   clients: JobClientRow[];
   mechanics: JobMechanicRow[];
+  deviceMasters: DeviceMasterSeed;
   nextJobId: number;
 };
 
 export type BulkEditSeed = {
   clients: JobClientRow[];
   mechanics: JobMechanicRow[];
+  deviceMasters: DeviceMasterSeed;
 };
 
 export type CombinedInvoiceSeed = { clients: JobClientAddressRow[] };
@@ -64,6 +87,7 @@ export async function fetchBulkJobSeed(supabase: SupabaseClient): Promise<BulkJo
   return {
     clients: (cRes.data || []) as JobClientRow[],
     mechanics: (mRes.data || []) as JobMechanicRow[],
+    deviceMasters: await fetchDeviceMasterSeed(supabase),
     nextJobId,
   };
 }
@@ -86,6 +110,7 @@ export async function fetchBulkEditSeed(supabase: SupabaseClient): Promise<BulkE
   return {
     clients: (cRes.data || []) as JobClientRow[],
     mechanics: (mRes.data || []) as JobMechanicRow[],
+    deviceMasters: await fetchDeviceMasterSeed(supabase),
   };
 }
 

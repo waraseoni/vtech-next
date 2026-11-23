@@ -23,6 +23,8 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef, Suspense } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
+import DeviceFieldPicker from "@/components/DeviceFieldPicker";
+import { composeJobItemLabel, normalizeIdentifier } from "@/lib/deviceIdentity";
 import ZoomableImage from "@/components/ZoomableImage";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
@@ -895,7 +897,11 @@ function JobsListContent({
   const [quickForm, setQuickForm] = useState({
     clientName: "",
     contact: "",
-    item: "",
+    item: "", // custom/free-text fallback (device fields khali hone par)
+    brandId: null as number | null,
+    brandName: "",
+    model: "",
+    serial: "",
     fault: "",
     mechanicId: "",
   });
@@ -939,9 +945,24 @@ function JobsListContent({
     return name.includes(quickClientSearch.toLowerCase()) || c.contact.includes(quickClientSearch);
   });
 
+  // Identifier har item ka unique hota hai — dropdown nahi, free text. Save se
+  // pehle normalize (trim + uppercase + whitespace collapse) yahin hota hai.
+  const quickSerial = normalizeIdentifier(quickForm.serial);
+  const quickComposedItem = composeJobItemLabel({
+    brand: quickForm.brandName,
+    model: quickForm.model,
+    identifier: quickSerial,
+  });
+
   const handleQuickCreate = async () => {
     if (quickCreateRef.current) return;
-    if (!quickForm.item.trim()) {
+    const composedItem = composeJobItemLabel({
+      brand: quickForm.brandName,
+      model: quickForm.model,
+      identifier: quickSerial,
+    });
+    const savedItem = composedItem || quickForm.item.trim();
+    if (!savedItem) {
       toast.error("Item/Model zaroori hai!");
       return;
     }
@@ -976,7 +997,10 @@ function JobsListContent({
           mechanic_id: parseInt(quickForm.mechanicId),
           code: `${datePrefix}${dailySeq}`,
           job_id: String(nextJobId),
-          item: quickForm.item.trim(),
+          item: savedItem,
+          brand_id: quickForm.brandId,
+          model: quickForm.model.trim() || null,
+          serial_no: quickSerial || null,
           fault: quickForm.fault.trim(),
           remark: "",
           uniq_id: "",
@@ -995,7 +1019,17 @@ function JobsListContent({
       await bumpJobCounter(nextJobId);
 
       setShowQuickCreate(false);
-      setQuickForm({ clientName: "", contact: "", item: "", fault: "", mechanicId: "" });
+      setQuickForm({
+        clientName: "",
+        contact: "",
+        item: "",
+        brandId: null,
+        brandName: "",
+        model: "",
+        serial: "",
+        fault: "",
+        mechanicId: "",
+      });
       setQuickClientId(null);
       fetchStats();
       fetchPage();
@@ -1603,8 +1637,18 @@ function JobsListContent({
                       </div>
                     </td>
 
-                    <td className="px-3 py-2.5 text-xs text-app-2 truncate" title={txn.item}>
-                      {txn.item}
+                    <td className="px-3 py-2.5 text-xs text-app-2" title={txn.item}>
+                      <span className="block truncate">{txn.item}</span>
+                      {(txn.model || txn.serial_no) && (
+                        <span
+                          className="block truncate text-[9px] text-muted-2"
+                          title={txn.serial_no ?? txn.model ?? ""}
+                        >
+                          {[txn.model, txn.serial_no && `S/N ${txn.serial_no}`]
+                            .filter(Boolean)
+                            .join(" · ")}
+                        </span>
+                      )}
                     </td>
                     <td className="px-3 py-2.5 text-xs text-red-400 truncate" title={txn.fault}>
                       {txn.fault}
@@ -2425,6 +2469,9 @@ function JobsListContent({
                   <div className="px-3 py-2.5 border-t border-app space-y-1.5 text-xs">
                     {[
                       { label: "Item/Model", value: txn.item, cls: "text-app-2 font-bold" },
+                      ...(txn.serial_no
+                        ? [{ label: "S/N", value: txn.serial_no, cls: "text-blue-300" }]
+                        : []),
                       { label: "Fault/Issue", value: txn.fault, cls: "text-red-400" },
                     ].map(({ label, value, cls }) => (
                       <div key={label} className="flex justify-between gap-2">
@@ -2758,18 +2805,78 @@ function JobsListContent({
                 )}
               </div>
 
-              {/* Item */}
-              <div>
-                <label className="block text-[10px] font-black uppercase tracking-[0.18em] text-muted mb-1.5">
-                  Item / Model <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g. iPhone 15, Samsung S24"
-                  value={quickForm.item}
-                  onChange={(e) => setQuickForm((p) => ({ ...p, item: e.target.value }))}
-                  className="w-full px-3 py-2.5 bg-slate-50 dark:bg-panel-2 border border-app-2 dark:border-app rounded-xl text-app dark:text-white text-sm placeholder:text-muted dark:placeholder:text-app outline-none focus:border-blue-500"
-                />
+              {/* Device Identity — compact: Item → Brand → Model → Identifier */}
+              <div className="rounded-xl border border-app-2 dark:border-app p-3">
+                <p className="text-[10px] font-black uppercase tracking-[0.18em] text-blue-400 mb-2">
+                  Device Identity
+                </p>
+
+                {/* 1) ITEM */}
+                <div className="mb-3">
+                  <label className="block text-[10px] font-black uppercase tracking-[0.18em] text-muted mb-1.5">
+                    Item / Model (custom)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Apna text likhein (optional)"
+                    value={quickForm.item}
+                    onChange={(e) => setQuickForm((p) => ({ ...p, item: e.target.value }))}
+                    className="w-full px-3 py-2.5 bg-slate-50 dark:bg-panel-2 border border-app-2 dark:border-app rounded-xl text-app dark:text-white text-sm placeholder:text-muted dark:placeholder:text-app outline-none focus:border-blue-500"
+                  />
+                  <p className="text-[10px] text-muted mt-1 truncate">
+                    Item preview:{" "}
+                    <span className="font-bold text-app">
+                      {quickComposedItem || quickForm.item || "—"}
+                    </span>
+                  </p>
+                </div>
+
+                {/* 2) BRAND → 3) MODEL → 4) IDENTIFIER (free text, optional) */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  <div>
+                    <label className="block text-[10px] font-bold text-muted mb-1">Brand</label>
+                    <DeviceFieldPicker
+                      kind="brand"
+                      value={quickForm.brandId}
+                      onSelect={(id, label) =>
+                        setQuickForm((p) => ({
+                          ...p,
+                          brandId: typeof id === "number" ? id : null,
+                          brandName: label,
+                          model: p.brandId && id !== p.brandId ? "" : p.model,
+                        }))
+                      }
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-muted mb-1">Model</label>
+                    <DeviceFieldPicker
+                      kind="model"
+                      value={quickForm.model}
+                      brandId={quickForm.brandId}
+                      onSelect={(_v, label) => setQuickForm((p) => ({ ...p, model: label }))}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-muted mb-1">
+                      Identifier (Serial / IMEI) — optional
+                    </label>
+                    <input
+                      type="text"
+                      value={quickForm.serial}
+                      onChange={(e) => setQuickForm((p) => ({ ...p, serial: e.target.value }))}
+                      onBlur={(e) =>
+                        setQuickForm((p) => ({
+                          ...p,
+                          serial: normalizeIdentifier(e.target.value),
+                        }))
+                      }
+                      placeholder="Type karein (har item ka unique)"
+                      maxLength={120}
+                      className="w-full px-3 py-2.5 bg-slate-50 dark:bg-panel-2 border border-app-2 dark:border-app rounded-xl text-app dark:text-white text-sm placeholder:text-muted dark:placeholder:text-app outline-none focus:border-blue-500"
+                    />
+                  </div>
+                </div>
               </div>
 
               {/* Fault */}

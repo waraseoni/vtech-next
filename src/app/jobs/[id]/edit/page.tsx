@@ -28,6 +28,13 @@ import {
 import PageLoader from "@/components/PageLoader";
 import SearchableSelect from "@/components/SearchableSelect";
 import JobSpotPicker from "@/components/JobSpotPicker";
+import DeviceFieldPicker from "@/components/DeviceFieldPicker";
+import {
+  clampJobItemLabel,
+  composeJobItemLabel,
+  labelShrinks,
+  normalizeIdentifier,
+} from "@/lib/deviceIdentity";
 import { getNextJobId, bumpJobCounter } from "@/lib/jobIdCounter";
 import { fetchClientDue, dueLabel } from "@/lib/client-due";
 import { buildAvailableStock } from "@/app/jobs/jobFormQueries";
@@ -118,6 +125,13 @@ export default function ManageJobPage({ params }: { params: Promise<{ id?: strin
   const [jobCode, setJobCode] = useState<string>(""); // job_id column
   const [txnCode, setTxnCode] = useState<string>(""); // code column (YYYYMMDD+seq)
   const [item, setItem] = useState("");
+  /** DB se aaya asli purana item — compose preview isi se compare hota hai. */
+  const [legacyItem, setLegacyItem] = useState("");
+  const [brandId, setBrandId] = useState<number | null>(null);
+  const [brandName, setBrandName] = useState("");
+  const [modelValue, setModelValue] = useState("");
+  const [serialValue, setSerialValue] = useState("");
+  const [customItemMode, setCustomItemMode] = useState(false);
   const [fault, setFault] = useState("");
   const [uniqId, setUniqId] = useState(""); // legacy free-text (bina location_id wale rows ka fallback)
   const [locId, setLocId] = useState<number | null>(null); // locations.id (kind='job')
@@ -127,6 +141,33 @@ export default function ManageJobPage({ params }: { params: Promise<{ id?: strin
   const [productRows, setProductRows] = useState<ProductRow[]>([]);
   const [commissionAmt, setCommissionAmt] = useState<string>("0");
   const tempIdRef = useRef(0);
+
+  const brandOptions = (formSeed?.brands ?? []).map((b) => ({
+    id: b.id,
+    label: b.name,
+    sub: b.code ?? undefined,
+  }));
+  const modelOptions = (formSeed?.deviceModels ?? [])
+    .filter((m) => !brandId || m.brand_id === brandId)
+    .map((m) => ({
+      id: m.id,
+      label: m.name,
+      sub: (formSeed?.brands ?? []).find((b) => b.id === m.brand_id)?.name,
+    }));
+  const composedItem = composeJobItemLabel({
+    brand: brandName,
+    model: modelValue,
+    identifier: serialValue,
+  });
+  const finalItem = clampJobItemLabel(customItemMode ? item : composedItem || legacyItem || item);
+  const showShrinkWarning =
+    !customItemMode &&
+    labelShrinks({
+      brand: brandName,
+      model: modelValue,
+      identifier: serialValue,
+      legacyItem,
+    });
 
   // Custom (non-inventory) spare
   const [showCustom, setShowCustom] = useState(false);
@@ -303,6 +344,11 @@ export default function ManageJobPage({ params }: { params: Promise<{ id?: strin
         setJobCode(data.job_id ?? "");
         setTxnCode(data.code ?? "");
         setItem(data.item ?? "");
+        setLegacyItem(data.item ?? "");
+        setBrandId(data.brand_id ?? null);
+        setBrandName((formSeed?.brands ?? []).find((b) => b.id === data.brand_id)?.name ?? "");
+        setModelValue(data.model ?? "");
+        setSerialValue(data.serial_no ?? "");
         setFault(data.fault ?? "");
         setUniqId(data.uniq_id ?? "");
         setLocId(data.location_id ?? null);
@@ -367,7 +413,7 @@ export default function ManageJobPage({ params }: { params: Promise<{ id?: strin
       }
     };
     loadJob();
-  }, [jobId, isEdit, fetchClientBalance, router]);
+  }, [jobId, isEdit, fetchClientBalance, router, formSeed]);
 
   // ── ADD NEW CLIENT ─────────────────────────────────────────────────────
   const handleSaveNewClient = async () => {
@@ -698,7 +744,7 @@ export default function ManageJobPage({ params }: { params: Promise<{ id?: strin
       toast.error("Client select karo!");
       return;
     }
-    if (!item.trim()) {
+    if (!finalItem.trim()) {
       toast.error("Item/Model zaroori hai!");
       return;
     }
@@ -735,7 +781,10 @@ export default function ManageJobPage({ params }: { params: Promise<{ id?: strin
         mechanic_id: parseInt(selectedMechanic),
         code: txnCode, // YYYYMMDD+seq e.g. "2025102401"
         job_id: jobCode, // global seq e.g. "27270
-        item: item.trim(),
+        item: finalItem,
+        brand_id: brandId,
+        model: modelValue.trim() || null,
+        serial_no: serialValue.trim() || null,
         fault: fault.trim(),
         uniq_id: (locId ? locName : uniqId).trim() || "", // dual-write: location ho to spot naam, warna legacy text
         location_id: locId,
@@ -1406,19 +1455,104 @@ export default function ManageJobPage({ params }: { params: Promise<{ id?: strin
           <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-2 mb-4">
             2. Device Information
           </p>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className={labelCls}>
-                <Smartphone size={13} className="text-blue-400" />
-                Item / Model <span className="text-red-400">*</span>
-              </label>
-              <input
-                value={item}
-                onChange={(e) => setItem(e.target.value)}
-                placeholder="e.g. iPhone 15 Pro, Samsung S24"
-                className={inputCls}
-              />
+          {/* ── Device Identity: Item → Brand → Model → Identifier ───────── */}
+          <div className="rounded-xl border border-app bg-panel-2/40 p-4 mb-5">
+            <div className="flex items-center justify-between flex-wrap gap-2 mb-3">
+              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-blue-300 flex items-center gap-1.5">
+                <Smartphone size={13} /> Device Identity
+              </p>
+              <span className="text-[10px] text-muted-2">
+                Item → Brand → Model → Identifier · list me na ho to &quot;+&quot; se add karo
+              </span>
             </div>
+
+            {/* 1) ITEM */}
+            <div className="mb-4">
+              <div className="flex items-center justify-between gap-3 flex-wrap">
+                <label className={labelCls + " mb-0"}>
+                  <Smartphone size={13} className="text-blue-400" />
+                  Item * (auto / custom)
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setCustomItemMode(!customItemMode)}
+                  className="text-[11px] font-bold text-blue-400 hover:text-blue-300 underline underline-offset-2"
+                >
+                  {customItemMode ? "Wapas auto banayein" : "Apna text likhein"}
+                </button>
+              </div>
+              {customItemMode ? (
+                <input
+                  value={item}
+                  onChange={(e) => setItem(e.target.value)}
+                  placeholder="Apna item text likhein…"
+                  className={`${inputCls} mt-1.5`}
+                />
+              ) : (
+                <input
+                  readOnly
+                  value={finalItem}
+                  placeholder="Brand · Model · Identifier se auto banega"
+                  className={`${inputCls} mt-1.5 opacity-90`}
+                />
+              )}
+              <p className="text-[10px] text-muted-2 mt-1">
+                Ye label bill, WhatsApp aur reports me dikhega.
+              </p>
+              {showShrinkWarning && (
+                <p className="text-[11px] text-amber-400 mt-1 flex items-start gap-1.5">
+                  <AlertCircle size={12} className="mt-0.5 shrink-0" />
+                  Purana item text chhota ho jayega — zaroori dikhe to &quot;Apna text likhein&quot;
+                  dabayein.
+                </p>
+              )}
+            </div>
+
+            {/* 2) BRAND → 3) MODEL → 4) IDENTIFIER (free text, optional) */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-3 border-t border-app">
+              <div>
+                <label className={labelCls}>Brand</label>
+                <DeviceFieldPicker
+                  kind="brand"
+                  value={brandId}
+                  options={brandOptions}
+                  onSelect={(id, label) => {
+                    const nextId = typeof id === "number" ? id : null;
+                    if (brandId && nextId !== brandId && modelValue) {
+                      setModelValue("");
+                      toast.info("Brand badla — model clear kar diya.");
+                    }
+                    setBrandId(nextId);
+                    setBrandName(label);
+                  }}
+                />
+              </div>
+              <div>
+                <label className={labelCls}>Model</label>
+                <DeviceFieldPicker
+                  kind="model"
+                  value={modelValue}
+                  brandId={brandId}
+                  options={modelOptions}
+                  onSelect={(_v, label) => setModelValue(label)}
+                />
+              </div>
+              <div>
+                <label className={labelCls}>Identifier (Serial / IMEI) — optional</label>
+                <input
+                  type="text"
+                  value={serialValue}
+                  onChange={(e) => setSerialValue(e.target.value)}
+                  onBlur={(e) => setSerialValue(normalizeIdentifier(e.target.value))}
+                  placeholder="Type karein (har item ka unique)"
+                  maxLength={120}
+                  className={inputCls}
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className={labelCls}>
                 <AlertCircle size={13} className="text-red-400" />

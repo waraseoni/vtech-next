@@ -19,6 +19,8 @@ import {
 import PageLoader from "@/components/PageLoader";
 import SearchableSelect from "@/components/SearchableSelect";
 import { toast } from "@/lib/toast";
+import DeviceFieldPicker from "@/components/DeviceFieldPicker";
+import { clampJobItemLabel, composeJobItemLabel, normalizeIdentifier } from "@/lib/deviceIdentity";
 import { useJobAuxSeed } from "../JobAuxSeed";
 
 // ─── IST Helper ───────────────────────────────────────────────────────────────
@@ -57,6 +59,11 @@ interface TxnRow {
   client_id: string; // stored client_name as string id
   client_name: string; // resolved display
   item: string;
+  /** DB se aaye nullable structured columns — ab per-row editable. */
+  brand_id: number | null;
+  brandName: string;
+  model: string | null;
+  serial_no: string | null;
   fault: string;
   mechanic_id: string;
   uniq_id: string;
@@ -78,6 +85,7 @@ export default function BulkEditPage() {
   const [mechanics, setMechanics] = useState<Mechanic[]>(seed?.mechanics ?? []);
   const [sourceClient, setSourceClient] = useState("");
   const [globalClient, setGlobalClient] = useState("");
+  // Device identity — DB se loaded per-row fields, yahin edit hote hain.
   const [rows, setRows] = useState<TxnRow[]>([]);
   const [loading, setLoading] = useState(!seed);
   const [rowLoading, setRowLoading] = useState(false);
@@ -85,6 +93,32 @@ export default function BulkEditPage() {
   const [loaded, setLoaded] = useState(false);
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [loadedFrom, setLoadedFrom] = useState("");
+
+  const deviceMasters = seed?.deviceMasters;
+  const brandOptions = (deviceMasters?.brands ?? []).map((b) => ({
+    id: b.id,
+    label: b.name,
+    sub: b.code ?? undefined,
+  }));
+  const modelOptionsFor = (brandId: number | null) =>
+    (deviceMasters?.models ?? [])
+      .filter((m) => !brandId || m.brand_id === brandId)
+      .map((m) => ({
+        id: m.id,
+        label: m.name,
+        sub: deviceMasters?.brands.find((b) => b.id === m.brand_id)?.name,
+      }));
+
+  /** Purana typed item hamesha preserve; khali ho to structured se banao. */
+  const itemOf = (r: TxnRow) =>
+    clampJobItemLabel(
+      composeJobItemLabel({
+        brand: r.brandName,
+        model: r.model,
+        identifier: r.serial_no,
+        customItem: r.item,
+      })
+    );
 
   // ── Fetch master data ──────────────────────────────────────────────────────
   const fetchMaster = useCallback(async () => {
@@ -132,7 +166,9 @@ export default function BulkEditPage() {
     try {
       const { data, error } = await supabase
         .from("transaction_list")
-        .select("id, job_id, client_name, item, fault, mechanic_id, uniq_id, remark")
+        .select(
+          "id, job_id, client_name, item, brand_id, model, serial_no, fault, mechanic_id, uniq_id, remark"
+        )
         .eq("client_name", sourceClient)
         .eq("del_status", 0)
         .order("id", { ascending: false })
@@ -152,6 +188,10 @@ export default function BulkEditPage() {
           }
         ),
         item: t.item ?? "",
+        brand_id: t.brand_id ?? null,
+        brandName: (deviceMasters?.brands ?? []).find((b) => b.id === t.brand_id)?.name ?? "",
+        model: t.model ?? null,
+        serial_no: t.serial_no ?? null,
         fault: t.fault ?? "",
         mechanic_id: t.mechanic_id != null ? String(t.mechanic_id) : "",
         uniq_id: t.uniq_id ?? "",
@@ -169,8 +209,8 @@ export default function BulkEditPage() {
   };
 
   // ── Update row field ───────────────────────────────────────────────────────
-  const updateRow = (id: number, field: keyof TxnRow, val: string) => {
-    setRows((prev) => prev.map((r) => (r.id === id ? { ...r, [field]: val } : r)));
+  const updateRow = (id: number, patch: Partial<TxnRow>) => {
+    setRows((prev) => prev.map((r) => (r.id === id ? { ...r, ...patch } : r)));
   };
 
   const labelOf = (cid: string) => {
@@ -256,7 +296,7 @@ export default function BulkEditPage() {
       return;
     }
 
-    const invalid = rows.filter((r) => !r.client_id.trim() || !r.item.trim() || !r.fault.trim());
+    const invalid = rows.filter((r) => !r.client_id.trim() || !itemOf(r) || !r.fault.trim());
     if (invalid.length > 0) {
       toast.error(`${invalid.length} row(s) mein Client/Item/Fault khaali hai!`);
       return;
@@ -280,7 +320,11 @@ export default function BulkEditPage() {
         rows.map((r) => {
           const payload: Record<string, unknown> = {
             client_name: String(r.client_id),
-            item: r.item.trim(),
+            item: itemOf(r),
+            // Har row ke apne structured fields — DB se loaded, yahin edit hue.
+            brand_id: r.brand_id,
+            model: r.model?.trim() || null,
+            serial_no: normalizeIdentifier(r.serial_no) || null,
             fault: r.fault.trim(),
             uniq_id: r.uniq_id.trim() || "",
             remark: r.remark.trim() || "",
@@ -413,6 +457,14 @@ export default function BulkEditPage() {
             </div>
           </div>
 
+          {/* ── Device identity ab per-row editable (neeche table/card me) ── */}
+          {loaded && rows.length > 0 && (
+            <p className="text-[10px] text-muted-2 mt-3">
+              Har job ka Item → Brand → Model → Identifier alag-alag edit karein. Item text preserve
+              rehta hai; khali hua to structured fields se banega.
+            </p>
+          )}
+
           {/* ── Selection bar (master checkbox + counter) ── */}
           {loaded && rows.length > 0 && (
             <div className="mt-4 pt-4 border-t border-app flex items-center gap-3 flex-wrap">
@@ -459,8 +511,8 @@ export default function BulkEditPage() {
 
         {/* ── Desktop Table View ── */}
         {!rowLoading && loaded && rows.length > 0 && (
-          <div className="hidden md:block bg-panel border border-app rounded-2xl overflow-hidden">
-            <table className="w-full text-xs">
+          <div className="hidden md:block bg-panel border border-app rounded-2xl overflow-x-auto">
+            <table className="w-full min-w-[1320px] text-xs">
               <thead>
                 <tr className="bg-blue-900/40 border-b border-app">
                   <th className="px-2 py-3 text-center w-10">
@@ -482,8 +534,17 @@ export default function BulkEditPage() {
                   <th className="px-3 py-3 text-left text-[9px] font-black text-blue-300 uppercase w-52">
                     Target Client <span className="text-red-400">*</span>
                   </th>
-                  <th className="px-3 py-3 text-left text-[9px] font-black text-blue-300 uppercase">
-                    Item / Model <span className="text-red-400">*</span>
+                  <th className="px-3 py-3 text-left text-[9px] font-black text-blue-300 uppercase w-52">
+                    Item <span className="text-red-400">*</span>
+                  </th>
+                  <th className="px-3 py-3 text-left text-[9px] font-black text-blue-300 uppercase w-36">
+                    Brand
+                  </th>
+                  <th className="px-3 py-3 text-left text-[9px] font-black text-blue-300 uppercase w-36">
+                    Model
+                  </th>
+                  <th className="px-3 py-3 text-left text-[9px] font-black text-blue-300 uppercase w-36">
+                    Identifier
                   </th>
                   <th className="px-3 py-3 text-left text-[9px] font-black text-blue-300 uppercase">
                     Fault Reported <span className="text-red-400">*</span>
@@ -529,28 +590,64 @@ export default function BulkEditPage() {
                         options={clients.map((c) => ({ id: c.id, label: clientLabel(c) }))}
                         onSelect={(v) => {
                           const c = clients.find((x) => x.id === Number(v));
-                          updateRow(row.id, "client_id", v);
-                          updateRow(row.id, "client_name", c ? clientLabel(c) : "Unknown");
+                          updateRow(row.id, { client_id: v });
+                          updateRow(row.id, { client_name: c ? clientLabel(c) : "Unknown" });
                         }}
                         placeholder="Select Client"
                         clearLabel="Select Client"
                       />
                     </td>
-                    <td className="px-3 py-2.5">
+                    <td className="px-3 py-2.5 align-top">
                       <input
                         type="text"
                         value={row.item}
-                        onChange={(e) => updateRow(row.id, "item", e.target.value)}
+                        onChange={(e) => updateRow(row.id, { item: e.target.value })}
                         placeholder="Item / Model"
                         className={iCls}
                         required
+                      />
+                    </td>
+                    <td className="px-3 py-2.5 align-top">
+                      <DeviceFieldPicker
+                        kind="brand"
+                        value={row.brand_id}
+                        options={brandOptions}
+                        onSelect={(id, label) =>
+                          updateRow(row.id, {
+                            brand_id: typeof id === "number" ? id : null,
+                            brandName: label,
+                            model: row.brand_id && id !== row.brand_id ? null : row.model,
+                          })
+                        }
+                      />
+                    </td>
+                    <td className="px-3 py-2.5 align-top">
+                      <DeviceFieldPicker
+                        kind="model"
+                        value={row.model}
+                        brandId={row.brand_id}
+                        options={modelOptionsFor(row.brand_id)}
+                        onSelect={(_v, label) => updateRow(row.id, { model: label })}
+                      />
+                    </td>
+                    <td className="px-3 py-2.5 align-top">
+                      <input
+                        type="text"
+                        value={row.serial_no ?? ""}
+                        onChange={(e) => updateRow(row.id, { serial_no: e.target.value })}
+                        onBlur={(e) =>
+                          updateRow(row.id, { serial_no: normalizeIdentifier(e.target.value) })
+                        }
+                        placeholder="Optional"
+                        maxLength={120}
+                        className={iCls}
                       />
                     </td>
                     <td className="px-3 py-2.5">
                       <input
                         type="text"
                         value={row.fault}
-                        onChange={(e) => updateRow(row.id, "fault", e.target.value)}
+                        onChange={(e) => updateRow(row.id, { fault: e.target.value })}
                         placeholder="Fault"
                         className={iCls}
                         required
@@ -560,7 +657,7 @@ export default function BulkEditPage() {
                       <SearchableSelect
                         value={row.mechanic_id}
                         options={mechOptions.map((m) => ({ id: m.id, label: m.name }))}
-                        onSelect={(v) => updateRow(row.id, "mechanic_id", v)}
+                        onSelect={(v) => updateRow(row.id, { mechanic_id: v })}
                         placeholder="Select"
                         clearLabel="Select"
                       />
@@ -569,7 +666,7 @@ export default function BulkEditPage() {
                       <input
                         type="text"
                         value={row.uniq_id}
-                        onChange={(e) => updateRow(row.id, "uniq_id", e.target.value)}
+                        onChange={(e) => updateRow(row.id, { uniq_id: e.target.value })}
                         placeholder="Location/ID"
                         className={iCls}
                       />
@@ -578,7 +675,7 @@ export default function BulkEditPage() {
                       <input
                         type="text"
                         value={row.remark}
-                        onChange={(e) => updateRow(row.id, "remark", e.target.value)}
+                        onChange={(e) => updateRow(row.id, { remark: e.target.value })}
                         placeholder="Notes"
                         className={iCls}
                       />
@@ -628,7 +725,7 @@ export default function BulkEditPage() {
                     <input
                       type="text"
                       value={row.uniq_id}
-                      onChange={(e) => updateRow(row.id, "uniq_id", e.target.value)}
+                      onChange={(e) => updateRow(row.id, { uniq_id: e.target.value })}
                       placeholder="Location/ID"
                       className={iCls}
                     />
@@ -642,20 +739,63 @@ export default function BulkEditPage() {
                       options={clients.map((c) => ({ id: c.id, label: clientLabel(c) }))}
                       onSelect={(v) => {
                         const c = clients.find((x) => x.id === Number(v));
-                        updateRow(row.id, "client_id", v);
-                        updateRow(row.id, "client_name", c ? clientLabel(c) : "Unknown");
+                        updateRow(row.id, { client_id: v });
+                        updateRow(row.id, { client_name: c ? clientLabel(c) : "Unknown" });
                       }}
                       placeholder="Select Client"
                       clearLabel="Select Client"
                     />
                   </div>
+                  {/* 1) ITEM */}
                   <div>
                     <label className={lCls}>Item / Model *</label>
                     <input
                       type="text"
                       value={row.item}
-                      onChange={(e) => updateRow(row.id, "item", e.target.value)}
+                      onChange={(e) => updateRow(row.id, { item: e.target.value })}
                       placeholder="Item Name / Model"
+                      className={iCls}
+                    />
+                  </div>
+                  {/* 2) BRAND */}
+                  <div>
+                    <label className={lCls}>Brand</label>
+                    <DeviceFieldPicker
+                      kind="brand"
+                      value={row.brand_id}
+                      options={brandOptions}
+                      onSelect={(id, label) =>
+                        updateRow(row.id, {
+                          brand_id: typeof id === "number" ? id : null,
+                          brandName: label,
+                          model: row.brand_id && id !== row.brand_id ? null : row.model,
+                        })
+                      }
+                    />
+                  </div>
+                  {/* 3) MODEL */}
+                  <div>
+                    <label className={lCls}>Model</label>
+                    <DeviceFieldPicker
+                      kind="model"
+                      value={row.model}
+                      brandId={row.brand_id}
+                      options={modelOptionsFor(row.brand_id)}
+                      onSelect={(_v, label) => updateRow(row.id, { model: label })}
+                    />
+                  </div>
+                  {/* 4) IDENTIFIER — optional free text */}
+                  <div>
+                    <label className={lCls}>Identifier (Serial / IMEI) — optional</label>
+                    <input
+                      type="text"
+                      value={row.serial_no ?? ""}
+                      onChange={(e) => updateRow(row.id, { serial_no: e.target.value })}
+                      onBlur={(e) =>
+                        updateRow(row.id, { serial_no: normalizeIdentifier(e.target.value) })
+                      }
+                      placeholder="Type karein (har item ka unique)"
+                      maxLength={120}
                       className={iCls}
                     />
                   </div>
@@ -664,7 +804,7 @@ export default function BulkEditPage() {
                     <input
                       type="text"
                       value={row.fault}
-                      onChange={(e) => updateRow(row.id, "fault", e.target.value)}
+                      onChange={(e) => updateRow(row.id, { fault: e.target.value })}
                       placeholder="Reported Fault"
                       className={iCls}
                     />
@@ -674,7 +814,7 @@ export default function BulkEditPage() {
                     <SearchableSelect
                       value={row.mechanic_id}
                       options={mechOptions.map((m) => ({ id: m.id, label: m.name }))}
-                      onSelect={(v) => updateRow(row.id, "mechanic_id", v)}
+                      onSelect={(v) => updateRow(row.id, { mechanic_id: v })}
                       placeholder="Select Mechanic"
                       clearLabel="Select Mechanic"
                     />
@@ -684,7 +824,7 @@ export default function BulkEditPage() {
                     <input
                       type="text"
                       value={row.remark}
-                      onChange={(e) => updateRow(row.id, "remark", e.target.value)}
+                      onChange={(e) => updateRow(row.id, { remark: e.target.value })}
                       placeholder="Additional notes"
                       className={iCls}
                     />

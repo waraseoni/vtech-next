@@ -16,12 +16,21 @@ export type JobFormClient = {
 export type JobFormMechanic = { id: number; fullname: string; commission_percent: number };
 export type JobFormService = { id: number; name: string; price: number };
 export type JobFormProduct = { id: number; name: string; price: number; available_stock: number };
+export type JobFormBrand = { id: number; name: string; code: string | null };
+export type JobFormDeviceModel = { id: number; name: string; brand_id: number | null };
+export type JobFormIdentifier = { id: number; value: string; note: string | null };
+export type JobFormServiceType = { id: number; name: string; sort_order: number };
 
 export type JobFormMasters = {
   clients: JobFormClient[];
   mechanics: JobFormMechanic[];
   services: JobFormService[];
   products: JobFormProduct[];
+  /** Device identity masters (P2). Migration apply se pehle error → khali array. */
+  brands: JobFormBrand[];
+  deviceModels: JobFormDeviceModel[];
+  deviceIdentifiers: JobFormIdentifier[];
+  serviceTypes: JobFormServiceType[];
 };
 
 export type JobFormSeed = JobFormMasters & {
@@ -74,6 +83,10 @@ export async function fetchJobFormMasters(supabase: SupabaseClient): Promise<Job
     { data: tpData },
     { data: dsiData },
     { data: cancelledJobs },
+    { data: brandData },
+    { data: modelData },
+    { data: identifierData },
+    { data: serviceTypeData },
   ] = await Promise.all([
     supabase
       .from("client_list")
@@ -102,6 +115,20 @@ export async function fetchJobFormMasters(supabase: SupabaseClient): Promise<Job
     supabase.from("transaction_products").select("product_id, qty, transaction_id"),
     supabase.from("direct_sale_items").select("product_id, qty"),
     supabase.from("transaction_list").select("id").eq("status", 4),
+    // Ye 4 naye tables abhi live DB me na ho to bhi job form chalna chahiye
+    // (migration owner approval ke baad hi apply hoti hai) — error ignore.
+    supabase.from("brands").select("id, name, code").eq("is_active", true).order("name"),
+    supabase.from("device_models").select("id, name, brand_id").eq("is_active", true).order("name"),
+    supabase
+      .from("device_identifiers")
+      .select("id, value, note")
+      .eq("is_active", true)
+      .order("value"),
+    supabase
+      .from("service_types")
+      .select("id, name, sort_order")
+      .eq("is_active", true)
+      .order("sort_order"),
   ]);
 
   const cancelledIds = new Set((cancelledJobs || []).map((j: { id: number }) => j.id));
@@ -144,5 +171,9 @@ export async function fetchJobFormMasters(supabase: SupabaseClient): Promise<Job
       (dsiData || []) as Array<{ product_id: number; qty: number | null }>,
       cancelledIds
     ),
+    brands: (brandData || []) as JobFormBrand[],
+    deviceModels: (modelData || []) as JobFormDeviceModel[],
+    deviceIdentifiers: (identifierData || []) as JobFormIdentifier[],
+    serviceTypes: (serviceTypeData || []) as JobFormServiceType[],
   };
 }

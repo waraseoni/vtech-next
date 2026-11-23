@@ -107,13 +107,13 @@ export function useNavbarSearch() {
           )
           .limit(25),
 
-        // Jobs — item, fault, job_id, code, uniq_id
+        // Jobs — item (derived label me brand bhi hota hai), model, serial_no, fault, ...
         supabase
           .from("transaction_list")
-          .select("id, job_id, item, fault, status, date_created")
+          .select("id, job_id, item, model, serial_no, fault, status, date_created")
           .eq("del_status", 0)
           .or(
-            `item.ilike.${like},fault.ilike.${like},job_id.ilike.${like},code.ilike.${like},uniq_id.ilike.${like}${!isNaN(num) ? `,job_id.eq.${q}` : ""}`
+            `item.ilike.${like},model.ilike.${like},serial_no.ilike.${like},fault.ilike.${like},job_id.ilike.${like},code.ilike.${like},uniq_id.ilike.${like}${!isNaN(num) ? `,job_id.eq.${q}` : ""}`
           )
           .limit(25),
 
@@ -196,10 +196,15 @@ export function useNavbarSearch() {
       });
 
       (jobRes.data || []).forEach((r) => {
+        // `item` derived label hai (Brand · Model · S/N). Subtitle me sirf
+        // additional structured hint — duplicate na ho isliye model/serial hi.
+        const deviceHint = [r.model, r.serial_no && `S/N ${r.serial_no}`]
+          .filter(Boolean)
+          .join(" · ");
         out.push({
           id: r.id,
           title: `Job #${r.job_id} — ${r.item}`,
-          subtitle: r.fault || "—",
+          subtitle: [r.fault, deviceHint].filter(Boolean).join(" · ") || "—",
           tag: STATUS_LABELS[r.status] || "Job",
           tagColor: STATUS_COLORS[r.status] || "bg-muted/20 text-muted",
           href: `/jobs/${r.id}/view`,

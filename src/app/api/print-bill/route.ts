@@ -6,6 +6,7 @@ import { getPrintShop, getSiteBaseUrl, qrDataUrl } from "@/lib/print-shop";
 import { signTrackingToken } from "@/lib/tracking-token";
 import { printHtmlResponse } from "@/lib/print-html";
 import { numberToWords } from "@/lib/numberToWords";
+import { formatDeviceIdentity } from "@/lib/deviceIdentity";
 
 // ─── Supabase (server-side) ──────────────────────────────────────────────────
 const supabase = getAdminSupabase();
@@ -24,6 +25,14 @@ function fmtDate(iso: string | null): string {
     month: "short",
     year: "numeric",
   }).format(new Date(iso));
+}
+/** Print HTML me naye structured values ko safely likhne ke liye. */
+function esc(value: unknown): string {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
 }
 function fmtTime(iso: string | null): string {
   if (!iso) return "—";
@@ -87,6 +96,17 @@ export async function GET(req: NextRequest) {
     return new NextResponse(`Job ID ${jobIdStr} not found`, { status: 404 });
   }
   const txn: DbRow = txnRaw;
+
+  // Device identity — ek hi helper se label (bill/WA/reports me yahi dikhega).
+  const { data: brandRow } = txn.brand_id
+    ? await supabase.from("brands").select("id, name").eq("id", txn.brand_id).maybeSingle()
+    : { data: null };
+  const device = formatDeviceIdentity({
+    item: txn.item,
+    brand: (brandRow as { id: number; name: string } | null)?.name,
+    model: txn.model,
+    serial_no: txn.serial_no,
+  });
 
   // ── Fetch client ───────────────────────────────────────────────────────────
   const { data: client } = await supabase
@@ -221,7 +241,8 @@ export async function GET(req: NextRequest) {
   <div class="dash"></div>
   <div class="row"><span>Customer</span><span>${clientName}</span></div>
   <div class="row"><span>Mobile</span><span>${client?.contact || "—"}</span></div>
-  <div class="row"><span>Item</span><span>${txn.item || "—"}</span></div>
+  <div class="row"><span>Item</span><span>${esc(device.label) || "—"}</span></div>
+  ${device.identifier ? `<div class="row"><span>S/N</span><span>${esc(device.identifier)}</span></div>` : ""}
   <div class="row"><span>Fault</span><span>${txn.fault || "—"}</span></div>
   ${txn.uniq_id ? `<div class="row"><span>Location</span><span>${txn.uniq_id}</span></div>` : ""}
   <div class="dash"></div>
@@ -471,7 +492,8 @@ export async function GET(req: NextRequest) {
   <!-- Item Details -->
   <div class="info-box" style="margin-bottom:14px">
     <div class="info-box-title">Item Description</div>
-    <div class="ig"><span class="il">Item/Model:</span><span class="iv"><strong>${txn.item || "—"}</strong></span></div>
+    <div class="ig"><span class="il">Item/Model:</span><span class="iv"><strong>${esc(device.label) || "—"}</strong></span></div>
+    ${device.identifier ? `<div class="ig"><span class="il">S/N:</span><span class="iv">${esc(device.identifier)}</span></div>` : ""}
     <div class="ig"><span class="il">Fault:</span><span class="iv" style="color:#c0392b">${txn.fault || "—"}</span></div>
   </div>
 

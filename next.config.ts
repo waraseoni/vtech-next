@@ -120,8 +120,20 @@ const nextConfig: NextConfig = {
         ],
       },
       {
+        // Dev me Turbopack chunk filenames content-hash nahi hote — `immutable`
+        // cache purana (buggy) chunk browser me pin kar deta tha (jobs/new ka
+        // `brandName` TDZ error isi wajah se dobara dikh raha tha).
+        // Prod me hashed assets ke liye immutable sahi hai.
         source: "/_next/static/:path*",
-        headers: [{ key: "Cache-Control", value: "public, max-age=31536000, immutable" }],
+        headers: [
+          {
+            key: "Cache-Control",
+            value:
+              process.env.NODE_ENV === "production"
+                ? "public, max-age=31536000, immutable"
+                : "no-store, must-revalidate",
+          },
+        ],
       },
       {
         source: "/:file((?:[^/]+\\.(?:png|jpg|jpeg|webp|svg|ico|gif|woff2?)))",

@@ -20,12 +20,15 @@ import {
 import { buildWhatsAppLink } from "@/lib/public-site-defaults";
 import { usePublicSiteContent } from "../components/public-content-provider";
 import { JOB_STATUS_INLINE } from "@/lib/status-colors";
+import DeviceIdentity from "@/components/DeviceIdentity";
 
 type JobData = {
   id: number;
   job_id: string;
   code: string;
   item: string;
+  model?: string | null;
+  serial_no?: string | null;
   fault: string;
   remark: string;
   status: number;
@@ -570,6 +573,14 @@ export default function JobStatusPage() {
                         </div>
                       ))}
                     </div>
+
+                    {/* Device identity — public par serial chhupa (sirf model line) */}
+                    <DeviceIdentity
+                      job={job}
+                      variant="compact"
+                      showIdentifier={false}
+                      className="mt-3"
+                    />
 
                     {/* Services */}
                     {services.length > 0 && (

@@ -960,12 +960,24 @@ function SidebarNav({
             <li className="text-[9px] font-black uppercase text-app tracking-widest px-3 pt-5 pb-1.5 select-none">
               System
             </li>
+            {/* Service Center direct link — System accordion band karne ki
+                zaroorat na pade (purane bundled build me yahin dhoondh rahe the). */}
+            <li>
+              <Link
+                href="/settings/service-center"
+                className={navLinkCls(pathname === "/settings/service-center")}
+                onClick={onNavClick}
+              >
+                <Wrench size={15} className="text-violet-400" />
+                <span>Service Center</span>
+              </Link>
+            </li>
             <SubMenu
               collapsed={collapsed}
               onExpand={onExpand}
               title="System"
               icon={<Settings2 size={15} />}
-              matchPaths={["/users", "/settings", "/backup", "/images"]}
+              matchPaths={["/users", "/settings", "/settings/service-center", "/backup", "/images"]}
             >
               <li>
                 <Link
@@ -985,6 +997,16 @@ function SidebarNav({
                 >
                   <Settings2 size={12} />
                   Settings
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/settings/service-center"
+                  className={subLinkCls(pathname === "/settings/service-center")}
+                  onClick={onNavClick}
+                >
+                  <Wrench size={12} className="text-violet-400" />
+                  Service Center
                 </Link>
               </li>
               <li>
