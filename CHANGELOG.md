@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.86.0](https://github.com/waraseoni/vtech-next/compare/v1.85.2...v1.86.0) (2026-11-23)
+
+### Features
+
+* **jobs:** service-center device identity UX + bulk grid redesign ([9e620ad](https://github.com/waraseoni/vtech-next/commit/9e620ad11f84a5e1850f43d8baa2d073f92b54c7))
+
 ## [1.85.2](https://github.com/waraseoni/vtech-next/compare/v1.85.1...v1.85.2) (2026-11-22)
 
 ### Bug Fixes
