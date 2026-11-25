@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.87.0](https://github.com/waraseoni/vtech-next/compare/v1.86.0...v1.87.0) (2026-11-25)
+
+### Features
+
+* **backup:** lossless restore + admin auth-linked recovery ([27b8038](https://github.com/waraseoni/vtech-next/commit/27b803895a1583ccf503df923ac50a2fe7ffb3d0))
+
 ## [1.86.0](https://github.com/waraseoni/vtech-next/compare/v1.85.2...v1.86.0) (2026-11-23)
 
 ### Features
