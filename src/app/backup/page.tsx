@@ -6,6 +6,15 @@ import { supabase } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
 import { downloadBlob } from "@/lib/nativePrint";
 import { type SupabaseTableSchema, countPkViolations } from "@/lib/backupSchema";
+import {
+  BACKUP_TABLES_ORDERED,
+  BACKUP_TABLES,
+  normalizeTextFieldsForRestore,
+  dedupeRowsByPk,
+  classifyRestoreError,
+  restoreErrorHint,
+} from "@/lib/backupRestore";
+import { AUTH_LINKED_TABLES } from "@/lib/backupAuthRestore";
 import { toast } from "@/lib/toast";
 import {
   Download,
@@ -25,75 +34,8 @@ import {
   Trash2,
 } from "lucide-react";
 
-// ─── Backup tables in RESTORE ORDER (FK dependencies matter!) ─────────────────
-// Parent tables phle restore honge, phir child tables. List = LIVE schema se
-// bnaya gya (51 tables); runtime me /api/backup/schema se koi nayi table ho to
-// usse auto-append kiya jata hai (FAIL-safe — naye tables kabhi miss nahi hote).
-const BACKUP_TABLES_ORDERED = [
-  // Step 1: System & Counters (no FK)
-  { table: "system_info", order: 1 },
-  { table: "job_id_counter", order: 1 },
-  // Step 2: Master tables (parents phle; child contacts/location-zones FK inhe)
-  { table: "mechanic_list", order: 2 },
-  { table: "users", order: 2 },
-  { table: "profiles", order: 2 },
-  { table: "client_list", order: 2 },
-  { table: "product_list", order: 2 },
-  { table: "service_list", order: 2 },
-  { table: "suppliers", order: 2 },
-  { table: "locations", order: 2 },
-  // Step 2b: Location hierarchy (FK: locations) + contacts (FK: client_list/suppliers)
-  { table: "location_zones", order: 2 },
-  { table: "location_racks", order: 2 },
-  { table: "location_bins", order: 2 },
-  { table: "location_boxes", order: 2 },
-  { table: "client_contacts", order: 2 },
-  { table: "supplier_contacts", order: 2 },
-  { table: "supplier_contact_persons", order: 2 },
-  { table: "supplier_contact_phones", order: 2 },
-  // Step 3: Pivot + Purchase Orders (FK: product_list, suppliers, locations)
-  { table: "spare_supplier", order: 3 },
-  { table: "product_locations", order: 3 },
-  { table: "purchase_orders", order: 3 },
-  { table: "purchase_order_items", order: 3 },
-  // Step 4: Inventory + Stock + Finance (FK: product_list, locations, lenders)
-  { table: "inventory_list", order: 4 },
-  { table: "stock_counts", order: 4 },
-  { table: "stock_adjustments", order: 4 },
-  { table: "lender_list", order: 4 },
-  { table: "loan_payments", order: 4 },
-  { table: "expense_list", order: 4 },
-  { table: "supplier_payments", order: 4 },
-  // Step 5: Transactions (main job table — parent of transaction sub-tables)
-  { table: "transaction_list", order: 5 },
-  // Step 6: Transaction sub-tables + required parts + client finance
-  { table: "transaction_products", order: 6 },
-  { table: "transaction_services", order: 6 },
-  { table: "transaction_images", order: 6 },
-  { table: "job_required_parts", order: 6 },
-  { table: "client_loans", order: 6 },
-  { table: "client_payments", order: 6 },
-  // Step 7: Direct sales + Attendance/Advances/Salary
-  { table: "direct_sales", order: 7 },
-  { table: "direct_sale_items", order: 7 },
-  { table: "attendance_list", order: 7 },
-  { table: "advance_payments", order: 7 },
-  { table: "mechanic_salary_history", order: 7 },
-  { table: "mechanic_commission_history", order: 7 },
-  // Step 8: Messaging + templates + logs
-  { table: "message_list", order: 8 },
-  { table: "messages", order: 8 },
-  { table: "wp_template_history", order: 8 },
-  { table: "activity_logs", order: 8 },
-  { table: "payment_reminders", order: 8 },
-  { table: "push_subscriptions", order: 8 },
-  // Step 9: BoM + login/online tracking
-  { table: "bom_templates", order: 9 },
-  { table: "login_throttle", order: 9 },
-  { table: "user_presence", order: 9 },
-];
-
-const BACKUP_TABLES = BACKUP_TABLES_ORDERED.map((t) => t.table);
+// Restore order + shared normalization helpers: src/lib/backupRestore.ts se aate
+// hain (unit-tested). Is file me sirf UI + Supabase calls hain.
 
 // ── Database Schema Columns — Used to strip extra columns from backup JSON ───
 const TABLE_COLUMNS: Record<string, string[]> = {
@@ -399,8 +341,34 @@ type BackupPreview = {
   version: string;
   createdAt: string;
 };
-type TableResult = { table: string; fileRows: number; restored: number; failed: number };
+type TableResult = {
+  table: string;
+  fileRows: number;
+  restored: number;
+  failed: number;
+  errors?: string[];
+};
 type DiffRow = { table: string; fileRows: number; dbRows: number; diff: number };
+type AuthRestorePlan = {
+  remap: Record<string, string>;
+  missing: { oldId: string; email: string }[];
+  toCreate: { id: string; email: string; fullName: string }[];
+  perTable: { table: string; rows: number }[];
+  protectedAdmin: boolean;
+  tempPasswordsEnabled?: boolean;
+  totalRows: number;
+};
+type AuthRestoreResponse = {
+  ok: boolean;
+  dryRun: boolean;
+  error?: string;
+  plan?: AuthRestorePlan;
+  results?: TableResult[];
+  createdUsers?: string[];
+  createErrors?: string[];
+  credentials?: { email: string; password: string }[];
+  adminPreserved?: boolean;
+};
 
 export default function BackupPage() {
   const [taking, setTaking] = useState(false);
@@ -409,6 +377,19 @@ export default function BackupPage() {
   const [dragOver, setDragOver] = useState(false);
   const [preview, setPreview] = useState<BackupPreview | null>(null);
   const [restoreReport, setRestoreReport] = useState<TableResult[]>([]);
+  const [verifyFails, setVerifyFails] = useState<
+    { table: string; fileRows: number; dbRows: number }[]
+  >([]);
+  // Auth-linked tables ke liye admin-only server restore (service-role).
+  const [authBusy, setAuthBusy] = useState(false);
+  const [authPlan, setAuthPlan] = useState<AuthRestorePlan | null>(null);
+  const [authResults, setAuthResults] = useState<TableResult[] | null>(null);
+  const [authCreateUsers, setAuthCreateUsers] = useState(false);
+  const [authSetTempPassword, setAuthSetTempPassword] = useState(true);
+  const [authTempPasswords, setAuthTempPasswords] = useState<{ email: string; password: string }[]>(
+    []
+  );
+  const [authConfirmed, setAuthConfirmed] = useState(false);
   const [loadedBackup, setLoadedBackup] = useState<BackupData | null>(null);
   const [diffData, setDiffData] = useState<DiffRow[] | null>(null);
   const [diffLoading, setDiffLoading] = useState(false);
@@ -815,6 +796,7 @@ export default function BackupPage() {
     }
 
     setRestoring(true);
+    setVerifyFails([]);
     setProgress(dryRun ? "Dry run: validating..." : "Backup file parse ho rahi hai...");
     try {
       let backup: BackupData;
@@ -1015,7 +997,6 @@ export default function BackupPage() {
         const genCols = genOf(table);
         // ── Live schema PK (upsert onConflict + dedupe ke liye) ───────────────
         const pk = pkOf(table);
-        const hasIdCol = pk.includes("id");
         // ── Image columns jo is table mein hain (protection ke liye) ───────────
         const imgCols = (colsOf(table) ?? TABLE_COLUMNS[table] ?? []).filter((c) =>
           IMAGE_COLUMNS.includes(c)
@@ -1046,33 +1027,9 @@ export default function BackupPage() {
             for (const pf of ["price", "cost_price", "amount", "discount"]) {
               if (pf in r && typeof r[pf] === "number" && (r[pf] as number) < 0) r[pf] = 0;
             }
-            // Fix int/null in text NOT NULL columns
-            for (const tf of [
-              "name",
-              "description",
-              "category",
-              "fault",
-              "item",
-              "remark",
-              "remarks",
-              "uniq_id",
-              "code",
-              "fullname",
-              "address",
-              "sale_code",
-              "firstname",
-              "lastname",
-              "contact",
-              "email",
-              "message",
-              "meta_value",
-              "hsn",
-            ]) {
-              if (tf in r) {
-                if (r[tf] === null || r[tf] === undefined) r[tf] = "";
-                else if (typeof r[tf] !== "string") r[tf] = String(r[tf]);
-              }
-            }
+            // Fix int/null in text columns — nullable column ka NULL NULL hi
+            // rehta hai (locations.code / brands.code par '' duplicate fail tha)
+            Object.assign(r, normalizeTextFieldsForRestore(r, schemaOf(table)?.notNull ?? []));
             // Fix boolean NOT NULL columns (converter 0/1 se aa sakta hai)
             for (const bf of ["login_allowed"]) {
               if (bf in r) r[bf] = !!r[bf];
@@ -1105,6 +1062,7 @@ export default function BackupPage() {
           });
 
         const tableStart = totalRestored;
+        const tableErrors = new Set<string>();
         setProgress(`Restoring: ${table} (${rows.length} rows)...`);
 
         // Step 2: Insert in batches of 25 (rate limit se bachne ke liye smaller batches)
@@ -1114,23 +1072,13 @@ export default function BackupPage() {
         const onConflict = pk.length ? { onConflict: pk.join(",") } : undefined;
         for (let i = 0; i < rows.length; i += batchSize) {
           let batch = rows.slice(i, i + batchSize);
-          // Dedup within batch to avoid "cannot affect row a second time"
-          if (hasIdCol && batch.length > 1) {
-            const seen = new Set<unknown>();
-            const deduped: Record<string, unknown>[] = [];
-            for (const r of batch) {
-              const id = (r as Record<string, unknown>).id;
-              if (id != null && seen.has(id)) continue;
-              if (id != null) seen.add(id);
-              deduped.push(r);
-            }
-            if (deduped.length < batch.length) {
-              console.warn(
-                `${table} batch ${i}: ${batch.length - deduped.length} duplicates skipped`
-              );
-            }
-            batch = deduped;
+          // Dedup within batch (single + composite PK) — "cannot affect row a
+          // second time" error se bachao
+          const deduped = dedupeRowsByPk(batch, pk);
+          if (deduped.skipped > 0) {
+            console.warn(`${table} batch ${i}: ${deduped.skipped} duplicates skipped`);
           }
+          batch = deduped.rows;
           if (batch.length === 0) continue;
           setProgress(`Restoring: ${table} (${i + batch.length}/${rows.length})...`);
 
@@ -1139,6 +1087,7 @@ export default function BackupPage() {
             .upsert(batch as Record<string, unknown>[], onConflict);
 
           if (insErr) {
+            tableErrors.add(insErr.message);
             console.warn(`${table} batch ${i}-${i + batchSize} error:`, insErr.message);
             // Row-by-row fallback with delay (rate limit se bachne ke liye)
             for (const row of batch) {
@@ -1150,10 +1099,14 @@ export default function BackupPage() {
                 if (!rowErr) {
                   totalRestored++;
                 } else {
-                  console.warn(`${table} row skip:`, rowErr.message, row);
+                  // Row data (email/phone/URL) console me mat print karo — sirf error.
+                  tableErrors.add(rowErr.message);
+                  console.warn(`${table} row skip:`, rowErr.message);
                 }
               } catch (networkErr) {
-                console.warn(`${table} row network error:`, networkErr, row);
+                const msg = networkErr instanceof Error ? networkErr.message : "network error";
+                tableErrors.add(msg);
+                console.warn(`${table} row network error:`, msg);
                 await sleep(500); // Extra delay on network error
               }
             }
@@ -1170,6 +1123,7 @@ export default function BackupPage() {
           fileRows: rows.length,
           restored: totalRestored - tableStart,
           failed: rows.length - (totalRestored - tableStart),
+          errors: Array.from(tableErrors),
         });
       }
 
@@ -1177,30 +1131,35 @@ export default function BackupPage() {
       // Har table ka exact count file rows se compare — mismatch = restore
       // PARTIAL (upsert errors report me agar skip ho gaye to ye pakdega).
       setProgress("Post-restore verify (count compare) ho rahi hai...");
-      const verifyFails: { table: string; fileRows: number; dbRows: number }[] = [];
+      const verifiedFails: { table: string; fileRows: number; dbRows: number }[] = [];
       for (const { table } of orderedTables) {
         // Restore-free tables live values preserve karte hain — count match nahi
         // hoga, isliye verify se bahar
         if (RESTORE_FREE_TABLES.includes(table)) continue;
-        const fileRows = Array.isArray(backup[table]) ? backup[table].length : 0;
+        // File ki raw length nahi — actual attempted rows (FK/dedup ke baad)
+        // se compare karo, warna intentionally skipped rows par fake fail aata tha.
+        const fileRows =
+          tableResults.find((r) => r.table === table)?.fileRows ??
+          (Array.isArray(backup[table]) ? backup[table].length : 0);
         if (fileRows === 0) continue;
-        const { count } = await supabase.from(table).select("*", { count: "exact", head: true });
-        const dbRows = count || 0;
+        const { count, error: countErr } = await supabase
+          .from(table)
+          .select("*", { count: "exact", head: true });
+        if (countErr) {
+          console.warn(`${table} count verify skipped:`, countErr.message);
+          continue;
+        }
+        const dbRows = count ?? 0;
         if (dbRows !== fileRows) {
-          verifyFails.push({ table, fileRows, dbRows });
+          verifiedFails.push({ table, fileRows, dbRows });
           console.warn(`${table} post-restore verify FAILED: file=${fileRows}, db=${dbRows}`);
         }
       }
-      if (verifyFails.length > 0) {
-        for (const f of verifyFails) {
-          tableResults.push({
-            table: `${f.table} (count verify)`,
-            fileRows: f.fileRows,
-            restored: 0,
-            failed: Math.abs(f.fileRows - f.dbRows),
-          });
-        }
-      }
+      // Purana code yahan ek fake "table (count verify)" row daalta tha jiska
+      // `restored: 0` hota tha — isse 2334 rows successfully restore hone ke
+      // baad bhi report me +2334 "failed" aur 15 duplicate rows dikhte the.
+      // Ab verify alag section me, totals se bahar dikhte hain.
+      setVerifyFails(verifiedFails);
 
       // Step 3: Reset sequences (important for auto-increment IDs)
       setProgress("Sequences reset ho rahi hain (naye IDs ke liye)...");
@@ -1215,7 +1174,7 @@ export default function BackupPage() {
         showToast(
           "error",
           `⚠ ${totalRestored.toLocaleString()} restored, ${failedCount} failed${
-            verifyFails.length ? ` (+${verifyFails.length} tables count mismatch)` : ""
+            verifiedFails.length ? ` (+${verifiedFails.length} tables count mismatch)` : ""
           } — report dekhein`
         );
       } else {
@@ -1271,6 +1230,14 @@ export default function BackupPage() {
       "location_racks",
       "location_bins",
       "location_boxes",
+      "locations",
+      "brands",
+      "service_types",
+      "device_models",
+      "device_identifiers",
+      "staff_duty_schedule",
+      "staff_geofence_permit",
+      "user_passkeys",
       "stock_counts",
       "stock_adjustments",
       "supplier_payments",
@@ -1372,8 +1339,83 @@ export default function BackupPage() {
     }
   };
 
+  // ── ADMIN AUTH RESTORE (service-role, server-side) ────────────────────────
+  // Browser restore in 8 auth-linked tables ko RLS/FK ki wajah se nahi likh
+  // sakta. Ye route sirf admin/developer session se chalao; default dry-run.
+  const callAuthRestore = async (confirm: boolean, createMissing: boolean) => {
+    if (!loadedBackup) {
+      showToast("error", "Pehle backup file load karo.");
+      return;
+    }
+    const payload: Record<string, unknown[]> = {};
+    for (const table of AUTH_LINKED_TABLES) {
+      const rows = loadedBackup[table];
+      if (!Array.isArray(rows)) continue;
+      const cols = colsOf(table);
+      payload[table] = cols
+        ? rows.map((row) => {
+            const r = row as Record<string, unknown>;
+            const out: Record<string, unknown> = {};
+            for (const [key, value] of Object.entries(r)) {
+              if (cols.includes(key)) out[key] = value;
+            }
+            return out;
+          })
+        : rows;
+    }
+    if (Object.keys(payload).length === 0) {
+      showToast("error", "Is file me koi auth-linked table nahi hai.");
+      return;
+    }
+
+    setAuthBusy(true);
+    try {
+      const res = await fetch("/api/backup/auth-restore", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          backup: payload,
+          createMissingUsers: createMissing,
+          setTempPasswords: authSetTempPassword,
+          confirm,
+        }),
+      });
+      const json = (await res.json()) as AuthRestoreResponse;
+      if (!res.ok || !json.ok) throw new Error(json.error || "Admin restore fail hua.");
+      setAuthPlan(json.plan ?? null);
+      if (confirm) {
+        setAuthResults(json.results ?? []);
+        setAuthTempPasswords(json.credentials ?? []);
+        setAuthConfirmed(false);
+        const restored = (json.results ?? []).reduce((s, r) => s + r.restored, 0);
+        const failed = (json.results ?? []).reduce((s, r) => s + r.failed, 0);
+        showToast(
+          failed ? "error" : "success",
+          `Admin restore: ${restored} restored, ${failed} failed${
+            json.adminPreserved ? " · admin profile safe" : ""
+          }`
+        );
+        refetchTableStats();
+      } else {
+        setAuthResults(null);
+        showToast(
+          "info",
+          `Plan ready: ${json.plan?.totalRows ?? 0} rows · ${json.plan?.missing.length ?? 0} user match nahi hue`
+        );
+      }
+    } catch (err) {
+      showToast("error", err instanceof Error ? err.message : "Admin restore fail hua!");
+    } finally {
+      setAuthBusy(false);
+    }
+  };
+
   const clearLoaded = () => {
     setLoadedBackup(null);
+    setAuthPlan(null);
+    setAuthResults(null);
+    setAuthTempPasswords([]);
+    setAuthConfirmed(false);
     setDiffData(null);
     setPreview(null);
   };
@@ -1433,24 +1475,48 @@ export default function BackupPage() {
               </div>
             </div>
             <div className="p-3 max-h-64 overflow-y-auto flex flex-col gap-1">
-              {restoreReport.map((r) => (
-                <div
-                  key={r.table}
-                  className="flex justify-between items-center px-3 py-1.5 bg-app rounded-lg text-xs"
-                >
-                  <span className="font-mono text-muted">{r.table}</span>
-                  <span className="flex gap-3 items-center">
-                    <span className="text-muted">{r.fileRows} in file</span>
-                    {r.failed === 0 ? (
-                      <span className="text-green-400 font-bold">✓ {r.restored} OK</span>
-                    ) : (
-                      <span className="text-red-400 font-bold">
-                        ✓{r.restored} ✗{r.failed} FAIL
+              {restoreReport.map((r) => {
+                const firstError = r.errors?.[0];
+                const hint = firstError ? restoreErrorHint(classifyRestoreError(firstError)) : "";
+                return (
+                  <div
+                    key={r.table}
+                    className="px-3 py-1.5 bg-app rounded-lg text-xs flex flex-col"
+                  >
+                    <div className="flex justify-between items-center">
+                      <span className="font-mono text-muted">{r.table}</span>
+                      <span className="flex gap-3 items-center">
+                        <span className="text-muted">{r.fileRows} in file</span>
+                        {r.failed === 0 ? (
+                          <span className="text-green-400 font-bold">✓ {r.restored} OK</span>
+                        ) : (
+                          <span className="text-red-400 font-bold">
+                            ✓{r.restored} ✗{r.failed} FAIL
+                          </span>
+                        )}
                       </span>
+                    </div>
+                    {r.failed > 0 && firstError && (
+                      <div
+                        className="mt-1 text-[10px] text-red-300 break-words"
+                        title={r.errors?.join("\n")}
+                      >
+                        {r.errors?.slice(0, 2).join(" · ")}
+                        {hint ? ` — ${hint}` : ""}
+                        {(r.errors?.length ?? 0) > 2
+                          ? ` (+${(r.errors?.length ?? 0) - 2} aur)`
+                          : ""}
+                      </div>
                     )}
-                  </span>
+                  </div>
+                );
+              })}
+              {verifyFails.length > 0 && (
+                <div className="mt-2 pt-2 border-t border-app text-[10px] text-amber-300 break-words">
+                  Count mismatch (verify only):{" "}
+                  {verifyFails.map((f) => `${f.table} ${f.dbRows}/${f.fileRows}`).join(" · ")}
                 </div>
-              ))}
+              )}
             </div>
             <div className="px-4 py-2 border-t border-app flex justify-end">
               <button
@@ -2032,6 +2098,166 @@ export default function BackupPage() {
                 </div>
               </div>
             )}
+
+            {/* ── ADMIN AUTH RESTORE (auth/RLS ke 218 failures) ──────────── */}
+            {loadedBackup &&
+              AUTH_LINKED_TABLES.some(
+                (t) => Array.isArray(loadedBackup[t]) && (loadedBackup[t] as unknown[]).length > 0
+              ) && (
+                <div className="rounded-xl border border-violet-500/25 bg-violet-500/5 p-4 space-y-3">
+                  <div className="flex items-start gap-2.5">
+                    <ShieldAlert size={15} className="text-violet-400 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-xs font-black text-violet-300">
+                        Admin Restore — auth-linked tables (service-role)
+                      </p>
+                      <p className="text-[11px] text-muted leading-relaxed mt-1">
+                        Purane project ke user UUID naye project se match nahi karte isliye ye 8
+                        tables browser restore mein fail hoti hain. Server purane UUID ko{" "}
+                        <b>email</b> se naye auth users se map karta hai. Current admin ka profile
+                        hamesha preserve hota hai. Service-role key browser mein kabhi nahi aati.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-3">
+                    <button
+                      onClick={() => void callAuthRestore(false, authCreateUsers)}
+                      disabled={authBusy}
+                      className="px-3 py-2 bg-violet-600/80 hover:bg-violet-600 disabled:opacity-50 text-white rounded-lg text-xs font-bold transition"
+                    >
+                      {authBusy ? " Chal raha hai..." : "🔍 Plan / Dry Run (no writes)"}
+                    </button>
+                    <label className="flex items-center gap-1.5 text-[11px] text-muted cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={authCreateUsers}
+                        onChange={(e) => {
+                          const value = e.target.checked;
+                          setAuthCreateUsers(value);
+                          void callAuthRestore(false, value);
+                        }}
+                        disabled={authBusy}
+                        className="accent-violet-500"
+                      />
+                      Missing auth users bhi banayein (email se)
+                    </label>
+                    <label className="flex items-center gap-1.5 text-[11px] text-muted cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={authSetTempPassword}
+                        onChange={(e) => setAuthSetTempPassword(e.target.checked)}
+                        disabled={authBusy || !authCreateUsers}
+                        className="accent-violet-500"
+                      />
+                      Custom/fake email hai — naye users ko temporary password auto-set karo
+                    </label>
+                  </div>
+
+                  {authPlan && (
+                    <div className="rounded-lg bg-app border border-app px-3 py-2 text-[11px] text-muted space-y-1">
+                      <p>
+                        <b className="text-white">{authPlan.totalRows}</b> rows ·{" "}
+                        <b className="text-white">{Object.keys(authPlan.remap).length}</b> UUID map
+                        · <b className="text-amber-300">{authPlan.missing.length}</b> user match
+                        nahi
+                        {authPlan.protectedAdmin ? " · admin profile protected" : ""}
+                      </p>
+                      <p className="font-mono text-[10px] break-words">
+                        {authPlan.perTable.map((t) => `${t.table}:${t.rows}`).join(" · ")}
+                      </p>
+                      {authPlan.missing.length > 0 && (
+                        <p className="text-amber-300 text-[10px] break-words">
+                          Missing: {authPlan.missing.map((m) => m.email).join(", ")}
+                        </p>
+                      )}
+                      {authPlan.toCreate.length > 0 && (
+                        <p className="text-sky-300 text-[10px] break-words">
+                          Will create: {authPlan.toCreate.map((u) => u.email).join(", ")}
+                          {authPlan.tempPasswordsEnabled
+                            ? " · random temporary password set hoga (ek baar dikhega)"
+                            : ""}
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  {authPlan && (
+                    <div className="flex flex-wrap items-center gap-3 pt-1 border-t border-app">
+                      <label className="flex items-center gap-1.5 text-[11px] text-red-300 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={authConfirmed}
+                          onChange={(e) => setAuthConfirmed(e.target.checked)}
+                          disabled={authBusy}
+                          className="accent-red-500"
+                        />
+                        Main confirm karta hoon — ye rows overwrite honge
+                      </label>
+                      <button
+                        onClick={() => void callAuthRestore(true, authCreateUsers)}
+                        disabled={authBusy || !authConfirmed}
+                        className="px-3 py-2 bg-red-600 hover:bg-red-500 disabled:opacity-40 text-white rounded-lg text-xs font-bold transition"
+                      >
+                        <Upload size={12} className="inline mr-1" /> Run Admin Restore
+                      </button>
+                    </div>
+                  )}
+
+                  {authResults && (
+                    <div className="max-h-40 overflow-y-auto rounded-lg bg-app border border-app px-3 py-2 space-y-1">
+                      {authResults.map((r) => (
+                        <div
+                          key={r.table}
+                          className="flex justify-between gap-3 text-[11px] font-mono"
+                        >
+                          <span className="text-muted">{r.table}</span>
+                          <span className={r.failed ? "text-red-400" : "text-green-400"}>
+                            ✓{r.restored} ✗{r.failed}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {authTempPasswords.length > 0 && (
+                    <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/5 px-3 py-2 space-y-2">
+                      <div className="flex items-center justify-between gap-3">
+                        <p className="text-[11px] font-bold text-emerald-300">
+                          Temporary passwords — abhi copy kar lein (dobara nahi dikhenge)
+                        </p>
+                        <button
+                          onClick={() => {
+                            const text = authTempPasswords
+                              .map((c) => `${c.email} → ${c.password}`)
+                              .join("\n");
+                            void navigator.clipboard
+                              .writeText(text)
+                              .then(() => showToast("success", "Credentials copy ho gaye."))
+                              .catch(() =>
+                                showToast("error", "Clipboard block ho gaya — manually copy karo.")
+                              );
+                          }}
+                          className="px-2 py-1 bg-emerald-600/80 hover:bg-emerald-600 text-white rounded text-[10px] font-bold flex-shrink-0"
+                        >
+                          Copy
+                        </button>
+                      </div>
+                      <div className="max-h-32 overflow-y-auto space-y-0.5 font-mono text-[10px] text-emerald-200">
+                        {authTempPasswords.map((c) => (
+                          <div key={c.email} className="break-words">
+                            {c.email} <span className="text-muted">→</span> {c.password}
+                          </div>
+                        ))}
+                      </div>
+                      <p className="text-[10px] text-muted">
+                        In users ko password apne hisaab se badalne do. Email inbox na hone ki wajah
+                        se reset link kaam nahi karega — admin se password reset karwao.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
 
             {/* ── Restoring indicator ── */}
             {restoring && (

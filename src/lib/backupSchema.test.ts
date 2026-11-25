@@ -83,6 +83,20 @@ describe("parseOpenApiToSchema", () => {
     expect(GENERATED_COLUMNS.client_payments).toContain("net_amount");
   });
 
+  it("marks generated identity ids so restore strips them", () => {
+    expect(GENERATED_COLUMNS.staff_duty_schedule).toContain("id");
+    expect(GENERATED_COLUMNS.staff_geofence_permit).toContain("id");
+    const sds = parseOpenApiToSchema({
+      definitions: {
+        staff_duty_schedule: {
+          required: ["id"],
+          properties: { id: { description: "Primary Key.<pk/>" } },
+        },
+      },
+    });
+    expect(sds[0].generated).toEqual(["id"]);
+  });
+
   describe("countPkViolations", () => {
     it("returns 0 for unique composite pk combos (no ragged key bug)", () => {
       const rows = [

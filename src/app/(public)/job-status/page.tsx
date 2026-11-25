@@ -27,6 +27,7 @@ type JobData = {
   job_id: string;
   code: string;
   item: string;
+  item_name?: string | null;
   model?: string | null;
   serial_no?: string | null;
   fault: string;

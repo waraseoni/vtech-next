@@ -163,6 +163,7 @@ function ManageJobPageInner({ params }: { params: Promise<{ id?: string }> }) {
   const clientId = useWatch({ control, name: "client_id" });
   const mechanicId = useWatch({ control, name: "mechanic_id" });
   const itemValue = useWatch({ control, name: "item" });
+  const itemName = useWatch({ control, name: "item_name" });
   const faultValue = useWatch({ control, name: "fault" });
   const brandId = useWatch({ control, name: "brand_id" });
   const brandName = useWatch({ control, name: "brand_name" });
@@ -189,6 +190,7 @@ function ManageJobPageInner({ params }: { params: Promise<{ id?: string }> }) {
       sub: brandSeed.find((b) => b.id === m.brand_id)?.name,
     }));
   const composedItem = composeJobItemLabel({
+    item: itemName,
     brand: brandName,
     model: modelValue,
     identifier: serialValue,
@@ -199,6 +201,7 @@ function ManageJobPageInner({ params }: { params: Promise<{ id?: string }> }) {
   const showShrinkWarning =
     !customItem &&
     labelShrinks({
+      item: itemName,
       brand: brandName,
       model: modelValue,
       identifier: serialValue,
@@ -408,6 +411,7 @@ function ManageJobPageInner({ params }: { params: Promise<{ id?: string }> }) {
           client_id: null,
           mechanic_id: String(data.mechanic_id || ""),
           item: data.item || "",
+          item_name: data.item_name ?? "",
           custom_item: false,
           brand_id: data.brand_id ?? null,
           brand_name: formSeed?.brands?.find((b) => b.id === data.brand_id)?.name ?? "",
@@ -811,6 +815,7 @@ function ManageJobPageInner({ params }: { params: Promise<{ id?: string }> }) {
       // hai (UX plan §4.4) — purana free-text kabhi silently nahi chhuppa.
       const current = getValues();
       const composed = composeJobItemLabel({
+        item: current.item_name,
         brand: current.brand_name,
         model: current.model,
         identifier: current.serial_no,
@@ -827,6 +832,7 @@ function ManageJobPageInner({ params }: { params: Promise<{ id?: string }> }) {
         code: txnCode, // YYYYMMDD+seq e.g. "2025102401"
         job_id: finalJobCode, // global seq e.g. "27270
         item: savedItem,
+        item_name: current.item_name.trim() || null,
         brand_id: current.brand_id,
         model: current.model.trim() || null,
         serial_no: current.serial_no.trim() || null,
@@ -1579,45 +1585,16 @@ function ManageJobPageInner({ params }: { params: Promise<{ id?: string }> }) {
                   </span>
                 </div>
 
-                {/* 1) ITEM */}
+                {/* 1) ITEM — baaki fields aur preview neeche, same kram sab jagah. */}
                 <div className="mb-4">
-                  <div className="flex items-center justify-between gap-3 flex-wrap">
-                    <label className={labelCls + " mb-0"}>
-                      <Smartphone size={13} className="text-blue-400" />
-                      Item * (auto / custom)
-                    </label>
-                    <button
-                      type="button"
-                      onClick={() => setValue("custom_item", !customItem)}
-                      className="text-[11px] font-bold text-blue-400 hover:text-blue-300 underline underline-offset-2"
-                    >
-                      {customItem ? "Wapas auto banayein" : "Apna text likhein"}
-                    </button>
-                  </div>
-                  {customItem ? (
-                    <input
-                      {...register("item")}
-                      placeholder="Apna item text likhein…"
-                      className={`${inputCls} mt-1.5`}
-                    />
-                  ) : (
-                    <input
-                      readOnly
-                      value={finalItem}
-                      placeholder="Brand · Model · Identifier se auto banega"
-                      className={`${inputCls} mt-1.5 opacity-90`}
-                    />
-                  )}
-                  <p className="text-[10px] text-muted-2 mt-1">
-                    Ye label bill, WhatsApp aur reports me dikhega.
-                  </p>
-                  {showShrinkWarning && (
-                    <p className="text-[11px] text-amber-400 mt-1 flex items-start gap-1.5">
-                      <AlertCircle size={12} className="mt-0.5 shrink-0" />
-                      Purana item text chhota ho jayega — zaroori dikhe to &quot;Apna text
-                      likhein&quot; dabayein.
-                    </p>
-                  )}
+                  <label className={labelCls}>
+                    <Smartphone size={13} className="text-blue-400" /> Item *
+                  </label>
+                  <input
+                    {...register("item_name")}
+                    placeholder="Kya cheez hai? e.g. Ceiling Fan / Mobile / Charger"
+                    className={`${inputCls} mt-1.5`}
+                  />
                 </div>
 
                 {/* 2) BRAND → 3) MODEL → 4) IDENTIFIER (free text, optional) */}
@@ -1659,6 +1636,53 @@ function ManageJobPageInner({ params }: { params: Promise<{ id?: string }> }) {
                       className={inputCls}
                     />
                   </div>
+                </div>
+
+                {/* Preview + advanced override — 4 fields ke baad. */}
+                <div className="mt-3 rounded-lg border border-app bg-app/60 px-2.5 py-1.5">
+                  <div className="flex items-center justify-between gap-3 flex-wrap">
+                    <p className="text-[9px] font-bold uppercase tracking-wider text-muted-2">
+                      Final label (bill · WhatsApp · reports)
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setValue("custom_item", !customItem)}
+                      className="text-[11px] font-bold text-blue-400 hover:text-blue-300 underline underline-offset-2"
+                    >
+                      {customItem ? "Wapas auto banayein" : "Advanced: khud ka label"}
+                    </button>
+                  </div>
+                  {customItem && (
+                    <div className="mt-2">
+                      <input
+                        {...register("item")}
+                        placeholder="Advanced: poora label likhein (identifier isme nahi aayega)"
+                        className={inputCls}
+                      />
+                      <p className="text-[10px] text-amber-400 mt-1">
+                        Advanced override: bill/WhatsApp par yahi text dikhega. Identifier DB aur
+                        Device Identity card me rahega, par label se chhoot jayega.
+                      </p>
+                    </div>
+                  )}
+                  <p
+                    className="mt-1 text-xs font-semibold text-white break-words"
+                    title={finalItem}
+                  >
+                    {finalItem || "—"}
+                  </p>
+                  {!customItem && (
+                    <p className="text-[10px] text-muted-2 mt-1">
+                      Item → Brand → Model → Identifier — sab ek hi label me.
+                    </p>
+                  )}
+                  {showShrinkWarning && (
+                    <p className="text-[11px] text-amber-400 mt-1 flex items-start gap-1.5">
+                      <AlertCircle size={12} className="mt-0.5 shrink-0" />
+                      Purana item text chhota ho jayega — zaroori dikhe to &quot;Advanced: khud ka
+                      label&quot; dabayein.
+                    </p>
+                  )}
                 </div>
               </div>
 

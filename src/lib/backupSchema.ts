@@ -27,6 +27,10 @@ export interface SupabaseOpenApiLike {
 /** Known GENERATED ALWAYS columns (OpenAPI me marker nahi milta — explicit map). */
 export const GENERATED_COLUMNS: Record<string, string[]> = {
   client_payments: ["net_amount"],
+  // `generated always as identity` — backup me purana id hota hai, insert par
+  // PostgreSQL 428C9 deta hai. DB apna id khud banayega.
+  staff_duty_schedule: ["id"],
+  staff_geofence_permit: ["id"],
 };
 
 export function parseOpenApiToSchema(

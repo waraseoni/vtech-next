@@ -59,6 +59,7 @@ export type JobsOldJobRow = {
   date_created: string | null;
   item: string | null;
   /** Naye nullable columns — select("*") se aate hain. */
+  item_name: string | null;
   brand_id: number | null;
   model: string | null;
   serial_no: string | null;

@@ -4,6 +4,7 @@ import {
   queryJobPage,
   queryJobSpots,
   queryJobStats,
+  searchBrandsForTerm,
   searchClientsForTerm,
   type JobsPageData,
 } from "@/app/jobs/jobListQueries";
@@ -70,6 +71,12 @@ export async function fetchJobsPageData(
     if (!clientsP) clientsP = searchClientsForTerm(supabase, term);
     return clientsP;
   };
+  let brandsP: Promise<string> | null = null;
+  const resolveBrands = (term: string): Promise<string> => {
+    if (!term) return Promise.resolve("");
+    if (!brandsP) brandsP = searchBrandsForTerm(supabase, term);
+    return brandsP;
+  };
 
   const listP = (async () => {
     try {
@@ -77,8 +84,16 @@ export async function fetchJobsPageData(
       // `total` bilkul yahi filters (del_status=0 + term/date/status/spot) count
       // karta hai, isliye page query count ke bina chalti hai aur total wahin se.
       const [{ rows }, stats] = await Promise.all([
-        queryJobPage(supabase, filters, 0, PAGE_SIZE, resolveClients, { withCount: false }),
-        queryJobStats(supabase, filters, resolveClients),
+        queryJobPage(
+          supabase,
+          filters,
+          0,
+          PAGE_SIZE,
+          resolveClients,
+          { withCount: false },
+          resolveBrands
+        ),
+        queryJobStats(supabase, filters, resolveClients, resolveBrands),
       ]);
       // PERF: open-part counts sirf row ids par depend karte hain — pehle
       // enrichJobRows ke BAAD sequential chalte the (ek extra RTT ~300ms).

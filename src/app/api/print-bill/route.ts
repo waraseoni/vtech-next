@@ -103,6 +103,7 @@ export async function GET(req: NextRequest) {
     : { data: null };
   const device = formatDeviceIdentity({
     item: txn.item,
+    item_name: txn.item_name,
     brand: (brandRow as { id: number; name: string } | null)?.name,
     model: txn.model,
     serial_no: txn.serial_no,

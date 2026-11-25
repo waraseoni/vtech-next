@@ -44,6 +44,8 @@
 --   - `security definer` + restricted grants (Sept 2026 pattern): anon/PUBLIC ko
 --     execute nahi, sirf authenticated + service_role.
 --   - Limit/order/fallback chain client logic se 1:1 — koi nayi business rule nahi.
+--   - Search clauses `src/app/jobs/jobListQueries.ts :: jobSearchFilter()` se
+--     match honi chahiye (item/item_name/brand/model/serial_no/fault/uniq_id/...).
 --
 -- Apply: Supabase SQL Editor me run karo (ek baar). Verify section file ke end me.
 -- ══════════════════════════════════════════════════════════════════════════════
@@ -90,6 +92,13 @@ as $$
         or t.job_id ilike a.pat
         or t.code ilike a.pat
         or t.item ilike a.pat
+        or t.item_name ilike a.pat
+        or t.model ilike a.pat
+        or t.serial_no ilike a.pat
+        or t.brand_id in (
+          select b.id from public.brands b
+          where b.name ilike a.pat or b.code ilike a.pat
+        )
         or t.fault ilike a.pat
         or t.uniq_id ilike a.pat
         or t.remark ilike a.pat

@@ -67,7 +67,7 @@ export function NavbarSearch() {
         data-search-input
         onChange={handleChange}
         onFocus={() => results.length > 0 && setOpen(true)}
-        placeholder="Search..."
+        placeholder="Item · Brand · Model · S/N..."
         className="w-full pl-9 pr-24 py-2.5 sm:py-2 bg-panel-2 border border-app rounded-xl text-sm text-app-2 placeholder:text-muted-2 outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 transition-all font-medium"
       />
       <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 pointer-events-none">

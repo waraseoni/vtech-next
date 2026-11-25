@@ -5,13 +5,15 @@
 // sirf un chuni hui jagahon par additional structured line/card dikhata hai.
 // Format ka saru `formatDeviceIdentity()` — kahin alag .join/.map nahi.
 
-import { Check, Copy, Cpu, Hash, ShieldCheck, Smartphone, Tag } from "lucide-react";
+import { Check, Copy, Cpu, Hash, ShieldCheck, Smartphone, Tag, Wrench } from "lucide-react";
 import { useState } from "react";
 import { formatDeviceIdentity } from "@/lib/deviceIdentity";
 import { toast } from "@/lib/toast";
 
 export type DeviceIdentityJob = {
   item?: string | null;
+  /** Naya structured field — kya cheez repair ho rahi hai. */
+  item_name?: string | null;
   brand?: string | null;
   brand_name?: string | null;
   model?: string | null;
@@ -92,7 +94,18 @@ export default function DeviceIdentity({
         </p>
         <WarrantyBadge job={job} />
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+        <div className="min-w-0">
+          <p className="text-[9px] font-bold uppercase tracking-wider text-muted-2 flex items-center gap-1">
+            <Wrench size={10} /> Item
+          </p>
+          <p
+            className="text-xs font-semibold text-app truncate"
+            title={info.item || (info.isLegacy ? info.label : "—")}
+          >
+            {info.item || (info.isLegacy ? info.label : "—")}
+          </p>
+        </div>
         <div className="min-w-0">
           <p className="text-[9px] font-bold uppercase tracking-wider text-muted-2 flex items-center gap-1">
             <Tag size={10} /> Brand
@@ -138,11 +151,6 @@ export default function DeviceIdentity({
           </div>
         </div>
       </div>
-      {info.isLegacy && (
-        <p className="text-[9px] text-muted-2 mt-2" title={info.label}>
-          Item: {info.label}
-        </p>
-      )}
     </div>
   );
 }

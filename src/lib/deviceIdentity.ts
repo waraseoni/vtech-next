@@ -16,17 +16,20 @@ export const DEVICE_SEPARATOR = " · ";
 export const MAX_ITEM_LENGTH = 300;
 
 export type ComposeInput = {
+  /** Item — kya cheez hai (e.g. Ceiling Fan). Composed label ka pehla hissa. */
+  item?: string | null;
   brand?: string | null;
   model?: string | null;
   identifier?: string | null;
   /** Purana DB `item` — sirf tab use jab koi structured field na ho. */
   legacyItem?: string | null;
-  /** "Apna text likhein" escape — upar sab ko override karta hai. */
+  /** Advanced override — upar sab ko replace karta hai (rare). */
   customItem?: string | null;
 };
 
 export type FormattedDeviceIdentity = {
   label: string;
+  item?: string;
   brand?: string;
   model?: string;
   identifier?: string;
@@ -38,13 +41,20 @@ const clean = (v?: string | null): string => (v ?? "").trim();
 
 /**
  * Final `item` label. Jo part khali hai wo chhup jata hai — "undefined"/"—" nahi.
- * Custom text > structured (Brand · Model · Identifier) > legacy item.
+ * Kram: Item → Brand → Model → Identifier. Advanced custom override sab ko
+ * replace karta hai (rare); legacy item sirf tab jab koi structured part na ho.
  */
 export function composeJobItemLabel(input: ComposeInput): string {
   const custom = clean(input.customItem);
   if (custom) return custom;
 
-  const parts = [clean(input.brand), clean(input.model), clean(input.identifier)].filter(Boolean);
+  // Kram: Item → Brand → Model → Identifier. Khali part chhup jata hai.
+  const parts = [
+    clean(input.item),
+    clean(input.brand),
+    clean(input.model),
+    clean(input.identifier),
+  ].filter(Boolean);
   if (parts.length === 0) return clean(input.legacyItem);
   return parts.join(DEVICE_SEPARATOR);
 }
@@ -55,22 +65,26 @@ export function composeJobItemLabel(input: ComposeInput): string {
  */
 export function formatDeviceIdentity(job: {
   item?: string | null;
+  /** Naya DB column — kya cheez repair ho rahi hai. */
+  item_name?: string | null;
   brand?: string | null;
+  brand_name?: string | null;
   model?: string | null;
   identifier?: string | null;
   /** DB column naam alag hai — caller yahan se map karega. */
   serial_no?: string | null;
-  brand_name?: string | null;
 }): FormattedDeviceIdentity {
+  const item = clean(job.item_name);
   const brand = clean(job.brand ?? job.brand_name);
   const model = clean(job.model);
   const identifier = clean(job.identifier ?? job.serial_no);
-  const hasStructured = Boolean(brand || model || identifier);
+  const hasStructured = Boolean(item || brand || model || identifier);
 
   return {
     label: hasStructured
-      ? composeJobItemLabel({ brand, model, identifier, legacyItem: job.item })
+      ? composeJobItemLabel({ item, brand, model, identifier, legacyItem: job.item })
       : clean(job.item),
+    item: item || undefined,
     brand: brand || undefined,
     model: model || undefined,
     identifier: identifier || undefined,
@@ -80,7 +94,7 @@ export function formatDeviceIdentity(job: {
 
 /**
  * Preview warning ke liye: composed label purane free-text se chhota to
- * user ko "Apna text likhein" ka option dikhana hai (silent loss nahi).
+ * user ko advanced override ka option dikhana hai (silent loss nahi).
  */
 export function labelShrinks(input: ComposeInput): boolean {
   const legacy = clean(input.legacyItem);
@@ -99,17 +113,20 @@ export function clampJobItemLabel(label: string): string {
 
 /** Har form ka controlled device state — ek hi shape, ek hi resolve rule. */
 export type DeviceFieldValues = {
+  /** Kya cheez hai — naya structured `item_name` column. */
+  itemName: string;
   brandId: number | null;
   brandName: string;
   model: string;
   serial: string;
-  /** Purana / custom free-text `item`. */
+  /** Advanced custom label / legacy raw `item` (rare). */
   item: string;
-  /** true = "Apna text likhein" — structured compose override. */
+  /** true = advanced custom label — composed ko replace karta hai. */
   customMode: boolean;
 };
 
 export const emptyDeviceFields: DeviceFieldValues = {
+  itemName: "",
   brandId: null,
   brandName: "",
   model: "",
@@ -120,13 +137,15 @@ export const emptyDeviceFields: DeviceFieldValues = {
 
 /**
  * Save se pehle final `item` — new/edit/old/bulk sab isi ko call karte hain.
- * Custom mode > composed > legacy free-text; aur 300-char guard yahin.
+ * Rule: Item → Brand → Model → Identifier. Advanced override sirf tab jab
+ * user khud se poora label likhna chahe (identifier tab bhi DB me rehta hai).
  */
 export function resolveDeviceItem(v: DeviceFieldValues): string {
   const composed = composeJobItemLabel({
+    item: v.itemName,
     brand: v.brandName,
     model: v.model,
     identifier: v.serial,
   });
-  return clampJobItemLabel(v.customMode ? v.item : composed || v.item);
+  return clampJobItemLabel(v.customMode ? clean(v.item) : composed || clean(v.item));
 }

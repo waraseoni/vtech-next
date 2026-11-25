@@ -18,6 +18,7 @@ import {
   queryJobSpots,
   queryJobStats,
   queryStatusChangeLogs,
+  searchBrandsForTerm,
   searchClientsForTerm,
   seedMatchesFilters,
   type JobListFilterInputs,
@@ -44,6 +45,8 @@ export const fetchStatusChangeLogs = (
 // NOTE: ye map CLIENT-only hai (per-browser-session); server par per-request
 // closure banao (cross-user cache = RLS leak).
 const searchClientsInflight = new Map<string, Promise<string>>();
+// Brand resolver bhi stats + page dono se chalta hai — uska bhi in-flight dedupe.
+const searchBrandsInflight = new Map<string, Promise<string>>();
 
 /** Server seed ki first page size (server-jobs.ts PAGE_SIZE se match). */
 const PAGE_SIZE_SEED = 25;
@@ -224,6 +227,19 @@ export function useJobList(initial?: JobsListSeed | null) {
     }
   }, []);
 
+  const searchBrands = useCallback(async (term: string) => {
+    if (!term) return "";
+    const inflight = searchBrandsInflight.get(term);
+    if (inflight) return inflight;
+    const p = searchBrandsForTerm(supabase, term);
+    searchBrandsInflight.set(term, p);
+    try {
+      return await p;
+    } finally {
+      if (searchBrandsInflight.get(term) === p) searchBrandsInflight.delete(term);
+    }
+  }, []);
+
   // ── Quick Stats (exact — no 2k-row cap). Filter-dependent only: NOT re-run
   //    on pagination, so page changes skip the full-dataset stats scan. ──────
   const fetchStats = useCallback(async () => {
@@ -238,13 +254,23 @@ export function useJobList(initial?: JobsListSeed | null) {
           status: statusFilter,
           spot: spotFilter,
         },
-        searchClients
+        searchClients,
+        searchBrands
       );
       setStats(s);
     } catch (err) {
       logger.error("fetchStats error:", err);
     }
-  }, [dateFrom, dateTo, hideDelivered, statusFilter, spotFilter, debouncedSearch, searchClients]);
+  }, [
+    dateFrom,
+    dateTo,
+    hideDelivered,
+    statusFilter,
+    spotFilter,
+    debouncedSearch,
+    searchClients,
+    searchBrands,
+  ]);
 
   // ── Page rows (filter + pagination dependent) ─────────────────────────────
   const fetchPage = useCallback(async () => {
@@ -263,7 +289,9 @@ export function useJobList(initial?: JobsListSeed | null) {
         },
         pageIndex,
         pageSize,
-        searchClients
+        searchClients,
+        {},
+        searchBrands
       );
 
       setTotalRows(count);
@@ -291,6 +319,7 @@ export function useJobList(initial?: JobsListSeed | null) {
     pageIndex,
     pageSize,
     searchClients,
+    searchBrands,
   ]);
 
   useEffect(() => {

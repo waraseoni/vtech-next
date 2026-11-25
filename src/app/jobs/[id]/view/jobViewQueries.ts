@@ -18,6 +18,7 @@ export interface JobDetail {
   client_name: string;
   item: string;
   /** Naye nullable device columns (migration se pehle undefined — UI safe). */
+  item_name?: string | null;
   brand_id?: number | null;
   brand_name?: string | null;
   model?: string | null;
@@ -113,7 +114,7 @@ export async function fetchJobViewData(
     supabase
       .from("transaction_list")
       .select(
-        "id, job_id, code, client_name, item, brand_id, model, serial_no, warranty_status, warranty_until, fault, remark, uniq_id, amount, mechanic_amount, mechanic_commission_amount, mechanic_id, user_id, del_status, status, location_id, date_created, date_updated, date_completed"
+        "id, job_id, code, client_name, item, item_name, brand_id, model, serial_no, warranty_status, warranty_until, fault, remark, uniq_id, amount, mechanic_amount, mechanic_commission_amount, mechanic_id, user_id, del_status, status, location_id, date_created, date_updated, date_completed"
       )
       .eq("id", numId)
       .eq("del_status", 0)

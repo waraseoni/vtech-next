@@ -163,6 +163,7 @@ export default function ManageJobPage({ initial }: { initial?: JobsOldInitial | 
   );
   const [jobId, setJobId] = useState(seedJob?.job.job_id ?? "");
   const [device, setDevice] = useState<DeviceFieldValues>({
+    itemName: seedJob?.job.item_name ?? "",
     brandId: seedJob?.job.brand_id ?? null,
     brandName: (seedMasters?.brands ?? []).find((b) => b.id === seedJob?.job.brand_id)?.name ?? "",
     model: seedJob?.job.model ?? "",
@@ -288,6 +289,7 @@ export default function ManageJobPage({ initial }: { initial?: JobsOldInitial | 
       brandName: brandsRef.current.find((b) => b.id === job.brand_id)?.name ?? "",
       model: job.model ?? "",
       serial: job.serial_no ?? "",
+      itemName: job.item_name ?? "",
       item: job.item ?? "",
     }));
     setFault(job.fault || "");
@@ -444,6 +446,7 @@ export default function ManageJobPage({ initial }: { initial?: JobsOldInitial | 
         client_name: String(clientId),
         job_id: jobId,
         item: resolveDeviceItem(device),
+        item_name: device.itemName.trim() || null,
         brand_id: device.brandId,
         model: device.model.trim() || null,
         serial_no: device.serial.trim() || null,
@@ -540,7 +543,9 @@ export default function ManageJobPage({ initial }: { initial?: JobsOldInitial | 
             </div>
             <div>
               <h1 className="text-lg font-black text-white">
-                {isEdit ? `Edit Transaction — ${device.item || editId}` : "Old Job Entry (Manual)"}
+                {isEdit
+                  ? `Edit Transaction — ${resolveDeviceItem(device) || editId}`
+                  : "Old Job Entry (Manual)"}
               </h1>
               <p className="text-[10px] text-muted uppercase tracking-wider">
                 {isEdit

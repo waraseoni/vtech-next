@@ -17,15 +17,18 @@ describe("composeJobItemLabel", () => {
     expect(composeJobItemLabel({})).toBe("");
   });
 
-  it("full compose — fixed order Brand · Model · Identifier", () => {
+  it("full compose — fixed order Item · Brand · Model · Identifier", () => {
     expect(
       composeJobItemLabel({
+        item: " Ceiling Fan ",
         brand: " Komaki ",
         model: "XGT",
         identifier: "KMK123456789",
         legacyItem: "purana text",
       })
-    ).toBe(`Komaki${DEVICE_SEPARATOR}XGT${DEVICE_SEPARATOR}KMK123456789`);
+    ).toBe(
+      `Ceiling Fan${DEVICE_SEPARATOR}Komaki${DEVICE_SEPARATOR}XGT${DEVICE_SEPARATOR}KMK123456789`
+    );
   });
 
   it("partial compose — khali part chhup jayega, '—'/'undefined' nahi", () => {
@@ -33,6 +36,9 @@ describe("composeJobItemLabel", () => {
       `Komaki${DEVICE_SEPARATOR}KMK1`
     );
     expect(composeJobItemLabel({ model: "XGT" })).toBe("XGT");
+    expect(composeJobItemLabel({ item: "Fan", identifier: "SN1" })).toBe(
+      `Fan${DEVICE_SEPARATOR}SN1`
+    );
   });
 
   it("customItem sab ko override karta hai", () => {
@@ -66,15 +72,19 @@ describe("formatDeviceIdentity", () => {
     expect(out).toEqual({ label: "Samsung S24 ultra", isLegacy: true });
   });
 
-  it("DB columns (serial_no / brand_name) map ho kar structured label banate hain", () => {
+  it("DB columns (item_name / serial_no / brand_name) map ho kar structured label banate hain", () => {
     const out = formatDeviceIdentity({
       item: "purana",
+      item_name: "Ceiling Fan",
       brand_name: "Komaki",
       model: "XGT",
       serial_no: "kmk123",
     });
     expect(out.isLegacy).toBe(false);
-    expect(out.label).toBe(`Komaki${DEVICE_SEPARATOR}XGT${DEVICE_SEPARATOR}kmk123`);
+    expect(out.label).toBe(
+      `Ceiling Fan${DEVICE_SEPARATOR}Komaki${DEVICE_SEPARATOR}XGT${DEVICE_SEPARATOR}kmk123`
+    );
+    expect(out.item).toBe("Ceiling Fan");
     expect(out.identifier).toBe("kmk123");
   });
 });
@@ -94,12 +104,13 @@ describe("helpers", () => {
     expect(
       resolveDeviceItem({
         ...emptyDeviceFields,
+        itemName: "Ceiling Fan",
         brandName: "Komaki",
         model: "XGT",
         serial: "KMK1",
         item: "purana",
       })
-    ).toBe(`Komaki${DEVICE_SEPARATOR}XGT${DEVICE_SEPARATOR}KMK1`);
+    ).toBe(`Ceiling Fan${DEVICE_SEPARATOR}Komaki${DEVICE_SEPARATOR}XGT${DEVICE_SEPARATOR}KMK1`);
     expect(
       resolveDeviceItem({
         ...emptyDeviceFields,
@@ -109,5 +120,20 @@ describe("helpers", () => {
       })
     ).toBe("purana");
     expect(resolveDeviceItem({ ...emptyDeviceFields, item: "legacy only" })).toBe("legacy only");
+  });
+
+  it("advanced override — label replace hota hai, identifier DB me rehta hai", () => {
+    const v = {
+      ...emptyDeviceFields,
+      itemName: "Fan",
+      brandName: "Stan",
+      serial: "KMK1",
+      item: "customer ne likha",
+      customMode: true,
+    };
+    // Form se bheja gaya serial_no alag field me save hota hai; sirf label
+    // override hota hai — isliye resolveDeviceItem expected label "customer".
+    expect(resolveDeviceItem(v)).toBe("customer ne likha");
+    expect(v.serial).toBe("KMK1");
   });
 });

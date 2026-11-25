@@ -58,6 +58,9 @@ interface TxnRow {
   job_id: string | null;
   client_id: string; // stored client_name as string id
   client_name: string; // resolved display
+  /** Naya structured field — kya cheez hai (item_name). */
+  itemName: string;
+  /** DB ka raw item — item_name khali hone par preserve. */
   item: string;
   /** DB se aaye nullable structured columns — ab per-row editable. */
   brand_id: number | null;
@@ -109,14 +112,16 @@ export default function BulkEditPage() {
         sub: deviceMasters?.brands.find((b) => b.id === m.brand_id)?.name,
       }));
 
-  /** Purana typed item hamesha preserve; khali ho to structured se banao. */
+  /** item_name me basal label; khali ho to purana typed item preserve. */
   const itemOf = (r: TxnRow) =>
     clampJobItemLabel(
       composeJobItemLabel({
+        item: r.itemName,
         brand: r.brandName,
         model: r.model,
         identifier: r.serial_no,
-        customItem: r.item,
+        customItem: r.itemName ? undefined : r.item,
+        legacyItem: r.item,
       })
     );
 
@@ -167,7 +172,7 @@ export default function BulkEditPage() {
       const { data, error } = await supabase
         .from("transaction_list")
         .select(
-          "id, job_id, client_name, item, brand_id, model, serial_no, fault, mechanic_id, uniq_id, remark"
+          "id, job_id, client_name, item, item_name, brand_id, model, serial_no, fault, mechanic_id, uniq_id, remark"
         )
         .eq("client_name", sourceClient)
         .eq("del_status", 0)
@@ -187,6 +192,7 @@ export default function BulkEditPage() {
             contact: "",
           }
         ),
+        itemName: t.item_name ?? "",
         item: t.item ?? "",
         brand_id: t.brand_id ?? null,
         brandName: (deviceMasters?.brands ?? []).find((b) => b.id === t.brand_id)?.name ?? "",
@@ -321,6 +327,7 @@ export default function BulkEditPage() {
           const payload: Record<string, unknown> = {
             client_name: String(r.client_id),
             item: itemOf(r),
+            item_name: r.itemName.trim() || null,
             // Har row ke apne structured fields — DB se loaded, yahin edit hue.
             brand_id: r.brand_id,
             model: r.model?.trim() || null,
@@ -600,12 +607,15 @@ export default function BulkEditPage() {
                     <td className="px-3 py-2.5 align-top">
                       <input
                         type="text"
-                        value={row.item}
-                        onChange={(e) => updateRow(row.id, { item: e.target.value })}
-                        placeholder="Item / Model"
+                        value={row.itemName}
+                        onChange={(e) => updateRow(row.id, { itemName: e.target.value })}
+                        placeholder="Kya cheez hai?"
                         className={iCls}
                         required
                       />
+                      <p className="text-[9px] text-muted-2 mt-1 truncate" title={itemOf(row)}>
+                        {itemOf(row)}
+                      </p>
                     </td>
                     <td className="px-3 py-2.5 align-top">
                       <DeviceFieldPicker
@@ -748,12 +758,12 @@ export default function BulkEditPage() {
                   </div>
                   {/* 1) ITEM */}
                   <div>
-                    <label className={lCls}>Item / Model *</label>
+                    <label className={lCls}>Item *</label>
                     <input
                       type="text"
-                      value={row.item}
-                      onChange={(e) => updateRow(row.id, { item: e.target.value })}
-                      placeholder="Item Name / Model"
+                      value={row.itemName}
+                      onChange={(e) => updateRow(row.id, { itemName: e.target.value })}
+                      placeholder="Kya cheez hai?"
                       className={iCls}
                     />
                   </div>
@@ -799,6 +809,10 @@ export default function BulkEditPage() {
                       className={iCls}
                     />
                   </div>
+                  {/* Final label — 4 identity fields ke baad */}
+                  <p className="text-[9px] text-muted-2 truncate" title={itemOf(row)}>
+                    Final label: {itemOf(row) || "—"}
+                  </p>
                   <div>
                     <label className={lCls}>Fault Reported *</label>
                     <input

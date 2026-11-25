@@ -13,10 +13,22 @@ import { buildDueMaps } from "@/lib/client-due";
 /**
  * Job free-text search — EK hi `.or()` filter dono query paths ke liye
  * (stats + page). Naye device columns bhi yahin add karo, warna drift.
- * `brand` naam `item` derived label me already hota hai, isliye alag clause nahi.
+ *
+ * Device identity ke 4 fields yahan explicit hain:
+ *   Item (`item` + `item_name`), Brand (`brand_id.in.(...)` + legacy `item`),
+ *   Model (`model`), Identifier (`serial_no`).
+ * Brand `brands.name/code` FK hai — PostgREST cross-table `.or()` nahi karta,
+ * isliye `searchBrandsForTerm()` se IDs resolve karke yahan inject kiye jaate
+ * hain. Legacy rows me brand text `item` derived label me hota hai (wo clause
+ * already hai). RPC `get_jobs_stats()` me yahi clauses duplicate hain — dont dono
+ * ek saath badlo.
  */
-function jobSearchFilter(term: string, matchedClientIds: string): string {
-  return `job_id.ilike.%${term}%,code.ilike.%${term}%,item.ilike.%${term}%,model.ilike.%${term}%,serial_no.ilike.%${term}%,fault.ilike.%${term}%,uniq_id.ilike.%${term}%,remark.ilike.%${term}%,client_name.in.(${matchedClientIds})`;
+export function jobSearchFilter(
+  term: string,
+  matchedClientIds: string,
+  matchedBrandIds: string
+): string {
+  return `job_id.ilike.%${term}%,code.ilike.%${term}%,item.ilike.%${term}%,item_name.ilike.%${term}%,brand_id.in.(${matchedBrandIds}),model.ilike.%${term}%,serial_no.ilike.%${term}%,fault.ilike.%${term}%,uniq_id.ilike.%${term}%,remark.ilike.%${term}%,client_name.in.(${matchedClientIds})`;
 }
 
 export interface Transaction {
@@ -26,6 +38,7 @@ export interface Transaction {
   client_name: number;
   item: string;
   /** Naye nullable device columns — select("*") se aate hain. */
+  item_name?: string | null;
   brand_id?: number | null;
   model?: string | null;
   serial_no?: string | null;
@@ -177,16 +190,36 @@ export async function searchClientsForTerm(
   return matchedClients?.map((c: { id: number }) => c.id).join(",") || "-1";
 }
 
+/**
+ * Step-1b: search term se matching brand IDs (CSV) — "" no term, "-1" no match.
+ * `brand_id` FK hai; scalar `item` label me brand naam legacy rows ke liye hota
+ * hai, par naye/custom-label rows ke liye alag resolution zaroori hai.
+ */
+export async function searchBrandsForTerm(supabase: SupabaseClient, term: string): Promise<string> {
+  if (!term) return "";
+  const { data: matchedBrands } = await supabase
+    .from("brands")
+    .select("id")
+    .or(`name.ilike.%${term}%,code.ilike.%${term}%`);
+  return matchedBrands?.map((b: { id: number }) => b.id).join(",") || "-1";
+}
+
 type ClientIdsResolver = (term: string) => Promise<string>;
+type BrandIdsResolver = (term: string) => Promise<string>;
 const defaultResolver =
   (supabase: SupabaseClient): ClientIdsResolver =>
   (term) =>
     searchClientsForTerm(supabase, term);
+const defaultBrandResolver =
+  (supabase: SupabaseClient): BrandIdsResolver =>
+  (term) =>
+    searchBrandsForTerm(supabase, term);
 
 function applyFilters(
   supabase: SupabaseClient,
   filters: JobListFilters,
   matchedClientIds: string,
+  matchedBrandIds: string,
   withCount: boolean,
   rangeFrom: number,
   rangeTo: number
@@ -201,7 +234,7 @@ function applyFilters(
   if (filters.hideDelivered) q = q.neq("status", 5);
   if (filters.status !== "") q = q.eq("status", filters.status);
   if (filters.spot) q = q.eq("location_id", parseInt(filters.spot));
-  if (filters.term) q = q.or(jobSearchFilter(filters.term, matchedClientIds));
+  if (filters.term) q = q.or(jobSearchFilter(filters.term, matchedClientIds, matchedBrandIds));
   return q;
 }
 
@@ -212,16 +245,28 @@ function applyFilters(
 export async function computeJobStats(
   supabase: SupabaseClient,
   filters: JobListFilters,
-  resolveClients: ClientIdsResolver = defaultResolver(supabase)
+  resolveClients: ClientIdsResolver = defaultResolver(supabase),
+  resolveBrands: BrandIdsResolver = defaultBrandResolver(supabase)
 ): Promise<JobListStats> {
   const term = filters.term;
-  const matchedClientIds = await resolveClients(term);
+  const [matchedClientIds, matchedBrandIds] = await Promise.all([
+    resolveClients(term),
+    resolveBrands(term),
+  ]);
 
   // Chunk 0 carries the exact total (same filters as the scan) — removes a
   // standalone full-table `count: exact` head round-trip (N+1 → N queries).
   // Baki chunks parallel. Results/behaviour unchanged.
   const buildStatsQuery = (rangeFrom: number, rangeTo: number, withCount = false) =>
-    applyFilters(supabase, filters, matchedClientIds, withCount, rangeFrom, rangeTo);
+    applyFilters(
+      supabase,
+      filters,
+      matchedClientIds,
+      matchedBrandIds,
+      withCount,
+      rangeFrom,
+      rangeTo
+    );
 
   const { data: head, count } = await buildStatsQuery(0, 999, true);
   const total = count || 0;
@@ -266,7 +311,8 @@ export async function computeJobStats(
 export async function queryJobStats(
   supabase: SupabaseClient,
   filters: JobListFilters,
-  resolveClients: ClientIdsResolver = defaultResolver(supabase)
+  resolveClients: ClientIdsResolver = defaultResolver(supabase),
+  resolveBrands: BrandIdsResolver = defaultBrandResolver(supabase)
 ): Promise<JobListStats> {
   try {
     const { data, error } = await supabase.rpc("get_jobs_stats", {
@@ -290,7 +336,7 @@ export async function queryJobStats(
   } catch {
     /* RPC missing/failed → client fallback */
   }
-  return computeJobStats(supabase, filters, resolveClients);
+  return computeJobStats(supabase, filters, resolveClients, resolveBrands);
 }
 
 /** Filtered rows ka ek page (job_id desc — newest first) + exact total count. */
@@ -305,10 +351,14 @@ export async function queryJobPage(
    * caller ko total pehle se pata ho (e.g. `get_jobs_stats().total` — same
    * filters, same del_status=0; measured ~200 ms bachta hai).
    */
-  opts: { withCount?: boolean } = {}
+  opts: { withCount?: boolean } = {},
+  resolveBrands: BrandIdsResolver = defaultBrandResolver(supabase)
 ): Promise<{ rows: RawTxnRow[]; count: number }> {
   const term = filters.term;
-  const matchedClientIds = await resolveClients(term);
+  const [matchedClientIds, matchedBrandIds] = await Promise.all([
+    resolveClients(term),
+    resolveBrands(term),
+  ]);
 
   const withCount = opts.withCount !== false;
   let query = supabase
@@ -320,7 +370,7 @@ export async function queryJobPage(
   if (filters.hideDelivered) query = query.neq("status", 5);
   if (filters.status !== "") query = query.eq("status", filters.status);
   if (filters.spot) query = query.eq("location_id", parseInt(filters.spot));
-  if (term) query = query.or(jobSearchFilter(term, matchedClientIds));
+  if (term) query = query.or(jobSearchFilter(term, matchedClientIds, matchedBrandIds));
 
   const from = pageIndex * pageSize;
   const to = from + pageSize - 1;
@@ -463,7 +513,7 @@ export async function queryStaleJobsFallback(
 
   const { data: cands, error: candErr } = await supabase
     .from("transaction_list")
-    .select("id, job_id, item, uniq_id, date_created, date_updated")
+    .select("id, job_id, item, item_name, uniq_id, date_created, date_updated")
     .eq("del_status", 0)
     .in("status", [2, 3])
     .neq("uniq_id", "")

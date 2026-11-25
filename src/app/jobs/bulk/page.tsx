@@ -77,7 +77,9 @@ interface Mechanic {
 interface BulkRow {
   id: number; // local key only
   estJobId: number; // estimated job id (display)
-  /** Item = Brand · Model · Identifier se auto label; customMode par free text. */
+  /** Item = kya cheez hai (structured `item_name`); final label isme baaki fields jude hain. */
+  itemName: string;
+  /** Advanced custom label (bulk me UI nahi — compose fallback ke liye rakha hai). */
   item: string;
   brandId: number | null;
   brandName: string;
@@ -94,6 +96,7 @@ interface BulkRow {
 const emptyBulkRow = (id: number, estJobId: number, mechanicId = ""): BulkRow => ({
   id,
   estJobId,
+  itemName: "",
   item: "",
   brandId: null,
   brandName: "",
@@ -194,10 +197,10 @@ export default function BulkJobPage() {
   const itemOf = (r: BulkRow) =>
     clampJobItemLabel(
       composeJobItemLabel({
+        item: r.itemName,
         brand: r.brandName,
         model: r.model,
         identifier: r.serial,
-        customItem: r.customItem ? r.item : undefined,
         legacyItem: r.item,
       })
     );
@@ -359,6 +362,7 @@ export default function BulkJobPage() {
         job_id: String(nextJobId + i),
         code: `${codePrefix}${String(baseSeq + i).padStart(2, "0")}`,
         item: itemOf(row),
+        item_name: row.itemName.trim() || null,
         brand_id: row.brandId,
         model: row.model.trim() || null,
         serial_no: normalizeIdentifier(row.serial) || null,
@@ -522,9 +526,8 @@ export default function BulkJobPage() {
             Device details har row me alag-alag bharo — kram: Item → Brand → Model → Identifier
           </p>
           <p className="text-[9px] text-muted-2 mt-0.5">
-            Item automatically &quot;Brand · Model · Identifier&quot; banega. Apna text chahiye to
-            row me &quot;Apna text&quot; dabayein. Identifier optional hai — har item ka unique hota
-            hai, isliye type karke bharo.
+            Final label = Item · Brand · Model · Identifier. Item me kya cheez hai wo type karo;
+            identifier optional hai — har item ka unique hota hai, isliye type karke bharo.
           </p>
         </div>
 
@@ -598,41 +601,18 @@ export default function BulkJobPage() {
                   </button>
                 </div>
 
-                {/* 8 fields — same label + same control height */}
-                <div className="p-4 grid grid-cols-2 lg:grid-cols-4 gap-3">
-                  {/* 1) ITEM */}
-                  <BulkField
-                    label="Item"
-                    required
-                    error={itemErr}
-                    action={
-                      <button
-                        type="button"
-                        onClick={() => updateRow(row.id, { customItem: !row.customItem })}
-                        className="text-[8px] font-bold text-blue-400 hover:text-blue-300 underline whitespace-nowrap mb-2"
-                      >
-                        {row.customItem ? "Auto" : "Apna text"}
-                      </button>
-                    }
-                  >
-                    {row.customItem ? (
-                      <input
-                        type="text"
-                        data-bulk-input-item={row.id}
-                        value={row.item}
-                        onChange={(e) => updateRow(row.id, { item: e.target.value })}
-                        placeholder="Apna item text"
-                        className={itemErr ? iClsErr : iCls}
-                      />
-                    ) : (
-                      <input
-                        readOnly
-                        data-bulk-input-item={row.id}
-                        value={itemOf(row)}
-                        placeholder="Brand · Model · Identifier"
-                        className={`${iCls} truncate opacity-90`}
-                      />
-                    )}
+                {/* 4 identity fields — Item → Brand → Model → Identifier, har row me yahi kram */}
+                <div className="px-4 pt-4 grid grid-cols-2 lg:grid-cols-4 gap-3">
+                  {/* 1) ITEM — kya cheez hai; final label neeche preview me. */}
+                  <BulkField label="Item" required error={itemErr}>
+                    <input
+                      type="text"
+                      data-bulk-input-item={row.id}
+                      value={row.itemName}
+                      onChange={(e) => updateRow(row.id, { itemName: e.target.value })}
+                      placeholder="e.g. Ceiling Fan"
+                      className={itemErr ? iClsErr : iCls}
+                    />
                   </BulkField>
 
                   {/* 2) BRAND */}
@@ -679,7 +659,20 @@ export default function BulkJobPage() {
                       className={iCls}
                     />
                   </BulkField>
+                </div>
 
+                {/* Preview identity fields ke baad — sab card me yahi jagah. */}
+                <div className="px-4 pt-2">
+                  <p
+                    className="text-[9px] text-muted-2 truncate"
+                    title={itemOf(row) || "Item · Brand · Model · Identifier"}
+                  >
+                    Final label: {itemOf(row) || "—"}
+                  </p>
+                </div>
+
+                {/* Baaki 4 fields — same label + same control height */}
+                <div className="p-4 grid grid-cols-2 lg:grid-cols-4 gap-3">
                   {/* 5) FAULT */}
                   <BulkField label="Fault Reported" required error={faultErr}>
                     <input

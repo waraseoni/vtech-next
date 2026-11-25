@@ -9,9 +9,11 @@
 > (`4e5cf66`), login OTP/reset + WebView WhatsApp fix shipped, vitest **702/702**,
 > naya `service_center_data_model_plan_2026-11-21.md` (v2 — 3 modes, coverage
 > audit §15, G1–G3 adopted).
-> **Synced:** 24 Nov 2026 · repo @ `0f61d88` (release 1.85.1, tree dirty) — E2
-> service-center **P1–P5 code complete, uncommitted**; vitest **712/712**, build ✓,
-> schema:drift ✓; live DB untouched (owner approval ke baad hi apply + commit).
+> **Synced:** 26 Nov 2026 · repo @ `9e620ad`/`727a887` (release 1.85.2, tree dirty) —
+> E2 service-center **P1–P5 committed + pushed**; `20261122_service_center_fields.sql`
+> owner ne apply kiya. Rev 3 (`item_name`) code local WIP; `20261126_item_name_field.sql`
+> bhi owner ne apply kiya (read-only probe: 0 non-null rows). Rev 3a field-order fix +
+> Rev 3b field-aware search local WIP; updated `get_jobs_stats()` RPC ko owner dobara apply karna hai.
 
 ---
 
@@ -211,11 +213,23 @@
 - [x] Gates: prettier · tsc 0 · eslint 0 · vitest **702/702**.
 - **Source:** `docs/plans/login_page_next_improvements_2026-11-20.md`.
 
-### E2. Multi-brand / service-center data model — 🟢 P1–P5 code done (uncommitted)
+### E2. Multi-brand / service-center data model — 🟢 P1–P5 shipped; Rev 3 WIP
 
-- **Status:** P0 owner sign-off + live migration apply + commit/push baaki.
-  Code local complete hai (Hinglish details ux plan §7 "Implementation status").
-  Commit/push **mat karna** — naya explicit approval chahiye.
+- **Status:** P1–P5 `9e620ad` se pushed; `20261122_service_center_fields.sql` applied.
+  Rev 3 (`item_name` + `Item · Brand · Model · Identifier`) local code complete;
+  commit/push ke liye **naya explicit approval** chahiye (abhi rok diya gaya hai).
+  `20261126_item_name_field.sql` owner ne apply kar diya. Rev 3a (uniform field order)
+  + Rev 3b (Item/Brand/Model/Identifier free-text search, brand resolver, RPC drift fix)
+  local code complete. **Owner action:** updated `get_jobs_stats()` dobara apply karo.
+  Naye env/DB par full-schema run karte samay 2 order/idempotency error mile aur dono
+  fix hue: (1) `reset_sequence(text)` 42P13 (purana param `p_table_name`) →
+  `DROP FUNCTION IF EXISTS` se fix; (2) `get_jobs_stats()` line ~4730 par
+  `42703 column t.item_name does not exist` — function device-identity fold-in
+  se pehle ban raha tha → function + grants ko columns/`brands` ke baad move kiya.
+  `schema:drift` 33 OK. Owner ne full schema naye DB par run + restore bhi kar diya;
+  post-restore read-only search/form smoke green (403 results + stats 403, RPC 200,
+  navbar 25 results, console 0). `reset_sequence` anon grant-hole abhi bhi pending
+  (alag track). P0 sign-off baaki.
 - **Ab wahi plan `service_center_data_model_plan_2026-11-21.md` (v2) me hai:**
   brand/item/model/serial split + service type + **3 modes** (autonomous /
   single-brand / multi-brand) + reports-integrity guarantees (§12) + coverage
@@ -236,7 +250,14 @@
   `"use no memo"` se fix. Ye ux plan upper data-model plan ka P2–P5 ko detail karta hai —
   implement shuru karne se pehle dono padho.
 - **Rev 2 gates:** prettier · tsc 0 · eslint 0 · vitest **712/712** · schema:drift **32 OK** ·
-  build ✓ (137 pages). Live DB abhi bhi untouched; commit/push ke liye naya approval chahiye.
+  build ✓ (137 pages). P1 migration DB me applied aur verified (legacy 2433 rows unchanged).
+- **Rev 3 (26 Nov):** naya nullable `item_name`; default label `Item · Brand · Model · Identifier`;
+  advanced override opt-in (identifier bill label se chhoot jayega, DB/card me rahega).
+  `20261126_item_name_field.sql` + full-schema fold-in; gates green (vitest **713**,
+  schema:drift **33 OK**, build ✓ 137 pages), read-only browser smoke ✓ (console 0 errors).
+  Read-only REST probe: `item_name` selectable, `with_item_name = 0` — migration applied.
+  Rev 3a: saare form surfaces par field kram `Item → Brand → Model → Identifier`, advanced
+  toggle + final-label preview niche summary me; browser DOM order verify, console 0 errors.
 
 ### E3. React Query completion / RHF rollout
 
@@ -272,8 +293,8 @@
 3. **A1 (passkey)** — migration ✅ done; user ke paas ab device QA + HTTPS/rpID
    check (15 min), phir release tag.
 
-**Status (24 Nov):** login OTP/reset + WebView fix + profile RLS push ho chuke
-(`0f61d88`). Service-center **P1–P5 code local complete** (migration, master CRUD,
-3 pickers, old/bulk forms, display + search), sab gates green, par **uncommitted**
-aur **live DB untouched**. Agla step: owner se P0 decisions + migration apply
-approval lena, phir browser smoke/report parity, phir explicit approval par commit.
+**Status (26 Nov):** login OTP/reset + WebView fix + profile RLS push ho chuke
+(`0f61d88`). Service-center **P1–P5 push + migration apply ho chuka** (`9e620ad`).
+Rev 3 `item_name` code local complete, gates + read-only browser smoke green;
+`20261126_item_name_field.sql` owner ne apply kar diya. Agla step: P0 sign-off aur
+explicit approval par commit/push (user ne abhi commit rok diya hai).

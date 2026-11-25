@@ -96,72 +96,98 @@ export function useNavbarSearch() {
     const num = parseInt(q);
 
     try {
-      const [clientRes, jobRes, prodRes, mechRes, saleRes, locRes, spotRes] = await Promise.all([
-        // Clients — name, contact, address
-        supabase
-          .from("client_list")
-          .select("id, firstname, middlename, lastname, contact, address")
-          .eq("delete_flag", 0)
-          .or(
-            `firstname.ilike.${like},middlename.ilike.${like},lastname.ilike.${like},contact.ilike.${like},address.ilike.${like}`
-          )
-          .limit(25),
+      const [clientRes, jobRes, prodRes, mechRes, saleRes, locRes, spotRes, brandRes] =
+        await Promise.all([
+          // Clients — name, contact, address
+          supabase
+            .from("client_list")
+            .select("id, firstname, middlename, lastname, contact, address")
+            .eq("delete_flag", 0)
+            .or(
+              `firstname.ilike.${like},middlename.ilike.${like},lastname.ilike.${like},contact.ilike.${like},address.ilike.${like}`
+            )
+            .limit(25),
 
-        // Jobs — item (derived label me brand bhi hota hai), model, serial_no, fault, ...
-        supabase
+          // Jobs — Item (item + item_name), Model, Identifier (serial_no), fault, ...
+          // Brand alag FK hai — neeche brands query se IDs resolve karke extra
+          // job rows add kiye jaate hain (custom-label rows bhi match hon).
+          supabase
+            .from("transaction_list")
+            .select("id, job_id, item, item_name, model, serial_no, fault, status, date_created")
+            .eq("del_status", 0)
+            .or(
+              `item.ilike.${like},item_name.ilike.${like},model.ilike.${like},serial_no.ilike.${like},fault.ilike.${like},job_id.ilike.${like},code.ilike.${like},uniq_id.ilike.${like}${!isNaN(num) ? `,job_id.eq.${q}` : ""}`
+            )
+            .limit(25),
+
+          // Products
+          supabase
+            .from("product_list")
+            .select("id, name, price")
+            .eq("delete_flag", 0)
+            .ilike("name", like)
+            .limit(25),
+
+          // Mechanics
+          supabase
+            .from("mechanic_list")
+            .select("id, firstname, lastname, designation, contact")
+            .eq("status", 1)
+            .or(`firstname.ilike.${like},lastname.ilike.${like},contact.ilike.${like}`)
+            .limit(25),
+
+          // Direct Sales — sale_code, remarks
+          supabase
+            .from("direct_sales")
+            .select("id, sale_code, total_amount, remarks, date_created")
+            .or(`sale_code.ilike.${like},remarks.ilike.${like}`)
+            .limit(25),
+
+          // Inventory Locations — zone, rack, bin, box, label, code
+          supabase
+            .from("locations")
+            .select("id, zone, rack, bin, box, label, code, kind")
+            .eq("kind", "inventory")
+            .eq("status", 1)
+            .eq("delete_flag", 0)
+            .or(
+              `zone.ilike.${like},rack.ilike.${like},bin.ilike.${like},box.ilike.${like},label.ilike.${like},code.ilike.${like}`
+            )
+            .limit(25),
+
+          // Job Spots — rack (spot name)
+          supabase
+            .from("locations")
+            .select("id, rack, kind")
+            .eq("kind", "job")
+            .eq("status", 1)
+            .eq("delete_flag", 0)
+            .ilike("rack", like)
+            .limit(25),
+
+          // Brands — brand naam/code se jobs dhoondhne ke liye IDs (field-aware search)
+          supabase
+            .from("brands")
+            .select("id, name, code")
+            .or(`name.ilike.${like},code.ilike.${like}`)
+            .limit(25),
+        ]);
+
+      // Brand FK match → un brand_id wale jobs bhi results me (dedupe + cap 25).
+      // Pehli job query already item/model/serial par match karti hai; ye sirf
+      // un rows ko add karta hai jinka custom label me brand naam na ho.
+      let jobRows = jobRes.data || [];
+      const brandIds = (brandRes.data || []).map((b: { id: number }) => b.id);
+      if (brandIds.length) {
+        const { data: brandJobs } = await supabase
           .from("transaction_list")
-          .select("id, job_id, item, model, serial_no, fault, status, date_created")
+          .select("id, job_id, item, item_name, model, serial_no, fault, status, date_created")
           .eq("del_status", 0)
-          .or(
-            `item.ilike.${like},model.ilike.${like},serial_no.ilike.${like},fault.ilike.${like},job_id.ilike.${like},code.ilike.${like},uniq_id.ilike.${like}${!isNaN(num) ? `,job_id.eq.${q}` : ""}`
-          )
-          .limit(25),
-
-        // Products
-        supabase
-          .from("product_list")
-          .select("id, name, price")
-          .eq("delete_flag", 0)
-          .ilike("name", like)
-          .limit(25),
-
-        // Mechanics
-        supabase
-          .from("mechanic_list")
-          .select("id, firstname, lastname, designation, contact")
-          .eq("status", 1)
-          .or(`firstname.ilike.${like},lastname.ilike.${like},contact.ilike.${like}`)
-          .limit(25),
-
-        // Direct Sales — sale_code, remarks
-        supabase
-          .from("direct_sales")
-          .select("id, sale_code, total_amount, remarks, date_created")
-          .or(`sale_code.ilike.${like},remarks.ilike.${like}`)
-          .limit(25),
-
-        // Inventory Locations — zone, rack, bin, box, label, code
-        supabase
-          .from("locations")
-          .select("id, zone, rack, bin, box, label, code, kind")
-          .eq("kind", "inventory")
-          .eq("status", 1)
-          .eq("delete_flag", 0)
-          .or(
-            `zone.ilike.${like},rack.ilike.${like},bin.ilike.${like},box.ilike.${like},label.ilike.${like},code.ilike.${like}`
-          )
-          .limit(25),
-
-        // Job Spots — rack (spot name)
-        supabase
-          .from("locations")
-          .select("id, rack, kind")
-          .eq("kind", "job")
-          .eq("status", 1)
-          .eq("delete_flag", 0)
-          .ilike("rack", like)
-          .limit(25),
-      ]);
+          .in("brand_id", brandIds)
+          .limit(25);
+        const seen = new Set(jobRows.map((r) => r.id));
+        jobRows = [...jobRows, ...(brandJobs || []).filter((r) => !seen.has(r.id))].slice(0, 25);
+      }
 
       const STATUS_LABELS: Record<number, string> = {
         0: "Pending",
@@ -195,9 +221,9 @@ export function useNavbarSearch() {
         });
       });
 
-      (jobRes.data || []).forEach((r) => {
-        // `item` derived label hai (Brand · Model · S/N). Subtitle me sirf
-        // additional structured hint — duplicate na ho isliye model/serial hi.
+      jobRows.forEach((r) => {
+        // `item` derived label hai (Item · Brand · Model · Identifier). Subtitle
+        // me sirf additional hint — duplicate na ho isliye model/serial hi.
         const deviceHint = [r.model, r.serial_no && `S/N ${r.serial_no}`]
           .filter(Boolean)
           .join(" · ");

@@ -5,8 +5,11 @@
 > guarantee**, **counter-speed UX** aur **standard-center coverage audit (§15)** add kiya;
 > phases reorder kiye. **G1–G3 (claim lifecycle, warranty expiry, status prompt) ADOPTED**
 > — ab gap register ke nahi, plan ke phases me hain.
-> **Status:** 📝 PLAN ONLY — koi code/migration nahi likha, **live DB untouched**,
-> owner approval pending.
+> **Status:** P1–P5 shipped (`9e620ad`) · `20261122_service_center_fields.sql`
+> owner ne apply kiya · Rev 3 `item_name` code local WIP; `20261126_item_name_field.sql`
+> bhi owner ne apply kiya (read-only probe: column selectable, 0 non-null rows).
+> Rev 3a/3b: uniform field order + field-aware search (brand resolver + RPC drift fix).
+> P0 sign-off aur commit approval baaki.
 > **Scope:** `transaction_list` ke device fields split + `service_type` + ek brand ka
 > service center chalane ke liye baaki zaruri cheezein — **teenon mode** me.
 > **Extends (schema part of):** `multi_brand_service_architecture_plan.md` §3 ·
@@ -78,7 +81,8 @@ Naye structured columns + `item` ko **derived preview** bana ke rakho → 12 ren
 | Column                  | Type                          | Naya job me                   | Kaam                                                                                                                   |
 | ----------------------- | ----------------------------- | ----------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
 | `brand_id`              | `int NULL FK → brands(id)`    | mode-dependent §2.4           | device manufacturer + (mode ke hisaab se) authorization axis                                                           |
-| `item_category`         | `text NULL`                   | **Optional**                  | device type (Scooter/SMPS/TV) — datalist, counter friction na badhe                                                    |
+| `item_category`         | `text NULL`                   | **Optional (unused)**         | device type (Scooter/SMPS/TV) — abhi code me nahi; future category ke liye reserve                                    |
+| `item_name`             | `text NULL` 🆕 (Rev 3)        | **Recommended**               | kya cheez repair ho rahi hai (Ceiling Fan) — composed label ka pehla hissa: `Item · Brand · Model · Identifier`         |
 | `model`                 | `text NULL`                   | Recommended                   | specific model (XGT, 15 Pro)                                                                                           |
 | `serial_no`             | `text NULL`                   | Optional (hint)               | serial / IMEI / chassis / vehicle no — warranty + pickup                                                               |
 | `service_type_id`       | `int NULL FK → service_types` | **Required (default Repair)** | §2.2                                                                                                                   |
@@ -505,8 +509,9 @@ Zaroori nahi, par autonomous → multi switch karne wale center ke liye coverage
    incomplete data behtar hai, aur baad me bhar sakta hai.)
 6. **Bulk create me shared override** — `jobs/bulk`/`bulk-edit` me brand/service-type ek
    baar select → saari rows (20 job 1 tap me).
-7. **Serial + brand navbar search me** — `useNavbarSearch.ts:113` ka select list me
-   `serial_no`/brand add → counter par "IMEI daalo, job aa gaya" (pickup par sabse kaam aata hai).
+7. **Serial + brand navbar search me** ✅ (Rev 3b) — `useNavbarSearch` me `serial_no`
+   clause + `brands` resolver → counter par "IMEI/brand daalo, job aa gaya" (pickup par
+   sabse kaam aata hai). Jobs list me bhi same 4 fields explicit.
 8. **View page device card** — brand logo, model, serial (**copy button**), warranty badge,
    service type. Job card print me **serial prominent** (return par verify).
 9. **Ek jagah settings** — `/settings/service-center`: mode + brands + service types +

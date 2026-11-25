@@ -1571,6 +1571,11 @@ begin
 end;
 $$;
 
+-- Idempotency fix: purane DB me ye function `p_table_name` param ke saath hai.
+-- Postgres CREATE OR REPLACE se param ka naam badalne nahi deta (42P13), isliye
+-- pehle old signature drop karo — neeche same body + grants dobara create hote hain.
+DROP FUNCTION IF EXISTS public.reset_sequence(text);
+
 CREATE OR REPLACE FUNCTION public.reset_sequence(table_name text) RETURNS text
     LANGUAGE plpgsql SECURITY DEFINER
     AS $$
@@ -4675,82 +4680,9 @@ revoke all on function public.get_due_stats() from anon;
 grant execute on function public.get_due_stats() to authenticated;
 grant execute on function public.get_due_stats() to service_role;
 
--- ══════════════════════════════════════════════════════════════════════════════
--- get_jobs_stats() + get_stale_jobs() (20261113_jobs_stats_stale_rpc.sql)
--- /jobs Quick Stats ka full-dataset scan → 1 aggregate; stale alert ke 3
--- requests → 1 RPC. Filters/dual-era rules: src/app/jobs/jobListQueries.ts.
--- Read-only, stable, security definer. Koi data change nahi.
--- ══════════════════════════════════════════════════════════════════════════════
-create or replace function public.get_jobs_stats(
-  p_term text default null,
-  p_date_from text default null,
-  p_date_to text default null,
-  p_hide_delivered boolean default false,
-  p_status int default null,
-  p_spot text default null
-)
-returns jsonb
-language sql
-security definer
-stable
-set search_path = public
-as $$
-  with args as (
-    select
-      case when coalesce(p_term, '') = '' then null
-           else '%' || lower(p_term) || '%' end as pat,
-      case when coalesce(p_date_from, '') = '' then null
-           else (p_date_from::timestamptz at time zone 'UTC') end as from_ts,
-      case when coalesce(p_date_to, '') = '' then null
-           else ((p_date_to || 'T23:59:59+05:30')::timestamptz at time zone 'UTC') end as to_ts,
-      coalesce(p_hide_delivered, false) as hide_delivered,
-      p_status as filt_status,
-      case when coalesce(p_spot, '') ~ '^\d+$' then p_spot::int else null end as spot_id
-  ),
-  filtered as (
-    select t.status, coalesce(t.amount, 0) as amount
-    from public.transaction_list t
-    cross join args a
-    where t.del_status = 0
-      and (a.from_ts is null or t.date_created >= a.from_ts)
-      and (a.to_ts is null or t.date_created <= a.to_ts)
-      and (not a.hide_delivered or t.status <> 5)
-      and (a.filt_status is null or t.status = a.filt_status)
-      and (a.spot_id is null or t.location_id = a.spot_id)
-      and (
-        a.pat is null
-        or t.job_id ilike a.pat
-        or t.code ilike a.pat
-        or t.item ilike a.pat
-        or t.fault ilike a.pat
-        or t.uniq_id ilike a.pat
-        or t.remark ilike a.pat
-        or t.client_name in (
-          select c.id::text
-          from public.client_list c
-          where c.firstname ilike a.pat
-             or c.middlename ilike a.pat
-             or c.lastname ilike a.pat
-             or c.contact ilike a.pat
-        )
-      )
-  )
-  select jsonb_build_object(
-    'total',     count(*),
-    'pending',   count(*) filter (where status = 0),
-    'progress',  count(*) filter (where status = 1),
-    'completed', count(*) filter (where status in (2, 3, 5)),
-    'totalAmt',  coalesce(sum(amount), 0)
-  )
-  from filtered;
-$$;
-
-revoke all on function public.get_jobs_stats(text, text, text, boolean, int, text) from public;
-revoke all on function public.get_jobs_stats(text, text, text, boolean, int, text) from anon;
-grant execute on function public.get_jobs_stats(text, text, text, boolean, int, text)
-  to authenticated;
-grant execute on function public.get_jobs_stats(text, text, text, boolean, int, text)
-  to service_role;
+-- get_jobs_stats() neeche device-identity fold-in ke BAAD define hota hai:
+-- `item_name/model/serial_no/brand_id` columns aur `brands` table par depend
+-- karta hai. Yahan pehle create karne par fresh DB par 42703 milta tha.
 
 create or replace function public.get_stale_jobs(
   p_days int default 7,
@@ -5110,6 +5042,7 @@ CREATE TABLE IF NOT EXISTS public.device_identifiers (
 
 ALTER TABLE public.transaction_list ADD COLUMN IF NOT EXISTS brand_id integer REFERENCES public.brands(id) ON DELETE SET NULL;
 ALTER TABLE public.transaction_list ADD COLUMN IF NOT EXISTS item_category text;
+ALTER TABLE public.transaction_list ADD COLUMN IF NOT EXISTS item_name text;
 ALTER TABLE public.transaction_list ADD COLUMN IF NOT EXISTS model text;
 ALTER TABLE public.transaction_list ADD COLUMN IF NOT EXISTS serial_no text;
 ALTER TABLE public.transaction_list ADD COLUMN IF NOT EXISTS service_type_id integer REFERENCES public.service_types(id) ON DELETE SET NULL;
@@ -5120,6 +5053,8 @@ ALTER TABLE public.transaction_list ADD COLUMN IF NOT EXISTS warranty_claim_stat
 
 CREATE INDEX IF NOT EXISTS transaction_list_brand_id_idx
   ON public.transaction_list (brand_id) WHERE brand_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS transaction_list_item_name_idx
+  ON public.transaction_list (item_name) WHERE item_name IS NOT NULL;
 CREATE INDEX IF NOT EXISTS device_models_active_brand_idx
   ON public.device_models (brand_id, name) WHERE is_active;
 CREATE UNIQUE INDEX IF NOT EXISTS device_models_active_name_uniq
@@ -5206,5 +5141,91 @@ CREATE TRIGGER update_device_models_timestamp BEFORE UPDATE ON public.device_mod
 DROP TRIGGER IF EXISTS update_device_identifiers_timestamp ON public.device_identifiers;
 CREATE TRIGGER update_device_identifiers_timestamp BEFORE UPDATE ON public.device_identifiers
   FOR EACH ROW EXECUTE FUNCTION extensions.moddatetime('date_updated');
+
+-- ══════════════════════════════════════════════════════════════════════════════
+-- get_jobs_stats() (20261113_jobs_stats_stale_rpc.sql)
+-- /jobs Quick Stats ka full-dataset scan → 1 aggregate. Filters/dual-era rules:
+-- src/app/jobs/jobListQueries.ts. Read-only, stable, security definer.
+-- Dependency order: ye function upar wale device-identity columns (`item_name`,
+-- `model`, `serial_no`, `brand_id`) aur `public.brands` ke baad aata hai —
+-- warna fresh DB par 42703 "column t.item_name does not exist" milta hai.
+-- ══════════════════════════════════════════════════════════════════════════════
+create or replace function public.get_jobs_stats(
+  p_term text default null,
+  p_date_from text default null,
+  p_date_to text default null,
+  p_hide_delivered boolean default false,
+  p_status int default null,
+  p_spot text default null
+)
+returns jsonb
+language sql
+security definer
+stable
+set search_path = public
+as $$
+  with args as (
+    select
+      case when coalesce(p_term, '') = '' then null
+           else '%' || lower(p_term) || '%' end as pat,
+      case when coalesce(p_date_from, '') = '' then null
+           else (p_date_from::timestamptz at time zone 'UTC') end as from_ts,
+      case when coalesce(p_date_to, '') = '' then null
+           else ((p_date_to || 'T23:59:59+05:30')::timestamptz at time zone 'UTC') end as to_ts,
+      coalesce(p_hide_delivered, false) as hide_delivered,
+      p_status as filt_status,
+      case when coalesce(p_spot, '') ~ '^\d+$' then p_spot::int else null end as spot_id
+  ),
+  filtered as (
+    select t.status, coalesce(t.amount, 0) as amount
+    from public.transaction_list t
+    cross join args a
+    where t.del_status = 0
+      and (a.from_ts is null or t.date_created >= a.from_ts)
+      and (a.to_ts is null or t.date_created <= a.to_ts)
+      and (not a.hide_delivered or t.status <> 5)
+      and (a.filt_status is null or t.status = a.filt_status)
+      and (a.spot_id is null or t.location_id = a.spot_id)
+      and (
+        a.pat is null
+        or t.job_id ilike a.pat
+        or t.code ilike a.pat
+        or t.item ilike a.pat
+        or t.item_name ilike a.pat
+        or t.model ilike a.pat
+        or t.serial_no ilike a.pat
+        or t.brand_id in (
+          select b.id from public.brands b
+          where b.name ilike a.pat or b.code ilike a.pat
+        )
+        or t.fault ilike a.pat
+        or t.uniq_id ilike a.pat
+        or t.remark ilike a.pat
+        or t.client_name in (
+          select c.id::text
+          from public.client_list c
+          where c.firstname ilike a.pat
+             or c.middlename ilike a.pat
+             or c.lastname ilike a.pat
+             or c.contact ilike a.pat
+        )
+      )
+  )
+  select jsonb_build_object(
+    'total',     count(*),
+    'pending',   count(*) filter (where status = 0),
+    'progress',  count(*) filter (where status = 1),
+    'completed', count(*) filter (where status in (2, 3, 5)),
+    'totalAmt',  coalesce(sum(amount), 0)
+  )
+  from filtered;
+$$;
+
+revoke all on function public.get_jobs_stats(text, text, text, boolean, int, text) from public;
+revoke all on function public.get_jobs_stats(text, text, text, boolean, int, text) from anon;
+grant execute on function public.get_jobs_stats(text, text, text, boolean, int, text)
+  to authenticated;
+grant execute on function public.get_jobs_stats(text, text, text, boolean, int, text)
+  to service_role;
 
 NOTIFY pgrst, 'reload schema';

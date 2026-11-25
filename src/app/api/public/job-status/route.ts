@@ -70,7 +70,7 @@ export async function GET(request: NextRequest) {
   let query = supabase
     .from("transaction_list")
     .select(
-      "id, job_id, code, client_name, item, brand_id, model, serial_no, fault, remark, status, amount, date_created, date_updated"
+      "id, job_id, code, client_name, item, item_name, brand_id, model, serial_no, fault, remark, status, amount, date_created, date_updated"
     )
     .limit(1);
 

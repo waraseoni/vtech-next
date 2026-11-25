@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
   let query = supabaseAdmin
     .from("transaction_list")
     .select(
-      "id, job_id, code, item, brand_id, model, serial_no, fault, remark, status, amount, date_created, date_completed"
+      "id, job_id, code, item, item_name, brand_id, model, serial_no, fault, remark, status, amount, date_created, date_completed"
     )
     .eq("client_name", String(cid))
     .eq("del_status", 0)

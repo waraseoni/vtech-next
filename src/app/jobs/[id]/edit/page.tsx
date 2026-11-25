@@ -125,6 +125,8 @@ export default function ManageJobPage({ params }: { params: Promise<{ id?: strin
   const [jobCode, setJobCode] = useState<string>(""); // job_id column
   const [txnCode, setTxnCode] = useState<string>(""); // code column (YYYYMMDD+seq)
   const [item, setItem] = useState("");
+  /** Naya structured field — kya cheez repair ho rahi hai. */
+  const [itemName, setItemName] = useState("");
   /** DB se aaya asli purana item — compose preview isi se compare hota hai. */
   const [legacyItem, setLegacyItem] = useState("");
   const [brandId, setBrandId] = useState<number | null>(null);
@@ -155,6 +157,7 @@ export default function ManageJobPage({ params }: { params: Promise<{ id?: strin
       sub: (formSeed?.brands ?? []).find((b) => b.id === m.brand_id)?.name,
     }));
   const composedItem = composeJobItemLabel({
+    item: itemName,
     brand: brandName,
     model: modelValue,
     identifier: serialValue,
@@ -163,6 +166,7 @@ export default function ManageJobPage({ params }: { params: Promise<{ id?: strin
   const showShrinkWarning =
     !customItemMode &&
     labelShrinks({
+      item: itemName,
       brand: brandName,
       model: modelValue,
       identifier: serialValue,
@@ -344,6 +348,7 @@ export default function ManageJobPage({ params }: { params: Promise<{ id?: strin
         setJobCode(data.job_id ?? "");
         setTxnCode(data.code ?? "");
         setItem(data.item ?? "");
+        setItemName(data.item_name ?? "");
         setLegacyItem(data.item ?? "");
         setBrandId(data.brand_id ?? null);
         setBrandName((formSeed?.brands ?? []).find((b) => b.id === data.brand_id)?.name ?? "");
@@ -782,6 +787,7 @@ export default function ManageJobPage({ params }: { params: Promise<{ id?: strin
         code: txnCode, // YYYYMMDD+seq e.g. "2025102401"
         job_id: jobCode, // global seq e.g. "27270
         item: finalItem,
+        item_name: itemName.trim() || null,
         brand_id: brandId,
         model: modelValue.trim() || null,
         serial_no: serialValue.trim() || null,
@@ -1466,46 +1472,17 @@ export default function ManageJobPage({ params }: { params: Promise<{ id?: strin
               </span>
             </div>
 
-            {/* 1) ITEM */}
+            {/* 1) ITEM — baaki fields aur preview neeche, same kram sab jagah. */}
             <div className="mb-4">
-              <div className="flex items-center justify-between gap-3 flex-wrap">
-                <label className={labelCls + " mb-0"}>
-                  <Smartphone size={13} className="text-blue-400" />
-                  Item * (auto / custom)
-                </label>
-                <button
-                  type="button"
-                  onClick={() => setCustomItemMode(!customItemMode)}
-                  className="text-[11px] font-bold text-blue-400 hover:text-blue-300 underline underline-offset-2"
-                >
-                  {customItemMode ? "Wapas auto banayein" : "Apna text likhein"}
-                </button>
-              </div>
-              {customItemMode ? (
-                <input
-                  value={item}
-                  onChange={(e) => setItem(e.target.value)}
-                  placeholder="Apna item text likhein…"
-                  className={`${inputCls} mt-1.5`}
-                />
-              ) : (
-                <input
-                  readOnly
-                  value={finalItem}
-                  placeholder="Brand · Model · Identifier se auto banega"
-                  className={`${inputCls} mt-1.5 opacity-90`}
-                />
-              )}
-              <p className="text-[10px] text-muted-2 mt-1">
-                Ye label bill, WhatsApp aur reports me dikhega.
-              </p>
-              {showShrinkWarning && (
-                <p className="text-[11px] text-amber-400 mt-1 flex items-start gap-1.5">
-                  <AlertCircle size={12} className="mt-0.5 shrink-0" />
-                  Purana item text chhota ho jayega — zaroori dikhe to &quot;Apna text likhein&quot;
-                  dabayein.
-                </p>
-              )}
+              <label className={labelCls}>
+                <Smartphone size={13} className="text-blue-400" /> Item *
+              </label>
+              <input
+                value={itemName}
+                onChange={(e) => setItemName(e.target.value)}
+                placeholder="Kya cheez hai? e.g. Ceiling Fan / Mobile / Charger"
+                className={`${inputCls} mt-1.5`}
+              />
             </div>
 
             {/* 2) BRAND → 3) MODEL → 4) IDENTIFIER (free text, optional) */}
@@ -1549,6 +1526,51 @@ export default function ManageJobPage({ params }: { params: Promise<{ id?: strin
                   className={inputCls}
                 />
               </div>
+            </div>
+
+            {/* Preview + advanced override — 4 fields ke baad. */}
+            <div className="mt-3 rounded-lg border border-app bg-app/60 px-2.5 py-1.5">
+              <div className="flex items-center justify-between gap-3 flex-wrap">
+                <p className="text-[9px] font-bold uppercase tracking-wider text-muted-2">
+                  Final label (bill · WhatsApp · reports)
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setCustomItemMode(!customItemMode)}
+                  className="text-[11px] font-bold text-blue-400 hover:text-blue-300 underline underline-offset-2"
+                >
+                  {customItemMode ? "Wapas auto banayein" : "Advanced: khud ka label"}
+                </button>
+              </div>
+              {customItemMode && (
+                <div className="mt-2">
+                  <input
+                    value={item}
+                    onChange={(e) => setItem(e.target.value)}
+                    placeholder="Advanced: poora label likhein (identifier isme nahi aayega)"
+                    className={inputCls}
+                  />
+                  <p className="text-[10px] text-amber-400 mt-1">
+                    Advanced override: bill/WhatsApp par yahi text dikhega. Identifier DB aur Device
+                    Identity card me rahega, par label se chhoot jayega.
+                  </p>
+                </div>
+              )}
+              <p className="mt-1 text-xs font-semibold text-white break-words" title={finalItem}>
+                {finalItem || "—"}
+              </p>
+              {!customItemMode && (
+                <p className="text-[10px] text-muted-2 mt-1">
+                  Item → Brand → Model → Identifier — sab ek hi label me.
+                </p>
+              )}
+              {showShrinkWarning && (
+                <p className="text-[11px] text-amber-400 mt-1 flex items-start gap-1.5">
+                  <AlertCircle size={12} className="mt-0.5 shrink-0" />
+                  Purana item text chhota ho jayega — zaroori dikhe to &quot;Advanced: khud ka
+                  label&quot; dabayein.
+                </p>
+              )}
             </div>
           </div>
 

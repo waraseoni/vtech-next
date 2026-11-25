@@ -897,7 +897,7 @@ function JobsListContent({
   const [quickForm, setQuickForm] = useState({
     clientName: "",
     contact: "",
-    item: "", // custom/free-text fallback (device fields khali hone par)
+    itemName: "", // naya structured field — kya cheez hai
     brandId: null as number | null,
     brandName: "",
     model: "",
@@ -949,6 +949,7 @@ function JobsListContent({
   // pehle normalize (trim + uppercase + whitespace collapse) yahin hota hai.
   const quickSerial = normalizeIdentifier(quickForm.serial);
   const quickComposedItem = composeJobItemLabel({
+    item: quickForm.itemName,
     brand: quickForm.brandName,
     model: quickForm.model,
     identifier: quickSerial,
@@ -957,13 +958,14 @@ function JobsListContent({
   const handleQuickCreate = async () => {
     if (quickCreateRef.current) return;
     const composedItem = composeJobItemLabel({
+      item: quickForm.itemName,
       brand: quickForm.brandName,
       model: quickForm.model,
       identifier: quickSerial,
     });
-    const savedItem = composedItem || quickForm.item.trim();
+    const savedItem = composedItem;
     if (!savedItem) {
-      toast.error("Item/Model zaroori hai!");
+      toast.error("Item zaroori hai!");
       return;
     }
     if (!quickForm.fault.trim()) {
@@ -998,6 +1000,7 @@ function JobsListContent({
           code: `${datePrefix}${dailySeq}`,
           job_id: String(nextJobId),
           item: savedItem,
+          item_name: quickForm.itemName.trim() || null,
           brand_id: quickForm.brandId,
           model: quickForm.model.trim() || null,
           serial_no: quickSerial || null,
@@ -1022,7 +1025,7 @@ function JobsListContent({
       setQuickForm({
         clientName: "",
         contact: "",
-        item: "",
+        itemName: "",
         brandId: null,
         brandName: "",
         model: "",
@@ -2174,7 +2177,7 @@ function JobsListContent({
           />
           <input
             type="text"
-            placeholder="Search jobs, clients, items..."
+            placeholder="Search item · brand · model · S/N · client..."
             value={localSearch}
             onChange={(e) => setLocalSearch(e.target.value)}
             className="theme-input w-full pl-9 pr-10 py-2 rounded-xl text-sm outline-none placeholder:text-[var(--app-muted-2)]"
@@ -2811,24 +2814,18 @@ function JobsListContent({
                   Device Identity
                 </p>
 
-                {/* 1) ITEM */}
+                {/* 1) ITEM — kya cheez hai; final label neeche preview me. */}
                 <div className="mb-3">
                   <label className="block text-[10px] font-black uppercase tracking-[0.18em] text-muted mb-1.5">
-                    Item / Model (custom)
+                    Item *
                   </label>
                   <input
                     type="text"
-                    placeholder="Apna text likhein (optional)"
-                    value={quickForm.item}
-                    onChange={(e) => setQuickForm((p) => ({ ...p, item: e.target.value }))}
+                    placeholder="Kya cheez hai? e.g. Ceiling Fan"
+                    value={quickForm.itemName}
+                    onChange={(e) => setQuickForm((p) => ({ ...p, itemName: e.target.value }))}
                     className="w-full px-3 py-2.5 bg-slate-50 dark:bg-panel-2 border border-app-2 dark:border-app rounded-xl text-app dark:text-white text-sm placeholder:text-muted dark:placeholder:text-app outline-none focus:border-blue-500"
                   />
-                  <p className="text-[10px] text-muted mt-1 truncate">
-                    Item preview:{" "}
-                    <span className="font-bold text-app">
-                      {quickComposedItem || quickForm.item || "—"}
-                    </span>
-                  </p>
                 </div>
 
                 {/* 2) BRAND → 3) MODEL → 4) IDENTIFIER (free text, optional) */}
@@ -2877,6 +2874,10 @@ function JobsListContent({
                     />
                   </div>
                 </div>
+                <p className="text-[10px] text-muted mt-2 truncate">
+                  Final label:{" "}
+                  <span className="font-bold text-app">{quickComposedItem || "—"}</span>
+                </p>
               </div>
 
               {/* Fault */}

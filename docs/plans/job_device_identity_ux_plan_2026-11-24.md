@@ -1,8 +1,12 @@
-# Job Device Identity UX Plan — Brand · Model · Identifier dropdown + add-new + har jagah sahi display
+# Job Device Identity UX Plan — Item · Brand · Model · Identifier dropdown + add-new + har jagah sahi display
 
 > **Created:** 24 Nov 2026 · **Revision 2:** 24 Nov 2026 (user review ke baad) ·
-> **Status:** 🟢 P1–P5 code complete (uncommitted) · gates green ·
-> **live DB untouched** (owner approval pending). P0 sign-off aur migration apply baaki hai.
+> **Revision 3:** 26 Nov 2026 (`item_name` structured field) ·
+> **Revision 3a:** 26 Nov 2026 (field order fix) · **Revision 3b:** 26 Nov 2026 (field-aware search) ·
+> **Status:** P1–P5 committed (`9e620ad`) · `20261122_service_center_fields.sql`
+> owner ne apply kiya · **Rev 3 code uncommitted**; `20261126_item_name_field.sql`
+> owner ne apply kiya (read-only probe: `item_name` selectable, 0 non-null rows).
+> P0 sign-off aur commit approval baaki hai.
 > **Extends (does not replace):** `service_center_data_model_plan_2026-11-21.md` (v2) —
 > uske §2.1 (device columns), §2.4 (3 modes), §2.5 (derived `item`), §11 (breakage audit),
 > §12 (reports integrity), §13 (counter-speed UX) **as-is maane gaye hain**.
@@ -16,14 +20,16 @@
 
 ## 0. Ek line me faisla
 
-Jobs me `item` ke saath **Brand, Model aur Identifier** ke 3 fields honge —
-**Brand aur Model** searchable dropdown (existing list se select) + **"+" se inline
-add-new** (jaisa aaj `location_id` ka `JobSpotPicker` karta hai). **Identifier unique
-hota hai har item ke liye** — isliye uska dropdown/master nahi, **optional typeable
-text field** (Revision 2). Field kram **Item → Brand → Model → Identifier** hai.
-`item` column **badlega nahi** — wo in 3 se **derived label** ban jayega, isliye item
-dikhne wali **40+ jagah apne aap rich ho jayengi**; sirf **rich display** wali chuni
-hui jagahon par ek shared `<DeviceIdentity />` component se structured line add karenge.
+Jobs me 4 device fields honge — **Item, Brand, Model, Identifier**.
+**Item** ab naya structured nullable column `item_name` hai ("kya cheez repair ho rahi
+hai"). **Brand aur Model** searchable dropdown (existing list se select) + **"+" se
+inline add-new** (jaisa aaj `location_id` ka `JobSpotPicker` karta hai). **Identifier
+unique hota hai har item ke liye** — isliye uska dropdown/master nahi, **optional
+typeable text field** (Revision 2). Field kram **Item → Brand → Model → Identifier**
+hai. Purana `item` column **badlega nahi** — wo in 4 se **derived label** ban jayega,
+isliye item dikhne wali **40+ jagah apne aap rich ho jayengi**; sirf **rich display**
+wali chuni hui jagahon par ek shared `<DeviceIdentity />` component se structured
+line add karenge.
 
 ---
 
@@ -38,6 +44,7 @@ hui jagahon par ek shared `<DeviceIdentity />` component se structured line add 
 | **Rev 2:** "bulk me har job ke liye alag item, brand, model, identifier — yahi kram"     | Bulk create + bulk-edit dono me **global override hata diya**; har row me 4 alag fields, kram **Item → Brand → Model → Identifier**.                                                                |
 | **Rev 2:** "/jobs/new runtime error + sidebar link"                                      | React Compiler ke `useWatch` reorder se TDZ → `ManageJobPageInner` me `"use no memo"`; Settings ke andar nested link ke saath **direct sidebar link** bhi.                                          |
 | "jaha bhi item show hota hai, sabhi jagah sabhi ka sahi display"                         | 3-layer display strategy (§5): derived `item` = 0-change coverage; `<DeviceIdentity />` = structured coverage; search = discoverability.                                                            |
+| **Rev 3:** "custom text item ko override na kare — wo Item part bane, identifier label me rahe" | Naya nullable `item_name` column. Default label `Item · Brand · Model · Identifier`. Advanced override alag, warning ke saath (identifier tab DB/card me rahega).                                     |
 | "purana plan bhi padho"                                                                  | Padha — §2.5 non-destructive compose, §11 R1–R18, §12 parity, §13 ux rules **non-negotiable** hain.                                                                                                 |
 
 ---
@@ -48,7 +55,7 @@ hui jagahon par ek shared `<DeviceIdentity />` component se structured line add 
 | --- | --------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
 | 1   | `item` free-text **NOT NULL unchanged**, naye columns NULLABLE, no backfill | Har 3 field ka **dropdown + add-new UX** detail (exact component, states, copy)                                        |
 | 2   | `brands` table proposed (§2.3), mode-aware visibility (§2.4)                | **Model aur Identifier ke liye bhi master tables** + unka add-new flow + brand-dependent model list                    |
-| 3   | `composeJobItemLabel()` + preview/warning (§2.5)                            | Compose format final + **custom free-text escape** + display contract (ek hi helper, ek hi component)                  |
+| 3   | `composeJobItemLabel()` + preview/warning (§2.5)                            | Compose format final `Item · Brand · Model · Identifier` + naya `item_name` + **advanced override** + display contract (ek hi helper, ek hi component) |
 | 4   | "12 render sites" estimate (§1)                                             | **Verified 40+ display sites** enumerate (§4.2) + layered coverage plan (§5)                                           |
 | 5   | Search me serial add karna (§13.7)                                          | Brand + Model + Identifier **sab search/filter me**, exact file:line + query shape                                     |
 | 6   | 3 modes (autonomous/single/multi)                                           | Dropdown behaviour mode ke hisaab se (single me brand auto-fill; multi me required) — existing mode contract hi follow |
@@ -155,23 +162,24 @@ me expense-category datalist hai):
 
 ### 4.1 Intake me "Device Identity" block
 
-Ek hi compact row (counter par scroll kam) — order **Brand → Model → Identifier**:
+Ek hi compact row (counter par scroll kam) — order **Item → Brand → Model → Identifier**:
 
 ```
 Device Identity                                    [Client ke purane devices ▾]
-┌────────────────┐  ┌────────────────┐  ┌──────────────────────┐  ┌─────────────┐
-│ Brand       🔍+│  │ Model       🔍+│  │ Identifier      🔍+ │  │ Item (auto) │
-│ Komaki       ▾ │  │ XGT            ▾│  │ S/N: KMK123...   ▾ │  │ Komaki·XGT·…│
-└────────────────┘  └────────────────┘  └──────────────────────┘  └─────────────┘
+┌──────────────────────┐  ┌────────────────┐  ┌────────────────┐  ┌──────────────────────┐
+│ Item *               │  │ Brand       🔍+│  │ Model       🔍+│  │ Identifier (optional) │
+│ Ceiling Fan          │  │ Komaki       ▾ │  │ XGT            ▾│  │ KMK123...            │
+└──────────────────────┘  └────────────────┘  └────────────────┘  └──────────────────────┘
+Final label: Ceiling Fan · Komaki · XGT · KMK123...
                        ↑ brand chune par usi brand ke models filter
 ℹ️ Identifier = Serial / IMEI / Chassis / Vehicle no — warranty aur delivery ke liye.
 ```
 
-- **Label**: `Brand`, `Model`, `Identifier (Serial / IMEI)` — user ki basha me "Identifier", DB me `serial_no`.
-- **Item (auto)** read-only preview input; niche chhota text: "Ye label bill, WhatsApp aur reports me dikhega."
-- **Custom escape**: chhota link **"Apna text likhein"** → `item` wapas editable (legacy/free-text raasta hamesha khula — plan §2.5 rule).
-- **Client memory**: client chunte hi "Is client ke pichhle devices" list se 3 fields ek tap me prefill (`transaction_list` se distinct brand/model/serial).
-- **Order flip** na karein: Brand pehle (axis), phir Model, phir Identifier — print/export me bhi yahi order.
+- **Label**: `Item`, `Brand`, `Model`, `Identifier (Serial / IMEI)` — user ki basha me "Identifier", DB me `serial_no`.
+- **Item** ab editable structured field (`item_name`) hai; niche **Final label** preview dikhti hai: "Ye label bill, WhatsApp aur reports me dikhega."
+- **Advanced override**: chhota link **"Advanced: khud ka label"** → alag full-label input. Clear warning: identifier DB/card me rahega, par bill label se chhoot jayega.
+- **Client memory**: client chunte hi "Is client ke pichhle devices" list se fields ek tap me prefill (`transaction_list` se distinct item/brand/model/serial).
+- **Order flip** na karein: Item, Brand, Model, Identifier — print/export me bhi yahi order.
 
 ### 4.2 Dropdown + add-new — exact behaviour (copy `JobSpotPicker`)
 
@@ -200,7 +208,7 @@ Reusable component: `src/components/DeviceFieldPicker.tsx` (props: `kind: "brand
 | -------------- | ----------------------------- | ----------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
 | **Brand**      | `brands` (planned §2.3)       | `is_active=true`, mode hisaab se authorized-only chip | `name`, `code` (optional 2–4 char), `is_authorized=false` default; admin badh sakta hai                                          | mode: autonomous = optional, single = auto-fill, multi = required + "General / Unbranded" |
 | **Model**      | **naya** `device_models`      | selected brand ke models; brand na ho to saare active | `name`, `brand_id` = abhi selected brand ( agar brand abhi select nahi → form ke andar hi brand bhi choose karne ka mini-picker) | optional (counter block nahi)                                                             |
-| **Identifier** | **naya** `device_identifiers` | saare active values + "Recent" group; lookup fast     | `value` (trim, upper-case normalize serial), `note?`                                                                             | optional; duplicate par warning (same identifier do active jobs = fraud/repeat signal)    |
+| **Identifier** | `device_identifiers` (table rehti hai) | **UI me dropdown nahi** — optional free text, blur par `normalizeIdentifier()` | `serial_no` me direct value; master table future/legacy ke liye rakhi gayi hai                                                    | optional; duplicate par warning (same identifier do active jobs = fraud/repeat signal)    |
 
 - **Brand change → model clear** (silently galat brand-model combo na bache); confirm toast: _"Brand badla — model clear kar diya."_
 - **Identifier uniqueness** hard constraint **nahi** (ek device do baar aati hai = feature, G9 history); soft warning par **"Isi device ka purana job dekhein"** link.
@@ -211,35 +219,35 @@ Reusable component: `src/components/DeviceFieldPicker.tsx` (props: `kind: "brand
 Helper: `src/lib/deviceIdentity.ts`
 
 ```ts
-composeJobItemLabel({ brand, model, identifier, legacyItem, customItem }): string
-formatDeviceIdentity(job): { label: string; brand?: string; model?: string; identifier?: string; isLegacy: boolean }
+composeJobItemLabel({ item, brand, model, identifier, legacyItem, customItem }): string
+formatDeviceIdentity(job): { label: string; item?: string; brand?: string; model?: string; identifier?: string; isLegacy: boolean }
 ```
 
-| Situation                              | Output                                                                                                                        |
-| -------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| 3 me se koi bhi nahi                   | legacy `item` **jaisa ka taisa** (0 change)                                                                                   |
-| Kuch bhara                             | `Brand · Model · Identifier` — **jo khali hai wo chhup jayega**, "undefined"/"—" nahi                                         |
-| `customItem` (Apna text likhein)       | user ka text exactly (override)                                                                                               |
-| Composed label purane `item` se chhota | preview me warning: _"Purana item text chhota ho jayega — zaroori dikhe to 'Apna text likhein' dabayein."_ (silent loss nahi) |
-| Length > 200                           | `job.ts:29` max **300** (plan R2) + live counter; DB `item text` limit nahi hai                                               |
+| Situation                              | Output                                                                                                                                |
+| -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| 4 me se koi bhi nahi                   | legacy `item` **jaisa ka taisa** (0 change)                                                                                           |
+| Kuch bhara                             | `Item · Brand · Model · Identifier` — **jo khali hai wo chhup jayega**, "undefined"/"—" nahi                                           |
+| Advanced override (`customMode`)       | user ka poora label exactly (rare) — identifier DB aur Device Identity card me rahega, bill label se chhoot jayega (UI warning)         |
+| Composed label purane `item` se chhota | preview me warning: _"Purana item text chhota ho jayega — zaroori dikhe to 'Advanced: khud ka label' dabayein."_ (silent loss nahi)     |
+| Length > 300                           | `job.ts` max **300** + `clampJobItemLabel()`; `item_name` form guard 200, DB `text` limit nahi hai                                    |
 
-**Example:** `Komaki · XGT · KMK123456789` → bill/WhatsApp/list/reports sab me yahi dikhega.
+**Example:** `Ceiling Fan · Komaki · XGT · KMK123456789` → bill/WhatsApp/list/reports sab me yahi dikhega.
 **Legacy row:** `Komaki XGT scooter` → koi structured field nahi → wahi purana text, `isLegacy=true`.
 
 ### 4.5 Display contract ("sahi tareeke se" ka matlab)
 
-Har jagah **ek hi format**: `Brand · Model · Identifier` (order fixed), empty part omit,
-legacy fallback = raw `item`, long text truncate + `title` tooltip (print me wrap).
+Har jagah **ek hi format**: `Item · Brand · Model · Identifier` (order fixed), empty part
+omit, legacy fallback = raw `item`, long text truncate + `title` tooltip (print me wrap).
 
-| Display context                 | Kya dikhega                                                                            | Component/helper                       |
-| ------------------------------- | -------------------------------------------------------------------------------------- | -------------------------------------- |
-| Job list row                    | 1-line composed `item` (already) + hover me chhota `Brand · ID` chip                   | `formatDeviceIdentity()`               |
-| Job view / client view          | **Device card**: 3 labeled rows + **Identifier ke saath copy button** + warranty badge | `<DeviceIdentity variant="card" />`    |
-| Print bill / job-card           | `Item/Model:` me composed label + chhota `S/N …` line, wrap-safe CSS                   | `formatDeviceIdentity()` in route      |
-| WhatsApp templates              | `{item}` me composed label (template badalne ki zarurat nahi)                          | 0 change                               |
-| Public tracking / client portal | composed label + model line (no internal IDs)                                          | `<DeviceIdentity variant="compact" />` |
-| Dashboard / pending-jobs        | composed label truncated + brand dot/chip                                              | `formatDeviceIdentity()`               |
-| Search results                  | composed label + match highlight (brand/model/serial me bhi search)                    | `useNavbarSearch`                      |
+| Display context                 | Kya dikhega                                                                               | Component/helper                       |
+| ------------------------------- | ----------------------------------------------------------------------------------------- | -------------------------------------- |
+| Job list row                    | 1-line composed `item` (already) + hover me chhota `Brand · ID` chip                      | `formatDeviceIdentity()`               |
+| Job view / client view          | **Device card**: 4 labeled rows (Item/Brand/Model/Identifier) + copy + warranty badge     | `<DeviceIdentity variant="card" />`    |
+| Print bill / job-card           | `Item/Model:` me composed label + chhota `S/N …` line, wrap-safe CSS                      | `formatDeviceIdentity()` in route      |
+| WhatsApp templates              | `{item}` me composed label (template badalne ki zarurat nahi)                             | 0 change                               |
+| Public tracking / client portal | composed label + model line (no internal IDs)                                             | `<DeviceIdentity variant="compact" />` |
+| Dashboard / pending-jobs        | composed label truncated + brand dot/chip                                                 | `formatDeviceIdentity()`               |
+| Search results                  | composed label + match highlight (item_name/model/serial me bhi search)                   | `useNavbarSearch`                      |
 
 ---
 
@@ -282,9 +290,11 @@ CREATE TABLE IF NOT EXISTS public.device_identifiers (
 );
 ```
 
-`transaction_list` me purane plan ke exactly ye columns (koi naya enum nahi):
-`brand_id int NULL`, `item_category text NULL`, `model text NULL`, `serial_no text NULL`,
-`service_type_id int NULL`, `warranty_*`.
+`transaction_list` me purane plan ke columns + Rev 3 ka naya field (koi naya enum nahi):
+`brand_id int NULL`, `item_category text NULL` (unused — future category ke liye reserve),
+**`item_name text NULL` (naya — kya cheez repair ho rahi hai)**, `model text NULL`,
+`serial_no text NULL`, `service_type_id int NULL`, `warranty_*`.
+Rev 3 migration: `20261126_item_name_field.sql`; full-schema fold-in bhi update.
 
 **Rules (purane plan §11.3 non-negotiable):**
 
@@ -315,17 +325,17 @@ CREATE TABLE IF NOT EXISTS public.device_identifiers (
 `npx vitest run` · `npm run schema:drift` (P1) · browser smoke (3 modes, mobile dropdown,
 inline add, print preview) · **report parity** (§12.5 purana plan).
 
-### Implementation status (24 Nov 2026, uncommitted)
+### Implementation status (26 Nov 2026)
 
-| Phase  | State                     | Note                                                                                                                                                               |
-| ------ | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **P0** | ⏳ Owner sign-off pending | mode, brand-required, seeds, separator, numbering/config                                                                                                           |
-| **P1** | ✅ Code done              | `20261122_service_center_fields.sql` + full-schema fold-in + `/settings/service-center` CRUD + **direct + nested nav link**                                        |
-| **P2** | ✅ Code done              | `deviceIdentity.ts`, `DeviceFieldPicker`, new/edit/quick-create pickers + preview + custom escape, zod 300 guard; **identifier text (Rev 2)**; `/jobs/new` TDZ fix |
-| **P3** | ✅ Code done              | shared `DeviceIdentityFields` dono old forms; bulk/bulk-edit me **per-row 4 fields** (global override hata diya)                                                   |
-| **P4** | ✅ Code done              | `<DeviceIdentity />` card (job view), print-bill S/N line, client portal, public tracking (serial chhupa), JobsBody list subline + S/N chip                        |
-| **P5** | ✅ Code done              | `jobListQueries.ts` me `jobSearchFilter()` single-source (model + serial_no clauses), navbar search select/filter/subtitle                                         |
-| **P6** | ⏳ Alag track             | purane plan ke P4–P7                                                                                                                                               |
+| Phase  | State                     | Note                                                                                                                                                                  |
+| ------ | ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **P0** | ⏳ Owner sign-off pending | mode, brand-required, final seed list, separator ` · `, numbering/config                                                                                               |
+| **P1** | ✅ Committed + applied    | `9e620ad`; `20261122_service_center_fields.sql` owner ne apply kiya; full-schema fold-in + `/settings/service-center` CRUD + nav link                                  |
+| **P2** | ✅ Committed + Rev 3 WIP  | `deviceIdentity.ts`, `DeviceFieldPicker`, pickers/preview, zod 300 guard; **identifier text (Rev 2)**; Rev 3 me `item_name` compose                                     |
+| **P3** | ✅ Committed + Rev 3 WIP  | shared `DeviceIdentityFields` dono old forms; bulk/bulk-edit per-row 4 fields; Rev 3 me Item editable + final label preview                                           |
+| **P4** | ✅ Committed + Rev 3 WIP  | `<DeviceIdentity />` card ab 4 rows (Item/Brand/Model/Identifier), print-bill `item_name` pass, public tracking (serial chhupa)                                       |
+| **P5** | ✅ Committed + Rev 3 WIP  | `jobSearchFilter()` + navbar search me `item_name` clause; stale-jobs fallback select bhi update                                                                       |
+| **P6** | ⏳ Alag track             | purane plan ke P4–P7                                                                                                                                                    |
 
 **P4 note:** `DashboardBody` aur `reports/pending-jobs` ko structured card nahi mila — inke data
 source (`get_dashboard_recents` RPC / `select("*")`) derived `item` hi dikhaate hain (Layer A),
@@ -335,10 +345,21 @@ hai, par derived `item` khud me S/N rakhta hai aur Info Grid me dikhta hai — *
 ka exact matlab P0 sign-off me confirm karna**. Agar public label se S/N hatana hai to
 `composeJobItemLabel({ brand, model, legacyItem: item })` ka alag public variant banega.
 
-**Gates (final):** `prettier` ✅ · `tsc --noEmit` ✅ · `npm run lint` ✅ (0 warnings) ·
-`npx vitest run` → **69 files / 712 tests pass** ✅ · `npm run schema:drift` → **32 migrations OK** ✅ ·
-`npm run build` → **compiled, 137 static pages** ✅.
-Browser smoke + report parity abhi pending (live DB apply ke baad).
+**Gates (Rev 3, final):** `prettier` ✅ · `tsc --noEmit` ✅ · `npm run lint` ✅ (0 warnings) ·
+`npx vitest run` → **69 files / 713 tests pass** ✅ · `npm run schema:drift` → **33 migrations OK** ✅ ·
+`npm run build` ✅ (137 static pages; build se pehle dev server band kiya gaya tha).
+
+**Read-only browser smoke (26 Nov):** `/jobs/new` me Item + Brand (`Komaki`) + Identifier type
+karne par label `Ceiling Fan · Komaki · KMK 123`; advanced override par custom label dikha aur
+wapas auto mode par composed label — identifier input value (`KMK 123`) dono me DB/card level par
+raha. `/jobs/2536/view` (job #29640) me 4-row card `Item — / Brand Stan / Model 10R Axxis /
+Identifier —`; legacy `/jobs/1706/old` ka `Sharpy Stan 10r Axxis` unchanged, item_name input khali.
+`/jobs/2536/edit`, `/jobs/bulk` (per-row 4 fields, uniform grid), `/jobs/bulk-edit` (2 rows loaded,
+per-row item/brand/model/identifier) aur navbar search `10R Axxis` → **23 results** — sab par
+console errors **0**. Rev 3a ke baad DOM order bhi verify kiya: new/edit/old/quick-create/bulk/
+bulk-edit sab me `Item → Brand → Model → Identifier → Final label → Advanced`. Note: URL `/jobs/29640/view` galat hota hai (29640 = `job_id`, internal
+`id` = 2536); sahi route `/jobs/2536/view`. Read-only REST probe: `item_name` selectable aur
+`with_item_name = 0` (legacy rows untouched; migration owner ne apply kar diya).
 
 ### Revision 2 — user review ke baad (24 Nov 2026)
 
@@ -368,6 +389,83 @@ Browser smoke + report parity abhi pending (live DB apply ke baad).
 - **`device_identifiers` table:** drop mat karo (purana plan v2 ka safety invariant). UI se
   picker hatana kaafi hai; settings me tab legacy data ke liye rehta hai.
 
+### Revision 3 — `item_name` (26 Nov 2026)
+
+| #   | User decision                                                              | Implementation                                                                                                                                                                  |
+| --- | -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | Naya `item_name` column — `item_category` nahi (category ke liye reserve)   | `20261126_item_name_field.sql` (nullable, partial index, no backfill) + full-schema fold-in; `item` NOT NULL/text unchanged                                                        |
+| 2   | Custom text Item ban jayega; identifier hamesha label me rahega             | `composeJobItemLabel()` kram `Item · Brand · Model · Identifier`; `item_name` pehla part; default mode me koi full override nahi                                                  |
+| 3   | Advanced override optional, warning ke saath                                | "Advanced: khud ka label" → `customMode`; UI clear bolta hai identifier bill label se chhoot jayega par DB/card me rahega                                                         |
+| 4   | Bulk page me bhi har job ke liye alag 4 fields                              | `jobs/bulk` + `jobs/bulk-edit` me per-row `itemName/brand/model/serial`; global override nahi                                                                                      |
+| 5   | Device card me 4th row Item                                                 | `<DeviceIdentity />` grid `Item/Brand/Model/Identifier`, legacy row me item raw `item` se fallback                                                                                 |
+| 6   | Read/search layers                                                          | `jobViewQueries`, `client/jobs`, `public/job-status`, `useNavbarSearch`, `jobSearchFilter`, `print-bill`, stale-jobs fallback me `item_name`                                       |
+
+**Pending:** commit/push approval (user ne abhi roka hai); P0 sign-off (brand-required
+rules, final seed list, separator ` · `); public tracking me S/N behavior.
+
+### Revision 3a — field order fix (26 Nov 2026)
+
+User review me galaat order mila: `Item → Advanced → Final label → Brand → Model → Identifier`.
+Ab **har form surface** par yahi kram hai:
+
+`1 Item → 2 Brand → 3 Model → 4 Identifier → (summary) Advanced + Final label + warnings`
+
+| Surface                                   | Fix                                                                                       |
+| ----------------------------------------- | ----------------------------------------------------------------------------------------- |
+| `DeviceIdentityFields` (dono old forms)   | Advanced toggle + preview Item block se hata kar 4 fields ke baad summary me               |
+| `jobs/new`, `jobs/[id]/edit`              | Wahi structure — advanced/preview ab niche; helper text bhi preview ke baad                |
+| `JobsBody` quick-create                   | `Final label` Item input se hata kar 4 fields ke baad                                      |
+| `jobs/bulk`                               | Preview upar se hata kar pehle 4 identity fields, phir preview, phir baaki 4 fields        |
+| `jobs/bulk-edit`                          | Preview Item ke andar se hata kar Identifier ke baad                                       |
+| `DeviceIdentity` card                     | Pehle se hi `Item/Brand/Model/Identifier` — unchanged                                      |
+
+**Expert advice:** inquiry inputs contiguous rakho (user ka mental model yahi hai); advanced
+override aur final-label preview _summary_ hain, field nahi — isliye we always last. Long-term
+me `jobs/new` aur `jobs/[id]/edit` ko bhi `DeviceIdentityFields` shared component par le jana
+chahiye, taaki future me koi naya surface add ho to kram dobara na bigde. Abhi har surface ka
+kram browser me verify ho chuka hai (console 0 errors).
+
+### Revision 3b — field-aware free-text search (26 Nov 2026)
+
+User request: jobs-list search aur universal (navbar) search me **Item · Brand · Model ·
+Identifier** sabse search ho. Dono jagah ek hi box rakha gaya ( nayi dropdown nahi — universal
+search cross-entity hai, scope dropdown confusing hota).
+
+| Surface                     | Badlaav                                                                                                                        |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `jobSearchFilter()`         | `item`, `item_name`, `brand_id.in.(...)`, `model`, `serial_no` sab explicit clauses; brand IDs `searchBrandsForTerm()` se        |
+| `searchBrandsForTerm()`     | `brands.name/code ilike` → CSV IDs; koi match na ho to `-1` sentinel (khaali `.in.()` nahi)                                     |
+| `useJobList`/`server-jobs`  | client + server dono me brand resolver in-flight dedupe (stats + page ek hi query share)                                        |
+| `useNavbarSearch()`         | 8th parallel query `brands`; brand-ID wale jobs alag query se merge + dedupe + cap 25                                            |
+| Placeholders                | Navbar `Item · Brand · Model · S/N...`, jobs list `Search item · brand · model · S/N · client...`                               |
+| `get_jobs_stats()` RPC      | `item_name`, `model`, `serial_no` + `brands` subquery **add** — client page query se stats drift khatam                          |
+
+**Must-fix tha:** purane RPC me `item_name/model/serial_no` clauses nahi the — identifier ya
+model se search karne par rows to aate the, Quick Stats total alag dikh sakta tha. Clause ab
+`20261113_jobs_stats_stale_rpc.sql` **aur** full-schema fold-in dono me identical hain.
+**Owner ko updated `get_jobs_stats()` dobara apply karna hoga** (sirf function body, koi
+schema/data change nahi; anon grant unchanged). Tab tak RPC fallback (chunked client scan)
+sahi results dega.
+
+**Env note (26 Nov, late):** user ne `.env.local` dusre Supabase project par switch kiya —
+purane DB par `item_name` thi, naye par nahi thi (search 400: `42703 column ... does not
+exist`). Naye DB par full schema / migration apply hone tak browser smoke pending hai; code
+me koi regression nahi (400 purane DB se naye DB par switch ka asar tha). Full-schema me
+`reset_sequence(text)` ka 42P13 param-rename error bhi `DROP FUNCTION IF EXISTS` se fix hua,
+aur `get_jobs_stats()` ka `42703 column t.item_name does not exist` error function ko
+device-identity columns/`brands` table ke baad move karke fix hua (fold-in dependency order).
+
+**Smoke (26 Nov, post-restore ✅):** naye DB par dev server restart ke baad read-only smoke
+green — jobs-list `Stan` → **403 results**, `get_jobs_stats` RPC 200 aur total/rows dono 403;
+zero-result term → 0 results + stats 0. Request URL me `item`, `item_name`, `model`,
+`serial_no` clauses aur `brand_id.in.(2)` (Stan resolver) maujood, koi 400 nahi. Navbar
+search → 25 job results, `brands` + brand-ID job query dono 200. Forms `/jobs/new`,
+`/jobs/2517/edit`, `/jobs/2517/old`, `/jobs/bulk` aur view card me kram
+**Item → Brand → Model → Identifier**; console errors **0**. Live DB me naye columns
+(`brand_id/item_name/model/serial_no`) abhi 0 non-null rows hain (no-backfill rule), isliye
+brand-only merge aur model/serial-specific match unit tests se verify hote hain, live data se
+nahi. Koi DB write/commit nahi.
+
 ---
 
 ## 8. Risk register (naye risks; purane R1–R18 additionally applicable)
@@ -376,7 +474,8 @@ Browser smoke + report parity abhi pending (live DB apply ke baad).
 | --- | ----------------------------------------------------------------- | --- | ---------------------------------------------------------------------------------------------------- |
 | N1  | Inline add se **duplicate brand/model** (spacing/case)            | 🟠  | `ilike` dedupe + upper/trim normalize + unique index (`lower(name)`)                                 |
 | N2  | Brand badla, **model stale** (galat combo save)                   | 🔴  | Brand change par model clear + toast; save par helper cross-check                                    |
-| N3  | Composed label se **purana free-text chhup gaya**                 | 🔴  | §4.4 preview + shrink warning + "Apna text likhein" escape                                           |
+| N3  | Composed label se **purana free-text chhup gaya**                 | 🔴  | §4.4 preview + shrink warning + advanced override escape                                             |
+| N11 | Advanced override me **identifier bill label se chhoot jana**    | 🟠  | UI me clear warning; DB/card me identifier rahega (rare, opt-in)                                     |
 | N4  | 3 dropdowns se **counter slow**                                   | 🟠  | Progressive disclosure (mode), recent memory, client-device prefill, keyboard, required sirf mode me |
 | N5  | Explicit `select()` list me columns bhool gaye → `undefined` chip | 🟠  | `formatDeviceIdentity()` missing fields handle karta hai (legacy fallback), QA matrix                |
 | N6  | Identifier do active jobs me same → duplicate-looking report      | 🟢  | Soft warning + "purana job dekhein" link (feature: device history G9)                                |
@@ -389,10 +488,10 @@ Browser smoke + report parity abhi pending (live DB apply ke baad).
 
 ## 9. Test plan
 
-- **Unit** (`deviceIdentity.test.ts`): legacy untouched · full compose · partial compose (no `—`/`undefined`) · custom override · shrink warning flag · 300-char guard.
+- **Unit** (`deviceIdentity.test.ts`): legacy untouched · full compose `Item · Brand · Model · Identifier` · partial compose (no `—`/`undefined`) · `item_name` DB mapping · advanced override (identifier DB me rehta hai) · shrink warning flag · 300-char guard.
 - **Component**: `DeviceFieldPicker` — dedupe path (existing selected, no insert) · insert+auto-select · error keeps modal text · brand-change clears model · recent cap 5.
 - **E2E smoke (manual, no live-DB writes by agent)**: `/jobs/new` 3 modes → add-new brand/model/identifier → save → composed `item` in list, view, print preview, WhatsApp preview, search by identifier · edit legacy job → raw `item` unchanged · mobile bottom sheet.
-- **Regression**: existing 702 vitest green; `reports/daily-income`, `delivered`, `client-ledger` totals parity; `/login` 200; console 0 errors.
+- **Regression**: existing 713 vitest green; `reports/daily-income`, `delivered`, `client-ledger` totals parity; `/login` 200; console 0 errors.
 
 ---
 
@@ -400,7 +499,7 @@ Browser smoke + report parity abhi pending (live DB apply ke baad).
 
 1. **Identifier master chaahiye ya sirf "recent values"**? recommend **master table** (`device_identifiers`) — user ne "list me na ho to add karo" kaha, isliye searchable registry chahiye.
 2. **Model master globally ya brand-wise?** recommend **brand-linked** (`device_models.brand_id`), dropdown brand se filter — galat combo rokne ke liye.
-3. **"Apna text likhein" escape rakhein?** recommend **HAAN** (legacy data loss ka raasta band na ho).
+3. **Advanced full-label override rakhein?** recommend **HAAN, rare/opt-in** — default me custom text Item part ban jata hai aur identifier label me rehta hai; override chunne par clear warning dikhti hai (identifier DB/card me rehta hai).
 4. **Mode default** — purane plan §9.1 se **autonomous** (already recommended, abhi tak pending).
 5. **Composed label me separator** `·` (middle dot) — recommend haan; agar SMS/print me issue ho to `/` fallback.
 6. **Live apply approval** (read-only simulation pehle) + purane plan ke §9 baaki decisions.

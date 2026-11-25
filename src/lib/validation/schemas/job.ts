@@ -29,7 +29,9 @@ export const jobFormSchema = z.object({
   // Brand/Model/Identifier pickers se `item` derived hota hai. Label lamba ho
   // sakta hai (3 values + separator) — isliye 300 (DB me text, limit nahi).
   item: z.string().trim().max(300),
-  /** UI-only: true = "Apna text likhein" escape (compose override nahi karega). */
+  /** DB: item_name text NULL — kya cheez repair ho rahi hai (compose ka pehla hissa). */
+  item_name: z.string().trim().max(200),
+  /** UI-only: true = advanced custom label (compose override, rare). */
   custom_item: z.boolean(),
   /** DB: brand_id int NULL / model text NULL / serial_no text NULL. */
   brand_id: z.number().int().positive().nullable(),
@@ -52,6 +54,7 @@ export const emptyJobForm: JobFormValues = {
   client_id: null,
   mechanic_id: "",
   item: "",
+  item_name: "",
   custom_item: false,
   brand_id: null,
   brand_name: "",

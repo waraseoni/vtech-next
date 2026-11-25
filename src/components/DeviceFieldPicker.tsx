@@ -206,11 +206,12 @@ export default function DeviceFieldPicker({
           searchPlaceholder={`${LABEL[kind]} dhundo…`}
           emptyText={`Koi ${LABEL[kind].toLowerCase()} nahi — '+' se naya banao`}
           clearLabel={`${LABEL[kind]} hatao`}
-          renderSelected={() =>
+          renderSelected={(opt) =>
             selectValue ? (
               <span className="flex items-center gap-1.5 truncate">
                 <Icon size={13} className="text-blue-400 flex-shrink-0" />
-                <span className="truncate">{String(selectValue)}</span>
+                {/* Brand ka value numeric FK id hai — trigger par naam dikhe. */}
+                <span className="truncate">{opt.label}</span>
               </span>
             ) : null
           }
