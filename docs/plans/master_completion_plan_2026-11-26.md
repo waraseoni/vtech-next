@@ -203,6 +203,11 @@ Repair par fault ab bhi mandatory; deactivated type ka purana job edit me sahi d
 - [~] **D10 — P1-6 docs index + archive:** `docs/README.md` ban gaya (topic → canonical → status +
   historical note). Purane 70+ plan docs **archive physically nahi kiye** — unme status update
   nahi, canonical ye master plan hai.
+- [x] **D11 — Schema → backup/restore golden rule (27 Nov):** `AGENTS.md` + DATA_MIGRATION_NOTES
+  me standing rule; `docs/backup_restore_contract.md` canonical (60 tables/512 migration columns,
+  10 surfaces); `npm run backup:contract` + CI gate; `npm run verify:data`. Purana backup me na hone
+  wale naye tables ab preserve (delete nahi); count mismatch error toast. Baaki legacy gaps
+  (schema snapshot, converter bool maps, CLI alphabetical order, grants backup) recorded.
 
 ---
 

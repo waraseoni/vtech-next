@@ -92,12 +92,45 @@ Naya antar milte hi is table me add karo.
   karo, phir RLS/auth socho. Month gate hone par report khud `Is period mein koi
   transaction nahi mila.` dikhati hai.
 
+## Golden Rule #2 — Schema change = Backup/Restore update (bina bole)
+
+> **JAB BHI migration / table / column / grants badle, backup aur restore wale
+> surfaces bhi usi change me update karo.** User ko iske liye baar baar bolne
+> ki zarurat nahi hai — ye standing rule hai.
+
+Kyunki browser backup live OpenAPI schema se table/column/PK padhta hai,
+additive changes zyadatar apne aap chal jaate hain. Lekin ye kaafi nahi:
+
+- backup JSON me **schema snapshot nahi** hota (sirf rows + `_meta.version = 3.0`),
+  isliye rename/type-change/removed column detect nahi hote.
+- `src/lib/backupRestore.ts` ka FK-first table order, `backupSchema.ts` ka
+  `GENERATED_COLUMNS`, `backupAuthRestore.ts` ke auth maps aur `resetSequence.ts`
+  ki allowlist **hard-coded** hain.
+- `public/tools/vtech_mysql_converter.html` aur backup page ke static fallback
+  lists bhi hard-coded hain.
+- Purana backup naye schema par restore hone par naye tables **delete** ho sakte
+  the (clear loop live order par chalata tha, backup me table na hone par skip).
+- Grants/RLS/functions/triggers backup me nahi jaate — fresh DB pe pehle
+  migrations apply hona zaroori hai.
+
+### Har schema change par ye karo (agent khud, bina bole)
+
+1. `docs/backup_restore_contract.md` me naya table/column declare karo.
+2. Naya FK-parent → `src/lib/backupRestore.ts` ordered list me daalo.
+3. Generated/identity column → `src/lib/backupSchema.ts` + CLI/force-restore.
+4. Auth-linked table/UUID → `src/lib/backupAuthRestore.ts`.
+5. Serial/identity sequence → `src/lib/resetSequence.ts` allowlist.
+6. Converter/backup page static lists sync karo; guide me table count galat na rahe.
+7. `npm run verify:data` green karo (schema drift + backup contract). CI me bhi
+   ye step hai, isliye bhoolna possible nahi.
+
 ## Aage Ke Liye Checklist (har DB-related change par)
 
 1. Kya ye reader purane logs/data ko bhi padh payega?
 2. Kya ye writer naye canonical convention se likh raha hai?
 3. Kya maine `date_updated` ko kahin display ke liye use kiya? (Mat karo)
 4. Fallbacks: missing data par **kuch-na-dikhao** ya approx — jhooti fresh date kabhi nahi.
+5. Kya schema change ke saath backup/restore contract + surfaces update ho gaye? (`npm run verify:data`)
 
 ---
 *Banaya gaya: Aug 2026 — jab jobs-page status-date bug (#28201 par aaj ki date)

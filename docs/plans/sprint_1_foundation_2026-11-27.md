@@ -74,12 +74,16 @@
 7. [x] **E2 money tests** — `src/lib/money-logic.integration.test.ts` me **15 golden assertions**:
    dual-era `client_name` string + numeric `client_id`, payment+discount, active-loan-only repayment,
    Done-job red proof, dueLabel, balance-sheet identity, cash-flow `asOn` cut-off, previousPeriod.
+8. [x] **D11 golden rule** — schema change ke saath backup/restore update bina bole: `AGENTS.md` +
+   DATA_MIGRATION_NOTES, `docs/backup_restore_contract.md`, `npm run backup:contract` CI gate,
+   old-backup me na hone wale tables preserve, count mismatch → error toast.
 
-> Inme se 1–7 sab **code/docs** hain — koi DB write, koi secret, koi commit nahi.
+> Inme se 1–8 sab **code/docs** hain — koi DB write, koi secret, koi commit nahi.
 >
-> **Aaj ke gates (D1/D4/E2 ke baad):** `tsc --noEmit` ✓ · `eslint` (touched) ✓ ·
-> `vitest run` **77 files / 783 tests** ✓ · `schema:drift` **35 OK** ✓ ·
-> `next build` **139 pages** ✓ · touched files prettier ✓. Commit/push **nahi**.
+> **Aaj ke gates (D1/D4/E2/D11 ke baad):** `tsc --noEmit` ✓ · `eslint` (touched) ✓ ·
+> `vitest run` **77 files / 783 tests** ✓ · `verify:data` (schema:drift 35 OK +
+> backup:contract 60 tables/512 columns) ✓ · `next build` **139 pages** ✓ ·
+> touched files prettier ✓. Commit/push **nahi**.
 
 ---
 

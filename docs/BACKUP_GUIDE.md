@@ -7,6 +7,12 @@
 > Ek hi file me teen bhasha. Har section self-contained hai — jo bhasha chahiye,
 > wahi padho. Commands/file names sab jagah same hain.
 
+> ⚠️ **Golden rule (bina bole):** har schema/migration badlaav ke saath
+> `docs/backup_restore_contract.md` aur backup/restore surfaces bhi update hone
+> chahiye. Gate: `npm run verify:data`. Purana backup naye schema par restore
+> karo to backup me na hone wale **naye tables preserve** hote hain (delete
+> nahi); count mismatch ab error toast me dikhta hai, "100% verified" nahi.
+
 ---
 
 # हिंदी गाइड
@@ -14,7 +20,7 @@
 ## 1. पहले ये समझें (सिस्टम कैसा है)
 
 - मुख्य डेटाबेस **Supabase (PostgreSQL)** पर है — project ref: `rklyznlrcrysdpksltxm`.
-- कुल **51 tables**, लगभग **10,000+ rows** (JSON full backup ~3.4 MB).
+- कुल **~60 tables** (`docs/backup_restore_contract.md` canonical), लगभग **10,000+ rows** (JSON full backup ~3.4 MB).
 - अगर Data में गड़बड़ हो जाए तो हमारे पास **कई fail-safe लेयर** हैं:
   1. **Full JSON backup** (डेटाबेस की पूरी कॉपी) — browser से या server/CLI से.
   2. **Cloud copy** — Supabase Storage के private bucket `backups` में ऑटो-अपलोड.
@@ -104,7 +110,7 @@ node scripts/supabase-to-mariadb.mjs --history 50     # sync history JSON
 2. Restore कार्ड → JSON फ़ाइल drop करें।
 3. ऐप **diff + Dry Run** दिखाता है (डेटाबेस vs फ़ाइल की तुलना, कोई write नहीं).
 4. Dry Run **PASS** होने पर ही confirm करें। Dry Run FAIL हो तो रुकें और warning पढ़ें।
-5. Restore खुद बाद में हर table का count verify करता है (HARD fail).
+5. Restore बाद में हर table का count verify करता है; mismatch पर **error toast + report** दिखता है (HARD fail) — "100% verified" नहीं कहा जाता. Backup फ़ाइल में न होने वाले नए tables preserve रहते हैं.
 
 ### रास्ता B — CLI force-restore (psql के बिना)
 ```powershell
@@ -296,7 +302,7 @@ node scripts/supabase-to-mariadb.mjs --history 50     # sync history JSON
 2. Restore card → drop the JSON file.
 3. The app shows a **diff + Dry Run** (DB vs file comparison, zero writes).
 4. Confirm only if Dry Run **PASSES**. If it FAILS, stop and read the warning.
-5. Restore itself verifies every table's count afterwards (HARD fail).
+5. Restore verifies every table's count afterwards; a mismatch shows an **error toast + report** (HARD fail), never "100% verified". New tables absent from the backup file are preserved, not deleted.
 
 ### Route B — CLI force-restore (no psql needed)
 ```powershell

@@ -958,8 +958,16 @@ export default function BackupPage() {
       }
 
       // ── Step 0b: Clear existing data in REVERSE ORDER (avoiding FK violations) ──
+      // Schema badlaav ke baad purane backup me naye tables nahi hote. Agar hum
+      // live schema ke SAARE tables clear kar dein aur phir backup me na hone ki
+      // wajah se skip kar dein, to naye tables ki data delete ho jati hai.
+      // Isliye sirf wahi tables clear karo jo backup file me maujood hain
+      // (empty array = explicit clear; missing key = preserve).
       setProgress("Clearing existing data (reverse order)...");
-      const reverseOrderedTables = [...orderedTables].reverse();
+      const tablesInBackup = orderedTables.filter(({ table }) =>
+        Object.prototype.hasOwnProperty.call(backup, table)
+      );
+      const reverseOrderedTables = [...tablesInBackup].reverse();
       for (const { table } of reverseOrderedTables) {
         if (!NO_DELETE_TABLES.includes(table) && !RESTORE_FREE_TABLES.includes(table)) {
           setProgress(`Clearing table: ${table}...`);
@@ -1171,7 +1179,9 @@ export default function BackupPage() {
       setRestoreReport(tableResults);
       clearLoaded(); // Diff panel clear karo restore ke baad
       const failedCount = tableResults.reduce((s, r) => s + r.failed, 0);
-      if (failedCount > 0) {
+      // Count mismatch ko "100% restored + count verified" mat bolo — warna
+      // restore visually success dikhata hai jabki data file se mismatch hai.
+      if (failedCount > 0 || verifiedFails.length > 0) {
         showToast(
           "error",
           `⚠ ${totalRestored.toLocaleString()} restored, ${failedCount} failed${

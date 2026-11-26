@@ -50,6 +50,11 @@ jobs:
         # mahine tak silent missing rahe). Details: npm run schema:drift
         run: npm run schema:drift
 
+      - name: Check backup/restore contract
+        # Golden rule: schema change ke saath backup+restore surfaces bhi update.
+        # Ye static check hai (live DB/secrets nahi) — quality job me safe.
+        run: npm run backup:contract
+
   build:
     name: Production Build
     runs-on: ubuntu-latest
