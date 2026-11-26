@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -21,6 +21,13 @@ import SearchableSelect from "@/components/SearchableSelect";
 import { toast } from "@/lib/toast";
 import DeviceFieldPicker from "@/components/DeviceFieldPicker";
 import { clampJobItemLabel, composeJobItemLabel, normalizeIdentifier } from "@/lib/deviceIdentity";
+import {
+  expectsFault,
+  faultFieldLabel,
+  faultHint,
+  serviceTypeOptions,
+  type ServiceTypeOption,
+} from "@/lib/serviceType";
 import { useJobAuxSeed } from "../JobAuxSeed";
 
 // ─── IST Helper ───────────────────────────────────────────────────────────────
@@ -67,6 +74,8 @@ interface TxnRow {
   brandName: string;
   model: string | null;
   serial_no: string | null;
+  /** Legacy rows NULL — yahin se tag karte hain (coverage badhaane ke liye). */
+  serviceTypeId: number | null;
   fault: string;
   mechanic_id: string;
   uniq_id: string;
@@ -96,6 +105,16 @@ export default function BulkEditPage() {
   const [loaded, setLoaded] = useState(false);
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [loadedFrom, setLoadedFrom] = useState("");
+
+  const [fallbackServiceTypes, setFallbackServiceTypes] = useState<ServiceTypeOption[]>([]);
+  const serviceTypeSeed: ServiceTypeOption[] = useMemo(
+    () => seed?.deviceMasters?.serviceTypes ?? fallbackServiceTypes,
+    [seed, fallbackServiceTypes]
+  );
+  const serviceTypeOpts = (selectedId: number | null) =>
+    serviceTypeOptions(serviceTypeSeed, selectedId);
+  const rowFaultRequired = (r: TxnRow) =>
+    expectsFault(serviceTypeSeed.find((t) => t.id === r.serviceTypeId));
 
   const deviceMasters = seed?.deviceMasters;
   const brandOptions = (deviceMasters?.brands ?? []).map((b) => ({
@@ -128,7 +147,7 @@ export default function BulkEditPage() {
   // ── Fetch master data ──────────────────────────────────────────────────────
   const fetchMaster = useCallback(async () => {
     setLoading(true);
-    const [cRes, mRes] = await Promise.all([
+    const [cRes, mRes, sRes] = await Promise.all([
       supabase
         .from("client_list")
         .select("id, firstname, middlename, lastname, contact")
@@ -140,9 +159,14 @@ export default function BulkEditPage() {
         .eq("delete_flag", 0)
         .eq("status", 1)
         .order("firstname"),
+      supabase
+        .from("service_types")
+        .select("id, name, sort_order, expects_fault, is_active")
+        .order("sort_order"),
     ]);
     setClients(cRes.data || []);
     setMechanics(mRes.data || []);
+    setFallbackServiceTypes((sRes.data || []) as ServiceTypeOption[]);
     setLoading(false);
   }, []);
 
@@ -172,7 +196,7 @@ export default function BulkEditPage() {
       const { data, error } = await supabase
         .from("transaction_list")
         .select(
-          "id, job_id, client_name, item, item_name, brand_id, model, serial_no, fault, mechanic_id, uniq_id, remark"
+          "id, job_id, client_name, item, item_name, brand_id, model, serial_no, service_type_id, fault, mechanic_id, uniq_id, remark"
         )
         .eq("client_name", sourceClient)
         .eq("del_status", 0)
@@ -198,6 +222,7 @@ export default function BulkEditPage() {
         brandName: (deviceMasters?.brands ?? []).find((b) => b.id === t.brand_id)?.name ?? "",
         model: t.model ?? null,
         serial_no: t.serial_no ?? null,
+        serviceTypeId: t.service_type_id ?? null,
         fault: t.fault ?? "",
         mechanic_id: t.mechanic_id != null ? String(t.mechanic_id) : "",
         uniq_id: t.uniq_id ?? "",
@@ -302,9 +327,11 @@ export default function BulkEditPage() {
       return;
     }
 
-    const invalid = rows.filter((r) => !r.client_id.trim() || !itemOf(r) || !r.fault.trim());
+    const invalid = rows.filter(
+      (r) => !r.client_id.trim() || !itemOf(r) || (rowFaultRequired(r) && !r.fault.trim())
+    );
     if (invalid.length > 0) {
-      toast.error(`${invalid.length} row(s) mein Client/Item/Fault khaali hai!`);
+      toast.error(`${invalid.length} row(s) mein Client/Item ya zaroori Fault khaali hai!`);
       return;
     }
 
@@ -332,6 +359,8 @@ export default function BulkEditPage() {
             brand_id: r.brand_id,
             model: r.model?.trim() || null,
             serial_no: normalizeIdentifier(r.serial_no) || null,
+            service_type_id: r.serviceTypeId,
+            // fault NOT NULL — faultless type par "" hi likhte hain.
             fault: r.fault.trim(),
             uniq_id: r.uniq_id.trim() || "",
             remark: r.remark.trim() || "",
@@ -553,8 +582,11 @@ export default function BulkEditPage() {
                   <th className="px-3 py-3 text-left text-[9px] font-black text-blue-300 uppercase w-36">
                     Identifier
                   </th>
+                  <th className="px-3 py-3 text-left text-[9px] font-black text-blue-300 uppercase w-40">
+                    Service Type
+                  </th>
                   <th className="px-3 py-3 text-left text-[9px] font-black text-blue-300 uppercase">
-                    Fault Reported <span className="text-red-400">*</span>
+                    Fault / Work Description
                   </th>
                   <th className="px-3 py-3 text-left text-[9px] font-black text-blue-300 uppercase w-36">
                     Assign To
@@ -654,14 +686,31 @@ export default function BulkEditPage() {
                       />
                     </td>
                     <td className="px-3 py-2.5">
+                      <SearchableSelect
+                        value={row.serviceTypeId ?? null}
+                        options={serviceTypeOpts(row.serviceTypeId)}
+                        onSelect={(id) =>
+                          updateRow(row.id, { serviceTypeId: id ? parseInt(id, 10) : null })
+                        }
+                        placeholder="Tag type"
+                      />
+                    </td>
+                    <td className="px-3 py-2.5">
                       <input
                         type="text"
                         value={row.fault}
                         onChange={(e) => updateRow(row.id, { fault: e.target.value })}
-                        placeholder="Fault"
+                        placeholder={
+                          rowFaultRequired(row) ? "Reported fault" : "Kaam ka scope (optional)"
+                        }
                         className={iCls}
-                        required
+                        required={rowFaultRequired(row)}
                       />
+                      {faultHint(rowFaultRequired(row)) && (
+                        <p className="text-[9px] text-muted-2 mt-1">
+                          {faultHint(rowFaultRequired(row))}
+                        </p>
+                      )}
                     </td>
                     <td className="px-3 py-2.5">
                       <SearchableSelect
@@ -814,14 +863,32 @@ export default function BulkEditPage() {
                     Final label: {itemOf(row) || "—"}
                   </p>
                   <div>
-                    <label className={lCls}>Fault Reported *</label>
+                    <label className={lCls}>Service Type</label>
+                    <SearchableSelect
+                      value={row.serviceTypeId ?? null}
+                      options={serviceTypeOpts(row.serviceTypeId)}
+                      onSelect={(id) =>
+                        updateRow(row.id, { serviceTypeId: id ? parseInt(id, 10) : null })
+                      }
+                      placeholder="Tag type"
+                    />
+                  </div>
+                  <div>
+                    <label className={lCls}>{faultFieldLabel(rowFaultRequired(row))}</label>
                     <input
                       type="text"
                       value={row.fault}
                       onChange={(e) => updateRow(row.id, { fault: e.target.value })}
-                      placeholder="Reported Fault"
+                      placeholder={
+                        rowFaultRequired(row) ? "Reported Fault" : "Kaam ka scope (optional)"
+                      }
                       className={iCls}
                     />
+                    {faultHint(rowFaultRequired(row)) && (
+                      <p className="text-[9px] text-muted-2 mt-1">
+                        {faultHint(rowFaultRequired(row))}
+                      </p>
+                    )}
                   </div>
                   <div>
                     <label className={lCls}>Assign To</label>

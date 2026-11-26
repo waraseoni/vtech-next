@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, use, useRef, useCallback } from "react";
+import { useState, useEffect, use, useRef, useCallback, useMemo } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase, getCachedUser } from "@/lib/supabase";
 import { safeBack } from "@/lib/utils";
@@ -37,7 +37,8 @@ import {
 } from "@/lib/deviceIdentity";
 import { getNextJobId, bumpJobCounter } from "@/lib/jobIdCounter";
 import { fetchClientDue, dueLabel } from "@/lib/client-due";
-import { buildAvailableStock } from "@/app/jobs/jobFormQueries";
+import { buildAvailableStock, type JobFormServiceType } from "@/app/jobs/jobFormQueries";
+import { expectsFault, faultFieldLabel, faultHint, serviceTypeOptions } from "@/lib/serviceType";
 import { useJobFormSeed } from "@/app/jobs/JobFormSeedProvider";
 import { logger } from "@/lib/logger";
 import { toast } from "@/lib/toast";
@@ -134,6 +135,7 @@ export default function ManageJobPage({ params }: { params: Promise<{ id?: strin
   const [modelValue, setModelValue] = useState("");
   const [serialValue, setSerialValue] = useState("");
   const [customItemMode, setCustomItemMode] = useState(false);
+  const [serviceTypeId, setServiceTypeId] = useState<number | null>(null);
   const [fault, setFault] = useState("");
   const [uniqId, setUniqId] = useState(""); // legacy free-text (bina location_id wale rows ka fallback)
   const [locId, setLocId] = useState<number | null>(null); // locations.id (kind='job')
@@ -156,6 +158,19 @@ export default function ManageJobPage({ params }: { params: Promise<{ id?: strin
       label: m.name,
       sub: (formSeed?.brands ?? []).find((b) => b.id === m.brand_id)?.name,
     }));
+
+  // Service Type — seed me inactive type bhi hai (deactivated wale purane job
+  // ka edit value preserve karne ke liye). NULL = legacy → fault required.
+  const serviceTypeSeed: JobFormServiceType[] = useMemo(
+    () => formSeed?.serviceTypes ?? [],
+    [formSeed]
+  );
+  const serviceTypeOpts = useMemo(
+    () => serviceTypeOptions(serviceTypeSeed, serviceTypeId),
+    [serviceTypeSeed, serviceTypeId]
+  );
+  const faultRequired = expectsFault(serviceTypeSeed.find((t) => t.id === serviceTypeId));
+
   const composedItem = composeJobItemLabel({
     item: itemName,
     brand: brandName,
@@ -354,6 +369,7 @@ export default function ManageJobPage({ params }: { params: Promise<{ id?: strin
         setBrandName((formSeed?.brands ?? []).find((b) => b.id === data.brand_id)?.name ?? "");
         setModelValue(data.model ?? "");
         setSerialValue(data.serial_no ?? "");
+        setServiceTypeId(data.service_type_id ?? null);
         setFault(data.fault ?? "");
         setUniqId(data.uniq_id ?? "");
         setLocId(data.location_id ?? null);
@@ -753,7 +769,9 @@ export default function ManageJobPage({ params }: { params: Promise<{ id?: strin
       toast.error("Item/Model zaroori hai!");
       return;
     }
-    if (!fault.trim()) {
+    // Faultless service type (New Installation / PDI) par fault optional —
+    // DB column NOT NULL hai, khali text "" bhejte hain.
+    if (faultRequired && !fault.trim()) {
       toast.error("Fault description zaroori hai!");
       return;
     }
@@ -791,6 +809,7 @@ export default function ManageJobPage({ params }: { params: Promise<{ id?: strin
         brand_id: brandId,
         model: modelValue.trim() || null,
         serial_no: serialValue.trim() || null,
+        service_type_id: serviceTypeId,
         fault: fault.trim(),
         uniq_id: (locId ? locName : uniqId).trim() || "", // dual-write: location ho to spot naam, warna legacy text
         location_id: locId,
@@ -1577,15 +1596,36 @@ export default function ManageJobPage({ params }: { params: Promise<{ id?: strin
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className={labelCls}>
-                <AlertCircle size={13} className="text-red-400" />
-                Fault Reported <span className="text-red-400">*</span>
+                <Briefcase size={13} className="text-blue-400" />
+                Service Type <span className="text-red-400">*</span>
+              </label>
+              <SearchableSelect
+                value={serviceTypeId ?? null}
+                options={serviceTypeOpts}
+                onSelect={(id) => setServiceTypeId(id ? parseInt(id, 10) : null)}
+                placeholder="Select service type…"
+                emptyText="Koi service type nahi mila"
+              />
+              <p className="text-[10px] text-muted-2 mt-1">
+                Type ke hisaab se Fault / Work Description field badalta hai.
+              </p>
+            </div>
+            <div>
+              <label className={labelCls}>
+                <AlertCircle size={13} className={faultRequired ? "text-red-400" : "text-muted"} />
+                {faultFieldLabel(faultRequired)}
               </label>
               <input
                 value={fault}
                 onChange={(e) => setFault(e.target.value)}
-                placeholder="e.g. Screen broken, Not charging"
+                placeholder={
+                  faultRequired ? "e.g. Screen broken, Not charging" : "Kaam ka scope (optional)"
+                }
                 className={inputCls}
               />
+              {faultHint(faultRequired) && (
+                <p className="text-[10px] text-muted-2 mt-1">{faultHint(faultRequired)}</p>
+              )}
             </div>
             <div>
               <label className={labelCls}>

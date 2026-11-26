@@ -19,7 +19,15 @@ export type JobFormProduct = { id: number; name: string; price: number; availabl
 export type JobFormBrand = { id: number; name: string; code: string | null };
 export type JobFormDeviceModel = { id: number; name: string; brand_id: number | null };
 export type JobFormIdentifier = { id: number; value: string; note: string | null };
-export type JobFormServiceType = { id: number; name: string; sort_order: number };
+export type JobFormServiceType = {
+  id: number;
+  name: string;
+  sort_order: number;
+  /** NULL = fault required (purane + naye admin types ka default). */
+  expects_fault?: boolean | null;
+  /** Purana/deactivated type bhi seed me aata hai — edit me value preserve karne ke liye. */
+  is_active?: boolean;
+};
 
 export type JobFormMasters = {
   clients: JobFormClient[];
@@ -124,10 +132,13 @@ export async function fetchJobFormMasters(supabase: SupabaseClient): Promise<Job
       .select("id, value, note")
       .eq("is_active", true)
       .order("value"),
+    // NOTE: yahan `.eq("is_active", true)` JAAN-BUJH KAR NAHI hai — deactivated
+    // type wale purane job ke edit form me type khali dikhega aur NULL save ho
+    // jayega (service type v2 critical catch #1). UI active list filter karegi,
+    // current value chahe inactive ho to bhi preserve rahegi.
     supabase
       .from("service_types")
-      .select("id, name, sort_order")
-      .eq("is_active", true)
+      .select("id, name, sort_order, expects_fault, is_active")
       .order("sort_order"),
   ]);
 

@@ -27,6 +27,36 @@ describe("jobFormSchema", () => {
     expect(errorsFor({ fault: "   " })?.fault).toContain("Fault description zaroori hai");
   });
 
+  it("fault_required=false par khali fault pass hota hai (faultless service type)", () => {
+    expect(jobFormSchema.safeParse({ ...base, fault_required: false, fault: "" }).success).toBe(
+      true
+    );
+    expect(jobFormSchema.safeParse({ ...base, fault_required: false, fault: "   " }).success).toBe(
+      true
+    );
+    // Text likha ho to preserve/save hota hai — sirf requiredness badalti hai.
+    const res = jobFormSchema.safeParse({
+      ...base,
+      fault_required: false,
+      fault: "  Scope: fan fitment  ",
+    });
+    expect(res.success).toBe(true);
+    if (res.success) expect(res.data.fault).toBe("Scope: fan fitment");
+  });
+
+  it("superRefine error path ['fault'] hai (trigger('fault') ko pakadna hai)", () => {
+    expect(errorsFor({ fault: "" })?.fault).toContain("Fault description zaroori hai");
+    expect(errorsFor({ fault_required: false, fault: "" })).toBeNull();
+  });
+
+  it("service_type_id nullable hai, positive integer accept, baaki reject", () => {
+    expect(jobFormSchema.safeParse({ ...base, service_type_id: null }).success).toBe(true);
+    expect(jobFormSchema.safeParse({ ...base, service_type_id: 3 }).success).toBe(true);
+    expect(jobFormSchema.safeParse({ ...base, service_type_id: 0 }).success).toBe(false);
+    expect(jobFormSchema.safeParse({ ...base, service_type_id: -1 }).success).toBe(false);
+    expect(jobFormSchema.safeParse({ ...base, service_type_id: 1.5 }).success).toBe(false);
+  });
+
   it("item optional hai (purana handleSave ise validate nahi karta tha)", () => {
     expect(jobFormSchema.safeParse({ ...base, item: "" }).success).toBe(true);
   });

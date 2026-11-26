@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef, type ReactNode } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo, type ReactNode } from "react";
 import { supabase, getCachedUser } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -21,6 +21,15 @@ import { getNextJobId, peekNextJobId, bumpJobCounter } from "@/lib/jobIdCounter"
 import { toast } from "@/lib/toast";
 import DeviceFieldPicker from "@/components/DeviceFieldPicker";
 import { clampJobItemLabel, composeJobItemLabel, normalizeIdentifier } from "@/lib/deviceIdentity";
+import {
+  defaultServiceTypeId,
+  expectsFault,
+  faultFieldLabel,
+  faultHint,
+  serviceTypeOptions,
+  type ServiceTypeOption,
+} from "@/lib/serviceType";
+import { validateBulkRows, validBulkRows, type BulkValidatableRow } from "@/lib/bulkJobValidation";
 import { useJobAuxSeed } from "../JobAuxSeed";
 
 // ─── IST Helper ───────────────────────────────────────────────────────────────
@@ -86,6 +95,10 @@ interface BulkRow {
   model: string;
   serial: string;
   customItem: boolean;
+  /** Service Type (NULL = legacy). Global default se aata hai, per-row override ho sakta hai. */
+  serviceTypeId: number | null;
+  /** True = user ne is row ka type khud chuna (global change se overwrite nahi). */
+  serviceTypeOverridden: boolean;
   fault: string;
   mechanic_id: string;
   uniq_id: string;
@@ -93,7 +106,12 @@ interface BulkRow {
 }
 
 /** Har nayi row ka empty shape — ek hi jagah se (seed/fetch/add deto same). */
-const emptyBulkRow = (id: number, estJobId: number, mechanicId = ""): BulkRow => ({
+const emptyBulkRow = (
+  id: number,
+  estJobId: number,
+  mechanicId = "",
+  serviceTypeId: number | null = null
+): BulkRow => ({
   id,
   estJobId,
   itemName: "",
@@ -103,6 +121,8 @@ const emptyBulkRow = (id: number, estJobId: number, mechanicId = ""): BulkRow =>
   model: "",
   serial: "",
   customItem: false,
+  serviceTypeId,
+  serviceTypeOverridden: false,
   fault: "",
   mechanic_id: mechanicId,
   uniq_id: "",
@@ -164,6 +184,19 @@ export default function BulkJobPage() {
   // Global mechanic ka hamesha-fresh mirror — searchable dropdown se select ke
   // baad addRow ko latest value mile (stale closure se bachne ke liye).
   const globalMechRef = useRef("");
+  // Service Type: global default (Repair) + per-row override.
+  const [fallbackServiceTypes, setFallbackServiceTypes] = useState<ServiceTypeOption[]>([]);
+  const serviceTypeSeed: ServiceTypeOption[] = useMemo(
+    () => seed?.deviceMasters?.serviceTypes ?? fallbackServiceTypes,
+    [seed, fallbackServiceTypes]
+  );
+  const defaultServiceType = useMemo(
+    () => defaultServiceTypeId(serviceTypeSeed),
+    [serviceTypeSeed]
+  );
+  const [globalServiceType, setGlobalServiceType] = useState<number | null>(null);
+  const globalServiceTypeRef = useRef<number | null>(null);
+  const globalTypeInitialized = useRef(false);
   const [baseJobId, setBaseJobId] = useState(seed?.nextJobId ?? 0);
   const [rows, setRows] = useState<BulkRow[]>(
     seed ? [0, 1, 2].map((i) => emptyBulkRow(i, seed.nextJobId + i)) : []
@@ -176,6 +209,17 @@ export default function BulkJobPage() {
   const savingRef = useRef(false);
   // Row-wise validation errors (missing fields) — save-block warning ke liye
   const [rowErrs, setRowErrs] = useState<Record<number, string[]>>({});
+
+  // Default type (Repair) seed milte hi sab non-overridden rows me lagao.
+  useEffect(() => {
+    if (globalTypeInitialized.current || defaultServiceType == null) return;
+    globalTypeInitialized.current = true;
+    globalServiceTypeRef.current = defaultServiceType;
+    setGlobalServiceType(defaultServiceType);
+    setRows((prev) =>
+      prev.map((r) => (r.serviceTypeOverridden ? r : { ...r, serviceTypeId: defaultServiceType }))
+    );
+  }, [defaultServiceType]);
 
   // Device masters — brand dropdown + row-wala model (brand-linked) options.
   const deviceMasters = seed?.deviceMasters;
@@ -205,10 +249,22 @@ export default function BulkJobPage() {
       })
     );
 
+  const serviceTypeOpts = (selectedId: number | null) =>
+    serviceTypeOptions(serviceTypeSeed, selectedId);
+  const rowFaultRequired = (r: BulkRow) =>
+    expectsFault(serviceTypeSeed.find((t) => t.id === r.serviceTypeId));
+  const toValidatable = (r: BulkRow): BulkValidatableRow => ({
+    id: r.id,
+    itemLabel: itemOf(r),
+    fault: r.fault,
+    serviceTypeId: r.serviceTypeId,
+    mechanicId: r.mechanic_id,
+  });
+
   // ── Fetch master data ──────────────────────────────────────────────────────
   const fetchMaster = useCallback(async () => {
     setLoading(true);
-    const [cRes, mRes] = await Promise.all([
+    const [cRes, mRes, sRes] = await Promise.all([
       supabase
         .from("client_list")
         .select("id, firstname, middlename, lastname, contact")
@@ -219,13 +275,25 @@ export default function BulkJobPage() {
         .select("id, firstname, middlename, lastname")
         .eq("status", 1)
         .order("firstname"),
+      supabase
+        .from("service_types")
+        .select("id, name, sort_order, expects_fault, is_active")
+        .order("sort_order"),
     ]);
     setClients(cRes.data || []);
     setMechanics(mRes.data || []);
+    const types = (sRes.data || []) as ServiceTypeOption[];
+    setFallbackServiceTypes(types);
+    const fallbackDefault = defaultServiceTypeId(types);
+    globalServiceTypeRef.current = fallbackDefault;
+    setGlobalServiceType(fallbackDefault);
+    globalTypeInitialized.current = true;
     const nextId = await peekNextJobId(); // preview only — no claim
     setBaseJobId(nextId);
     // Start with 3 empty rows
-    const initial: BulkRow[] = [0, 1, 2].map((i) => emptyBulkRow(i, nextId + i));
+    const initial: BulkRow[] = [0, 1, 2].map((i) =>
+      emptyBulkRow(i, nextId + i, "", fallbackDefault)
+    );
     setRows(initial);
     setRowKey(3);
     setLoading(false);
@@ -239,7 +307,10 @@ export default function BulkJobPage() {
   // ── Add row ────────────────────────────────────────────────────────────────
   const addRow = () => {
     const newEstJobId = baseJobId + rows.length;
-    setRows((prev) => [...prev, emptyBulkRow(rowKey, newEstJobId, globalMechRef.current)]);
+    setRows((prev) => [
+      ...prev,
+      emptyBulkRow(rowKey, newEstJobId, globalMechRef.current, globalServiceTypeRef.current),
+    ]);
     setRowKey((k) => k + 1);
   };
 
@@ -286,19 +357,39 @@ export default function BulkJobPage() {
     });
   };
 
-  // ── Row validation — missing fields ka map banao (row id → field names) ──
-  const buildRowValidation = (list: BulkRow[]): Record<number, string[]> => {
-    const errs: Record<number, string[]> = {};
-    list.forEach((r) => {
-      const miss: string[] = [];
-      if (!itemOf(r)) miss.push("Item / Model");
-      if (!r.fault.trim()) miss.push("Fault Reported");
-      // Mechanic sirf unhi rows me mandatory hai jo save hongi (item+fault filled)
-      if (itemOf(r) && r.fault.trim() && !r.mechanic_id) miss.push("Mechanic");
-      if (miss.length) errs[r.id] = miss;
+  // ── Global Service Type (sirf un rows jo user ne override nahi kiye) ────
+  const applyGlobalServiceType = (id: string) => {
+    const nextId = id ? parseInt(id, 10) : null;
+    setGlobalServiceType(nextId);
+    globalServiceTypeRef.current = nextId;
+    setRows((prev) =>
+      prev.map((r) => (r.serviceTypeOverridden ? r : { ...r, serviceTypeId: nextId }))
+    );
+    setRowErrs((prevErrs) => {
+      if (!Object.keys(prevErrs).length) return prevErrs;
+      const updatedRows = rows.map((r) =>
+        r.serviceTypeOverridden ? r : { ...r, serviceTypeId: nextId }
+      );
+      return validateBulkRows(updatedRows.map(toValidatable), serviceTypeSeed);
     });
-    return errs;
   };
+
+  const setRowServiceType = (rowId: number, typeId: number | null) => {
+    setRows((prev) =>
+      prev.map((r) =>
+        r.id === rowId ? { ...r, serviceTypeId: typeId, serviceTypeOverridden: true } : r
+      )
+    );
+    setRowErrs((prevErrs) => {
+      if (!prevErrs[rowId]) return prevErrs;
+      const updatedRows = rows.map((r) => (r.id === rowId ? { ...r, serviceTypeId: typeId } : r));
+      return validateBulkRows(updatedRows.map(toValidatable), serviceTypeSeed);
+    });
+  };
+
+  // ── Row validation — pure helper (save-filter bhi isi se aata hai) ─────
+  const buildRowValidation = (list: BulkRow[]): Record<number, string[]> =>
+    validateBulkRows(list.map(toValidatable), serviceTypeSeed);
 
   // ── Save all ───────────────────────────────────────────────────────────────
   const handleSaveAll = async () => {
@@ -326,10 +417,10 @@ export default function BulkJobPage() {
     }
     setRowErrs({});
 
-    // Filter valid rows
-    const validRows = rows.filter((r) => itemOf(r) && r.fault.trim() && r.mechanic_id);
+    // Filter valid rows — validation aur filter ek hi source (silent drop nahi).
+    const validRows = validBulkRows(rows, errs);
     if (validRows.length === 0) {
-      toast.error("Kam se kam ek row mein item, fault aur mechanic fill karo!");
+      toast.error("Kam se kam ek row mein item, mechanic aur zaroori fault fill karo!");
       return;
     }
 
@@ -366,6 +457,8 @@ export default function BulkJobPage() {
         brand_id: row.brandId,
         model: row.model.trim() || null,
         serial_no: normalizeIdentifier(row.serial) || null,
+        service_type_id: row.serviceTypeId,
+        // fault NOT NULL — faultless type par "" hi save hota hai.
         fault: row.fault.trim(),
         remark: row.remark.trim() || "",
         uniq_id: row.uniq_id.trim() || "",
@@ -515,6 +608,20 @@ export default function BulkJobPage() {
               />
               <p className="text-[9px] text-muted-2 mt-1.5">
                 Select karne par sabhi rows (purani aur nayi dono) me apply hota hai
+              </p>
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold uppercase tracking-wider text-muted mb-1.5">
+                Default Service Type
+              </label>
+              <SearchableSelect
+                value={globalServiceType ?? null}
+                options={serviceTypeOpts(globalServiceType)}
+                onSelect={applyGlobalServiceType}
+                placeholder="Select Default Service Type"
+              />
+              <p className="text-[9px] text-muted-2 mt-1.5">
+                Repair default hai. Per-row badalne par us row ka choice enforce hota hai.
               </p>
             </div>
           </div>
@@ -671,18 +778,37 @@ export default function BulkJobPage() {
                   </p>
                 </div>
 
-                {/* Baaki 4 fields — same label + same control height */}
+                {/* Baaki fields — same label + same control height */}
                 <div className="p-4 grid grid-cols-2 lg:grid-cols-4 gap-3">
-                  {/* 5) FAULT */}
-                  <BulkField label="Fault Reported" required error={faultErr}>
+                  {/* 5) SERVICE TYPE — default global, per-row override */}
+                  <BulkField label="Service Type" required>
+                    <div data-bulk-service-type={row.id}>
+                      <SearchableSelect
+                        value={row.serviceTypeId ?? null}
+                        options={serviceTypeOpts(row.serviceTypeId)}
+                        onSelect={(id) => setRowServiceType(row.id, id ? parseInt(id, 10) : null)}
+                        placeholder="Select service type"
+                      />
+                    </div>
+                  </BulkField>
+
+                  {/* 6) FAULT / WORK DESCRIPTION — type ke hisaab se label */}
+                  <BulkField label={faultFieldLabel(rowFaultRequired(row))} error={faultErr}>
                     <input
                       type="text"
                       data-bulk-input-fault={row.id}
                       value={row.fault}
                       onChange={(e) => updateRow(row.id, { fault: e.target.value })}
-                      placeholder="Reported fault"
+                      placeholder={
+                        rowFaultRequired(row) ? "Reported fault" : "Kaam ka scope (optional)"
+                      }
                       className={faultErr ? iClsErr : iCls}
                     />
+                    {faultHint(rowFaultRequired(row)) && (
+                      <p className="text-[9px] text-muted-2 mt-1">
+                        {faultHint(rowFaultRequired(row))}
+                      </p>
+                    )}
                   </BulkField>
 
                   {/* 6) ASSIGN TO */}
@@ -738,7 +864,8 @@ export default function BulkJobPage() {
           </button>
           <div className="flex items-center gap-3">
             <span className="text-xs text-muted-2">
-              {rows.filter((r) => itemOf(r) && r.fault.trim()).length} / {rows.length} rows filled
+              {rows.filter((r) => itemOf(r) && (!rowFaultRequired(r) || r.fault.trim())).length} /{" "}
+              {rows.length} rows filled
             </span>
             <button
               onClick={handleSaveAll}

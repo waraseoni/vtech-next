@@ -52,6 +52,7 @@ import JobRequiredParts from "@/components/JobRequiredParts";
 import WaitingPartsBadge from "@/components/WaitingPartsBadge";
 import { fetchOpenPartCounts } from "@/lib/requiredParts";
 import { dueLabel } from "@/lib/client-due";
+import { expectsFault, faultFieldLabel } from "@/lib/serviceType";
 import { logActivity } from "@/lib/activity";
 import { substituteTemplate, firmVars, resolveTemplate } from "@/lib/whatsapp";
 import { compressImage } from "@/lib/imageCompression";
@@ -595,6 +596,9 @@ export default function JobDetailsPage() {
     const msg = substituteTemplate(tpl, {
       client_name: name,
       item: job.item,
+      // Naye template me {{service_type}} ho to bhar dete hain; purane templates
+      // par koi asar nahi (unknown keys substituteTemplate ignore karta hai).
+      service_type: job.service_type_name ?? "",
       job_id: job.job_id,
       code: job.code,
       amount: amt,
@@ -750,6 +754,7 @@ export default function JobDetailsPage() {
   // ── PRINT ──────────────────────────────────────────────────────────────────
   const handlePrint = () => {
     if (!job) return;
+    const faultRequired = expectsFault({ expects_fault: job.service_type_expects_fault });
     const svcHtml =
       services.length > 0
         ? `<table border="1" style="border-collapse:collapse;width:100%;margin:8px 0"><thead><tr style="background:#001f3f;color:#fff"><th style="padding:6px">Service</th><th style="padding:6px;text-align:right">Price</th></tr></thead><tbody>${services.map((s) => `<tr><td style="padding:5px">${s.service_name || s.service_id}</td><td style="padding:5px;text-align:right">Rs.${s.price.toFixed(2)}</td></tr>`).join("")}</tbody></table>`
@@ -772,7 +777,8 @@ hr{border:1px solid #001f3f;margin:8px 0}.total{font-size:16px;font-weight:900;m
 <h1>${firmInfo.name || FIRM.name}</h1><h2>${firmInfo.owner || FIRM.owner} | ${firmInfo.address || FIRM.address} | ${firmInfo.contact || FIRM.contact}</h2><hr/>
 <p><b>Job ID:</b> ${job.job_id}&nbsp;&nbsp;<b>Code:</b> ${job.code}&nbsp;&nbsp;<b>Status:</b> ${STATUS_MAP[job.status]?.label}</p>
 <p><b>Client:</b> ${[client?.firstname, client?.middlename, client?.lastname].filter(Boolean).join(" ")}&nbsp;&nbsp;<b>Contact:</b> ${client?.contact || ""}</p>
-<p><b>Item:</b> ${job.item}&nbsp;&nbsp;<b>Fault:</b> ${job.fault}</p>
+<p><b>Item:</b> ${job.item}${job.service_type_name ? `&nbsp;&nbsp;<b>Service Type:</b> ${job.service_type_name}` : ""}</p>
+<p><b>${faultFieldLabel(faultRequired).replace(" *", "")}:</b> ${job.fault}</p>
 <p><b>Mechanic:</b> ${mechanic ? [mechanic.firstname, mechanic.middlename, mechanic.lastname].filter(Boolean).join(" ") : "N/A"}&nbsp;&nbsp;<b>Date:</b> ${fmtDate(job.date_created)}</p>
 ${job.date_completed ? `<p><b>Delivered:</b> ${fmtDateTime(job.date_completed)}</p>` : ""}
 ${svcHtml}${prodHtml}
@@ -798,6 +804,7 @@ ${svcHtml}${prodHtml}
 
   const st = STATUS_MAP[job.status] || STATUS_MAP[0];
   const badge = BADGE_COLORS[st.badgeColor];
+  const viewFaultRequired = expectsFault({ expects_fault: job.service_type_expects_fault });
   const clientName = client
     ? [client.firstname, client.middlename, client.lastname].filter(Boolean).join(" ")
     : `Client #${job.client_name}`;
@@ -994,9 +1001,22 @@ ${svcHtml}${prodHtml}
                       value={<span className="font-semibold">{job.item}</span>}
                     />
                     <DeviceIdentity job={job} className="mb-3" />
+                    {job.service_type_name && (
+                      <div className="mb-3 flex items-center gap-2">
+                        <span className="text-muted text-xs font-semibold">Service Type:</span>
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border border-blue-500/30 bg-blue-500/10 text-blue-300">
+                          {job.service_type_name}
+                          {!viewFaultRequired && " · Fault optional"}
+                        </span>
+                      </div>
+                    )}
                     <div className="mb-1.5 text-sm">
-                      <span className="font-semibold text-muted">Fault Reported:</span>
-                      <p className="mt-0.5 text-app-2 whitespace-pre-line">{job.fault}</p>
+                      <span className="font-semibold text-muted">
+                        {faultFieldLabel(viewFaultRequired).replace(" *", "")}:
+                      </span>
+                      <p className="mt-0.5 text-app-2 whitespace-pre-line">
+                        {job.fault || <em className="text-muted-2">—</em>}
+                      </p>
                     </div>
                     <div className="text-sm">
                       <span className="font-semibold text-muted">Remarks:</span>

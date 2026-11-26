@@ -3,10 +3,12 @@
 > **Created:** 24 Nov 2026 · **Revision 2:** 24 Nov 2026 (user review ke baad) ·
 > **Revision 3:** 26 Nov 2026 (`item_name` structured field) ·
 > **Revision 3a:** 26 Nov 2026 (field order fix) · **Revision 3b:** 26 Nov 2026 (field-aware search) ·
-> **Status:** P1–P5 committed (`9e620ad`) · `20261122_service_center_fields.sql`
-> owner ne apply kiya · **Rev 3 code uncommitted**; `20261126_item_name_field.sql`
-> owner ne apply kiya (read-only probe: `item_name` selectable, 0 non-null rows).
-> P0 sign-off aur commit approval baaki hai.
+> **Status (synced 27 Nov 2026):** P1–P5 + Rev 3/3a/3b **committed + pushed**
+> (`9e620ad`) · `20261122_service_center_fields.sql` aur `20261126_item_name_field.sql`
+> owner ne apply kiye (read-only probe: `item_name` selectable, 0 non-null rows).
+> Commit approval mil gaya; P0 sign-off (brand rules, seed list, separator, public S/N,
+> `showIdentifier`) aur `reset_sequence` grant fix baaki — tracking
+> `docs/plans/master_completion_plan_2026-11-26.md` me.
 > **Extends (does not replace):** `service_center_data_model_plan_2026-11-21.md` (v2) —
 > uske §2.1 (device columns), §2.4 (3 modes), §2.5 (derived `item`), §11 (breakage audit),
 > §12 (reports integrity), §13 (counter-speed UX) **as-is maane gaye hain**.
@@ -400,8 +402,8 @@ bulk-edit sab me `Item → Brand → Model → Identifier → Final label → Ad
 | 5   | Device card me 4th row Item                                                 | `<DeviceIdentity />` grid `Item/Brand/Model/Identifier`, legacy row me item raw `item` se fallback                                                                                 |
 | 6   | Read/search layers                                                          | `jobViewQueries`, `client/jobs`, `public/job-status`, `useNavbarSearch`, `jobSearchFilter`, `print-bill`, stale-jobs fallback me `item_name`                                       |
 
-**Pending:** commit/push approval (user ne abhi roka hai); P0 sign-off (brand-required
-rules, final seed list, separator ` · `); public tracking me S/N behavior.
+**Pending (27 Nov):** commit/push **ho gaya** (`9e620ad`); sirf P0 sign-off (brand-required
+rules, final seed list, separator ` · `) aur public tracking me S/N behavior baaki hai.
 
 ### Revision 3a — field order fix (26 Nov 2026)
 

@@ -13,40 +13,59 @@ import { z } from "zod";
  * - `item` label par * hai par handleSave use validate nahi karta tha → yahan
  *   bhi optional (sirf trim + max).
  * - `fault` / client / mechanic required (wahi 3 checks jo validateStep1 +
- *   handleSave dono karte the).
+ *   handleSave dono karte the) — **sirf tab jab `fault_required` true ho**.
+ *   Faultless service types (New Installation, PDI) ke liye `fault = ""` allowed
+ *   hai; DB column `fault text NOT NULL` yahin safe rehta hai (service type v2 D2).
  * - `uniq_id` legacy free-text fallback: location select ho to spot ka naam,
  *   warna purana `uniq_id` value (edit mode me DB se aata hai).
  */
 
-export const jobFormSchema = z.object({
-  client_id: z
-    .number()
-    .int()
-    .positive()
-    .nullable()
-    .refine((v) => v !== null && v > 0, "Client select karo"),
-  mechanic_id: z.string().min(1, "Mechanic select karo"),
-  // Brand/Model/Identifier pickers se `item` derived hota hai. Label lamba ho
-  // sakta hai (3 values + separator) — isliye 300 (DB me text, limit nahi).
-  item: z.string().trim().max(300),
-  /** DB: item_name text NULL — kya cheez repair ho rahi hai (compose ka pehla hissa). */
-  item_name: z.string().trim().max(200),
-  /** UI-only: true = advanced custom label (compose override, rare). */
-  custom_item: z.boolean(),
-  /** DB: brand_id int NULL / model text NULL / serial_no text NULL. */
-  brand_id: z.number().int().positive().nullable(),
-  /** UI-only: brand ka naam (inline add ke baad bhi composed label sahi rahe). */
-  brand_name: z.string().trim().max(200),
-  model: z.string().trim().max(200),
-  serial_no: z.string().trim().max(200),
-  fault: z.string().trim().min(1, "Fault description zaroori hai").max(1000),
-  location_id: z.number().int().positive().nullable(),
-  location_name: z.string().trim().max(200),
-  legacy_uniq_id: z.string().trim().max(200),
-  remark: z.string().trim().max(1000),
-  // Commission admin/developer ke liye free-text number input hai.
-  commission_amount: z.string().trim(),
-});
+export const jobFormSchema = z
+  .object({
+    client_id: z
+      .number()
+      .int()
+      .positive()
+      .nullable()
+      .refine((v) => v !== null && v > 0, "Client select karo"),
+    mechanic_id: z.string().min(1, "Mechanic select karo"),
+    // Brand/Model/Identifier pickers se `item` derived hota hai. Label lamba ho
+    // sakta hai (3 values + separator) — isliye 300 (DB me text, limit nahi).
+    item: z.string().trim().max(300),
+    /** DB: item_name text NULL — kya cheez repair ho rahi hai (compose ka pehla hissa). */
+    item_name: z.string().trim().max(200),
+    /** UI-only: true = advanced custom label (compose override, rare). */
+    custom_item: z.boolean(),
+    /** DB: brand_id int NULL / model text NULL / serial_no text NULL. */
+    brand_id: z.number().int().positive().nullable(),
+    /** UI-only: brand ka naam (inline add ke baad bhi composed label sahi rahe). */
+    brand_name: z.string().trim().max(200),
+    model: z.string().trim().max(200),
+    serial_no: z.string().trim().max(200),
+    /** DB: service_type_id int NULL — legacy rows NULL rehte hain (Untagged). */
+    service_type_id: z.number().int().positive().nullable(),
+    /** UI-only: type ke expects_fault se derive; DB payload me nahi jaata. */
+    fault_required: z.boolean(),
+    /**
+     * DB me NOT NULL — faultless type par "" likha jata hai. Requiredness
+     * neeche superRefine me `fault_required` se decide hoti hai (min(1) yahan
+     * nahi hai warna installation jobs save hi na ho).
+     */
+    fault: z.string().trim().max(1000),
+    location_id: z.number().int().positive().nullable(),
+    location_name: z.string().trim().max(200),
+    legacy_uniq_id: z.string().trim().max(200),
+    remark: z.string().trim().max(1000),
+    // Commission admin/developer ke liye free-text number input hai.
+    commission_amount: z.string().trim(),
+  })
+  .superRefine((v, ctx) => {
+    // Path ["fault"] zaroori hai: step-1 gate `trigger("fault")` issi error ko
+    // pakadta hai aur error input ke neeche dikhta hai (v2 critical catch #3).
+    if (v.fault_required && !v.fault) {
+      ctx.addIssue({ code: "custom", path: ["fault"], message: "Fault description zaroori hai" });
+    }
+  });
 
 export type JobFormValues = z.infer<typeof jobFormSchema>;
 
@@ -60,6 +79,8 @@ export const emptyJobForm: JobFormValues = {
   brand_name: "",
   model: "",
   serial_no: "",
+  service_type_id: null,
+  fault_required: true,
   fault: "",
   location_id: null,
   location_name: "",

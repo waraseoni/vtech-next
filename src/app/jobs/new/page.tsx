@@ -1,5 +1,5 @@
 "use client";
-import { Suspense, useState, useEffect, use, useRef, useCallback } from "react";
+import { Suspense, useState, useEffect, use, useRef, useCallback, useMemo } from "react";
 import { supabase, getCachedUser } from "@/lib/supabase";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -33,7 +33,16 @@ import {
   buildAvailableStock,
   type JobFormBrand,
   type JobFormDeviceModel,
+  type JobFormServiceType,
 } from "@/app/jobs/jobFormQueries";
+import {
+  defaultServiceTypeId,
+  expectsFault,
+  faultFieldLabel,
+  faultHint,
+  serviceTypeName,
+  serviceTypeOptions,
+} from "@/lib/serviceType";
 import { useJobFormSeed } from "@/app/jobs/JobFormSeedProvider";
 import { getNextJobId, peekNextJobId, bumpJobCounter } from "@/lib/jobIdCounter";
 import SearchableSelect from "@/components/SearchableSelect";
@@ -170,6 +179,42 @@ function ManageJobPageInner({ params }: { params: Promise<{ id?: string }> }) {
   const modelValue = useWatch({ control, name: "model" });
   const serialValue = useWatch({ control, name: "serial_no" });
   const customItem = useWatch({ control, name: "custom_item" });
+  const serviceTypeId = useWatch({ control, name: "service_type_id" });
+  const faultRequired = useWatch({ control, name: "fault_required" });
+
+  // Service Type masters — server seed. useMemo isliye taaki effect ko
+  // har render par naya array na mile (setValue loop se bachne ke liye).
+  const serviceTypeSeed: JobFormServiceType[] = useMemo(
+    () => formSeed?.serviceTypes ?? [],
+    [formSeed]
+  );
+  const serviceTypeOpts = useMemo(
+    () => serviceTypeOptions(serviceTypeSeed, serviceTypeId),
+    [serviceTypeSeed, serviceTypeId]
+  );
+
+  // Create mode: default Repair (D3). Edit mode: row ki value; load ke baad
+  // yahi effect type se fault_required derive karta hai (v2 catch #2).
+  useEffect(() => {
+    const id =
+      !isEdit && serviceTypeId == null ? defaultServiceTypeId(serviceTypeSeed) : serviceTypeId;
+    if (id != null && id !== serviceTypeId) setValue("service_type_id", id);
+    const required = expectsFault(serviceTypeSeed.find((t) => t.id === id));
+    if (required !== faultRequired) setValue("fault_required", required);
+  }, [isEdit, serviceTypeId, faultRequired, serviceTypeSeed, setValue]);
+
+  const selectServiceType = (id: string) => {
+    const nextId = id ? parseInt(id, 10) : null;
+    setValue("service_type_id", nextId, { shouldValidate: false });
+    // Fault text preserve karo — sirf requiredness/label badlo; purana error
+    // faultless type par turant hata do.
+    setValue("fault_required", expectsFault(serviceTypeSeed.find((t) => t.id === nextId)), {
+      shouldValidate: false,
+    });
+    if (nextId != null && !expectsFault(serviceTypeSeed.find((t) => t.id === nextId))) {
+      clearErrors("fault");
+    }
+  };
 
   // Device identity masters — server seed se (0 extra request).
   // Inline add kiya hua brand picker ke andar auto-select hota hai; uska naam
@@ -417,6 +462,12 @@ function ManageJobPageInner({ params }: { params: Promise<{ id?: string }> }) {
           brand_name: formSeed?.brands?.find((b) => b.id === data.brand_id)?.name ?? "",
           model: data.model ?? "",
           serial_no: data.serial_no ?? "",
+          service_type_id: data.service_type_id ?? null,
+          // Edit-load me explicitly set karna zaroori hai — warna installation
+          // job par fault mandatory reh jayega (v2 catch #2).
+          fault_required: expectsFault(
+            serviceTypeSeed.find((t) => t.id === (data.service_type_id ?? null))
+          ),
           fault: data.fault || "",
           location_id: data.location_id ?? null,
           location_name: data.location_id ? data.uniq_id || "" : "", // dual-write: naam = uniq_id
@@ -480,7 +531,7 @@ function ManageJobPageInner({ params }: { params: Promise<{ id?: string }> }) {
       }
     };
     loadJob();
-  }, [jobId, isEdit, pickClient, reset, router, formSeed]);
+  }, [jobId, isEdit, pickClient, reset, router, formSeed, serviceTypeSeed]);
 
   // ── ADD NEW CLIENT ─────────────────────────────────────────────────────
   const saveNewClient = handleClientSubmit(async (values) => {
@@ -775,7 +826,9 @@ function ManageJobPageInner({ params }: { params: Promise<{ id?: string }> }) {
   // Step 1 gate: wahi 3 checks jo schema me hain (client / fault / mechanic).
   // Next aur Quick Save dono isi validation se guzarte hain — billing optional.
   const goNext = async () => {
-    const ok = await trigger(["client_id", "fault", "mechanic_id"]);
+    const gateFields: Array<"client_id" | "mechanic_id" | "fault"> = ["client_id", "mechanic_id"];
+    if (faultRequired) gateFields.push("fault");
+    const ok = await trigger(gateFields);
     if (!ok) return;
     setStep(2);
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -836,7 +889,10 @@ function ManageJobPageInner({ params }: { params: Promise<{ id?: string }> }) {
         brand_id: current.brand_id,
         model: current.model.trim() || null,
         serial_no: current.serial_no.trim() || null,
-        fault: values.fault,
+        service_type_id: current.service_type_id ?? null,
+        // DB fault NOT NULL — faultless type par "" hi likhte hain (kisi bhi
+        // phase me DROP NOT NULL nahi).
+        fault: values.fault.trim(),
         // dual-write: location ho to spot naam, warna legacy text
         uniq_id: (values.location_id ? values.location_name : values.legacy_uniq_id) || "",
         location_id: values.location_id,
@@ -1689,14 +1745,40 @@ function ManageJobPageInner({ params }: { params: Promise<{ id?: string }> }) {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className={labelCls}>
-                    <AlertCircle size={13} className="text-red-400" />
-                    Fault Reported <span className="text-red-400">*</span>
+                    <Briefcase size={13} className="text-blue-400" />
+                    Service Type <span className="text-red-400">*</span>
+                  </label>
+                  <SearchableSelect
+                    value={serviceTypeId ?? null}
+                    options={serviceTypeOpts}
+                    onSelect={selectServiceType}
+                    placeholder="Select service type…"
+                    emptyText="Koi service type nahi mila"
+                  />
+                  <p className="text-[10px] text-muted-2 mt-1">
+                    Type ke hisaab se Fault / Work Description field badalta hai.
+                  </p>
+                </div>
+                <div>
+                  <label className={labelCls}>
+                    <AlertCircle
+                      size={13}
+                      className={faultRequired ? "text-red-400" : "text-muted"}
+                    />
+                    {faultFieldLabel(faultRequired)}
                   </label>
                   <input
                     {...register("fault")}
-                    placeholder="e.g. Screen broken, Not charging"
+                    placeholder={
+                      faultRequired
+                        ? "e.g. Screen broken, Not charging"
+                        : "Kaam ka scope (optional)"
+                    }
                     className={`${inputCls} ${errors.fault ? "border-red-500/60" : ""}`}
                   />
+                  {faultHint(faultRequired) && (
+                    <p className="text-[10px] text-muted-2 mt-1">{faultHint(faultRequired)}</p>
+                  )}
                   {errors.fault && <p className={errCls}>{errors.fault.message}</p>}
                 </div>
                 <div>
@@ -2105,7 +2187,11 @@ function ManageJobPageInner({ params }: { params: Promise<{ id?: string }> }) {
             </Link>
             <div className="flex-1 text-xs text-muted-2 font-bold hidden lg:block truncate text-right">
               {selectedClient ? `Client: ${selectedClient.fullname}` : "Client select karo"} ·{" "}
-              {finalItem || "Item?"} · {faultValue || "Fault?"}
+              {finalItem || "Item?"} ·{" "}
+              {faultValue ||
+                (faultRequired
+                  ? "Fault?"
+                  : serviceTypeName(serviceTypeSeed, serviceTypeId) || "Work description")}
             </div>
             <button
               type="button"

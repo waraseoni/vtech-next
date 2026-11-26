@@ -42,6 +42,10 @@ export interface Transaction {
   brand_id?: number | null;
   model?: string | null;
   serial_no?: string | null;
+  /** Service Type (select("*") se aata hai; naam preview me resolve hota hai). */
+  service_type_id?: number | null;
+  service_type_name?: string | null;
+  service_type_expects_fault?: boolean | null;
   fault: string;
   remark: string | null; // BUG FIX: was missing
   uniq_id: string | null;

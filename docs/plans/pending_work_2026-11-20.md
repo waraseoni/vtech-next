@@ -9,11 +9,11 @@
 > (`4e5cf66`), login OTP/reset + WebView WhatsApp fix shipped, vitest **702/702**,
 > naya `service_center_data_model_plan_2026-11-21.md` (v2 — 3 modes, coverage
 > audit §15, G1–G3 adopted).
-> **Synced:** 26 Nov 2026 · repo @ `9e620ad`/`727a887` (release 1.85.2, tree dirty) —
-> E2 service-center **P1–P5 committed + pushed**; `20261122_service_center_fields.sql`
-> owner ne apply kiya. Rev 3 (`item_name`) code local WIP; `20261126_item_name_field.sql`
-> bhi owner ne apply kiya (read-only probe: 0 non-null rows). Rev 3a field-order fix +
-> Rev 3b field-aware search local WIP; updated `get_jobs_stats()` RPC ko owner dobara apply karna hai.
+> **Synced:** 27 Nov 2026 · repo @ `8ee80d6` (release 1.87.0) — E2 service-center
+> **P1–P5 + Rev 3/3a/3b committed + pushed** (`9e620ad`); `20261122_*` aur
+> `20261126_item_name_field.sql` owner ne apply kiye. Backup lossless fix + admin auth
+> restore bhi pushed (`27b8038`). Baaki saara pending ab
+> `docs/plans/master_completion_plan_2026-11-26.md` + 4 sprint docs me tracked hai.
 
 ---
 
@@ -158,9 +158,11 @@
 - **Problem:** 26/28 functions anon-executable; 8 staff-only definer RPCs
   guard-less; client-role hole documented. `reset_sequence(text)` =
   **CRITICAL** (arbitrary `setval` = DoS).
-- [ ] `20261116_rpc_grants_hardening.sql` likho: Layer 1 grants → Layer 1b
+- [x] `20261127_rpc_grants_hardening.sql` likha (27 Nov): Layer 1 grants → Layer 1b
       triggers → Layer 2 guards → `NOTIFY pgrst` → verify block. Full-schema
-      snapshot me append (schema:drift requirement).
+      snapshot me append (schema:drift **35 OK**). `reset_sequence` ab service_role-only;
+      backup page naye admin-only `/api/admin/reset-sequence` route par. **Owner ne 27 Nov ko
+      dono migrations apply kiye — success; verification baaki.**
 - [ ] Pre-apply simulation **read-only**: client uuid = 42501, staff uuid = data.
 - [ ] `has_function_privilege` matrix before/after report.
 - [ ] Apply (owner approval) → anon REST 401 proof + staff/portal regression +

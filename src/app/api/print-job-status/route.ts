@@ -7,6 +7,7 @@ import { getPrintShop } from "@/lib/print-shop";
 import { clientIpFromHeaders, rateLimit } from "@/lib/rate-limit";
 import { isTrackingEnforced, verifyTrackingToken } from "@/lib/tracking-token";
 import { printHtmlResponse } from "@/lib/print-html";
+import { expectsFault, faultFieldLabel, serviceTypeName } from "@/lib/serviceType";
 
 const supabase = getAdminSupabase();
 
@@ -69,7 +70,7 @@ export async function GET(request: NextRequest) {
 
   let query = supabase
     .from("transaction_list")
-    .select("id, job_id, code, item, fault, remark, status, amount, date_created")
+    .select("id, job_id, code, item, service_type_id, fault, remark, status, amount, date_created")
     .limit(1);
 
   if (jobId) query = query.eq("job_id", jobId);
@@ -104,8 +105,24 @@ export async function GET(request: NextRequest) {
 
   let services: Array<{ service_name: string; price: number }> = [];
   let products: Array<{ product_name: string; qty: number; price: number; total: number }> = [];
+  // Tracking sheet par service type/fault label sirf full view me (token verified
+  // ya tracking enforced na ho) — limited view me extra detail nahi.
+  let serviceTypeLabel: string | null = null;
+  let faultLabel = "Fault";
 
   if (full) {
+    if (txn.service_type_id != null) {
+      const { data: stRows } = await supabase
+        .from("service_types")
+        .select("id, name, expects_fault")
+        .eq("id", txn.service_type_id)
+        .limit(1);
+      const st = (stRows || [])[0];
+      if (st) {
+        serviceTypeLabel = serviceTypeName([st], st.id);
+        faultLabel = faultFieldLabel(expectsFault(st)).replace(" *", "");
+      }
+    }
     const { data: svcData } = await supabase
       .from("transaction_services")
       .select("service_id, price")
@@ -207,7 +224,8 @@ export async function GET(request: NextRequest) {
       <div class="job-row"><span class="job-label">Job ID</span><span class="job-value">#${esc(txn.job_id)}</span></div>
       ${txn.code ? `<div class="job-row"><span class="job-label">Code</span><span class="job-value">${esc(txn.code)}</span></div>` : ""}
       <div class="job-row"><span class="job-label">Item</span><span class="job-value">${esc(txn.item) || "—"}</span></div>
-      <div class="job-row"><span class="job-label">Fault</span><span class="job-value">${esc(txn.fault) || "—"}</span></div>
+      ${serviceTypeLabel ? `<div class="job-row"><span class="job-label">Service Type</span><span class="job-value">${esc(serviceTypeLabel)}</span></div>` : ""}
+      <div class="job-row"><span class="job-label">${esc(faultLabel)}</span><span class="job-value">${esc(txn.fault) || "—"}</span></div>
       <div class="job-row"><span class="job-label">Created</span><span class="job-value">${fmtDate(txn.date_created)}</span></div>
       <div><span class="job-label">Status</span><br><span class="status-badge" style="background:${statusInfo.bg};color:${statusInfo.color};border:2px solid ${statusInfo.color}">${esc(statusInfo.label)}</span></div>
     </div>

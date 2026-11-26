@@ -50,7 +50,14 @@ type Identifier = {
   is_active: boolean;
   last_used: string | null;
 };
-type ServiceType = { id: number; name: string; sort_order: number; is_active: boolean };
+type ServiceType = {
+  id: number;
+  name: string;
+  sort_order: number;
+  /** NULL = fault required (purana behaviour). Sirf false optional mark karta hai. */
+  expects_fault: boolean | null;
+  is_active: boolean;
+};
 
 /** Har master row ka common shape — table renderer isi par chalata hai. */
 type MasterRow = {
@@ -63,6 +70,7 @@ type MasterRow = {
   value?: string;
   note?: string | null;
   sort_order?: number;
+  expects_fault?: boolean | null;
 };
 
 type Masters = {
@@ -178,7 +186,7 @@ export default function ServiceCenterSettingsPage() {
         .order("value"),
       supabase
         .from("service_types")
-        .select("id, name, sort_order, is_active")
+        .select("id, name, sort_order, expects_fault, is_active")
         .order("sort_order")
         .order("name"),
     ]);
@@ -218,6 +226,8 @@ export default function ServiceCenterSettingsPage() {
     note: "",
     sortOrder: "0",
     isAuthorized: false,
+    // NULL aur true dono ka matlab fault required — checked hi default hai.
+    expectsFault: true,
   });
 
   const resetForm = () =>
@@ -229,6 +239,7 @@ export default function ServiceCenterSettingsPage() {
       note: "",
       sortOrder: "0",
       isAuthorized: false,
+      expectsFault: true,
     });
 
   const openAdd = (kind: Kind) => {
@@ -249,6 +260,7 @@ export default function ServiceCenterSettingsPage() {
       note: row.note ?? "",
       sortOrder: String(row.sort_order ?? 0),
       isAuthorized: Boolean(row.is_authorized),
+      expectsFault: row.expects_fault !== false,
     });
     setShowModal(true);
   };
@@ -292,7 +304,13 @@ export default function ServiceCenterSettingsPage() {
     } else {
       if (!form.name.trim()) return setFormErr("Service type naam zaroori hai!");
       table = TABLE.serviceTypes;
-      payload = { name: form.name.trim(), sort_order: Number(form.sortOrder) || 0 };
+      // Checked → NULL (purana default preserved), unchecked → false. DB
+      // `expects_fault boolean NULL` ka koi type/NOT NULL change nahi.
+      payload = {
+        name: form.name.trim(),
+        sort_order: Number(form.sortOrder) || 0,
+        expects_fault: form.expectsFault ? null : false,
+      };
       dedupeColumn = "name";
       dedupeValue = form.name.trim();
     }
@@ -483,6 +501,9 @@ export default function ServiceCenterSettingsPage() {
                 {tab === "serviceTypes" && (
                   <th className="text-left px-3 py-2.5 font-bold">Sort</th>
                 )}
+                {tab === "serviceTypes" && (
+                  <th className="text-left px-3 py-2.5 font-bold">Fault required?</th>
+                )}
                 <th className="text-left px-3 py-2.5 font-bold">Status</th>
                 <th className="text-right px-5 py-2.5 font-bold">Actions</th>
               </tr>
@@ -490,14 +511,20 @@ export default function ServiceCenterSettingsPage() {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={7} className="px-5 py-10 text-center text-muted">
+                  <td
+                    colSpan={tab === "serviceTypes" ? 8 : 7}
+                    className="px-5 py-10 text-center text-muted"
+                  >
                     <Loader2 size={18} className="animate-spin inline mr-2" /> Masters load ho rahe
                     hain...
                   </td>
                 </tr>
               ) : filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-5 py-10 text-center text-muted">
+                  <td
+                    colSpan={tab === "serviceTypes" ? 8 : 7}
+                    className="px-5 py-10 text-center text-muted"
+                  >
                     Koi master nahi mila. &quot;Naya {LABEL[tab].replace(/s$/, "")}&quot; se
                     banayein.
                   </td>
@@ -544,6 +571,19 @@ export default function ServiceCenterSettingsPage() {
                     {tab === "serviceTypes" && (
                       <td className="px-3 py-3 text-muted font-mono text-xs">
                         {r.sort_order ?? 0}
+                      </td>
+                    )}
+                    {tab === "serviceTypes" && (
+                      <td className="px-3 py-3">
+                        <span
+                          className={`text-[10px] px-2 py-1 rounded-full font-bold ${
+                            r.expects_fault !== false
+                              ? "bg-amber-500/15 text-amber-300"
+                              : "bg-emerald-500/15 text-emerald-300"
+                          }`}
+                        >
+                          {r.expects_fault !== false ? "Required" : "Optional"}
+                        </span>
                       </td>
                     )}
                     <td className="px-3 py-3">
@@ -683,15 +723,32 @@ export default function ServiceCenterSettingsPage() {
               )}
 
               {editing.kind === "serviceTypes" && (
-                <div>
-                  <label className={labelCls}>Sort order</label>
-                  <input
-                    type="number"
-                    value={form.sortOrder}
-                    onChange={(e) => setForm({ ...form, sortOrder: e.target.value })}
-                    className={inputCls}
-                  />
-                </div>
+                <>
+                  <div>
+                    <label className={labelCls}>Sort order</label>
+                    <input
+                      type="number"
+                      value={form.sortOrder}
+                      onChange={(e) => setForm({ ...form, sortOrder: e.target.value })}
+                      className={inputCls}
+                    />
+                  </div>
+                  <label className="flex items-start gap-2 text-xs text-app cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={form.expectsFault}
+                      onChange={(e) => setForm({ ...form, expectsFault: e.target.checked })}
+                      className="accent-blue-500 mt-0.5"
+                    />
+                    <span>
+                      Fault required hai?
+                      <span className="block text-[10px] text-muted mt-0.5">
+                        Uncheck karne par Fault field optional ho jayega — installation/PDI jaise
+                        types ke liye. Purane jobs par asar nahi.
+                      </span>
+                    </span>
+                  </label>
+                </>
               )}
 
               {formErr && (

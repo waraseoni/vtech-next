@@ -25,6 +25,10 @@ export interface JobDetail {
   serial_no?: string | null;
   warranty_status?: string | null;
   warranty_until?: string | null;
+  /** Service Type (legacy rows NULL) — naam/requiredness query layer se resolve. */
+  service_type_id?: number | null;
+  service_type_name?: string | null;
+  service_type_expects_fault?: boolean | null;
   fault: string;
   remark: string;
   uniq_id: string;
@@ -114,7 +118,7 @@ export async function fetchJobViewData(
     supabase
       .from("transaction_list")
       .select(
-        "id, job_id, code, client_name, item, item_name, brand_id, model, serial_no, warranty_status, warranty_until, fault, remark, uniq_id, amount, mechanic_amount, mechanic_commission_amount, mechanic_id, user_id, del_status, status, location_id, date_created, date_updated, date_completed"
+        "id, job_id, code, client_name, item, item_name, brand_id, model, serial_no, warranty_status, warranty_until, service_type_id, fault, remark, uniq_id, amount, mechanic_amount, mechanic_commission_amount, mechanic_id, user_id, del_status, status, location_id, date_created, date_updated, date_completed"
       )
       .eq("id", numId)
       .eq("del_status", 0)
@@ -153,6 +157,7 @@ export async function fetchJobViewData(
     prodListRes,
     svcListRes,
     brandRes,
+    serviceTypeRes,
   ] = await Promise.all([
     supabase
       .from("client_list")
@@ -200,6 +205,7 @@ export async function fetchJobViewData(
     supabase.from("service_list").select("id, name, hsn"),
     // Nayi brand master abhi na ho to error ignore (migration approval pending).
     supabase.from("brands").select("id, name"),
+    supabase.from("service_types").select("id, name, expects_fault"),
   ]);
 
   const dueMaps = buildDueMaps({
@@ -237,6 +243,24 @@ export async function fetchJobViewData(
         (brandRes.data as Array<{ id: number; name: string }> | null)?.find(
           (b) => b.id === jobData.brand_id
         )?.name ?? null,
+      // Service Type naam/requiredness bhi same wave me resolve — view me extra
+      // round-trip nahi. Legacy NULL → naam null, fault required (default).
+      service_type_name:
+        (
+          serviceTypeRes.data as Array<{
+            id: number;
+            name: string;
+            expects_fault: boolean | null;
+          }> | null
+        )?.find((t) => t.id === jobData.service_type_id)?.name ?? null,
+      service_type_expects_fault:
+        (
+          serviceTypeRes.data as Array<{
+            id: number;
+            name: string;
+            expects_fault: boolean | null;
+          }> | null
+        )?.find((t) => t.id === jobData.service_type_id)?.expects_fault ?? null,
     },
     prevJob: (prevRes.data?.[0] as { id: number; job_id: string } | null) ?? null,
     nextJob: (nextRes.data?.[0] as { id: number; job_id: string } | null) ?? null,

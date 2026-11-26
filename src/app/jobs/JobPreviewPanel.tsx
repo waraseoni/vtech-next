@@ -8,6 +8,7 @@ import Link from "next/link";
 import { X, ArrowRight, Loader2 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { JOB_STATUS } from "@/lib/status-colors";
+import { expectsFault, faultFieldLabel } from "@/lib/serviceType";
 import type { Transaction } from "./useJobList";
 
 const NEXT_STEP: Record<number, { to: number; label: string }> = {
@@ -59,6 +60,22 @@ export function JobPreviewPanel({
           client_middlename: client.middlename || "",
           client_lastname: client.lastname || "",
           client_contact: client.contact || "",
+        };
+      }
+    }
+    // Service Type naam sirf tab jab row tagged ho — legacy rows par extra
+    // request nahi. Inactive/deleted type ka naam na mile to chip chhup jata hai.
+    if (data.service_type_id != null) {
+      const { data: stype } = await supabase
+        .from("service_types")
+        .select("id, name, expects_fault")
+        .eq("id", data.service_type_id)
+        .maybeSingle();
+      if (stype) {
+        enriched = {
+          ...enriched,
+          service_type_name: stype.name,
+          service_type_expects_fault: stype.expects_fault,
         };
       }
     }
@@ -151,10 +168,20 @@ export function JobPreviewPanel({
               <p className="text-[9px] font-black uppercase tracking-widest text-muted-2">Item</p>
               <p className="text-sm font-bold text-app-2">{txn.item}</p>
             </div>
+            {txn.service_type_name && (
+              <div>
+                <p className="text-[9px] font-black uppercase tracking-widest text-muted-2">
+                  Service Type
+                </p>
+                <p className="text-xs font-bold text-blue-300">{txn.service_type_name}</p>
+              </div>
+            )}
             {txn.fault && (
               <div>
                 <p className="text-[9px] font-black uppercase tracking-widest text-muted-2">
-                  Fault
+                  {faultFieldLabel(
+                    expectsFault({ expects_fault: txn.service_type_expects_fault })
+                  ).replace(" *", "")}
                 </p>
                 <p className="text-xs text-muted">{txn.fault}</p>
               </div>

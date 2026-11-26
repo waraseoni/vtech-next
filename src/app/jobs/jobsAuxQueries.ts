@@ -32,19 +32,34 @@ export type DeviceMasterSeed = {
   brands: Array<{ id: number; name: string; code: string | null }>;
   models: Array<{ id: number; name: string; brand_id: number | null }>;
   identifiers: Array<{ id: number; value: string }>;
+  /** Service Type masters (inactive bhi — purane job ka edit value preserve). */
+  serviceTypes: Array<{
+    id: number;
+    name: string;
+    sort_order: number;
+    expects_fault?: boolean | null;
+    is_active?: boolean;
+  }>;
 };
 
 /** Migration apply se pehle tables na hon to khali — errors deliberately ignore. */
 async function fetchDeviceMasterSeed(supabase: SupabaseClient): Promise<DeviceMasterSeed> {
-  const [bRes, mRes, iRes] = await Promise.all([
+  const [bRes, mRes, iRes, sRes] = await Promise.all([
     supabase.from("brands").select("id, name, code").eq("is_active", true).order("name"),
     supabase.from("device_models").select("id, name, brand_id").eq("is_active", true).order("name"),
     supabase.from("device_identifiers").select("id, value").eq("is_active", true).order("value"),
+    // `.eq("is_active", true)` yahan bhi nahi — deactivated type wale purane
+    // job ka edit form type khali na dikhe.
+    supabase
+      .from("service_types")
+      .select("id, name, sort_order, expects_fault, is_active")
+      .order("sort_order"),
   ]);
   return {
     brands: (bRes.data || []) as DeviceMasterSeed["brands"],
     models: (mRes.data || []) as DeviceMasterSeed["models"],
     identifiers: (iRes.data || []) as DeviceMasterSeed["identifiers"],
+    serviceTypes: (sRes.data || []) as DeviceMasterSeed["serviceTypes"],
   };
 }
 

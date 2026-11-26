@@ -15,6 +15,7 @@ import {
   restoreErrorHint,
 } from "@/lib/backupRestore";
 import { AUTH_LINKED_TABLES } from "@/lib/backupAuthRestore";
+import { RESET_SEQUENCE_TABLES } from "@/lib/resetSequence";
 import { toast } from "@/lib/toast";
 import {
   Download,
@@ -1192,67 +1193,28 @@ export default function BackupPage() {
     }
   };
 
-  // ── Reset PostgreSQL sequences via RPC ──────────────────────────────────────
-  // Requires: reset_sequence() SQL function in Supabase (run reset_sequences.sql once)
+  // ── Reset PostgreSQL sequences via admin-only route ────────────────────────
+  // D1 (K10): anon key se `reset_sequence` RPC ab deny hai (service_role only).
+  // Browser yahan server-side admin route ko call karta hai jo service role se
+  // RPC chalata hai + allowlist validate karta hai (src/lib/resetSequence.ts).
   const resetSequences = async () => {
-    const sequenceTables = [
-      "system_info",
-      "job_id_counter",
-      "mechanic_list",
-      "profiles",
-      "client_list",
-      "product_list",
-      "service_list",
-      "suppliers",
-      "inventory_list",
-      "lender_list",
-      "expense_list",
-      "transaction_list",
-      "client_loans",
-      "client_payments",
-      "direct_sales",
-      "direct_sale_items",
-      "attendance_list",
-      "advance_payments",
-      "mechanic_salary_history",
-      "mechanic_commission_history",
-      "message_list",
-      "messages",
-      "wp_template_history",
-      "activity_logs",
-      "payment_reminders",
-      "push_subscriptions",
-      "client_contacts",
-      "supplier_contacts",
-      "supplier_contact_persons",
-      "supplier_contact_phones",
-      "location_zones",
-      "location_racks",
-      "location_bins",
-      "location_boxes",
-      "locations",
-      "brands",
-      "service_types",
-      "device_models",
-      "device_identifiers",
-      "staff_duty_schedule",
-      "staff_geofence_permit",
-      "user_passkeys",
-      "stock_counts",
-      "stock_adjustments",
-      "supplier_payments",
-      "job_required_parts",
-      "bom_templates",
-      "login_throttle",
-    ];
+    const sequenceTables = RESET_SEQUENCE_TABLES;
 
     const results: string[] = [];
     for (const table of sequenceTables) {
       try {
-        // Method 1: RPC function se sequence reset karo (reset_sequences.sql deploy hona chahiye)
-        const { data, error } = await supabase.rpc("reset_sequence", { table_name: table });
-        if (!error && data) {
-          logger.debug(`Sequence reset: ${data}`);
+        // Method 1: admin-only route → service-role `reset_sequence` RPC
+        const res = await fetch("/api/admin/reset-sequence", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ table_name: table }),
+        });
+        const payload = (await res.json().catch(() => ({}))) as {
+          status?: string;
+          result?: unknown;
+        };
+        if (res.ok && payload.status === "success") {
+          logger.debug(`Sequence reset: ${payload.result}`);
           results.push(`✓ ${table}`);
         } else {
           // Method 2: Fallback — max ID fetch karke log karo

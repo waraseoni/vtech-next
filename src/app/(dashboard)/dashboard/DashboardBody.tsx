@@ -68,7 +68,16 @@ import {
 // ─── Types ────────────────────────────────────────────────────────────────────
 // Profile/Stat/Recent*/LowStock/Revenue/Status + STATUS_META shared hain
 // src/lib/dashboard-shared.ts me (server data layer ke saath single source).
+/**
+ * D4 (P0-3): RPC fast-path fail ho to zeros ko "valid data" mat samjho.
+ * `source` UI par stale/unavailable marker dikhata hai aur structured log
+ * `event: "rpc_fallback"` D5 observability ko feed karta hai.
+ */
+type DataSource = "rpc" | "fallback" | "error" | "skipped";
+
 type Financial = {
+  /** RPC se aaya data = fresh; fallback = client-side derived; error = zeros. */
+  source?: DataSource;
   totalSales: number;
   partsCost: number;
   grossProfit: number;
@@ -116,6 +125,7 @@ const inr = (v: number, digits = 0) =>
 // data (profile/stats/revenue/recents/low-stock/waiting) server page props ke
 // roop me deta hai — mount par koi heavy fetch nahi (waterfall khatam).
 const EMPTY_FINANCIAL: Financial = {
+  source: "skipped",
   totalSales: 0,
   partsCost: 0,
   grossProfit: 0,
@@ -126,6 +136,37 @@ const EMPTY_FINANCIAL: Financial = {
   totalOutflow: 0,
   netProfit: 0,
 };
+
+/**
+ * D4 structured event — D5 alerting isi `event: "rpc_fallback"` ko feed karega.
+ * `logger.warn` production me no-op hai, isliye prod me JSON line directly
+ * stdout par (Vercel log drain), dev me logger se.
+ */
+function logRpcFallback(e: { rpc: string; reason: string; error?: string }) {
+  const payload = { event: "rpc_fallback", ...e };
+  if (process.env.NODE_ENV === "production") console.warn(JSON.stringify(payload));
+  else logger.warn(payload);
+}
+
+/** Fallback/error ko fresh data se alag dikhaata hai (silent-zero khatam). */
+function DataFreshnessBadge({ source }: { source?: DataSource }) {
+  const label =
+    source === "error"
+      ? "Data unavailable · zeros"
+      : source === "fallback"
+        ? "Stale / fallback data"
+        : null;
+  if (!label) return null;
+  return (
+    <span
+      role="status"
+      title="RPC fast-path unavailable — neeche ke numbers fallback/error se hain"
+      className="inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded-full border border-amber-500/30 bg-amber-500/10 text-amber-300"
+    >
+      {label}
+    </span>
+  );
+}
 
 export default function DashboardBody({ initial }: { initial: DashboardInitialData }) {
   const [theme, setTheme] = useState<"dark" | "light">("dark");
@@ -238,14 +279,22 @@ export default function DashboardBody({ initial }: { initial: DashboardInitialDa
       if (!rpcErr && rpcData && typeof rpcData === "object" && "amount" in rpcData) {
         const d = rpcData as Record<string, number>;
         return {
+          source: "rpc" as const,
           overdue: d.overdue || 0,
           today: d.today || 0,
           upcoming: d.upcoming || 0,
           amount: d.amount || 0,
         };
       }
-    } catch {
-      /* RPC missing/failed → client fallback */
+      logRpcFallback({
+        rpc: "get_due_stats",
+        reason: rpcErr?.message ?? "empty response",
+      });
+    } catch (e) {
+      logRpcFallback({
+        rpc: "get_due_stats",
+        reason: e instanceof Error ? e.message : String(e),
+      });
     }
 
     try {
@@ -283,10 +332,15 @@ export default function DashboardBody({ initial }: { initial: DashboardInitialDa
         else if (diff === 0) todayC++;
         else if (diff <= 7) upcoming++;
       });
-      return { overdue, today: todayC, upcoming, amount };
+      return { source: "fallback" as const, overdue, today: todayC, upcoming, amount };
     } catch (e) {
       logger.error("Due stats fetch error:", e);
-      return { overdue: 0, today: 0, upcoming: 0, amount: 0 };
+      logRpcFallback({
+        rpc: "get_due_stats",
+        reason: "client fallback exhausted",
+        error: e instanceof Error ? e.message : String(e),
+      });
+      return { source: "error" as const, overdue: 0, today: 0, upcoming: 0, amount: 0 };
     }
   }, []);
 
@@ -306,6 +360,7 @@ export default function DashboardBody({ initial }: { initial: DashboardInitialDa
       if (!rpcErr && rpcData && typeof rpcData === "object" && "totalSales" in rpcData) {
         const fd = rpcData as Record<string, number>;
         return {
+          source: "rpc" as const,
           totalSales: fd.totalSales || 0,
           partsCost: fd.partsCost || 0,
           grossProfit: fd.grossProfit || 0,
@@ -317,6 +372,11 @@ export default function DashboardBody({ initial }: { initial: DashboardInitialDa
           netProfit: fd.netProfit || 0,
         };
       }
+
+      logRpcFallback({
+        rpc: "get_financial_summary",
+        reason: rpcErr?.message ?? "empty response",
+      });
 
       // ── Fallback: client-side aggregation (jab RPC migrate nahi hua) ──
       const [
@@ -447,6 +507,7 @@ export default function DashboardBody({ initial }: { initial: DashboardInitialDa
       const netProfit = grossProfit - totalOutflow;
 
       return {
+        source: "fallback" as const,
         totalSales,
         partsCost,
         grossProfit,
@@ -459,7 +520,12 @@ export default function DashboardBody({ initial }: { initial: DashboardInitialDa
       };
     } catch (e) {
       logger.error("Financial fetch error:", JSON.stringify(e));
-      return EMPTY_FINANCIAL;
+      logRpcFallback({
+        rpc: "get_financial_summary",
+        reason: "client fallback exhausted",
+        error: e instanceof Error ? e.message : String(e),
+      });
+      return { ...EMPTY_FINANCIAL, source: "error" as const };
     }
   }, [from, to, profile]);
 
@@ -484,7 +550,13 @@ export default function DashboardBody({ initial }: { initial: DashboardInitialDa
     queryFn: fetchDueStats,
     staleTime: 60_000,
   });
-  const dueStats = dueStatsData ?? { overdue: 0, today: 0, upcoming: 0, amount: 0 };
+  const dueStats = dueStatsData ?? {
+    source: "error" as const,
+    overdue: 0,
+    today: 0,
+    upcoming: 0,
+    amount: 0,
+  };
 
   // BUG FIX 1 applied in resetDates too
   const resetDates = () => {
@@ -773,7 +845,10 @@ export default function DashboardBody({ initial }: { initial: DashboardInitialDa
         <section className="glass rounded-3xl border theme-border p-5 md:p-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
             <div>
-              <h3 className="text-sm font-black text-app dark:text-white">Financial Summary</h3>
+              <div className="flex items-center gap-2 flex-wrap">
+                <h3 className="text-sm font-black text-app dark:text-white">Financial Summary</h3>
+                <DataFreshnessBadge source={financial.source} />
+              </div>
               {/* BUG FIX 4 applied: fmtDate now parses local, not UTC */}
               <p className="text-muted-2 text-[10px] mt-0.5 font-bold uppercase tracking-wider">
                 {fmtDate(from)} — {fmtDate(to)}
@@ -1119,8 +1194,9 @@ export default function DashboardBody({ initial }: { initial: DashboardInitialDa
       <section className="glass rounded-3xl border theme-border overflow-hidden">
         <div className="flex items-center justify-between px-5 py-3.5 border-b border-app-2 dark:border-app">
           <div>
-            <h3 className="text-sm font-black text-app dark:text-white flex items-center gap-2">
+            <h3 className="text-sm font-black text-app dark:text-white flex items-center gap-2 flex-wrap">
               <CalendarClock size={13} className="text-red-400" /> Payment Due Reminders
+              <DataFreshnessBadge source={dueStats.source} />
             </h3>
             <p className="text-muted-2 text-[10px] font-bold uppercase tracking-wider">
               Promised due dates · Overdue &amp; upcoming

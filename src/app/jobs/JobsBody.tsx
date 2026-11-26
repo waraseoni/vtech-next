@@ -25,6 +25,13 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import DeviceFieldPicker from "@/components/DeviceFieldPicker";
 import { composeJobItemLabel, normalizeIdentifier } from "@/lib/deviceIdentity";
+import {
+  defaultServiceTypeId,
+  expectsFault,
+  faultFieldLabel,
+  faultHint,
+  type ServiceTypeOption,
+} from "@/lib/serviceType";
 import ZoomableImage from "@/components/ZoomableImage";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
@@ -902,6 +909,8 @@ function JobsListContent({
     brandName: "",
     model: "",
     serial: "",
+    // Create mode default Repair — lookup aate hi effect set karta hai (D3/D6).
+    serviceTypeId: null as number | null,
     fault: "",
     mechanicId: "",
   });
@@ -910,7 +919,7 @@ function JobsListContent({
   const [quickClientId, setQuickClientId] = useState<number | null>(null);
 
   const loadClientsAndMechanics = useCallback(async () => {
-    const [clientsRes, mechanicsRes] = await Promise.all([
+    const [clientsRes, mechanicsRes, serviceTypesRes] = await Promise.all([
       supabase
         .from("client_list")
         .select("id, firstname, middlename, lastname, contact")
@@ -922,12 +931,18 @@ function JobsListContent({
         .eq("delete_flag", 0)
         .eq("status", 1)
         .order("firstname"),
+      supabase
+        .from("service_types")
+        .select("id, name, sort_order, expects_fault, is_active")
+        .order("sort_order"),
     ]);
     if (clientsRes.error) throw clientsRes.error;
     if (mechanicsRes.error) throw mechanicsRes.error;
+    if (serviceTypesRes.error) throw serviceTypesRes.error;
     return {
       clients: (clientsRes.data || []) as QuickClient[],
       mechanics: (mechanicsRes.data || []) as QuickMechanic[],
+      serviceTypes: (serviceTypesRes.data || []) as ServiceTypeOption[],
     };
   }, []);
 
@@ -939,6 +954,17 @@ function JobsListContent({
   });
   const quickClients = useMemo(() => quickLookup?.clients ?? [], [quickLookup]);
   const quickMechanics = useMemo(() => quickLookup?.mechanics ?? [], [quickLookup]);
+  const quickTypes = useMemo(() => quickLookup?.serviceTypes ?? [], [quickLookup]);
+
+  // Repair default (D3). Compact select isliye kyunki quick modal chhota hai (D6).
+  useEffect(() => {
+    if (quickForm.serviceTypeId != null || quickTypes.length === 0) return;
+    const def = defaultServiceTypeId(quickTypes);
+    if (def != null)
+      setQuickForm((p) => (p.serviceTypeId == null ? { ...p, serviceTypeId: def } : p));
+  }, [quickTypes, quickForm.serviceTypeId]);
+
+  const quickFaultRequired = expectsFault(quickTypes.find((t) => t.id === quickForm.serviceTypeId));
 
   const filteredQuickClients = quickClients.filter((c) => {
     const name = `${c.firstname} ${c.middlename || ""} ${c.lastname}`.toLowerCase();
@@ -968,7 +994,7 @@ function JobsListContent({
       toast.error("Item zaroori hai!");
       return;
     }
-    if (!quickForm.fault.trim()) {
+    if (quickFaultRequired && !quickForm.fault.trim()) {
       toast.error("Fault description zaroori hai!");
       return;
     }
@@ -1004,6 +1030,8 @@ function JobsListContent({
           brand_id: quickForm.brandId,
           model: quickForm.model.trim() || null,
           serial_no: quickSerial || null,
+          service_type_id: quickForm.serviceTypeId,
+          // fault NOT NULL — faultless type par "" hi save hota hai.
           fault: quickForm.fault.trim(),
           remark: "",
           uniq_id: "",
@@ -1030,6 +1058,7 @@ function JobsListContent({
         brandName: "",
         model: "",
         serial: "",
+        serviceTypeId: defaultServiceTypeId(quickTypes),
         fault: "",
         mechanicId: "",
       });
@@ -2880,18 +2909,53 @@ function JobsListContent({
                 </p>
               </div>
 
-              {/* Fault */}
+              {/* Service Type — device summary ke baad, Fault se pehle (D4/D6). */}
               <div>
                 <label className="block text-[10px] font-black uppercase tracking-[0.18em] text-muted mb-1.5">
-                  Fault Reported <span className="text-red-500">*</span>
+                  Service Type <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={quickForm.serviceTypeId ?? ""}
+                  onChange={(e) =>
+                    setQuickForm((p) => ({
+                      ...p,
+                      // Fault text preserve — sirf requiredness/label badalta hai.
+                      serviceTypeId: e.target.value ? Number(e.target.value) : null,
+                    }))
+                  }
+                  className="w-full px-3 py-2.5 bg-slate-50 dark:bg-panel-2 border border-app-2 dark:border-app rounded-xl text-app dark:text-white text-sm outline-none focus:border-blue-500"
+                >
+                  <option value="">Select Service Type</option>
+                  {quickTypes
+                    .filter((t) => t.is_active !== false || t.id === quickForm.serviceTypeId)
+                    .map((t) => (
+                      <option key={t.id} value={t.id}>
+                        {t.is_active === false ? `${t.name} (inactive)` : t.name}
+                        {expectsFault(t) ? "" : " — Fault optional"}
+                      </option>
+                    ))}
+                </select>
+              </div>
+
+              {/* Fault / Work Description — type ke hisaab se label */}
+              <div>
+                <label className="block text-[10px] font-black uppercase tracking-[0.18em] text-muted mb-1.5">
+                  {faultFieldLabel(quickFaultRequired)}
                 </label>
                 <input
                   type="text"
-                  placeholder="e.g. Screen broken, Battery drain"
+                  placeholder={
+                    quickFaultRequired
+                      ? "e.g. Screen broken, Battery drain"
+                      : "Kaam ka scope (optional)"
+                  }
                   value={quickForm.fault}
                   onChange={(e) => setQuickForm((p) => ({ ...p, fault: e.target.value }))}
                   className="w-full px-3 py-2.5 bg-slate-50 dark:bg-panel-2 border border-app-2 dark:border-app rounded-xl text-app dark:text-white text-sm placeholder:text-muted dark:placeholder:text-app outline-none focus:border-blue-500"
                 />
+                {faultHint(quickFaultRequired) && (
+                  <p className="text-[10px] text-muted mt-1">{faultHint(quickFaultRequired)}</p>
+                )}
               </div>
 
               {/* Mechanic */}

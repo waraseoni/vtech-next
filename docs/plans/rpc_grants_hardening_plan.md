@@ -1,7 +1,32 @@
 # RPC Grants Hardening (Security Debt) — Implementation Plan & TODO
 
-_Status: 📝 PLAN READY — code/migration abhi likhi nahi, live DB untouched._
+_Status (27 Nov 2026): ✅ **DB-side verification COMPLETE** — owner ne `20261127_rpc_grants_hardening.sql`
+**aur** full-schema dono successfully chalaye (42883 + 42804 ke baad). Anon REST 7/7 block,
+`reset_sequence` anon 401, `has_function_privilege` matrix 9/9 exact, client-role GUC guard proof
+`42501 permission denied for staff-only function` (RAISE line 12) — sab pass. Baaki: staff/portal
+UI regression + backup sequence reset (owner). Apply environment (dev/staging ya live) confirm baaki._
 _Created: 16 Nov 2026 · Source: live read-only audit (anon key REST tests + `pg_proc`/`pg_policies` dump)_
+
+> **27 Nov update:** Layer 2 me `rename + thin wrapper` ke jagah **same-name `create or replace`
+> + guard injection** kiya gaya (body same) — isse full-schema fold-in me `_impl_*` duplicate
+> naye functions nahi bante aur fresh/install dono me final guarded definition milti hai.
+>
+> **42883 fix (owner dry-run):** seedha `revoke ... on function public.inventory_sync_place_path()`
+> live DB par `42883 function does not exist` deta tha — kyunki `20260925_i6_phase2_place_drop.sql`
+> is dead trigger function ko **drop kar chuka hai**. Ab saare REVOKE/GRANT ek `do $$` block me
+> `to_regprocedure()` se guarded hain: missing function = skip, baaki sab waisa hi. Migration
+> ab idempotent + do baar chalane par bhi safe. (D2 note: ye drop intentional hai — function
+> wapas create nahi karna.)
+>
+> **42804 fix (owner dry-run #2):** `get_clients_page_financials()` scalar `jsonb` return hai;
+> generator ne SQL→plpgsql conversion me uski query ko `RETURN QUERY` se wrap kiya tha —
+> `RETURN QUERY` sirf `SETOF`/`TABLE` functions me chalata hai. Ab `RETURN (WITH ... SELECT ...)`
+> used hai; body/result waisa hi. (`get_inventory_stock()` `RETURNS TABLE` hai — uska
+> `RETURN QUERY` sahi hai.) Dono migration files (standalone + full-schema fold-in) patched.
+> Guard = `is_frontend_staff() OR JWT role service_role` (API routes service-role use karte hain;
+> sirf staff guard unhe block kar deta). `reset_sequence` browser anon RPC hataya gaya —
+> `/api/admin/reset-sequence` (admin-only) + `src/lib/resetSequence.ts` allowlist se service-role
+> se chalata hai. DB par sirf `service_role` ko grant.
 
 ---
 
@@ -228,10 +253,27 @@ Triggers ko wapas grant karne ki zaroorat nahi (trigger functions grant se nahi 
 
 1. ✅ (done 16 Nov) Live audit — 26/28 anon-executable, 8 staff-only definer RPCs guard-less,
    client-role hole documented; app callers mapped (§4).
-2. ⬜ `20261116_rpc_grants_hardening.sql` likho: Layer 1 grants → Layer 1b triggers → Layer 2 guards
-   → `NOTIFY pgrst` → verify block. Full-schema snapshot me append karna (schema:drift requirement).
-3. ⬜ Pre-apply simulation (client uuid = 42501, staff uuid = data) — **live, read-only**.
+2. ✅ `20261127_rpc_grants_hardening.sql` likha: Layer 1 grants → Layer 1b triggers → Layer 2 guards
+   → `NOTIFY pgrst` → verify block. Full-schema snapshot me append kiya (schema:drift **35 OK**).
+3. ⬜ Pre-apply simulation (client uuid = 42501, staff uuid = data) — **live, read-only** (owner).
 4. ⬜ Screenshot/report: `has_function_privilege` matrix before/after.
-5. ⬜ Apply (owner approval ke baad) → anon REST 401 proof + staff/portal regression + row counts.
+5. ✅ Apply (owner, 27 Nov) — standalone + full-schema dono success.
+   ✅ **Anon REST proof (read-only):** `get_dashboard_stats`, `get_clients_page_financials`,
+   `get_monthly_revenue`, `get_financial_summary`, `get_technician_metrics`, `get_inventory_stock`,
+   `peek_next_job_id` — **7/7 HTTP 401 / 42501 `permission denied for function`**.
+   `reset_sequence` bhi anon se block (**401**) — safe probe: nonexistent table naam diya,
+   `pg_get_serial_sequence` NULL → SKIP, koi `setval` nahi hua.
+   `next_job_id` anon se **call nahi kiya** (grant open hota to counter increment hota); migration
+   me function exist karti hai aur REVOKE chal chuka hai, isliye denial expected — direct proof
+   SQL matrix se karna hai. `GET /rest/v1/` OpenAPI root anon ke liye 401 (empty body) hai,
+   wo probe **inconclusive** — usse koi nishkarsh nahi.
+   ✅ **Owner `has_function_privilege` matrix (SQL editor):** 9/9 par `anon_ok=false`;
+   `auth_ok=true` 8 par (sirf `reset_sequence` par `false`); `svc_ok=true` 9/9 — exact expected.
+   `next_job_id` ka anon denial bhi isi se direct prove ho gaya.
+   ✅ **Owner GUC guard proof:** `set request.jwt.claims = '{"role":"authenticated"}'` ke saath
+   `get_dashboard_stats` → `42501 permission denied for staff-only function`,
+   `CONTEXT: PL/pgSQL function get_dashboard_stats(text,text) line 12 at RAISE` — client-role
+   authenticated user body guard se block. `reset request.jwt.claims` ke baad staff calls normal.
+   ⬜ Staff/portal UI regression (dashboard, clients, jobs, inventory, backup sequence reset) baaki.
 6. ⬜ `tsc` / `lint` / `test` / `build` / `schema:drift` / e2e smoke → commit (docs + migration).
 7. ⬜ (Optional) `scripts/check-rpc-grants.mjs` + CI step.

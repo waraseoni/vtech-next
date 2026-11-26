@@ -5,11 +5,11 @@
 > guarantee**, **counter-speed UX** aur **standard-center coverage audit (§15)** add kiya;
 > phases reorder kiye. **G1–G3 (claim lifecycle, warranty expiry, status prompt) ADOPTED**
 > — ab gap register ke nahi, plan ke phases me hain.
-> **Status:** P1–P5 shipped (`9e620ad`) · `20261122_service_center_fields.sql`
-> owner ne apply kiya · Rev 3 `item_name` code local WIP; `20261126_item_name_field.sql`
-> bhi owner ne apply kiya (read-only probe: column selectable, 0 non-null rows).
-> Rev 3a/3b: uniform field order + field-aware search (brand resolver + RPC drift fix).
-> P0 sign-off aur commit approval baaki.
+> **Status (synced 27 Nov 2026):** P1–P5 + Rev 3/3a/3b **committed + pushed**
+> (`9e620ad`) · `20261122_service_center_fields.sql` aur `20261126_item_name_field.sql`
+> owner ne apply kiye (read-only probe: `item_name` selectable, 0 non-null rows).
+> Baaki kaam `docs/plans/master_completion_plan_2026-11-26.md` me tracking hai;
+> device UX ke P0 sign-off (brand rules, seed list, separator, public S/N) abhi pending.
 > **Scope:** `transaction_list` ke device fields split + `service_type` + ek brand ka
 > service center chalane ke liye baaki zaruri cheezein — **teenon mode** me.
 > **Extends (schema part of):** `multi_brand_service_architecture_plan.md` §3 ·
