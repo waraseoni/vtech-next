@@ -5674,6 +5674,10 @@ CREATE OR REPLACE FUNCTION public.get_inventory_stock(
     SECURITY DEFINER
     SET search_path = public
 AS $$
+-- RETURNS TABLE ke OUT vars (product_id, place) query ke columns se clash karte
+-- the → plpgsql me 42702 "column reference is ambiguous" (original SQL fn me nahi tha).
+-- use_column = unqualified naam hamesha table column, OUT var nahi.
+#variable_conflict use_column
 begin
   if not (
     public.is_frontend_staff()

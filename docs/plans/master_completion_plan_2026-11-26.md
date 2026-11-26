@@ -180,7 +180,9 @@ Repair par fault ab bhi mandatory; deactivated type ka purana job edit me sahi d
   `/api/admin/reset-sequence` route + allowlist (`src/lib/resetSequence.ts`, tests ✓).
   **Owner ne 27 Nov ko standalone + full-schema dono apply kiye — success** (42883/42804 fix ke baad).
   **DB verification ✅:** anon REST 7/7 401 · `reset_sequence` anon 401 · matrix `anon_ok=false` 9/9 ·
-  client-role guard proof `42501` (RAISE line 12). Baaki: staff/portal UI regression + backup reset.
+  client-role guard proof `42501` (RAISE line 12). Staff UI smoke green, par `/reports/oversold` me
+  `get_inventory_stock` 42702 ambiguity (SQL→plpgsql OUT-var) mila — `#variable_conflict use_column`
+  se fix, **owner re-apply baaki**. Portal smoke + backup reset baaki.
 - [ ] **D2 — Pending migrations verify (P0-2):** read-only probes — profile RLS
   (`is not distinct from`), `item_name` + index, master tables, `get_jobs_stats` naye columns,
   `get_due_stats`/`get_stale_jobs`/`get_dashboard_*` exist + staff guard. Missing ho to owner apply.
