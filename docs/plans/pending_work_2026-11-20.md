@@ -298,3 +298,24 @@
 Rev 3 `item_name` code local complete, gates + read-only browser smoke green;
 `20261126_item_name_field.sql` owner ne apply kar diya. Agla step: P0 sign-off aur
 explicit approval par commit/push (user ne abhi commit rok diya hai).
+
+---
+
+## H. Project-level evaluation (26 Nov 2026)
+
+Poore project ka mulyankan + action plan alag docs me hai; yahan sirf pointer
+aur top items (taaki tracker single source rahe):
+
+- **Findings:** `docs/plans/project_evaluation_2026-11-26.md`
+  (metrics, strengths, weaknesses, risk ranking, verdict).
+- **Plan:** `docs/plans/project_improvement_plan_2026-11-26.md`
+  (P0/P1/P2 tasks, effort, acceptance criteria, status tracker).
+
+Top 3 jo yahan se unblock hote hain:
+
+1. **P0-1 RPC grants hardening** - `rpc_grants_hardening_plan.md` ke saath ek hi
+   window me (anon-executable definer functions). Highest security risk.
+2. **P0-2 Pending migrations verify** - profile RLS, `item_name`, updated
+   `get_jobs_stats()`; read-only probes ke baad owner apply.
+3. **P0-5 Money-logic integration tests** - ledger/due/balance/EMI formulas par
+   fixture-based tests (silent financial errors ka insurance).
