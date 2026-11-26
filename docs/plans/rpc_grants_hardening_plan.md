@@ -1,15 +1,13 @@
 # RPC Grants Hardening (Security Debt) — Implementation Plan & TODO
 
-_Status (27 Nov 2026): 🟡 **`get_inventory_stock` SQL→plpgsql do regressions (42702 ambiguity +
-42804 type mismatch) — dono fix ready, owner re-apply baaki** — grant/guard verification sab pass
-hai. Owner ne `20261127_rpc_grants_hardening.sql`
-**aur** full-schema dono successfully chalaye (42883 + 42804 ke baad). Anon REST 7/7 block,
-`reset_sequence` anon 401, `has_function_privilege` matrix 9/9 exact, client-role GUC guard proof
-`42501 permission denied for staff-only function` (RAISE line 12) — sab pass. Staff UI smoke:
-dashboard/clients/jobs green; `get_inventory_stock` wale 3 reports me pehle 42702, re-apply ke
-baad 42804 type mismatch mila — dono fix ho gaye. Baaki: patched migration re-apply → 3 reports
-re-smoke → portal smoke + backup sequence reset (owner). Apply environment (dev/staging ya live)
-confirm baaki._
+_Status (27 Nov 2026): ✅ **DB + staff UI verification COMPLETE** — owner ne
+`20261127_rpc_grants_hardening.sql` **aur** full-schema dono successfully chalaye (42883 + 42804
+fixes + final 42702/42804 patch ke baad). Anon REST 7/7 block, `reset_sequence` anon 401,
+`has_function_privilege` matrix 9/9 exact, client-role GUC guard proof
+`42501 permission denied for staff-only function` (RAISE line 12) — sab pass. Staff UI smoke final:
+dashboard/clients/jobs + 3 inventory reports + public job-status green, `get_inventory_stock` HTTP
+**200**, koi 400/42501/console error nahi. Baaki: portal smoke (client credentials chahiye) +
+backup sequence reset (owner). Apply environment (dev/staging ya live) confirm baaki._
 _Created: 16 Nov 2026 · Source: live read-only audit (anon key REST tests + `pg_proc`/`pg_policies` dump)_
 
 > **27 Nov update:** Layer 2 me `rename + thin wrapper` ke jagah **same-name `create or replace`
@@ -34,15 +32,14 @@ _Created: 16 Nov 2026 · Source: live read-only audit (anon key REST tests + `pg
 > SQL→plpgsql conversion me `RETURNS TABLE(product_id, ..., place)` ke OUT variables unqualified
 > column names se clash kar gaye (original `LANGUAGE sql` me ye nahi hota). Fix: function body ke
 > start me `#variable_conflict use_column` — unqualified naam ab hamesha table column. Dono files
-> patched + drift 35 OK. **Owner ko patched migration dobara apply karni hogi** (DB abhi purana
-> definition chalata hai). Baaki RPCs par aisa nahi hai — sirf yahi `RETURNS TABLE` wali function thi.
+> patched + drift 35 OK. Baaki RPCs par aisa nahi hai — sirf yahi `RETURNS TABLE` wali function thi.
 >
 > **42804 follow-up (owner re-apply ke baad):** ambiguity nahi rahi, par ab
 > `Returned type integer does not match expected type bigint in column 1` — plpgsql `RETURN QUERY`
 > original `LANGUAGE sql` se zyada strict hai. Final SELECT ke **saare 10 output columns** ko
 > `RETURNS TABLE` wale types me explicitly cast kiya (`product_id::bigint`, qty/total/available/
 > oversold `::bigint`, avg `::numeric`, date/text). Dono files patched + drift 35 OK.
-> **Owner ko ek baar aur re-apply karna hoga**, phir oversold/requirement-list/stock-valuation re-smoke.
+> **Owner ne final patched migration re-apply kiya → 3 reports re-smoke green (RPC 200)**.
 > Guard = `is_frontend_staff() OR JWT role service_role` (API routes service-role use karte hain;
 > sirf staff guard unhe block kar deta). `reset_sequence` browser anon RPC hataya gaya —
 > `/api/admin/reset-sequence` (admin-only) + `src/lib/resetSequence.ts` allowlist se service-role
@@ -298,11 +295,12 @@ Triggers ko wapas grant karne ki zaroorat nahi (trigger functions grant se nahi 
    `/clients` (Customer Registry), `/jobs` (Transactions), `/reports/requirement-list`,
    `/reports/stock-valuation`, `/job-status` (public) — sab green, koi 42501 nahi.
    `/inventory` aur backup ke kuch APIs "Admin only" 401 — preeti staff hai, expected (unrelated).
-   ❌ `/reports/oversold` → `get_inventory_stock` HTTP 400 / `42702 product_id ambiguous` —
-   D1 SQL→plpgsql conversion se aaya; `#variable_conflict use_column` se fix (dono files).
-   ❌ Owner re-apply ke baad wahi 3 reports → `42804 Returned type integer does not match expected
-   type bigint in column 1` — final SELECT ke 10 output columns me explicit casts (dono files).
-   ⬜ Owner final patched migration dobara apply kare → 3 reports re-smoke; portal smoke (client
-   credentials chahiye) + backup sequence reset baaki.
-6. ⬜ `tsc` / `lint` / `test` / `build` / `schema:drift` / e2e smoke → commit (docs + migration).
+   ❌→✅ 3 inventory reports me pehle `42702 product_id ambiguous`, phir re-apply ke baad
+   `42804 integer ≠ bigint` mila — D1 SQL→plpgsql conversion se aaya. `#variable_conflict use_column`
+   + 10 explicit casts se dono fix.
+   ✅ **Final re-smoke (owner ke final re-apply ke baad):** tinon reports me `get_inventory_stock`
+   HTTP **200**, koi HTTP 400 / `42501` / console error nahi; dashboard/jobs/clients/public
+   job-status bhi green. Baaki: portal smoke (client credentials chahiye) + backup sequence reset.
+6. ✅ `tsc` / touched `eslint` / `vitest` 77 files 783 tests / `schema:drift` 35 OK / `build` 139
+   pages / UI smoke — sab green; commits `0633b87`, `e93e87e`, `b791e4c` + final docs update.
 7. ⬜ (Optional) `scripts/check-rpc-grants.mjs` + CI step.

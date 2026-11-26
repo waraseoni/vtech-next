@@ -162,12 +162,14 @@
       triggers → Layer 2 guards → `NOTIFY pgrst` → verify block. Full-schema
       snapshot me append (schema:drift **35 OK**). `reset_sequence` ab service_role-only;
       backup page naye admin-only `/api/admin/reset-sequence` route par. **Owner ne 27 Nov ko
-      dono migrations apply kiye — success; verification baaki.**
-- [ ] Pre-apply simulation **read-only**: client uuid = 42501, staff uuid = data.
-- [ ] `has_function_privilege` matrix before/after report.
-- [ ] Apply (owner approval) → anon REST 401 proof + staff/portal regression +
-      row counts.
-- [ ] Gates: tsc/lint/test/build/schema:drift/e2e smoke → commit (docs + migration).
+      dono migrations + final 42702/42804 patch re-apply kiye — success.**
+- [x] Guard proof (read-only): client-role `42501 permission denied for staff-only function`
+      (`RAISE line 12`), staff calls normal.
+- [x] `has_function_privilege` matrix: **9/9 anon_ok=false**, auth 8/9, service_role 9/9.
+- [x] Apply (owner) → anon REST **7/7 401**, `reset_sequence` 401 + **staff UI smoke green**
+      (dashboard/clients/jobs + 3 reports, `get_inventory_stock` 200). Portal + backup reset baaki.
+- [x] Gates: tsc/touched eslint/77 files 783 tests/build 139 pages/schema:drift 35 OK/UI smoke
+      → local commits `0633b87`, `e93e87e`, `b791e4c`.
 - [ ] Optional: `scripts/check-rpc-grants.mjs` + CI step.
 - **Source:** `docs/plans/rpc_grants_hardening_plan.md` §Execution Order.
 

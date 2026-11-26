@@ -64,9 +64,10 @@
    `/api/admin/reset-sequence` admin-only route service-role se RPC chalata hai + table allowlist
    (`src/lib/resetSequence.ts`). **DB verify ✅** — anon REST 7/7 401, `reset_sequence` 401,
    owner matrix 9/9 `anon_ok=false`, client-role GUC guard proof `42501 at RAISE line 12`.
-   Staff UI smoke: dashboard/clients/jobs green; `get_inventory_stock` wale reports me 42702
-   ambiguity + 42804 type mismatch mile → `#variable_conflict use_column` + explicit casts se fix;
-   **owner ek baar aur re-apply karega**. Portal smoke + backup sequence reset baaki.
+   Staff UI smoke **final ✅**: dashboard/clients/jobs + 3 inventory reports + public job-status
+   green; 42702 ambiguity + 42804 type mismatch dono fix (use_column + explicit casts), owner ne
+   final patched migration re-apply kiya → `get_inventory_stock` 200, koi 400/42501 nahi.
+   Portal smoke + backup sequence reset baaki.
 6. [x] **D4 code** — dashboard Financial Summary + Due Reminders par DataFreshnessBadge
    ("Stale / fallback data" / "Data unavailable · zeros"); structured `event:"rpc_fallback"` dev me
    `logger.warn`, prod me stdout JSON (D5 alerting isi ko feed karega — `logger.warn` prod me no-op tha).
