@@ -1,5 +1,17 @@
 # CHANGELOG
 
+## [1.88.0](https://github.com/waraseoni/vtech-next/compare/v1.87.0...v1.88.0) (2026-11-26)
+
+### Features
+
+* **backup:** schema-change golden rule + contract gate, prevent old-backup data loss ([7695e0a](https://github.com/waraseoni/vtech-next/commit/7695e0ac0d63ff282d9eebd4e293e6a8c7a17a08))
+* service type rollout, RPC grants hardening, dashboard fallback, money tests ([0633b87](https://github.com/waraseoni/vtech-next/commit/0633b87fda10c1d1f23d7221152f191718525170))
+
+### Bug Fixes
+
+* **rpc:** cast get_inventory_stock outputs to RETURNS TABLE types (42804) ([b791e4c](https://github.com/waraseoni/vtech-next/commit/b791e4cee01d4d1641a44fcbf9462a55a87eed63))
+* **rpc:** resolve get_inventory_stock OUT-variable ambiguity (42702) ([e93e87e](https://github.com/waraseoni/vtech-next/commit/e93e87ee92d2e361737deaab09be514d60fceb7e)), closes [#variable_conflict](https://github.com/waraseoni/vtech-next/issues/variable_conflict)
+
 ## [1.87.0](https://github.com/waraseoni/vtech-next/compare/v1.86.0...v1.87.0) (2026-11-25)
 
 ### Features
