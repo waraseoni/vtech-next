@@ -208,6 +208,7 @@ Repair par fault ab bhi mandatory; deactivated type ka purana job edit me sahi d
   10 surfaces); `npm run backup:contract` + CI gate; `npm run verify:data`. Purana backup me na hone
   wale naye tables ab preserve (delete nahi); count mismatch error toast. Baaki legacy gaps
   (schema snapshot, converter bool maps, CLI alphabetical order, grants backup) recorded.
+  Roadmap: `plans/backup_restore_readiness_plan_2026-11-27.md` (B1–B20, owner decisions + acceptance).
 
 ---
 

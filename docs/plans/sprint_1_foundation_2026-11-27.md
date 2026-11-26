@@ -77,6 +77,7 @@
 8. [x] **D11 golden rule** — schema change ke saath backup/restore update bina bole: `AGENTS.md` +
    DATA_MIGRATION_NOTES, `docs/backup_restore_contract.md`, `npm run backup:contract` CI gate,
    old-backup me na hone wale tables preserve, count mismatch → error toast.
+   Readiness roadmap: `plans/backup_restore_readiness_plan_2026-11-27.md` (B1–B20 pending).
 
 > Inme se 1–8 sab **code/docs** hain — koi DB write, koi secret, koi commit nahi.
 >
