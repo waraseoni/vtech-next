@@ -581,16 +581,18 @@ begin
           UNION SELECT product_id FROM sold_job
           UNION SELECT product_id FROM sold_sale
       )
-      SELECT a.product_id,
-             COALESCE(i.total_in, 0)            AS total_in,
-             COALESCE(j.qty, 0)                 AS total_sold_job,
-             COALESCE(s.qty, 0)                 AS total_sold_sale,
-             COALESCE(j.qty, 0) + COALESCE(s.qty, 0) AS total_sold,
-             COALESCE(i.total_in, 0) - COALESCE(j.qty, 0) - COALESCE(s.qty, 0) AS available,
-             GREATEST(0, COALESCE(j.qty, 0) + COALESCE(s.qty, 0) - COALESCE(i.total_in, 0)) AS oversold,
-             COALESCE(i.avg_cost, 0)            AS avg_purchase_cost,
-             i.last_date                        AS last_stock_date,
-             i.place                            AS place
+      -- RETURN QUERY (plpgsql) original SQL function se zyada strict hai:
+      -- har output column ka type RETURNS TABLE se exactly match hona chahiye.
+      SELECT a.product_id::bigint                  AS product_id,
+             COALESCE(i.total_in, 0)::bigint        AS total_in,
+             COALESCE(j.qty, 0)::bigint             AS total_sold_job,
+             COALESCE(s.qty, 0)::bigint             AS total_sold_sale,
+             (COALESCE(j.qty, 0) + COALESCE(s.qty, 0))::bigint AS total_sold,
+             (COALESCE(i.total_in, 0) - COALESCE(j.qty, 0) - COALESCE(s.qty, 0))::bigint AS available,
+             GREATEST(0, COALESCE(j.qty, 0) + COALESCE(s.qty, 0) - COALESCE(i.total_in, 0))::bigint AS oversold,
+             COALESCE(i.avg_cost, 0)::numeric       AS avg_purchase_cost,
+             i.last_date::date                      AS last_stock_date,
+             i.place::text                          AS place
       FROM all_ids a
       LEFT JOIN inv  i ON i.product_id = a.product_id
       LEFT JOIN sold_job  j ON j.product_id = a.product_id

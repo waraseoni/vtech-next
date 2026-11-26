@@ -18,7 +18,7 @@
 | **K7** | Service Type D1–D8 | `expects_fault` column; `fault NOT NULL` unchanged | ✅ effectively accepted — owner ne `20261126_service_type_expects_fault.sql` apply kiya | — |
 | **K8** | Per-brand numbering | global `job_id`/counter/index **unchanged**; additive `brand_job_no`; prefix `brands.prefix` (recommend) vs counter table | ⏳ | B1, B2 |
 | **K9** | Claim lifecycle | existing `warranty_claim_status` + CSV export; nayi `warranty_claims` table **nahi** | ⏳ | B3 |
-| **K10** | RPC lockdown | `reset_sequence` = service_role only; staff RPCs = authenticated + `is_frontend_staff()`/service_role | ✅ DB verified (anon 7/7, matrix 9/9, guard 42501); staff UI smoke green; `get_inventory_stock` 42702 fix ready, owner re-apply baaki | D1 re-apply |
+| **K10** | RPC lockdown | `reset_sequence` = service_role only; staff RPCs = authenticated + `is_frontend_staff()`/service_role | ✅ DB verified (anon 7/7, matrix 9/9, guard 42501); staff smoke green; `get_inventory_stock` 42702 + 42804 dono fix, owner final re-apply baaki | D1 re-apply → re-smoke |
 | **K11** | Generated DB types adopt? | haan — one-time diff, phir CI gate | ⏳ | D6 |
 | **K12** | `JobsBody` split | tab-based modules, behaviour zero | ⏳ | E1 |
 | **K13** | G4–G14 adopt list | G4–G10 adopt; G11–G14 defer; G15 SMTP owner se blocked | ⏳ | C |
