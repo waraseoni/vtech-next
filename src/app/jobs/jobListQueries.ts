@@ -40,6 +40,8 @@ export interface Transaction {
   /** Naye nullable device columns — select("*") se aate hain. */
   item_name?: string | null;
   brand_id?: number | null;
+  /** K8/B1 — per-brand number; legacy rows me NULL. */
+  brand_job_no?: string | null;
   model?: string | null;
   serial_no?: string | null;
   /** Service Type (select("*") se aata hai; naam preview me resolve hota hai). */

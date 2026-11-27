@@ -22,7 +22,7 @@ const baseClient = createBrowserClient(
 //
 //   Blocked (staff + office ke bahar + permit nahi):
 //     .insert() .update() .upsert() .delete()
-//     .rpc()               — `rpc("next_job_id")` bhi read+increment WRITE hai
+//     .rpc()               — `rpc("next_job_id")` / `next_brand_job_no` read+increment WRITE hain
 //     storage .upload() .remove() .createSignedUrl(path, 60) — signed URL
 //                             naya banana bhi write hai
 //   Allowed hamesha: .select() — staff bahar/dekhta rahe (user decision 2026-09-28)
@@ -57,6 +57,7 @@ const READ_RPC_PREFIXES = ["get_", "peek_", "check_", "list_", "read_", "fetch_"
  * Read jaisa NAAM hone par bhi likhta hai — explicit deny (defence in depth,
  * inhe prefix allowlist se bachata hai agar kabhi prefix broaden ho).
  *   next_job_id           → value return karta hai + sequence increment (write)
+ *   next_brand_job_no     → brand counter increment + value return (write)
  *   record_stocktake      → stock rows likhta hai
  *   receive_po_receipt    → stock + PO update
  *   reset_sequence        → sequence reset
@@ -64,6 +65,7 @@ const READ_RPC_PREFIXES = ["get_", "peek_", "check_", "list_", "read_", "fetch_"
  */
 const WRITE_RPCS = new Set<string>([
   "next_job_id",
+  "next_brand_job_no",
   "record_stocktake",
   "receive_po_receipt",
   "reset_sequence",

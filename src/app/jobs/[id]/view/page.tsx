@@ -53,6 +53,7 @@ import WaitingPartsBadge from "@/components/WaitingPartsBadge";
 import { fetchOpenPartCounts } from "@/lib/requiredParts";
 import { dueLabel } from "@/lib/client-due";
 import { expectsFault, faultFieldLabel } from "@/lib/serviceType";
+import { jobReference } from "@/lib/jobReference";
 import { logActivity } from "@/lib/activity";
 import { substituteTemplate, firmVars, resolveTemplate } from "@/lib/whatsapp";
 import { compressImage } from "@/lib/imageCompression";
@@ -954,7 +955,11 @@ ${svcHtml}${prodHtml}
                       <InfoRow label="Received" value={fmtDateTime(job.date_created)} />
                       <InfoRow
                         label="Job No."
-                        value={<span className="font-bold">{job.job_id}</span>}
+                        value={
+                          <span className="font-bold">
+                            {jobReference(job.job_id, job.brand_job_no)}
+                          </span>
+                        }
                       />
                       <InfoRow
                         label="Code"

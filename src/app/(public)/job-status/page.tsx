@@ -21,10 +21,12 @@ import { buildWhatsAppLink } from "@/lib/public-site-defaults";
 import { usePublicSiteContent } from "../components/public-content-provider";
 import { JOB_STATUS_INLINE } from "@/lib/status-colors";
 import DeviceIdentity from "@/components/DeviceIdentity";
+import { jobReference } from "@/lib/jobReference";
 
 type JobData = {
   id: number;
   job_id: string;
+  brand_job_no?: string | null;
   code: string;
   item: string;
   item_name?: string | null;
@@ -558,7 +560,7 @@ export default function JobStatusPage() {
                     {/* Info Grid */}
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                       {[
-                        { label: "Job Number", value: job.job_id },
+                        { label: "Job Number", value: jobReference(job.job_id, job.brand_job_no) },
                         { label: "Repair Code", value: job.code },
                         { label: "Item", value: job.item },
                         { label: "Fault", value: job.fault },
@@ -712,7 +714,10 @@ export default function JobStatusPage() {
                     <div className="md:col-span-2 space-y-3">
                       <div className="grid grid-cols-2 gap-3">
                         {[
-                          { label: "Job Number", value: job.job_id },
+                          {
+                            label: "Job Number",
+                            value: jobReference(job.job_id, job.brand_job_no),
+                          },
                           { label: "Repair Code", value: job.code },
                           { label: "Item", value: job.item },
                           { label: "Fault", value: job.fault },

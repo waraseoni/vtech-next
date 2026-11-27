@@ -23,6 +23,7 @@ import SearchableSelect from "@/components/SearchableSelect";
 import { toast } from "@/lib/toast";
 import DeviceIdentityFields from "@/components/DeviceIdentityFields";
 import { type DeviceFieldValues, resolveDeviceItem } from "@/lib/deviceIdentity";
+import { claimBrandJobNo } from "@/lib/jobIdCounter";
 import type { JobsOldJob, JobsOldMasters } from "../../old/jobsOldSeed";
 
 // ─── IST Helpers ─────────────────────────────────────────────────────────────
@@ -442,6 +443,8 @@ export default function ManageJobPage({ initial }: { initial?: JobsOldInitial | 
         ? parseFloat(((svcTotal * (mech.commission_percent || 0)) / 100).toFixed(2))
         : 0;
 
+      const brandJobNo = !isEdit ? await claimBrandJobNo(device.brandId) : null;
+
       const txnData = {
         client_name: String(clientId),
         job_id: jobId,
@@ -482,7 +485,11 @@ export default function ManageJobPage({ initial }: { initial?: JobsOldInitial | 
         const code = await genCode();
         const { data: ins, error } = await supabase
           .from("transaction_list")
-          .insert({ ...txnData, code })
+          .insert({
+            ...txnData,
+            ...(brandJobNo ? { brand_job_no: brandJobNo } : {}),
+            code,
+          })
           .select("id")
           .single();
         if (error) throw error;

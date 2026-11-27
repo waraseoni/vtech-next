@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import PageLoader from "@/components/PageLoader";
 import SearchableSelect from "@/components/SearchableSelect";
-import { getNextJobId, peekNextJobId, bumpJobCounter } from "@/lib/jobIdCounter";
+import { claimBrandJobNo, getNextJobId, peekNextJobId, bumpJobCounter } from "@/lib/jobIdCounter";
 import { toast } from "@/lib/toast";
 import DeviceFieldPicker from "@/components/DeviceFieldPicker";
 import { clampJobItemLabel, composeJobItemLabel, normalizeIdentifier } from "@/lib/deviceIdentity";
@@ -448,30 +448,38 @@ export default function BulkJobPage() {
       const baseSeq = parseInt(baseCode.slice(8), 10) || 0;
       const ts = nowIST();
 
-      const inserts = validRows.map((row, i) => ({
-        client_name: String(clientId),
-        job_id: String(nextJobId + i),
-        code: `${codePrefix}${String(baseSeq + i).padStart(2, "0")}`,
-        item: itemOf(row),
-        item_name: row.itemName.trim() || null,
-        brand_id: row.brandId,
-        model: row.model.trim() || null,
-        serial_no: normalizeIdentifier(row.serial) || null,
-        service_type_id: row.serviceTypeId,
-        // fault NOT NULL — faultless type par "" hi save hota hai.
-        fault: row.fault.trim(),
-        remark: row.remark.trim() || "",
-        uniq_id: row.uniq_id.trim() || "",
-        amount: 0,
-        status: 0,
-        del_status: 0,
-        mechanic_id: row.mechanic_id ? parseInt(row.mechanic_id) : null,
-        mechanic_amount: 0,
-        mechanic_commission_amount: 0,
-        user_id: userId,
-        date_created: ts,
-        date_updated: ts,
-      }));
+      // K8/B1: har branded row ka apna unique brand_job_no chahiye (partial
+      // unique index usi ko enforce karta hai) — isliye per-row atomic claim.
+      const inserts = await Promise.all(
+        validRows.map(async (row, i) => {
+          const brandJobNo = await claimBrandJobNo(row.brandId);
+          return {
+            client_name: String(clientId),
+            job_id: String(nextJobId + i),
+            code: `${codePrefix}${String(baseSeq + i).padStart(2, "0")}`,
+            item: itemOf(row),
+            item_name: row.itemName.trim() || null,
+            brand_id: row.brandId,
+            ...(brandJobNo ? { brand_job_no: brandJobNo } : {}),
+            model: row.model.trim() || null,
+            serial_no: normalizeIdentifier(row.serial) || null,
+            service_type_id: row.serviceTypeId,
+            // fault NOT NULL — faultless type par "" hi save hota hai.
+            fault: row.fault.trim(),
+            remark: row.remark.trim() || "",
+            uniq_id: row.uniq_id.trim() || "",
+            amount: 0,
+            status: 0,
+            del_status: 0,
+            mechanic_id: row.mechanic_id ? parseInt(row.mechanic_id) : null,
+            mechanic_amount: 0,
+            mechanic_commission_amount: 0,
+            user_id: userId,
+            date_created: ts,
+            date_updated: ts,
+          };
+        })
+      );
 
       const { error } = await supabase.from("transaction_list").insert(inserts);
       if (error) throw new Error(`Bulk save failed: ${error.message}`);

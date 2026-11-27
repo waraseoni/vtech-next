@@ -35,7 +35,7 @@ import {
   labelShrinks,
   normalizeIdentifier,
 } from "@/lib/deviceIdentity";
-import { getNextJobId, bumpJobCounter } from "@/lib/jobIdCounter";
+import { claimBrandJobNo, getNextJobId, bumpJobCounter } from "@/lib/jobIdCounter";
 import { fetchClientDue, dueLabel } from "@/lib/client-due";
 import { buildAvailableStock, type JobFormServiceType } from "@/app/jobs/jobFormQueries";
 import { expectsFault, faultFieldLabel, faultHint, serviceTypeOptions } from "@/lib/serviceType";
@@ -131,6 +131,7 @@ export default function ManageJobPage({ params }: { params: Promise<{ id?: strin
   /** DB se aaya asli purana item — compose preview isi se compare hota hai. */
   const [legacyItem, setLegacyItem] = useState("");
   const [brandId, setBrandId] = useState<number | null>(null);
+  const [brandJobNo, setBrandJobNo] = useState<string | null>(null);
   const [brandName, setBrandName] = useState("");
   const [modelValue, setModelValue] = useState("");
   const [serialValue, setSerialValue] = useState("");
@@ -366,6 +367,7 @@ export default function ManageJobPage({ params }: { params: Promise<{ id?: strin
         setItemName(data.item_name ?? "");
         setLegacyItem(data.item ?? "");
         setBrandId(data.brand_id ?? null);
+        setBrandJobNo(data.brand_job_no ?? null);
         setBrandName((formSeed?.brands ?? []).find((b) => b.id === data.brand_id)?.name ?? "");
         setModelValue(data.model ?? "");
         setSerialValue(data.serial_no ?? "");
@@ -797,6 +799,10 @@ export default function ManageJobPage({ params }: { params: Promise<{ id?: strin
         }
       }
 
+      // K8/B1: naye job par hi brand number claim; edit me creation-time value
+      // preserved rehta hai (occupancy/duplicate avoid).
+      const finalBrandJobNo = isEdit ? brandJobNo : await claimBrandJobNo(brandId);
+
       const payload = {
         // user_id = logged-in user's numeric id (profiles.mechanic_id → old PHP users.id)
         user_id: currentUserId,
@@ -863,6 +869,7 @@ export default function ManageJobPage({ params }: { params: Promise<{ id?: strin
           .insert([
             {
               ...payload,
+              ...(finalBrandJobNo ? { brand_job_no: finalBrandJobNo } : {}),
               status: 0, // Pending — sirf naye job par
               del_status: 0,
               date_created: (() => {

@@ -44,7 +44,7 @@ import {
   serviceTypeOptions,
 } from "@/lib/serviceType";
 import { useJobFormSeed } from "@/app/jobs/JobFormSeedProvider";
-import { getNextJobId, peekNextJobId, bumpJobCounter } from "@/lib/jobIdCounter";
+import { claimBrandJobNo, getNextJobId, peekNextJobId, bumpJobCounter } from "@/lib/jobIdCounter";
 import SearchableSelect from "@/components/SearchableSelect";
 import JobSpotPicker from "@/components/JobSpotPicker";
 import DeviceFieldPicker from "@/components/DeviceFieldPicker";
@@ -859,9 +859,13 @@ function ManageJobPageInner({ params }: { params: Promise<{ id?: string }> }) {
       // job_id yahan save karne par ATOMIC claim hota hai, taaki page kholne se
       // IDs waste na hon aur concurrent saves duplicate na layen.
       let finalJobCode = jobCode;
+      let brandJobNo: string | null = null;
       if (!isEdit) {
         finalJobCode = String(await getNextJobId());
         setJobCode(finalJobCode);
+        // K8/B1: global ID ke saath hi per-brand number bhi claim. Brand na ho to
+        // RPC call nahi — legacy/autonomous rows me brand_job_no NULL rahega.
+        brandJobNo = await claimBrandJobNo(getValues().brand_id);
       }
 
       // Device identity → item derived label. Custom escape sab ko override karta
@@ -933,6 +937,7 @@ function ManageJobPageInner({ params }: { params: Promise<{ id?: string }> }) {
           .insert([
             {
               ...payload,
+              ...(brandJobNo ? { brand_job_no: brandJobNo } : {}),
               del_status: 0,
               date_created: (() => {
                 const p = new Intl.DateTimeFormat("en-CA", {

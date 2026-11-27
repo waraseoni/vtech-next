@@ -25,6 +25,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import DeviceFieldPicker from "@/components/DeviceFieldPicker";
 import { composeJobItemLabel, normalizeIdentifier } from "@/lib/deviceIdentity";
+import { jobReference } from "@/lib/jobReference";
 import {
   defaultServiceTypeId,
   expectsFault,
@@ -91,7 +92,7 @@ const JobPreviewPanel = dynamic(() => import("./JobPreviewPanel").then((m) => m.
 });
 import { substituteTemplate, firmVars, resolveTemplate } from "@/lib/whatsapp";
 import { logActivities } from "@/lib/activity";
-import { getNextJobId, bumpJobCounter } from "@/lib/jobIdCounter";
+import { claimBrandJobNo, getNextJobId, bumpJobCounter } from "@/lib/jobIdCounter";
 import { safeImageSrc } from "@/lib/image-utils";
 import { JOB_STATUS } from "@/lib/status-colors";
 import { logger } from "@/lib/logger";
@@ -822,7 +823,7 @@ function JobsListContent({
       totalSum += amt;
       msg +=
         `${i + 1}. *${row.item}*\n` +
-        `   Job ID: #${row.job_id}\n` +
+        `   Job ID: ${jobReference(row.job_id, row.brand_job_no)}\n` +
         `   Code: #${row.code || ""}\n` +
         `   Status: *${st}*\n`;
       if (row.status === 2 || row.status === 3 || row.status === 5) {
@@ -1016,6 +1017,7 @@ function JobsListContent({
       const dailySeq = String((todayCount || 0) + 1).padStart(2, "0");
 
       const nextJobId = await getNextJobId();
+      const brandJobNo = await claimBrandJobNo(quickForm.brandId);
 
       const { data, error } = await supabase
         .from("transaction_list")
@@ -1028,6 +1030,7 @@ function JobsListContent({
           item: savedItem,
           item_name: quickForm.itemName.trim() || null,
           brand_id: quickForm.brandId,
+          ...(brandJobNo ? { brand_job_no: brandJobNo } : {}),
           model: quickForm.model.trim() || null,
           serial_no: quickSerial || null,
           service_type_id: quickForm.serviceTypeId,
@@ -1617,7 +1620,7 @@ function JobsListContent({
                         href={`/jobs/${txn.id}/view`}
                         className="font-bold text-blue-400 hover:text-blue-300 text-xs transition-colors no-underline"
                       >
-                        #{txn.job_id}
+                        {jobReference(txn.job_id, txn.brand_job_no)}
                       </Link>
                       {txn.status <= 3 && (openPartCounts.get(txn.id) || 0) > 0 && (
                         <WaitingPartsBadge count={openPartCounts.get(txn.id)!} />
@@ -2373,7 +2376,7 @@ function JobsListContent({
                           href={`/jobs/${txn.id}/view`}
                           className="font-black text-sm text-white hover:text-blue-400 transition-colors"
                         >
-                          #{txn.job_id}
+                          {jobReference(txn.job_id, txn.brand_job_no)}
                         </Link>
                         {txn.status <= 3 && (openPartCounts.get(txn.id) || 0) > 0 && (
                           <WaitingPartsBadge count={openPartCounts.get(txn.id)!} />

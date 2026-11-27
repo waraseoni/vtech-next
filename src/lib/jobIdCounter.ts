@@ -37,6 +37,21 @@ export async function getNextJobId(): Promise<number> {
   return max + 1;
 }
 
+// K8/B1 — per-brand job number atomic claim. Brand choose hona zaroori hai;
+// RPC DB me active brand validate bhi karta hai. Global job_id/counter se alag.
+export async function claimBrandJobNo(
+  brandId: number | null | undefined,
+  prefix?: string | null
+): Promise<string | null> {
+  if (brandId == null || !Number.isFinite(brandId) || brandId <= 0) return null;
+  const { data, error } = await supabase.rpc("next_brand_job_no", {
+    p_brand_id: brandId,
+    p_prefix: prefix || null,
+  });
+  if (!error && typeof data === "string" && data.trim()) return data;
+  return null;
+}
+
 // PREVIEW ONLY — counter ko bump NAHI karta (unlike getNextJobId jo claim
 // karta hai). Naya job form / bulk form ki "next number" preview ke liye, taaki
 // page kholne bhar se IDs waste na hon. Pehle readonly RPC peek_next_job_id,

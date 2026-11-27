@@ -125,6 +125,15 @@ describe("supabase client proxy — writes BLOCKED jab staff bahar + no permit",
     expect(error?.code).toBe("GEO_WRITE_BLOCKED");
   });
 
+  it("next_brand_job_no RPC (counter WRITE) block", async () => {
+    lock();
+    const { error } = await supabase.rpc("next_brand_job_no", {
+      p_brand_id: 1,
+      p_prefix: null,
+    });
+    expect(error?.code).toBe("GEO_WRITE_BLOCKED");
+  });
+
   it("read-only RPCs ALLOWED — staff bahar bhi reports/inventory dekh sakta hai", async () => {
     lock();
     for (const fn of [
@@ -195,6 +204,16 @@ describe("supabase client proxy — writes ALLOWED when gate open", () => {
   it("next_job_id RPC gate open par chalta hai", async () => {
     open();
     const { data, error } = await supabase.rpc("next_job_id");
+    expect(error).toBeNull();
+    expect(data).toBe(42);
+  });
+
+  it("next_brand_job_no RPC gate open par chalta hai", async () => {
+    open();
+    const { data, error } = await supabase.rpc("next_brand_job_no", {
+      p_brand_id: 3,
+      p_prefix: "KMK",
+    });
     expect(error).toBeNull();
     expect(data).toBe(42);
   });
