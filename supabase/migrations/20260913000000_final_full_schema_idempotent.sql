@@ -5096,6 +5096,16 @@ begin
     raise exception 'permission denied for staff-only function' using errcode = '42501';
   end if;
 
+  -- K8/B1: autonomous (ya missing/unknown mode) me brand numbering band.
+  if not exists (
+    select 1
+    from public.system_info
+    where meta_field = 'service_center_mode'
+      and lower(btrim(coalesce(meta_value, ''))) in ('single_brand', 'multi_brand')
+  ) then
+    raise exception 'brand numbering disabled in autonomous mode' using errcode = 'check_violation';
+  end if;
+
   select coalesce(nullif(btrim(p_prefix), ''), nullif(btrim(b.code), ''), 'BR')
     into v_prefix
   from public.brands b

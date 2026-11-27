@@ -1,5 +1,6 @@
 import { supabase } from "@/lib/supabase";
 import { FALLBACK_LAST_JOB_ID, fetchPeekNextJobIdWith } from "@/lib/jobIdCounterQuery";
+import { brandNumberingEnabled } from "@/lib/serviceCenterMode";
 
 // Job ID counter — job_id_counter (id=1) DB ka authoritative source hai.
 // PHP legacy ka last job id fallback (agar counter ya transactions na ho).
@@ -44,6 +45,17 @@ export async function claimBrandJobNo(
   prefix?: string | null
 ): Promise<string | null> {
   if (brandId == null || !Number.isFinite(brandId) || brandId <= 0) return null;
+
+  // K8: autonomous me brand sirf device metadata hai — counter/brand number
+  // bilkul nahi. DB RPC me bhi yahi guard hai; ye client-side early-exit sirf
+  // unnecessary error toast rokne ke liye hai.
+  const { data: modeRow } = await supabase
+    .from("system_info")
+    .select("meta_value")
+    .eq("meta_field", "service_center_mode")
+    .maybeSingle();
+  if (!brandNumberingEnabled(modeRow?.meta_value)) return null;
+
   const { data, error } = await supabase.rpc("next_brand_job_no", {
     p_brand_id: brandId,
     p_prefix: prefix || null,
