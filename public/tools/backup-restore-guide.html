@@ -1,0 +1,1559 @@
+<!doctype html>
+<html lang="hi" data-theme="vibrant">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>V-Tech · Backup &amp; Restore — Interactive Guide</title>
+    <style>
+      :root {
+        --bg: #070b1a;
+        --bg2: #0d1430;
+        --panel: rgba(20, 28, 60, 0.72);
+        --panel2: rgba(12, 18, 42, 0.86);
+        --line: rgba(255, 255, 255, 0.12);
+        --txt: #eef2ff;
+        --muted: #a6b0d8;
+        --cyan: #22d3ee;
+        --purple: #a855f7;
+        --pink: #f472b6;
+        --amber: #fbbf24;
+        --green: #34d399;
+        --red: #fb7185;
+        --blue: #60a5fa;
+        --shadow: 0 18px 60px rgba(0, 0, 0, 0.45);
+        --radius: 20px;
+      }
+      html[data-theme="calm"] {
+        --bg: #f4f7ff;
+        --bg2: #e8eeff;
+        --panel: rgba(255, 255, 255, 0.9);
+        --panel2: rgba(255, 255, 255, 0.96);
+        --line: rgba(15, 23, 42, 0.12);
+        --txt: #111827;
+        --muted: #4b5563;
+        --shadow: 0 14px 40px rgba(30, 41, 59, 0.12);
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family:
+          ui-sans-serif,
+          system-ui,
+          -apple-system,
+          "Segoe UI",
+          sans-serif;
+        color: var(--txt);
+        background:
+          radial-gradient(1100px 700px at 8% -10%, rgba(34, 211, 238, 0.22), transparent 60%),
+          radial-gradient(900px 700px at 92% 0%, rgba(168, 85, 247, 0.26), transparent 58%),
+          radial-gradient(800px 600px at 50% 100%, rgba(244, 114, 182, 0.16), transparent 60%),
+          linear-gradient(160deg, var(--bg), var(--bg2));
+        transition:
+          background 0.35s,
+          color 0.35s;
+      }
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        opacity: 0.35;
+        background-image:
+          linear-gradient(var(--line) 1px, transparent 1px),
+          linear-gradient(90deg, var(--line) 1px, transparent 1px);
+        background-size: 48px 48px;
+        mask-image: linear-gradient(to bottom, black, transparent 75%);
+      }
+      a {
+        color: var(--cyan);
+        text-decoration: none;
+      }
+      a:hover {
+        text-decoration: underline;
+      }
+      .wrap {
+        max-width: 1240px;
+        margin: 0 auto;
+        padding: 0 20px 80px;
+        position: relative;
+        z-index: 1;
+      }
+
+      header {
+        padding: 46px 0 22px;
+      }
+      .eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 7px 14px;
+        border-radius: 999px;
+        background: linear-gradient(90deg, rgba(34, 211, 238, 0.18), rgba(168, 85, 247, 0.18));
+        border: 1px solid rgba(34, 211, 238, 0.35);
+        color: var(--cyan);
+        font-weight: 800;
+        font-size: 12px;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+      }
+      h1 {
+        margin: 16px 0 8px;
+        font-size: clamp(32px, 5vw, 58px);
+        line-height: 1.04;
+        letter-spacing: -0.035em;
+        background: linear-gradient(
+          100deg,
+          #fff 5%,
+          var(--cyan) 35%,
+          var(--purple) 65%,
+          var(--pink) 92%
+        );
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+      }
+      html[data-theme="calm"] h1 {
+        background: none;
+        color: #111827;
+      }
+      .sub {
+        color: var(--muted);
+        font-size: 16px;
+        max-width: 760px;
+        line-height: 1.65;
+      }
+      .badges {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 20px;
+      }
+      .badge {
+        padding: 8px 13px;
+        border-radius: 999px;
+        border: 1px solid var(--line);
+        background: var(--panel);
+        font-size: 13px;
+        font-weight: 700;
+        backdrop-filter: blur(10px);
+      }
+      .badge b {
+        color: var(--txt);
+      }
+      .dot {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        margin-right: 7px;
+      }
+
+      .toolbar {
+        position: sticky;
+        top: 0;
+        z-index: 20;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: center;
+        padding: 12px;
+        margin: 18px 0 14px;
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        background: var(--panel2);
+        backdrop-filter: blur(18px);
+        box-shadow: var(--shadow);
+      }
+      .toolbar label {
+        font-size: 12px;
+        color: var(--muted);
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+      input[type="text"],
+      input[type="search"] {
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid var(--line);
+        color: var(--txt);
+        border-radius: 12px;
+        padding: 10px 12px;
+        font-size: 14px;
+        outline: none;
+        min-width: 180px;
+      }
+      html[data-theme="calm"] input[type="text"],
+      html[data-theme="calm"] input[type="search"] {
+        background: #fff;
+        color: #111827;
+      }
+      input:focus {
+        border-color: var(--cyan);
+        box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.16);
+      }
+      button,
+      .btn {
+        cursor: pointer;
+        border: 1px solid var(--line);
+        color: var(--txt);
+        font-weight: 800;
+        background: linear-gradient(120deg, rgba(34, 211, 238, 0.18), rgba(168, 85, 247, 0.18));
+        border-radius: 12px;
+        padding: 10px 14px;
+        font-size: 13px;
+        transition:
+          transform 0.15s,
+          filter 0.15s;
+      }
+      button:hover,
+      .btn:hover {
+        transform: translateY(-1px);
+        filter: brightness(1.15);
+        text-decoration: none;
+      }
+      .spacer {
+        flex: 1 1 auto;
+      }
+
+      nav.tabs {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin: 0 0 22px;
+      }
+      nav.tabs button {
+        background: transparent;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        padding: 9px 15px;
+        color: var(--muted);
+      }
+      nav.tabs button.active {
+        color: #06111f;
+        background: linear-gradient(100deg, var(--cyan), var(--purple));
+        border-color: transparent;
+        box-shadow: 0 8px 24px rgba(34, 211, 238, 0.25);
+      }
+      html[data-theme="calm"] nav.tabs button.active {
+        color: #fff;
+      }
+
+      .panel {
+        display: none;
+        animation: fade 0.28s ease;
+      }
+      .panel.active {
+        display: block;
+      }
+      @keyframes fade {
+        from {
+          opacity: 0;
+          transform: translateY(8px);
+        }
+        to {
+          opacity: 1;
+          transform: none;
+        }
+      }
+
+      .grid {
+        display: grid;
+        gap: 16px;
+        grid-template-columns: repeat(auto-fit, minmax(285px, 1fr));
+      }
+      .card {
+        position: relative;
+        overflow: hidden;
+        padding: 20px;
+        border-radius: var(--radius);
+        border: 1px solid var(--line);
+        background: var(--panel);
+        box-shadow: var(--shadow);
+        backdrop-filter: blur(12px);
+      }
+      .card::after {
+        content: "";
+        position: absolute;
+        inset: 0 0 auto 0;
+        height: 3px;
+        background: linear-gradient(90deg, var(--cyan), var(--purple), var(--pink));
+        opacity: 0.9;
+      }
+      .card.green::after {
+        background: linear-gradient(90deg, var(--green), var(--cyan));
+      }
+      .card.amber::after {
+        background: linear-gradient(90deg, var(--amber), var(--pink));
+      }
+      .card.red::after {
+        background: linear-gradient(90deg, var(--red), var(--amber));
+      }
+      .card.blue::after {
+        background: linear-gradient(90deg, var(--blue), var(--purple));
+      }
+      .card h2,
+      .card h3 {
+        margin: 0 0 10px;
+        line-height: 1.25;
+      }
+      .card h2 {
+        font-size: 20px;
+      }
+      .card h3 {
+        font-size: 16px;
+      }
+      .card p,
+      .card li {
+        color: var(--muted);
+        line-height: 1.65;
+        font-size: 14px;
+      }
+      .card ul {
+        padding-left: 20px;
+        margin: 8px 0 0;
+      }
+      .kicker {
+        font-size: 11px;
+        font-weight: 900;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--cyan);
+      }
+      .card.green .kicker {
+        color: var(--green);
+      }
+      .card.amber .kicker {
+        color: var(--amber);
+      }
+      .card.red .kicker {
+        color: var(--red);
+      }
+      .card.blue .kicker {
+        color: var(--blue);
+      }
+
+      .flow {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 12px;
+        align-items: stretch;
+      }
+      .node {
+        padding: 16px;
+        border-radius: 16px;
+        border: 1px solid var(--line);
+        background: var(--panel2);
+        text-align: center;
+        font-weight: 800;
+        font-size: 14px;
+        position: relative;
+      }
+      .node small {
+        display: block;
+        color: var(--muted);
+        font-weight: 600;
+        margin-top: 6px;
+      }
+      .node.c1 {
+        box-shadow: inset 0 -3px 0 var(--cyan);
+      }
+      .node.c2 {
+        box-shadow: inset 0 -3px 0 var(--purple);
+      }
+      .node.c3 {
+        box-shadow: inset 0 -3px 0 var(--pink);
+      }
+      .node.c4 {
+        box-shadow: inset 0 -3px 0 var(--green);
+      }
+      .arrow {
+        align-self: center;
+        text-align: center;
+        color: var(--amber);
+        font-size: 22px;
+      }
+
+      details.step {
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        background: var(--panel2);
+        margin: 10px 0;
+        padding: 0 14px;
+      }
+      details.step summary {
+        cursor: pointer;
+        list-style: none;
+        padding: 14px 4px;
+        font-weight: 900;
+        display: flex;
+        gap: 10px;
+        align-items: center;
+      }
+      details.step summary::-webkit-details-marker {
+        display: none;
+      }
+      details.step summary::after {
+        content: "▾";
+        margin-left: auto;
+        color: var(--cyan);
+        transition: transform 0.2s;
+      }
+      details.step[open] summary::after {
+        transform: rotate(180deg);
+      }
+      .step-body {
+        padding: 0 4px 16px;
+        color: var(--muted);
+        font-size: 14px;
+        line-height: 1.7;
+      }
+      .step-body ol {
+        padding-left: 22px;
+        margin: 6px 0;
+      }
+      .num {
+        display: inline-grid;
+        place-items: center;
+        width: 26px;
+        height: 26px;
+        flex: 0 0 26px;
+        border-radius: 9px;
+        background: linear-gradient(120deg, var(--cyan), var(--purple));
+        color: #06111f;
+        font-size: 12px;
+        font-weight: 900;
+      }
+
+      pre {
+        position: relative;
+        margin: 10px 0 0;
+        padding: 14px 14px 14px 14px;
+        overflow: auto;
+        border-radius: 14px;
+        border: 1px solid var(--line);
+        background: rgba(2, 6, 23, 0.72);
+        color: #d8f3ff;
+        font-size: 12.5px;
+        line-height: 1.6;
+      }
+      html[data-theme="calm"] pre {
+        background: #0f172a;
+        color: #e2e8f0;
+      }
+      pre .copy {
+        position: absolute;
+        right: 8px;
+        top: 8px;
+        padding: 5px 9px;
+        font-size: 11px;
+        border-radius: 8px;
+        background: rgba(34, 211, 238, 0.16);
+        border-color: rgba(34, 211, 238, 0.4);
+        color: var(--cyan);
+      }
+      code.inline {
+        background: rgba(34, 211, 238, 0.12);
+        color: var(--cyan);
+        padding: 2px 6px;
+        border-radius: 7px;
+        font-size: 12.5px;
+        font-weight: 700;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+      }
+      th,
+      td {
+        text-align: left;
+        padding: 10px 12px;
+        border-bottom: 1px solid var(--line);
+        vertical-align: top;
+      }
+      th {
+        color: var(--cyan);
+        font-size: 11px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+      td {
+        color: var(--muted);
+      }
+      .pill {
+        display: inline-block;
+        padding: 3px 9px;
+        border-radius: 999px;
+        font-size: 11px;
+        font-weight: 900;
+      }
+      .p-ok {
+        background: rgba(52, 211, 153, 0.16);
+        color: var(--green);
+      }
+      .p-warn {
+        background: rgba(251, 191, 36, 0.16);
+        color: var(--amber);
+      }
+      .p-bad {
+        background: rgba(251, 113, 133, 0.16);
+        color: var(--red);
+      }
+      .p-info {
+        background: rgba(96, 165, 250, 0.16);
+        color: var(--blue);
+      }
+
+      .page-card a.page-link {
+        display: block;
+        padding: 11px 13px;
+        border-radius: 12px;
+        font-weight: 900;
+        background: rgba(34, 211, 238, 0.1);
+        border: 1px solid rgba(34, 211, 238, 0.28);
+        margin-bottom: 8px;
+      }
+      .page-card .meta {
+        font-size: 12px;
+        color: var(--muted);
+        line-height: 1.55;
+      }
+      .route {
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-size: 12px;
+        color: var(--amber);
+      }
+
+      .checklist label {
+        display: flex;
+        gap: 10px;
+        align-items: flex-start;
+        padding: 9px 0;
+        border-bottom: 1px solid var(--line);
+        cursor: pointer;
+      }
+      .checklist input {
+        width: 18px;
+        height: 18px;
+        accent-color: var(--cyan);
+        margin-top: 2px;
+      }
+      .checklist label span {
+        font-size: 14px;
+        line-height: 1.5;
+      }
+      .progress {
+        height: 10px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.08);
+        overflow: hidden;
+        margin: 12px 0 4px;
+      }
+      .progress > i {
+        display: block;
+        height: 100%;
+        width: 0%;
+        background: linear-gradient(90deg, var(--cyan), var(--green));
+        transition: width 0.3s;
+      }
+
+      .callout {
+        padding: 16px 18px;
+        border-radius: 16px;
+        border: 1px solid rgba(251, 191, 36, 0.35);
+        background: linear-gradient(120deg, rgba(251, 191, 36, 0.14), rgba(244, 114, 182, 0.12));
+        color: var(--txt);
+        line-height: 1.7;
+        font-size: 14px;
+      }
+      .callout.danger {
+        border-color: rgba(251, 113, 133, 0.4);
+        background: linear-gradient(120deg, rgba(251, 113, 133, 0.14), rgba(251, 191, 36, 0.1));
+      }
+      .callout.good {
+        border-color: rgba(52, 211, 153, 0.35);
+        background: linear-gradient(120deg, rgba(52, 211, 153, 0.14), rgba(34, 211, 238, 0.1));
+      }
+
+      footer {
+        margin-top: 40px;
+        padding-top: 20px;
+        border-top: 1px solid var(--line);
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.7;
+      }
+      .hidden {
+        display: none !important;
+      }
+      .empty {
+        padding: 30px;
+        text-align: center;
+        color: var(--muted);
+      }
+
+      @media print {
+        body {
+          background: #fff;
+          color: #000;
+        }
+        .toolbar,
+        nav.tabs,
+        pre .copy,
+        button {
+          display: none !important;
+        }
+        .panel {
+          display: block !important;
+        }
+        .card {
+          box-shadow: none;
+          break-inside: avoid;
+        }
+        h1 {
+          color: #000;
+          background: none;
+        }
+      }
+      @media (max-width: 640px) {
+        header {
+          padding-top: 26px;
+        }
+        .card {
+          padding: 16px;
+        }
+        .toolbar {
+          position: static;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header>
+        <span class="eyebrow">🛡️ V-TECH · OPS PLAYBOOK</span>
+        <h1>Backup &amp; Restore<br />Interactive Guide</h1>
+        <p class="sub">
+          Poori UI/UX, har instruction, har page aur har command ek hi jagah. Ye guide
+          self-contained hai — internet/CDN ki zarurat nahi. Upar base URL badal kar page links ko
+          apne app se connect karo.
+        </p>
+        <div class="badges">
+          <span class="badge"
+            ><span class="dot" style="background: var(--green)"></span
+            ><b>Golden rule</b> active</span
+          >
+          <span class="badge"
+            ><span class="dot" style="background: var(--cyan)"></span
+            ><b>60 tables</b> contract</span
+          >
+          <span class="badge"
+            ><span class="dot" style="background: var(--purple)"></span><b>4</b> backup
+            methods</span
+          >
+          <span class="badge"
+            ><span class="dot" style="background: var(--pink)"></span><b>4</b> restore routes</span
+          >
+          <span class="badge"
+            ><span class="dot" style="background: var(--amber)"></span><b>B1–B20</b> readiness
+            roadmap</span
+          >
+        </div>
+      </header>
+
+      <div class="toolbar">
+        <label for="baseUrl">App URL</label>
+        <input
+          id="baseUrl"
+          type="text"
+          value="http://localhost:3000"
+          spellcheck="false"
+          aria-label="App base URL"
+        />
+        <label for="search">Search</label>
+        <input
+          id="search"
+          type="search"
+          placeholder="restore, dry run, converter, auth…"
+          aria-label="Search guide"
+        />
+        <button id="expandAll" type="button">Expand all</button>
+        <button id="collapseAll" type="button">Collapse all</button>
+        <button id="themeBtn" type="button">🌙 Calm</button>
+        <button id="printBtn" type="button">🖨️ Print</button>
+        <span class="spacer"></span>
+        <span style="font-size: 12px; color: var(--muted)">Built: 27 Nov 2026</span>
+      </div>
+
+      <nav class="tabs" aria-label="Guide sections">
+        <button class="active" data-tab="overview">🏠 Overview</button>
+        <button data-tab="backup">💾 Backup</button>
+        <button data-tab="restore">♻️ Restore</button>
+        <button data-tab="pages">🧭 Pages &amp; Routes</button>
+        <button data-tab="checklist">✅ Checklist</button>
+        <button data-tab="errors">🚨 Errors &amp; Gaps</button>
+        <button data-tab="roadmap">🚀 Roadmap</button>
+      </nav>
+
+      <main>
+        <!-- OVERVIEW -->
+        <section class="panel active" id="overview">
+          <div class="grid">
+            <article
+              class="card"
+              data-search="overview system supabase postgresql tables rows 3-2-1 fail safe free tier pitr"
+            >
+              <div class="kicker">01 · System</div>
+              <h2>Pehle system samjho</h2>
+              <ul>
+                <li>
+                  Primary DB: <b>Supabase (PostgreSQL)</b>. ~60 tables, 10,000+ rows, full JSON ~3.4
+                  MB.
+                </li>
+                <li>
+                  Free plan me <b>automatic backup / PITR nahi</b> — asli backup hamara apna hai.
+                </li>
+                <li><b>3-2-1 rule:</b> 3 copies · 2 media · 1 copy bahar.</li>
+              </ul>
+            </article>
+            <article
+              class="card green"
+              data-search="fail safe layers json cloud mariadb sql dump storage backup"
+            >
+              <div class="kicker">02 · Fail-safe layers</div>
+              <h2>4 safety nets</h2>
+              <ul>
+                <li><b>Full JSON</b> — browser / server / CLI.</li>
+                <li>
+                  <b>Cloud copy</b> — private Storage bucket <code class="inline">backups</code>.
+                </li>
+                <li><b>MariaDB mirror</b> — XAMPP par live local mirror.</li>
+                <li>
+                  <b>SQL dump</b> — public schema ka <code class="inline">.sql</code> snapshot.
+                </li>
+              </ul>
+            </article>
+            <article
+              class="card blue"
+              data-search="golden rule schema migration contract verify data ci gate"
+            >
+              <div class="kicker">03 · Golden rule</div>
+              <h2>Schema change = backup update</h2>
+              <p>
+                Har migration ke saath backup/restore surfaces usi kaam me update —
+                <b>bina bole</b>. Gate: <code class="inline">npm run verify:data</code> (schema
+                drift + backup contract). CI me bhi chalao.
+              </p>
+            </article>
+            <article
+              class="card amber"
+              data-search="setup env local admin login node modules one time"
+            >
+              <div class="kicker">04 · One-time setup</div>
+              <h2>Pehle ye check karo</h2>
+              <ul>
+                <li>
+                  <code class="inline">.env.local</code>: URL + service-role key (+ MariaDB keys).
+                </li>
+                <li>Node 18+ aur <code class="inline">npm install</code> ho chuka ho.</li>
+                <li><code class="inline">/backup</code> ke liye <b>admin login</b> zaroori.</li>
+              </ul>
+            </article>
+          </div>
+
+          <article
+            class="card"
+            style="margin-top: 16px"
+            data-search="flow backup restore steps diagram"
+          >
+            <div class="kicker">Visual flow</div>
+            <h2>End-to-end flow</h2>
+            <div class="flow" style="margin-top: 14px">
+              <div class="node c1">Login / Admin<small>/login → /dashboard</small></div>
+              <div class="arrow">➜</div>
+              <div class="node c2">Fresh backup<small>/backup · method A/B/C</small></div>
+              <div class="arrow">➜</div>
+              <div class="node c3">Dry run<small>diff, zero writes</small></div>
+              <div class="arrow">➜</div>
+              <div class="node c4">Restore + verify<small>error toast on mismatch</small></div>
+            </div>
+          </article>
+
+          <div class="callout good" style="margin-top: 16px">
+            ✅ <b>Ab kya safe hai:</b> naye tables backup me na hon to bhi restore unhe delete nahi
+            karta — preserve hote hain. Count mismatch ab error toast me dikhta hai, jhootha “100%
+            verified” nahi.
+          </div>
+        </section>
+
+        <!-- BACKUP -->
+        <section class="panel" id="backup">
+          <div class="grid">
+            <article class="card green" data-search="browser manual download json backup page">
+              <div class="kicker">Method A · Easy</div>
+              <h2>Browser se manual backup</h2>
+              <ol>
+                <li><a data-route="/backup" href="#">/backup</a> kholo.</li>
+                <li><b>Download Full Backup (.json)</b> dabao.</li>
+                <li>File: <code class="inline">vtech_backup_YYYY-MM-DDTHH-MM-SS.json</code>.</li>
+                <li>Count verify dekho — red mismatch na ho.</li>
+              </ol>
+              <p>⚠️ File ko Drive/PC par alag rakho, <b>git me commit mat karo</b>.</p>
+            </article>
+            <article
+              class="card blue"
+              data-search="server scheduled backup cloud storage recent backups download delete"
+            >
+              <div class="kicker">Method B · Server</div>
+              <h2>Server Backup + Cloud</h2>
+              <ol>
+                <li>
+                  <a data-route="/backup" href="#">/backup</a> →
+                  <b>Server Backup (Scheduled)</b> card.
+                </li>
+                <li><b>Abhi Server Backup Run Karo</b>.</li>
+                <li>
+                  <code class="inline">backups/</code> me file + Storage
+                  <code class="inline">backups</code> me cloud copy.
+                </li>
+                <li>Neeche <b>Recent backups (server)</b> aur <b>Recent cloud copies</b> dekho.</li>
+                <li>File ke aage <b>download</b> / <b>trash</b> icon (admin-only).</li>
+              </ol>
+            </article>
+            <article
+              class="card amber"
+              data-search="cli scheduled node script storage dir exit codes"
+            >
+              <div class="kicker">Method C · CLI</div>
+              <h2>Scheduling ke liye best</h2>
+              <pre>
+node scripts/supabase-json-backup.mjs
+node scripts/supabase-json-backup.mjs --storage
+node scripts/supabase-json-backup.mjs --storage --dir "D:\vtech-backups"</pre>
+              <p><b>Exit:</b> 0 OK · 1 env/schema fail · 2 INCOMPLETE · 3 cloud upload fail.</p>
+            </article>
+            <article class="card" data-search="sql dump pg_dump mariadb mirror xampp supabase dump">
+              <div class="kicker">Method D · Dump / Mirror</div>
+              <h2>SQL dump + MariaDB</h2>
+              <pre>
+node scripts/supabase-dump.mjs --full
+node scripts/supabase-to-mariadb.mjs
+node scripts/supabase-to-mariadb.mjs --quiet
+node scripts/supabase-to-mariadb.mjs --history 50</pre>
+              <p>
+                ⚠️ SQL dump me <code class="inline">auth.users</code> aur Storage images nahi aati.
+              </p>
+            </article>
+          </div>
+
+          <article
+            class="card"
+            style="margin-top: 16px"
+            data-search="routine daily weekly quarterly before change schedule task scheduler cron"
+          >
+            <div class="kicker">Routine + scheduling</div>
+            <h2>Roz / hafte ka routine</h2>
+            <table>
+              <thead>
+                <tr>
+                  <th>Kab</th>
+                  <th>Kaam</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Roz (auto)</td>
+                  <td>CLI/Task Scheduler se server backup + cloud copy</td>
+                </tr>
+                <tr>
+                  <td>Roz (auto)</td>
+                  <td>MariaDB mirror sync (15 min / 12 ghante)</td>
+                </tr>
+                <tr>
+                  <td>Hafte me 1 baar</td>
+                  <td><code class="inline">backups/</code> se JSON → Drive / pen-drive</td>
+                </tr>
+                <tr>
+                  <td>Har 3 mahine</td>
+                  <td>Staging par restore drill</td>
+                </tr>
+                <tr>
+                  <td>Har badlaav se pehle</td>
+                  <td>Fresh backup (migration/fix se pehle)</td>
+                </tr>
+              </tbody>
+            </table>
+            <pre>
+schtasks /Create /TN "VTech Supabase Backup" /TR "node \"D:\next tech\vtech-next-frontend\scripts\supabase-json-backup.mjs\" --storage" /SC DAILY /ST 02:00 /F</pre>
+            <p>
+              ⚠️ Task Scheduler aapke PC par chalta hai — PC on hona chahiye. Vercel-side automation
+              ke liye <code class="inline">CRON_SECRET</code> bypass chahiye (abhi API admin-login
+              protected hai).
+            </p>
+          </article>
+        </section>
+
+        <!-- RESTORE -->
+        <section class="panel" id="restore">
+          <div class="callout danger" style="margin-bottom: 16px">
+            🚨 <b>Restore purana data REPLACE karta hai.</b> Hamesha pehle fresh backup lo. Dry Run
+            PASS hone se pehle confirm mat karo.
+          </div>
+          <div class="grid">
+            <article
+              class="card green"
+              data-search="restore json backup page dry run diff confirm count verify preserve new tables"
+            >
+              <div class="kicker">Route A · Safest</div>
+              <h2>/backup page se restore</h2>
+              <ol>
+                <li>Fresh backup lo (Method A/B/C).</li>
+                <li><a data-route="/backup" href="#">/backup</a> → Restore card → JSON drop.</li>
+                <li><b>Diff + Dry Run</b> dekho — zero writes.</li>
+                <li>PASS par hi <b>Confirm</b>. FAIL par ruko.</li>
+                <li>Baad me count verify; mismatch → <b>error toast + report</b>.</li>
+              </ol>
+              <p>✅ Backup file me na hone wale <b>naye tables preserve</b> hote hain.</p>
+            </article>
+            <article class="card amber" data-search="cli force restore cjs yes psql">
+              <div class="kicker">Route B · CLI</div>
+              <h2>force-restore.cjs</h2>
+              <pre>
+node scripts/force-restore.cjs vtech_backup_2026-09-17T08-12-48.json
+node scripts/force-restore.cjs vtech_backup_2026-09-17T08-12-48.json --yes</pre>
+              <p>⚠️ CLI abhi FK-first nahi hai — readiness plan me B9 par hai.</p>
+            </article>
+            <article class="card blue" data-search="sql dump restore psql dry run full">
+              <div class="kicker">Route C · SQL</div>
+              <h2>SQL dump restore</h2>
+              <pre>
+node scripts/supabase-restore.mjs backups/supabase/dumps/backup.sql --dry-run
+node scripts/supabase-restore.mjs backups/supabase/dumps/backup.sql --full</pre>
+            </article>
+            <article
+              class="card red"
+              data-search="mariadb failover converter phpmyadmin sql json 46 tables"
+            >
+              <div class="kicker">Route D · Last resort</div>
+              <h2>MariaDB mirror se failover</h2>
+              <ol>
+                <li>XAMPP → phpMyAdmin → <code class="inline">vtech_db</code> → Export → SQL.</li>
+                <li>
+                  <a data-route="/tools/vtech_mysql_converter.html" href="#"
+                    >/tools/vtech_mysql_converter.html</a
+                  >
+                  kholo.
+                </li>
+                <li>.sql drop → <b>Convert &amp; Download JSON</b> (v3.0, 46 tables).</li>
+                <li>Us JSON ko <a data-route="/backup" href="#">/backup</a> → Restore karo.</li>
+              </ol>
+              <p>⚠️ Converter stale hai — naye tables/bool columns missing (plan B10).</p>
+            </article>
+          </div>
+
+          <article
+            class="card"
+            style="margin-top: 16px"
+            data-search="auth restore admin service role dry run temp passwords 218 profiles"
+          >
+            <div class="kicker">Special · Auth restore</div>
+            <h2>Login accounts + profiles</h2>
+            <ul>
+              <li>
+                <code class="inline">/api/backup/auth-restore</code> — admin-only, service-role,
+                <b>default dry-run</b>.
+              </li>
+              <li>
+                Email → UUID remap; current admin profile last me restore (lock-out se bachne ke
+                liye).
+              </li>
+              <li>
+                Custom/fake emails ke liye <code class="inline">setTempPasswords: true</code>.
+              </li>
+              <li>Owner confirm ke bina agent live restore nahi karta.</li>
+            </ul>
+          </article>
+
+          <article
+            class="card blue"
+            style="margin-top: 16px"
+            data-search="reset sequence admin route allowlist service role backup page"
+          >
+            <div class="kicker">Special · Sequence reset</div>
+            <h2>Naye IDs ke liye</h2>
+            <ul>
+              <li>
+                Restore ke baad <code class="inline">/api/admin/reset-sequence</code> (admin +
+                service_role + allowlist).
+              </li>
+              <li>Browser se direct anon/authenticated call block hai — D1 hardening.</li>
+              <li>
+                Nayi serial/identity table ka sequence abhi static allowlist se bahar ho sakta hai
+                (plan B12).
+              </li>
+            </ul>
+          </article>
+        </section>
+
+        <!-- PAGES -->
+        <section class="panel" id="pages">
+          <div class="grid">
+            <article
+              class="card blue page-card"
+              data-search="pages ui login dashboard backup guide back office db tools settings service center"
+            >
+              <div class="kicker">UI pages</div>
+              <h2>App pages (click to open)</h2>
+              <a class="page-link" data-route="/login" href="#"
+                >🔐 /login <span class="meta">— admin/staff login</span></a
+              >
+              <a class="page-link" data-route="/dashboard" href="#"
+                >📊 /dashboard <span class="meta">— post-login landing</span></a
+              >
+              <a class="page-link" data-route="/backup" href="#"
+                >💾 /backup <span class="meta">— main backup/restore console</span></a
+              >
+              <a class="page-link" data-route="/backup/guide" href="#"
+                >📖 /backup/guide <span class="meta">— in-app backup guide</span></a
+              >
+              <a class="page-link" data-route="/back-office/db-tools" href="#"
+                >🧰 /back-office/db-tools <span class="meta">— DB tools</span></a
+              >
+              <a class="page-link" data-route="/settings/service-center" href="#"
+                >🏷️ /settings/service-center
+                <span class="meta">— masters (schema-sensitive)</span></a
+              >
+              <a class="page-link" data-route="/tools/vtech_mysql_converter.html" href="#"
+                >🔄 /tools/vtech_mysql_converter.html
+                <span class="meta">— MariaDB failover converter</span></a
+              >
+            </article>
+
+            <article
+              class="card amber page-card"
+              data-search="api routes backup schema scheduled download auth restore admin reset sequence backups"
+            >
+              <div class="kicker">API routes</div>
+              <h2>Backend routes (names)</h2>
+              <p class="route">GET /api/backup/schema</p>
+              <p class="meta">
+                Live OpenAPI schema → table/column/PK list. Restore yahin se validate hota hai.
+              </p>
+              <p class="route">POST /api/backup/scheduled</p>
+              <p class="meta">Server backup + Storage cloud copy (admin).</p>
+              <p class="route">GET /api/backup/download</p>
+              <p class="meta">Server/cloud backup file download (admin).</p>
+              <p class="route">POST /api/backup/auth-restore</p>
+              <p class="meta">
+                Auth users + profiles restore, default dry-run (admin, service-role).
+              </p>
+              <p class="route">POST /api/admin/reset-sequence</p>
+              <p class="meta">Sequence reset — allowlist + service_role only.</p>
+              <p class="route">POST /api/repair-images</p>
+              <p class="meta">Image/path repair helper used from the backup page.</p>
+            </article>
+
+            <article
+              class="card"
+              data-search="scripts cli json backup force restore dump supabase mariadb contract drift"
+            >
+              <div class="kicker">Scripts</div>
+              <h2>CLI tools</h2>
+              <ul>
+                <li><code class="inline">scripts/supabase-json-backup.mjs</code></li>
+                <li><code class="inline">scripts/force-restore.cjs</code></li>
+                <li><code class="inline">scripts/supabase-dump.mjs</code></li>
+                <li><code class="inline">scripts/supabase-restore.mjs</code></li>
+                <li><code class="inline">scripts/supabase-to-mariadb.mjs</code></li>
+                <li><code class="inline">scripts/check-backup-restore-contract.mjs</code></li>
+                <li><code class="inline">scripts/check-schema-drift.mjs</code></li>
+              </ul>
+            </article>
+
+            <article
+              class="card green"
+              data-search="docs guide contract readiness plan migration notes master sprint"
+            >
+              <div class="kicker">Docs</div>
+              <h2>Canonical references</h2>
+              <ul>
+                <li>
+                  <code class="inline">docs/BACKUP_GUIDE.md</code> — teen bhasha me poori guide.
+                </li>
+                <li>
+                  <code class="inline">docs/backup_restore_contract.md</code> — 60 tables / 512
+                  columns / 10 surfaces.
+                </li>
+                <li>
+                  <code class="inline">docs/plans/backup_restore_readiness_plan_2026-11-27.md</code>
+                  — B1–B20.
+                </li>
+                <li><code class="inline">docs/DATA_MIGRATION_NOTES.md</code> — Golden Rule #2.</li>
+                <li><code class="inline">docs/README.md</code> — docs index.</li>
+              </ul>
+            </article>
+          </div>
+          <div class="callout good" style="margin-top: 16px">
+            💡 Ye guide khud <code class="inline">/tools/backup-restore-guide.html</code> par serve
+            hoti hai. Upar <b>App URL</b> badal kar links ko apne dev/staging/live app par point
+            karo.
+          </div>
+        </section>
+
+        <!-- CHECKLIST -->
+        <section class="panel" id="checklist">
+          <div class="grid">
+            <article
+              class="card green"
+              data-search="checklist pre backup daily weekly restore drill golden rule"
+            >
+              <div class="kicker">Interactive checklist</div>
+              <h2>Routine + safety</h2>
+              <div class="progress"><i id="progressBar"></i></div>
+              <p id="progressText" style="font-size: 12px; color: var(--muted)">0 / 12 complete</p>
+              <div class="checklist" id="checkItems">
+                <label
+                  ><input type="checkbox" /><span
+                    >ClI/Task Scheduler se aaj ka server backup + cloud copy chal gaya.</span
+                  ></label
+                >
+                <label
+                  ><input type="checkbox" /><span
+                    >JSON file local <code class="inline">backups/</code> me hai aur Drive/USB par
+                    copy ho gayi.</span
+                  ></label
+                >
+                <label
+                  ><input type="checkbox" /><span
+                    >Backup ke baad <b>count verified</b> message dekha (red mismatch nahi).</span
+                  ></label
+                >
+                <label
+                  ><input type="checkbox" /><span
+                    >MariaDB <code class="inline">sync_history</code> latest status
+                    <b>OK</b> hai.</span
+                  ></label
+                >
+                <label
+                  ><input type="checkbox" /><span
+                    >Kisi migration/fix se pehle fresh backup liya.</span
+                  ></label
+                >
+                <label
+                  ><input type="checkbox" /><span
+                    ><code class="inline">npm run verify:data</code> green hai (schema + backup
+                    contract).</span
+                  ></label
+                >
+                <label
+                  ><input type="checkbox" /><span
+                    >Restore se pehle <b>Dry Run PASS</b> confirm kiya.</span
+                  ></label
+                >
+                <label
+                  ><input type="checkbox" /><span
+                    >Restore ke baad count report me mismatch nahi (ya error ko acknowledge
+                    kiya).</span
+                  ></label
+                >
+                <label
+                  ><input type="checkbox" /><span
+                    >Naye tables backup me na hon par bhi preserve the — verify kiya.</span
+                  ></label
+                >
+                <label
+                  ><input type="checkbox" /><span
+                    >Auth restore dry-run se plan dekha, phir owner ne confirm kiya.</span
+                  ></label
+                >
+                <label
+                  ><input type="checkbox" /><span
+                    >Sequence reset admin route se chalaya (naye IDs ke liye).</span
+                  ></label
+                >
+                <label
+                  ><input type="checkbox" /><span
+                    >Har 3 mahine me staging par restore drill ho chuka hai.</span
+                  ></label
+                >
+              </div>
+            </article>
+
+            <article
+              class="card amber"
+              data-search="before restore checklist migrations target db fresh backup dry run admin login"
+            >
+              <div class="kicker">Before you restore</div>
+              <h2>Golden 6 steps</h2>
+              <ol>
+                <li>Target DB par <b>saari migrations apply</b> karo.</li>
+                <li>Usi schema ke baad <b>fresh backup</b> lo.</li>
+                <li>Admin login se <a data-route="/backup" href="#">/backup</a> kholo.</li>
+                <li>JSON drop → <b>Dry Run PASS</b>.</li>
+                <li>Confirm → count verify + report.</li>
+                <li>Sequence reset + auth restore (agar zarurat ho).</li>
+              </ol>
+              <div class="callout danger" style="margin-top: 12px">
+                Purana backup naye schema par test karna ho to <b>pehle staging</b> me karo. Live
+                par seedha mat chalao.
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <!-- ERRORS -->
+        <section class="panel" id="errors">
+          <article
+            class="card"
+            data-search="troubleshooting env missing incomplete exit 2 cloud upload exit 3 dry run fail mariadb sync converter table missing"
+          >
+            <div class="kicker">Troubleshooting</div>
+            <h2>Problem → kaaran → fix</h2>
+            <table>
+              <thead>
+                <tr>
+                  <th>Problem</th>
+                  <th>Kaaran</th>
+                  <th>Fix</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code class="inline">Supabase env missing</code></td>
+                  <td>.env.local me key nahi</td>
+                  <td>URL + service-role key check karo (value kabhi share mat karo)</td>
+                </tr>
+                <tr>
+                  <td><code class="inline">INCOMPLETE</code> (exit 2)</td>
+                  <td>Table count mismatch</td>
+                  <td>Dobara chalao; baar-baar ho to RLS/Supabase check</td>
+                </tr>
+                <tr>
+                  <td>Cloud upload fail (3)</td>
+                  <td>Storage permission/bucket</td>
+                  <td>Service-role key + <code class="inline">backups</code> bucket</td>
+                </tr>
+                <tr>
+                  <td>Dry Run FAIL</td>
+                  <td>PK / NOT NULL mismatch</td>
+                  <td>Warning padho, file sahi karo; restore mat karo</td>
+                </tr>
+                <tr>
+                  <td>MariaDB sync nahi chal raha</td>
+                  <td>Galat path / XAMPP band</td>
+                  <td>Path theek karo, Apache/MySQL start karo</td>
+                </tr>
+                <tr>
+                  <td>Converter me table missing</td>
+                  <td>Naya table bana</td>
+                  <td>Converter update karo (plan B10)</td>
+                </tr>
+                <tr>
+                  <td>Count mismatch toast</td>
+                  <td>File vs DB rows alag</td>
+                  <td>Report dekho; success mat maano</td>
+                </tr>
+              </tbody>
+            </table>
+          </article>
+
+          <div class="grid" style="margin-top: 16px">
+            <article
+              class="card red"
+              data-search="gaps not covered storage auth users profiles pitr free plan"
+            >
+              <div class="kicker">Cover nahi hota</div>
+              <h2>Schema/DR gaps</h2>
+              <ul>
+                <li>
+                  Backup JSON me <b>schema snapshot nahi</b> — rename/type change detect nahi.
+                </li>
+                <li><b>Grants / RLS / functions / triggers</b> backup me nahi jaate.</li>
+                <li>Storage images + <code class="inline">auth.users</code> alag hain.</li>
+                <li>Free plan me <b>PITR nahi</b>.</li>
+                <li>
+                  <code class="inline">system_info</code> restore-free — naye config keys JSON se
+                  nahi aati.
+                </li>
+              </ul>
+            </article>
+            <article
+              class="card amber"
+              data-search="current state partial ready browser live schema legacy gaps"
+            >
+              <div class="kicker">Truth</div>
+              <h2>Abhi “fully ready” nahi</h2>
+              <p>
+                <span class="pill p-ok">Ready</span> Browser live-schema path + golden-rule gate +
+                old-backup preserve + error toast.
+              </p>
+              <p>
+                <span class="pill p-warn">Partial</span> Additive columns/tables, auth restore,
+                sequence reset.
+              </p>
+              <p>
+                <span class="pill p-bad">Pending</span> Schema snapshot, converter parity, CLI FK
+                order, dynamic auth/sequence maps.
+              </p>
+            </article>
+          </div>
+        </section>
+
+        <!-- ROADMAP -->
+        <section class="panel" id="roadmap">
+          <article
+            class="card blue"
+            data-search="roadmap b1 b20 readiness acceptance owner decisions format 4.0"
+          >
+            <div class="kicker">B1–B20</div>
+            <h2>Readiness roadmap</h2>
+            <table>
+              <thead>
+                <tr>
+                  <th>Wave</th>
+                  <th>Kaam</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>W0</td>
+                  <td>B0 golden rule + contract + data-loss fix</td>
+                  <td><span class="pill p-ok">Landed</span></td>
+                </tr>
+                <tr>
+                  <td>W1</td>
+                  <td>B1–B4 schema snapshot + format 4.0 + removed-column policy</td>
+                  <td><span class="pill p-warn">Planned</span></td>
+                </tr>
+                <tr>
+                  <td>W2</td>
+                  <td>B5–B8 clear policy + hard-fail + NOT NULL + generated single source</td>
+                  <td><span class="pill p-warn">Planned</span></td>
+                </tr>
+                <tr>
+                  <td>W3</td>
+                  <td>B9–B10 CLI/server FK order + converter sync</td>
+                  <td><span class="pill p-warn">Planned</span></td>
+                </tr>
+                <tr>
+                  <td>W4</td>
+                  <td>B11–B12 dynamic auth map + sequence allowlist</td>
+                  <td><span class="pill p-warn">Planned</span></td>
+                </tr>
+                <tr>
+                  <td>W5</td>
+                  <td>B13–B15 DR semantics + RLS guard + drill</td>
+                  <td><span class="pill p-warn">Planned</span></td>
+                </tr>
+                <tr>
+                  <td>W6</td>
+                  <td>B16–B20 tests + gates + owner smoke</td>
+                  <td><span class="pill p-warn">Planned</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </article>
+
+          <div class="grid" style="margin-top: 16px">
+            <article
+              class="card"
+              data-search="acceptance criteria row count pk set match no silent loss visible limits contract ci green"
+            >
+              <div class="kicker">Acceptance</div>
+              <h2>Tabhi “ready” bolenge jab…</h2>
+              <ol>
+                <li>
+                  Fresh backup → restore ke baad har table ka <b>row count + PK set match</b>.
+                </li>
+                <li>Purana backup naye schema par <b>naye tables ki data safe</b>.</li>
+                <li>Renamed/removed/type-changed column par <b>silent loss nahi</b>.</li>
+                <li>Grants/RLS ka missing hona <b>visible + documented</b>.</li>
+                <li>Browser/CLI/server/converter <b>ek hi contract</b> follow karein.</li>
+                <li>
+                  <code class="inline">npm run verify:data</code> + CI green, owner staging drill
+                  confirm.
+                </li>
+              </ol>
+            </article>
+            <article
+              class="card amber"
+              data-search="owner decisions legacy mode removed column migration ids drill environment"
+            >
+              <div class="kicker">Owner decisions</div>
+              <h2>Pehle in par sign-off</h2>
+              <ol>
+                <li>
+                  Backup format <b>4.0</b> accept? Purane files ke liye legacy mode ya hard-block?
+                </li>
+                <li>
+                  Removed column par <b>drop</b> ya <b>fail</b>? (Recommendation: fail + override)
+                </li>
+                <li>Snapshot me <b>migration IDs</b> store karein? (Recommendation: haan)</li>
+                <li>
+                  Live restore drill kab aur kis environment me? (Agent live write nahi karega)
+                </li>
+              </ol>
+            </article>
+          </div>
+
+          <div class="callout danger" style="margin-top: 16px">
+            🔒 <b>Standing rules:</b> secrets print nahi · browser me service-role nahi · agent live
+            DB write nahi · commit/push sirf owner approval par · masters deactivate-only · global
+            job_id/counter/index untouched.
+          </div>
+        </section>
+
+        <div id="emptyState" class="empty hidden">
+          Koi card is search se match nahi hua. Dobara try karo.
+        </div>
+      </main>
+
+      <footer>
+        <b>V-Tech Backup &amp; Restore Interactive Guide</b> · Self-contained HTML · 27 Nov 2026.<br />
+        Source of truth: <code class="inline">docs/BACKUP_GUIDE.md</code>,
+        <code class="inline">docs/backup_restore_contract.md</code>,
+        <code class="inline">docs/plans/backup_restore_readiness_plan_2026-11-27.md</code>.<br />
+        Kabhi bhi backup JSON ko git me commit mat karo — <code class="inline">backups/</code> aur
+        <code class="inline">vtech_backup_*.json</code> already ignored hain.
+      </footer>
+    </div>
+
+    <script>
+      (function () {
+        const $ = (s, r = document) => r.querySelector(s);
+        const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+
+        // --- Tabs ---
+        $$("nav.tabs button").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            $$("nav.tabs button").forEach((b) => b.classList.remove("active"));
+            $$(".panel").forEach((p) => p.classList.remove("active"));
+            btn.classList.add("active");
+            $("#" + btn.dataset.tab).classList.add("active");
+            if (location.hash !== "#" + btn.dataset.tab)
+              history.replaceState(null, "", "#" + btn.dataset.tab);
+          });
+        });
+        const initial = location.hash.slice(1);
+        if (initial && $("#" + initial)) {
+          const b = $$("nav.tabs button").find((x) => x.dataset.tab === initial);
+          if (b) b.click();
+        }
+
+        // --- Base URL → clickable page links ---
+        const base = $("#baseUrl");
+        function applyBase() {
+          const v = base.value.trim().replace(/\/+$/, "");
+          $$("[data-route]").forEach((a) => {
+            a.href = v + a.dataset.route;
+          });
+          try {
+            localStorage.setItem("vtech-guide-base", v);
+          } catch (_) {}
+        }
+        try {
+          const saved = localStorage.getItem("vtech-guide-base");
+          if (saved) base.value = saved;
+        } catch (_) {}
+        applyBase();
+        base.addEventListener("input", applyBase);
+
+        // --- Search filter ---
+        const search = $("#search");
+        function filter() {
+          const q = search.value.trim().toLowerCase();
+          let visible = 0;
+          $$(".card").forEach((card) => {
+            const hay = ((card.dataset.search || "") + " " + card.textContent).toLowerCase();
+            const show = !q || hay.includes(q);
+            card.classList.toggle("hidden", !show);
+            if (show) visible++;
+          });
+          $("#emptyState").classList.toggle("hidden", visible > 0 || !q);
+        }
+        search.addEventListener("input", filter);
+        filter();
+
+        // --- Accordions ---
+        $("#expandAll").addEventListener("click", () =>
+          $$("details.step").forEach((d) => (d.open = true))
+        );
+        $("#collapseAll").addEventListener("click", () =>
+          $$("details.step").forEach((d) => (d.open = false))
+        );
+
+        // --- Copy buttons for commands ---
+        $$("pre").forEach((pre) => {
+          const b = document.createElement("button");
+          b.type = "button";
+          b.className = "copy";
+          b.textContent = "Copy";
+          b.addEventListener("click", async () => {
+            const text = pre.textContent.replace(/^Copy\s*/, "").trim();
+            try {
+              await navigator.clipboard.writeText(text);
+              b.textContent = "Copied ✓";
+            } catch (_) {
+              const ta = document.createElement("textarea");
+              ta.value = text;
+              document.body.appendChild(ta);
+              ta.select();
+              try {
+                document.execCommand("copy");
+                b.textContent = "Copied ✓";
+              } catch (_) {}
+              ta.remove();
+            }
+            setTimeout(() => (b.textContent = "Copy"), 1400);
+          });
+          pre.appendChild(b);
+        });
+
+        // --- Checklist persistence ---
+        const boxes = $$("#checkItems input");
+        const bar = $("#progressBar");
+        const ptext = $("#progressText");
+        function progress() {
+          const done = boxes.filter((b) => b.checked).length;
+          bar.style.width = (done / boxes.length) * 100 + "%";
+          ptext.textContent = done + " / " + boxes.length + " complete";
+          try {
+            localStorage.setItem("vtech-guide-checks", JSON.stringify(boxes.map((b) => b.checked)));
+          } catch (_) {}
+        }
+        try {
+          const saved = JSON.parse(localStorage.getItem("vtech-guide-checks") || "[]");
+          boxes.forEach((b, i) => {
+            if (typeof saved[i] === "boolean") b.checked = saved[i];
+          });
+        } catch (_) {}
+        boxes.forEach((b) => b.addEventListener("change", progress));
+        progress();
+
+        // --- Theme + print ---
+        const root = document.documentElement;
+        const themeBtn = $("#themeBtn");
+        try {
+          root.dataset.theme = localStorage.getItem("vtech-guide-theme") || "vibrant";
+        } catch (_) {}
+        function themeLabel() {
+          themeBtn.textContent = root.dataset.theme === "calm" ? "✨ Vibrant" : "🌙 Calm";
+        }
+        themeLabel();
+        themeBtn.addEventListener("click", () => {
+          root.dataset.theme = root.dataset.theme === "calm" ? "vibrant" : "calm";
+          try {
+            localStorage.setItem("vtech-guide-theme", root.dataset.theme);
+          } catch (_) {}
+          themeLabel();
+        });
+        $("#printBtn").addEventListener("click", () => window.print());
+      })();
+    </script>
+  </body>
+</html>

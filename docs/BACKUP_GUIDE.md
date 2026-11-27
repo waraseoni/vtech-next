@@ -3,6 +3,7 @@
 - [हिंदी गाइड](#हिंदी-गाइड) (Hindi)
 - [English Guide](#english-guide)
 - [Hinglish Guide](#hinglish-guide)
+- [Interactive HTML Guide](../public/tools/backup-restore-guide.html) — रंगीन/इंटरैक्टिव UI, search + tabs + page map; app पर `/tools/backup-restore-guide.html`
 
 > Ek hi file me teen bhasha. Har section self-contained hai — jo bhasha chahiye,
 > wahi padho. Commands/file names sab jagah same hain.
