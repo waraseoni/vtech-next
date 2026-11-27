@@ -5,7 +5,7 @@
 > `2a73c47`, `e9a5a16`, `a6c9f8d`, `a57f28a`, `589e014`) **push pending**. K1–K15 lock.
 > Sprint 1 owner gates D2 (with_check), D3, A1 restore smoke, A8, portal/backup smoke pending.
 > Brand numbering code wired; `20261128_brand_job_no_mode_gate.sql` applied + verified by owner
-> (`provolatile=v`, `mode_gated=true`; test job `KMK#004`).
+> (`provolatile=v`, `mode_gated=true`; test job `KMK#004`, counter `(KMK,4)`, 4 unique numbers).
 > **Effort:** ~8–10 working days.
 > **Goal:** owner decisions lock + sabse bada security hole band + Service Type ka data aana shuru.
 
