@@ -143,7 +143,8 @@ Repair par fault ab bhi mandatory; deactivated type ka purana job edit me sahi d
   (`provolatile = v`). Owner ne 28 Nov ko ye bhi decide kiya: **brand numbering sirf
   `single_brand` / `multi_brand` me** — autonomous me purana global `job_id` hi rahe, brand sirf
   optional device metadata. `20261128_brand_job_no_mode_gate.sql` (DB guard) + client-side
-  `brandNumberingEnabled()` gate prepare; **owner ne 28 Nov ko apply kiya** (verify output baaki).
+  `brandNumberingEnabled()` gate prepare; **owner apply + verify kar chuka** (`provolatile=v`,
+  `mode_gated=true`). Single/multi test job id 8 par `KMK#004` generate hua.
   Mode change par na backfill na
   renumber; purana `brand_job_no` preserved. Print/WA/report parity next.
 - [ ] **B2 — Brand filter + switcher + coverage:** `jobListQueries.ts` ek hi source (RSC + client);

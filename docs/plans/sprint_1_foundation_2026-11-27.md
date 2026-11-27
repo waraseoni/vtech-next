@@ -4,7 +4,8 @@
 > **Status:** CODE COMPLETE. `origin/main = 015681b`; 6 local commits (`cfc21fe`,
 > `2a73c47`, `e9a5a16`, `a6c9f8d`, `a57f28a`, `589e014`) **push pending**. K1–K15 lock.
 > Sprint 1 owner gates D2 (with_check), D3, A1 restore smoke, A8, portal/backup smoke pending.
-> Brand numbering code wired; `20261128_brand_job_no_mode_gate.sql` applied by owner (verify pending).
+> Brand numbering code wired; `20261128_brand_job_no_mode_gate.sql` applied + verified by owner
+> (`provolatile=v`, `mode_gated=true`; test job `KMK#004`).
 > **Effort:** ~8–10 working days.
 > **Goal:** owner decisions lock + sabse bada security hole band + Service Type ka data aana shuru.
 
@@ -97,8 +98,8 @@
 - [x] D1 migration applied + verified by owner: anon 7/7 401, matrix 9/9 `anon_ok=false`,
       guard 42501, staff UI + 3 reports green. **Portal smoke + backup sequence reset baaki.**
 - [~] D2 probes (28 Nov): columns/tables/index/RPCs ✅ · profiles `qual` expected; `with_check`
-  null-safe query pending · B1 `brand_job_no` apply+verify ✅ · **mode-gate applied by owner;
-  verify output pending**
+  null-safe query pending · B1 `brand_job_no` apply+verify ✅ · **mode-gate applied + verified
+  (`v`, `true`; test job `KMK#004`)**
 - [x] A1 migration apply (owner) → `schema:drift` OK; **restore smoke (`expects_fault` round-trip) baaki**
 - [ ] D3 asli backup se browser dry-run → confirm checkbox → `setTempPasswords: true`;
       218 auth-linked rows clear, admin profile protected
