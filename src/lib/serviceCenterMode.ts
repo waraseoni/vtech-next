@@ -16,3 +16,13 @@ export function normalizeServiceCenterMode(value?: string | null): ServiceCenter
 export function brandNumberingEnabled(value?: string | null): boolean {
   return normalizeServiceCenterMode(value) !== DEFAULT_SERVICE_CENTER_MODE;
 }
+
+export const SERVICE_CENTER_MODE_LABEL: Record<ServiceCenterMode, string> = {
+  autonomous: "Autonomous",
+  single_brand: "Single Brand",
+  multi_brand: "Multi Brand",
+};
+
+export function serviceCenterModeLabel(value?: string | null): string {
+  return SERVICE_CENTER_MODE_LABEL[normalizeServiceCenterMode(value)];
+}

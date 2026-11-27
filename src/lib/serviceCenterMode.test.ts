@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { brandNumberingEnabled, normalizeServiceCenterMode } from "./serviceCenterMode";
+import {
+  brandNumberingEnabled,
+  normalizeServiceCenterMode,
+  serviceCenterModeLabel,
+} from "./serviceCenterMode";
 
 describe("service center mode", () => {
   it("unknown/missing/null = autonomous (fail closed)", () => {
@@ -21,5 +25,12 @@ describe("service center mode", () => {
     expect(brandNumberingEnabled("single_brand")).toBe(true);
     expect(brandNumberingEnabled("multi_brand")).toBe(true);
     expect(brandNumberingEnabled()).toBe(false);
+  });
+
+  it("UI label safe default ke saath", () => {
+    expect(serviceCenterModeLabel("single_brand")).toBe("Single Brand");
+    expect(serviceCenterModeLabel("multi_brand")).toBe("Multi Brand");
+    expect(serviceCenterModeLabel()).toBe("Autonomous");
+    expect(serviceCenterModeLabel("unknown")).toBe("Autonomous");
   });
 });

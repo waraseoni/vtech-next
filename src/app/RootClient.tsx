@@ -74,6 +74,7 @@ import PullToRefresh from "@/components/PullToRefresh";
 import ClearCacheButton from "@/components/ClearCacheButton";
 import { ThemeToggle } from "@/app/components/ui/ThemeToggle";
 import { DensityToggle } from "@/app/components/ui/DensityToggle";
+import ServiceCenterModeBadge from "@/components/ServiceCenterModeBadge";
 import { useDensity } from "@/hooks/useDensity";
 import { useSidebarTooltip } from "@/components/SidebarTooltip";
 import dynamic from "next/dynamic";
@@ -1874,6 +1875,9 @@ export default function RootClient({
 
             {/* Density - desktop topbar (Sprint 4 #19) */}
             {isMobile === false && <DensityToggle density={density} onSelect={setDensity} />}
+
+            {/* Service Center mode — authenticated pages par hamesha visible */}
+            <ServiceCenterModeBadge />
 
             {/* User dropdown */}
             <div className="relative flex-shrink-0">
