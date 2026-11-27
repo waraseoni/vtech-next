@@ -23,6 +23,8 @@ import { JOB_STATUS_INLINE } from "@/lib/status-colors";
 import DeviceIdentity from "@/components/DeviceIdentity";
 import { jobReference } from "@/lib/jobReference";
 
+type SearchType = "job_id" | "code" | "brand_job_no";
+
 type JobData = {
   id: number;
   job_id: string;
@@ -135,7 +137,7 @@ const STATUS_ICON: Record<number, React.ReactNode> = {
 export default function JobStatusPage() {
   const content = usePublicSiteContent();
   const [search, setSearch] = useState("");
-  const [searchType, setSearchType] = useState<"job_id" | "code">("job_id");
+  const [searchType, setSearchType] = useState<SearchType>("job_id");
   const [loading, setLoading] = useState(false);
   const [job, setJob] = useState<JobData | null>(null);
   const [services, setServices] = useState<Service[]>([]);
@@ -150,14 +152,14 @@ export default function JobStatusPage() {
 
   const runSearch = useCallback(
     async (
-      type: "job_id" | "code",
+      type: SearchType,
       raw: string,
       tokenValue: string | null,
       phoneValue: string | null = null
     ) => {
       const value = raw.trim();
       if (!value) {
-        setError("Job ID ya Code daalo!");
+        setError("Job ID, Brand Number ya Repair Code daalo!");
         return;
       }
       if (phoneValue && !/^\d{4}$/.test(phoneValue)) {
@@ -185,7 +187,7 @@ export default function JobStatusPage() {
 
         const txn = data.job;
         if (!txn) {
-          setError("Job nahi mila! Sahi Job ID ya Code daalo.");
+          setError("Job nahi mila! Sahi Job ID, Brand Number ya Code daalo.");
           return;
         }
 
@@ -193,6 +195,7 @@ export default function JobStatusPage() {
         const nextJob: JobData = {
           id: txn.id,
           job_id: txn.job_id,
+          brand_job_no: txn.brand_job_no,
           code: txn.code,
           item: txn.item,
           fault: txn.fault,
@@ -236,6 +239,7 @@ export default function JobStatusPage() {
     const urlToken = params.get("token");
     const urlJobId = params.get("job_id")?.trim();
     const urlCode = params.get("code")?.trim();
+    const urlBrandJobNo = params.get("brand_job_no")?.trim();
 
     // Printed QR / WhatsApp links carry these params — open straight to the job.
     if (urlJobId) {
@@ -246,6 +250,10 @@ export default function JobStatusPage() {
       setSearch(urlCode);
       setSearchType("code");
       void runSearch("code", urlCode, urlToken);
+    } else if (urlBrandJobNo) {
+      setSearch(urlBrandJobNo);
+      setSearchType("brand_job_no");
+      void runSearch("brand_job_no", urlBrandJobNo, urlToken);
     }
   }, [runSearch]);
 
@@ -291,7 +299,8 @@ export default function JobStatusPage() {
             </span>
           </h1>
           <p className="mt-4 text-[14px] sm:text-base text-muted max-w-2xl">
-            Apna Job ID ya Repair Code daalkar turant status aur timeline check karein.
+            Apna Job ID, Brand Number ya Repair Code daalkar turant status aur timeline check
+            karein.
           </p>
         </div>
       </section>
@@ -302,8 +311,8 @@ export default function JobStatusPage() {
           <div className="max-w-xl mx-auto">
             <div className="rounded-3xl p-6 sm:p-8 bg-white/[0.03] border border-white/[0.08]">
               {/* Search Type Toggle */}
-              <div className="grid grid-cols-2 gap-2 mb-5">
-                {(["job_id", "code"] as const).map((t) => (
+              <div className="grid grid-cols-3 gap-2 mb-5">
+                {(["job_id", "brand_job_no", "code"] as const).map((t) => (
                   <button
                     key={t}
                     type="button"
@@ -317,7 +326,7 @@ export default function JobStatusPage() {
                         : "bg-white/[0.04] text-muted hover:text-app-2"
                     }`}
                   >
-                    {t === "job_id" ? "Job ID" : "Repair Code"}
+                    {t === "job_id" ? "Job ID" : t === "brand_job_no" ? "Brand No" : "Repair Code"}
                   </button>
                 ))}
               </div>
@@ -333,13 +342,21 @@ export default function JobStatusPage() {
                   type="text"
                   inputMode={searchType === "job_id" ? "numeric" : "text"}
                   autoComplete="off"
-                  aria-label={searchType === "job_id" ? "Job ID" : "Repair Code"}
+                  aria-label={
+                    searchType === "job_id"
+                      ? "Job ID"
+                      : searchType === "brand_job_no"
+                        ? "Brand Number"
+                        : "Repair Code"
+                  }
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder={
                     searchType === "job_id"
                       ? "Enter Job ID (e.g. 27950)"
-                      : "Enter Repair Code (e.g. 2026032001)"
+                      : searchType === "brand_job_no"
+                        ? "Enter Brand No (e.g. KMK#004)"
+                        : "Enter Repair Code (e.g. 2026032001)"
                   }
                   className="flex-1 min-w-0 px-4 py-3.5 rounded-2xl bg-white/[0.04] border border-white/[0.1] text-sm text-white font-medium placeholder:text-muted-2 outline-none focus:border-blue-500/60 focus:ring-1 focus:ring-blue-500/20 transition-all"
                 />

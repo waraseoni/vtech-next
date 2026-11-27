@@ -109,14 +109,17 @@ export function useNavbarSearch() {
             .limit(25),
 
           // Jobs — Item (item + item_name), Model, Identifier (serial_no), fault, ...
+          // K8/B1: brand_job_no bhi job_id ki tarah seedha searchable hai.
           // Brand alag FK hai — neeche brands query se IDs resolve karke extra
           // job rows add kiye jaate hain (custom-label rows bhi match hon).
           supabase
             .from("transaction_list")
-            .select("id, job_id, item, item_name, model, serial_no, fault, status, date_created")
+            .select(
+              "id, job_id, brand_job_no, item, item_name, model, serial_no, fault, status, date_created"
+            )
             .eq("del_status", 0)
             .or(
-              `item.ilike.${like},item_name.ilike.${like},model.ilike.${like},serial_no.ilike.${like},fault.ilike.${like},job_id.ilike.${like},code.ilike.${like},uniq_id.ilike.${like}${!isNaN(num) ? `,job_id.eq.${q}` : ""}`
+              `item.ilike.${like},item_name.ilike.${like},model.ilike.${like},serial_no.ilike.${like},fault.ilike.${like},job_id.ilike.${like},brand_job_no.ilike.${like},code.ilike.${like},uniq_id.ilike.${like}${!isNaN(num) ? `,job_id.eq.${q}` : ""}`
             )
             .limit(25),
 
@@ -181,7 +184,9 @@ export function useNavbarSearch() {
       if (brandIds.length) {
         const { data: brandJobs } = await supabase
           .from("transaction_list")
-          .select("id, job_id, item, item_name, model, serial_no, fault, status, date_created")
+          .select(
+            "id, job_id, brand_job_no, item, item_name, model, serial_no, fault, status, date_created"
+          )
           .eq("del_status", 0)
           .in("brand_id", brandIds)
           .limit(25);
@@ -229,7 +234,9 @@ export function useNavbarSearch() {
           .join(" · ");
         out.push({
           id: r.id,
-          title: `Job #${r.job_id} — ${r.item}`,
+          title: r.brand_job_no
+            ? `Job ${r.brand_job_no} · #${r.job_id} — ${r.item}`
+            : `Job #${r.job_id} — ${r.item}`,
           subtitle: [r.fault, deviceHint].filter(Boolean).join(" · ") || "—",
           tag: STATUS_LABELS[r.status] || "Job",
           tagColor: STATUS_COLORS[r.status] || "bg-muted/20 text-muted",

@@ -1,12 +1,14 @@
 # Sprint 1 — Foundation, Security & Service Type (27 Nov 2026)
 
 > **Part of:** `master_completion_plan_2026-11-26.md` (W0 + W1 + W2).
-> **Status:** CODE COMPLETE. `origin/main = 015681b`; 6 local commits (`cfc21fe`,
-> `2a73c47`, `e9a5a16`, `a6c9f8d`, `a57f28a`, `589e014`) **push pending**. K1–K15 lock.
+> **Status:** CODE COMPLETE. `origin/main = 015681b`; 10 local commits **push pending**
+> (`cfc21fe`, `2a73c47`, `e9a5a16`, `a6c9f8d`, `a57f28a`, `589e014`, `a293d99`,
+> `1ad4095`, `02160ff`, `483efe6` + abhi ka search/AI commit). K1–K15 lock.
 > Sprint 1 owner gates D2 (with_check), D3, A1 restore smoke, A8, portal/backup smoke pending.
 > Brand numbering code wired; `20261128_brand_job_no_mode_gate.sql` applied + verified by owner
 > (`provolatile=v`, `mode_gated=true`; test job `KMK#004`, counter `(KMK,4)`, 4 unique numbers).
-> **Effort:** ~8–10 working days.
+> Brand-number search jobs list/navbar/public/AI me wired; `get_jobs_stats()` search migration
+> owner apply kar chuka (verify pending); D12 AI-context golden rule add. **Effort:** ~8–10 working days.
 > **Goal:** owner decisions lock + sabse bada security hole band + Service Type ka data aana shuru.
 
 ---

@@ -13,6 +13,8 @@ export const dynamic = "force-dynamic";
 const RATE_LIMIT = 60;
 const RATE_WINDOW_MS = 60_000;
 const ID_RE = /^[A-Za-z0-9-]{1,64}$/;
+// Brand number contains '#' (KMK#004) — alag, narrowly-scoped regex.
+const BRAND_NO_RE = /^[A-Za-z0-9#-]{1,64}$/;
 
 const RESPONSE_HEADERS = {
   "Cache-Control": "no-store",
@@ -38,6 +40,7 @@ export async function GET(request: NextRequest) {
   const url = new URL(request.url);
   const jobId = url.searchParams.get("job_id")?.trim();
   const code = url.searchParams.get("code")?.trim();
+  const brandJobNo = url.searchParams.get("brand_job_no")?.trim();
   const token = url.searchParams.get("token")?.trim() || null;
   const phone = url.searchParams.get("phone")?.trim() || null;
 
@@ -47,11 +50,14 @@ export async function GET(request: NextRequest) {
     return json({ error: "Recent list hata diya gaya hai." }, 410);
   }
 
-  if (!jobId && !code) {
-    return json({ error: "job_id ya code required" }, 400);
+  if (!jobId && !code && !brandJobNo) {
+    return json({ error: "job_id, code ya brand_job_no required" }, 400);
   }
   if ((jobId && !ID_RE.test(jobId)) || (code && !ID_RE.test(code))) {
     return json({ error: "Invalid job_id ya code" }, 400);
+  }
+  if (brandJobNo && !BRAND_NO_RE.test(brandJobNo)) {
+    return json({ error: "Invalid brand_job_no" }, 400);
   }
   if (phone && !PHONE_LAST4_RE.test(phone)) {
     return json({ error: "Phone ke sirf last 4 digits daalein." }, 400);
@@ -75,7 +81,8 @@ export async function GET(request: NextRequest) {
     .limit(1);
 
   if (jobId) query = query.eq("job_id", jobId);
-  else query = query.eq("code", code);
+  else if (code) query = query.eq("code", code);
+  else query = query.ilike("brand_job_no", brandJobNo!);
 
   const { data: txnData, error: txnErr } = await query;
 

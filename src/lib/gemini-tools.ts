@@ -22,7 +22,11 @@ type AiTool = {
 };
 
 type JobRow = {
+  id?: number;
   job_id: number | string;
+  code?: string | null;
+  /** K8/B1 — single/multi mode me canonical brand number (KMK#004). */
+  brand_job_no?: string | null;
   client_name: string | number | null;
   item: string;
   fault: string | null;
@@ -36,6 +40,12 @@ type JobRow = {
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 const supabase = createClient(supabaseUrl, supabaseKey);
+
+// PostgREST `.or()` grammar me comma/parenthesis condition separator hai —
+// user text embedded karne se pehle unhe hata dete hain (wildcard injection bhi).
+function safeOrTerm(value: string): string {
+  return value.replace(/[,()\\]/g, " ").trim();
+}
 
 const STATUS_MAP: Record<number, string> = {
   0: "Pending",
@@ -72,7 +82,7 @@ BUSINESS FACTS:
 
 WORKFLOW & DATA MODEL:
 - Repair jobs live in transaction_list; client_name column stores the client id. Status: 0=Pending (kaam shuru nahi), 1=On-Progress (kaam chal raha), 2=Done (kaam pura), 3=Paid (bill chuka), 4=Cancelled, 5=Delivered (item mil gaya).
-- Job grand total = services (price) + products (qty × price). Job code = YYYYMMDD+daily sequence; job_id = global number.
+- Job grand total = services (price) + products (qty × price). Job code = YYYYMMDD+daily sequence; job_id = global number. Column brand_job_no (sirf single/multi brand mode, e.g. KMK#004) bhi job_id ki tarah searchable hai — use get_job_details_by_id with that number.
 - Revenue (repairs) = job amounts for Delivered (status 5) jobs, counted by date_completed. Cash In = client payments + walk-in direct sales.
 - Direct sales in direct_sales (code SALE + 6 digits); client_id 0/null means walk-in customer.
 - Stock: available = inventory quantities − items used in active jobs − direct sale items. Thresholds: ≤0 Out of Stock, ≤5 Low, else In stock. alert_quantity = reorder point.
@@ -203,13 +213,14 @@ export const geminiTools: AiTool[] = [
   {
     name: "get_job_details_by_id",
     description:
-      "Searches the database for a specific job/transaction by its Exact Job ID and returns its full details including status, client name, item, fault, and amount.",
+      "Searches the database for a specific job/transaction by Job ID, brand number (KMK#004), repair code, serial number, item or keyword and returns full details including status, client name, item, fault and amount.",
     parameters: {
       type: "object",
       properties: {
         job_id: {
           type: "string",
-          description: "The exact Job ID to search for (e.g., '12' or '45')",
+          description:
+            "Job identifier: exact global Job ID (e.g. '28105'), brand number (e.g. 'KMK#004'), repair code, serial number or a short search keyword.",
         },
       },
       required: ["job_id"],
@@ -662,11 +673,16 @@ export async function executeGeminiTool(
       }
 
       if (!customers || customers.length === 0) {
-        // Fallback: search jobs by item/fault text
-        const ors = tokens.map((t: string) => `item.ilike.%${t}%,fault.ilike.%${t}%`).join(",");
+        // Fallback: search jobs by item/fault text + brand number (K8/B1)
+        const ors = tokens
+          .map((t: string) => {
+            const term = safeOrTerm(String(t));
+            return `item.ilike.%${term}%,item_name.ilike.%${term}%,brand_job_no.ilike.%${term}%,fault.ilike.%${term}%`;
+          })
+          .join(",");
         const { data: jobsObj } = await supabase
           .from("transaction_list")
-          .select("job_id, client_name, item, fault, status, amount, date_created")
+          .select("job_id, brand_job_no, client_name, item, fault, status, amount, date_created")
           .eq("del_status", 0)
           .or(ors)
           .order("date_created", { ascending: false })
@@ -688,7 +704,7 @@ export async function executeGeminiTool(
         const ids = customers.map((c) => c.id);
         const { data: jobs } = await supabase
           .from("transaction_list")
-          .select("job_id, client_name, item, fault, status, amount, date_created")
+          .select("job_id, brand_job_no, client_name, item, fault, status, amount, date_created")
           .eq("del_status", 0)
           .in("client_name", ids)
           .order("date_created", { ascending: false });
@@ -708,18 +724,38 @@ export async function executeGeminiTool(
     }
 
     if (name === "get_job_details_by_id") {
-      const jobId = String(args?.job_id || "");
-      if (!jobId) return { error: "Job ID or Search text is required" };
+      const jobId = String(args?.job_id || "").trim();
+      if (!jobId) return { error: "Job ID, brand number ya search text required" };
 
-      const isNumeric = /^\d+$/.test(jobId);
+      const term = safeOrTerm(jobId);
+      if (!term) return { error: "Invalid search text" };
+
+      const isNumeric = /^\d+$/.test(term);
+      const isBrandNo = /^[A-Za-z0-9]{1,16}#\d{1,10}$/.test(term);
       let query = supabase.from("transaction_list").select("*").eq("del_status", 0);
 
-      // Find the job with the exact job_id or search by text
+      // K8/B1: brand number (KMK#004) bhi job_id ki tarah seedha match karta
+      // hai. Numeric branch previously sirf job_id dekhta tha — ab code/serial
+      // bhi cover karta hai; text branch item/fault ke saath brand no bhi.
       if (isNumeric) {
-        query = query.eq("job_id", jobId);
+        query = query
+          .or(
+            `job_id.eq.${term},code.eq.${term},brand_job_no.ilike.%${term}%,serial_no.ilike.%${term}%,uniq_id.ilike.%${term}%`
+          )
+          .order("date_created", { ascending: false })
+          .limit(5);
+      } else if (isBrandNo) {
+        query = query
+          .or(
+            `brand_job_no.ilike.%${term}%,job_id.ilike.%${term}%,code.ilike.%${term}%,item.ilike.%${term}%`
+          )
+          .order("date_created", { ascending: false })
+          .limit(5);
       } else {
         query = query
-          .or(`item.ilike.%${jobId}%,fault.ilike.%${jobId}%`)
+          .or(
+            `job_id.ilike.%${term}%,brand_job_no.ilike.%${term}%,code.ilike.%${term}%,item.ilike.%${term}%,item_name.ilike.%${term}%,serial_no.ilike.%${term}%,uniq_id.ilike.%${term}%,fault.ilike.%${term}%`
+          )
           .order("date_created", { ascending: false })
           .limit(5);
       }
@@ -731,7 +767,9 @@ export async function executeGeminiTool(
       }
 
       if (!jobs || jobs.length === 0) {
-        return { result: `Koi bhi job, jiska id ya keyword '${jobId}' ho, wo nahi mila.` };
+        return {
+          result: `Koi bhi job, jiska job id, brand number ya keyword '${jobId}' ho, wo nahi mila.`,
+        };
       }
 
       const jobRows = jobs as JobRow[];
@@ -758,7 +796,16 @@ export async function executeGeminiTool(
         job.status_label = STATUS_MAP[job.status] || "Unknown";
       }
 
-      return isNumeric ? { job_details: jobs[0] } : { matching_jobs: jobs };
+      if (isNumeric || isBrandNo) {
+        const exact =
+          jobs.find((j) =>
+            isNumeric
+              ? String((j as JobRow).job_id) === term
+              : String((j as JobRow).brand_job_no || "").toLowerCase() === term.toLowerCase()
+          ) || jobs[0];
+        return { job_details: exact };
+      }
+      return { matching_jobs: jobs };
     }
 
     if (name === "get_business_alerts") {

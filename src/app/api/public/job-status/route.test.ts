@@ -19,7 +19,7 @@ vi.mock("@/lib/admin-supabase", () => ({
         return { data: [], error: null };
       };
       const chain: Record<string, unknown> = {};
-      for (const method of ["select", "eq", "limit", "in", "order"]) {
+      for (const method of ["select", "eq", "ilike", "limit", "in", "order"]) {
         chain[method] = () => chain;
       }
       chain.maybeSingle = async () => result();
@@ -121,6 +121,19 @@ describe("GET /api/public/job-status", () => {
     const body = await res.json();
     expect(body.limited).toBe(false);
     expect(body.job.amount).toBe(4500);
+  });
+
+  it("brand_job_no se bhi job lookup karta hai", async () => {
+    const res = await get("brand_job_no=KMK%23004", "203.0.113.28");
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.job.job_id).toBe(28201);
+    expect(body.limited).toBe(true);
+  });
+
+  it("brand_job_no me wildcard reject karta hai", async () => {
+    const res = await get("brand_job_no=KMK%25", "203.0.113.29");
+    expect(res.status).toBe(400);
   });
 
   it("never returns the raw client id even in the limited subset", async () => {

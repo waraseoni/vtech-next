@@ -147,7 +147,10 @@ Repair par fault ab bhi mandatory; deactivated type ka purana job edit me sahi d
   `mode_gated=true`). Single/multi test job id 8 par `KMK#004` generate hua; counter row
   `(KMK, 4)` aur 4 unique numbers (`KMK#001`–`KMK#004`, har ek count 1) consistent.
   Mode change par na backfill na
-  renumber; purana `brand_job_no` preserved. Print/WA/report parity next.
+  renumber; purana `brand_job_no` preserved. Search parity wired: jobs list (`jobSearchFilter`),
+  navbar search, public tracker (`?brand_job_no=KMK%23004`), `get_jobs_stats()` RPC
+  (`20261128_brand_job_no_search.sql`, **owner apply kar chuka**; verify output pending), aur AI (`get_job_details_by_id`
+  ab brand number se bhi job dhoondhta hai; prompt/schema/test sync). Print/WA/report parity next.
 - [ ] **B2 — Brand filter + switcher + coverage:** `jobListQueries.ts` ek hi source (RSC + client);
       dashboard, pending-jobs, reports; default **All (NULL sahit)** + "Untagged (legacy)" chip;
       coverage indicator `Brand-tagged: X / Y (Z%) · Untagged: …`; `get_jobs_stats()` RPC drift check.
@@ -227,6 +230,10 @@ Repair par fault ab bhi mandatory; deactivated type ka purana job edit me sahi d
       wale naye tables ab preserve (delete nahi); count mismatch error toast. Baaki legacy gaps
       (schema snapshot, converter bool maps, CLI alphabetical order, grants backup) recorded.
       Roadmap: `plans/backup_restore_readiness_plan_2026-11-27.md` (B1–B20, owner decisions + acceptance).
+- [x] **D12 — Project change → AI context golden rule (28 Nov):** `AGENTS.md` me standing rule —
+      naya field/mode/filter/search key/route/business rule change karte waqt AI prompt, tool
+      schema, tool executor query aur AI contract test (`gemini-tools.test.ts`) usi change me
+      update. Naya searchable identifier = jobs list + navbar + public tracker + `get_jobs_stats()` + AI executor, sab ek saath. `brand_job_no` is rule ka pehla live example hai.
 
 ---
 

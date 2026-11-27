@@ -19,7 +19,8 @@ import { buildDueMaps } from "@/lib/client-due";
  *   Model (`model`), Identifier (`serial_no`).
  * Brand `brands.name/code` FK hai — PostgREST cross-table `.or()` nahi karta,
  * isliye `searchBrandsForTerm()` se IDs resolve karke yahan inject kiye jaate
- * hain. Legacy rows me brand text `item` derived label me hota hai (wo clause
+ * hain. K8/B1: `brand_job_no` (KMK#004) bhi waise hi searchable hai jaise
+ * `job_id`. Legacy rows me brand text `item` derived label me hota hai (wo clause
  * already hai). RPC `get_jobs_stats()` me yahi clauses duplicate hain — dont dono
  * ek saath badlo.
  */
@@ -28,7 +29,7 @@ export function jobSearchFilter(
   matchedClientIds: string,
   matchedBrandIds: string
 ): string {
-  return `job_id.ilike.%${term}%,code.ilike.%${term}%,item.ilike.%${term}%,item_name.ilike.%${term}%,brand_id.in.(${matchedBrandIds}),model.ilike.%${term}%,serial_no.ilike.%${term}%,fault.ilike.%${term}%,uniq_id.ilike.%${term}%,remark.ilike.%${term}%,client_name.in.(${matchedClientIds})`;
+  return `job_id.ilike.%${term}%,brand_job_no.ilike.%${term}%,code.ilike.%${term}%,item.ilike.%${term}%,item_name.ilike.%${term}%,brand_id.in.(${matchedBrandIds}),model.ilike.%${term}%,serial_no.ilike.%${term}%,fault.ilike.%${term}%,uniq_id.ilike.%${term}%,remark.ilike.%${term}%,client_name.in.(${matchedClientIds})`;
 }
 
 export interface Transaction {

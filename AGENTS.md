@@ -20,6 +20,28 @@ aur restore surfaces bhi update karo — user ko baar baar batane ki zarurat nah
 
 Detail: `docs/DATA_MIGRATION_NOTES.md` + `docs/backup_restore_contract.md`.
 
+## Golden Rule: project change = AI context update (bina bole)
+
+Koi bhi naya/change hua field, mode, filter, search key, route, business rule ya
+page — **usi kaam me** AI ko bhi wo change batana hai, warna AI purani jaankari
+par jawab dega:
+
+- `src/lib/gemini-tools.ts :: buildSystemPrompt()` me naya fact/workflow/link.
+- `geminiTools` tool description + parameter description (model ko pata hona
+  chahiye ki nayi key se kaise pooche).
+- `executeGeminiTool()` me affected table ke `.select()`/`.or()`/`.eq()` clauses
+  — naya searchable identifier ho to AI bhi usse search kare.
+- AI contract test `src/lib/gemini-tools.test.ts` me clamp karo (prompt, schema
+  aur query clause), taaki agla agent drift na kare.
+- Provider plumbing (`gemini.ts`, `groq.ts`, `/api/chat`) sirf tab badlo jab
+  tool list/prompt contract badle.
+- Naya searchable identifier = ek saath 5 jagah: `jobSearchFilter()`, navbar
+  search, public tracker (`/api/public/job-status`), `get_jobs_stats()` RPC,
+  aur AI executor. Ek bhi chhoot gayi to user ko "search nahi ho raha" milega.
+
+Gate: focused AI test (`npx vitest run src/lib/gemini-tools.test.ts`) + schema
+chhue to `npm run verify:data`.
+
 <!-- BEGIN:nextjs-agent-rules -->
 
 ## This is NOT the Next.js you know

@@ -5257,6 +5257,7 @@ as $$
       and (
         a.pat is null
         or t.job_id ilike a.pat
+        or t.brand_job_no ilike a.pat
         or t.code ilike a.pat
         or t.item ilike a.pat
         or t.item_name ilike a.pat

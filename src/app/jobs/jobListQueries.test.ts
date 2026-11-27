@@ -8,12 +8,19 @@ describe("jobSearchFilter — device identity fields", () => {
   it("Item, Brand, Model aur Identifier sabko explicitly search karta hai", () => {
     const filter = jobSearchFilter("komaki", "5,6", "7,8");
 
+    expect(filter).toContain("job_id.ilike.%komaki%");
+    expect(filter).toContain("brand_job_no.ilike.%komaki%");
     expect(filter).toContain("item.ilike.%komaki%");
     expect(filter).toContain("item_name.ilike.%komaki%");
     expect(filter).toContain("brand_id.in.(7,8)");
     expect(filter).toContain("model.ilike.%komaki%");
     expect(filter).toContain("serial_no.ilike.%komaki%");
     expect(filter).toContain("client_name.in.(5,6)");
+  });
+
+  it("brand number (KMK#004) seedhe job_id ki tarah match karta hai", () => {
+    const filter = jobSearchFilter("KMK#004", "-1", "-1");
+    expect(filter).toContain("brand_job_no.ilike.%KMK#004%");
   });
 
   it("brand/client match na ho to sentinel '-1' — khaali .in.() nahi banta", () => {

@@ -42,6 +42,7 @@ vi.mock("@/lib/supabase", () => {
               {
                 id: 77,
                 job_id: "90001",
+                brand_job_no: "STA#002",
                 item: "Purana custom label",
                 item_name: "Ceiling Fan",
                 model: null,
@@ -105,5 +106,24 @@ describe("useNavbarSearch — device identity fields", () => {
     expect(jobsOr).toContain("item_name.ilike.%Stan%");
     expect(jobsOr).toContain("model.ilike.%Stan%");
     expect(jobsOr).toContain("serial_no.ilike.%Stan%");
+    expect(jobsOr).toContain("brand_job_no.ilike.%Stan%");
+  });
+
+  it("brand_job_no se mila job composite title ke saath dikhta hai", async () => {
+    const { result } = renderHook(() => useNavbarSearch());
+
+    await act(async () => {
+      result.current.handleChange({
+        target: { value: "Stan" },
+      } as React.ChangeEvent<HTMLInputElement>);
+      await new Promise((r) => setTimeout(r, 450));
+    });
+
+    await waitFor(() =>
+      expect(result.current.results.some((r) => r.href === "/jobs/77/view")).toBe(true)
+    );
+    expect(result.current.results.find((r) => r.href === "/jobs/77/view")?.title).toContain(
+      "STA#002"
+    );
   });
 });
