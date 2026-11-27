@@ -48,8 +48,13 @@ export async function claimBrandJobNo(
     p_brand_id: brandId,
     p_prefix: prefix || null,
   });
-  if (!error && typeof data === "string" && data.trim()) return data;
-  return null;
+  // Silent null chhupa deta hai ki counter write fail hua — tab job bina
+  // brand number ke save ho jati hai. Isliye ab clear error throw.
+  if (error) throw new Error(`Brand job number claim failed: ${error.message}`);
+  if (typeof data !== "string" || !data.trim()) {
+    throw new Error("Brand job number claim failed: empty response");
+  }
+  return data;
 }
 
 // PREVIEW ONLY — counter ko bump NAHI karta (unlike getNextJobId jo claim

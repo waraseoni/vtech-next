@@ -5079,7 +5079,7 @@ CREATE OR REPLACE FUNCTION public.next_brand_job_no(
 RETURNS text
 LANGUAGE plpgsql
 SECURITY DEFINER
-STABLE
+VOLATILE
 SET search_path = public
 AS $$
 declare

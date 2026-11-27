@@ -137,7 +137,11 @@ Repair par fault ab bhi mandatory; deactivated type ka purana job edit me sahi d
   prepared + full-schema fold-in; **owner ne apply + verify kiya** (column YES/text, partial
   unique index, `anon_ok=false`, `staff_ok=true`). UI wired: `claimBrandJobNo()` on all create
   paths (new / edit-create / quick / bulk / legacy), edit preserves original number, composite
-  reference in jobs list, job view, public tracker. Print/WA/report parity next.
+  reference in jobs list, job view, public tracker. **Hotfix (28 Nov):** RPC `STABLE` tha —
+  PostgreSQL me STABLE functions read-only chalte hain, isliye counter `INSERT` fail hota tha aur
+  helper silent null return karta tha. `20261128_brand_job_no_volatile_fix.sql` se `VOLATILE`
+  karna hai + helper ab brand select hone par failure throw karta hai. Owner hotfix apply baaki.
+  Print/WA/report parity next.
 - [ ] **B2 — Brand filter + switcher + coverage:** `jobListQueries.ts` ek hi source (RSC + client);
       dashboard, pending-jobs, reports; default **All (NULL sahit)** + "Untagged (legacy)" chip;
       coverage indicator `Brand-tagged: X / Y (Z%) · Untagged: …`; `get_jobs_stats()` RPC drift check.
