@@ -35,7 +35,11 @@ export function defaultServiceTypeId(types: readonly ServiceTypeOption[]): numbe
   const active = types.filter((t) => t.is_active !== false);
   if (active.length === 0) return null;
 
-  const repair = active.find((t) => t.name.trim().toLowerCase() === "repair");
+  // DB seed canonical naam "Repair" hai (K3). Owner ne "Repair Service" bhi
+  // default ke liye kaha — dono aliases yahin normalise karte hain, master
+  // rename / DB write ki zarurat nahi.
+  const repairAliases = new Set(["repair", "repair service"]);
+  const repair = active.find((t) => repairAliases.has(t.name.trim().toLowerCase()));
   if (repair) return repair.id;
 
   return active.reduce((best, t) => {

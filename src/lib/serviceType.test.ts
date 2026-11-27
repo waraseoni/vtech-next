@@ -41,6 +41,15 @@ describe("defaultServiceTypeId", () => {
     expect(defaultServiceTypeId(types.slice(1))).toBe(2);
   });
 
+  it("Repair Service alias bhi canonical Repair jaisa default hai", () => {
+    expect(
+      defaultServiceTypeId([
+        { id: 11, name: "Inspection", sort_order: 1 },
+        { id: 12, name: "Repair Service", sort_order: 99 },
+      ])
+    ).toBe(12);
+  });
+
   it("name match na ho to sort_order min", () => {
     expect(
       defaultServiceTypeId([

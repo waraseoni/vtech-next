@@ -82,13 +82,20 @@ h1{font-size:21px;font-weight:900;color:#fff;margin-bottom:4px}
 // ════════════════════════════════════════════════════════════
 // CONFIG — exact match with Supabase backup (verified field-by-field)
 // ════════════════════════════════════════════════════════════
-const TABLES=["system_info","job_id_counter","mechanic_list","client_list","product_list","service_list","suppliers","spare_supplier","inventory_list","lender_list","loan_payments","expense_list","transaction_list","transaction_products","transaction_services","transaction_images","client_loans","client_payments","direct_sales","direct_sale_items","attendance_list","advance_payments","mechanic_salary_history","mechanic_commission_history","message_list","messages","wp_template_history","activity_logs","payment_reminders","bom_templates","client_contacts","job_required_parts","location_zones","location_racks","location_bins","location_boxes","locations","product_locations","purchase_orders","purchase_order_items","stock_adjustments","stock_counts","supplier_contacts","supplier_contact_persons","supplier_contact_phones","supplier_payments"];
+const TABLES=["system_info","job_id_counter","mechanic_list","client_list","product_list","service_list","suppliers","spare_supplier","inventory_list","lender_list","loan_payments","expense_list","transaction_list","transaction_products","transaction_services","transaction_images","client_loans","client_payments","direct_sales","direct_sale_items","attendance_list","advance_payments","mechanic_salary_history","mechanic_commission_history","message_list","messages","wp_template_history","activity_logs","payment_reminders","bom_templates","client_contacts","job_required_parts","location_zones","location_racks","location_bins","location_boxes","locations","product_locations","purchase_orders","purchase_order_items","stock_adjustments","stock_counts","supplier_contacts","supplier_contact_persons","supplier_contact_phones","supplier_payments","brands","brand_job_counters","service_types","device_models","device_identifiers","staff_duty_schedule","user_passkeys"];
 
 // Auth/transient tables — convert me kabhi nahi aate (platform/auth-managed):
 // users, profiles, login_throttle, user_presence, push_subscriptions, sync_history (mirror-internal)
 
 // INT fields — exact from schema + good backup
 const INT_F={
+  brand_job_counters:["brand_id","last_sequence_number"],
+  brands:["id"],
+  device_identifiers:["id"],
+  device_models:["id","brand_id"],
+  service_types:["id","sort_order"],
+  staff_duty_schedule:["id"],
+  user_passkeys:["id"],
   activity_logs:["id","user_id"],
   advance_payments:["id","mechanic_id"],
   attendance_list:["id","mechanic_id","status"],
@@ -171,12 +178,16 @@ const STR_F={
   mechanic_list:["contact"],
   message_list:["contact"],
   suppliers:["contact"],
-  transaction_list:["code","job_id","client_name","remark","uniq_id","fault","item"],
+  transaction_list:["code","job_id","client_name","remark","uniq_id","fault","item","brand_job_no","item_name","model","serial_no","warranty_claim_no"],
 };
 
 // BOOLEAN fields — legacy MySQL tinyint (0/1) → PG boolean (true/false).
 // Bina iske number 0/1 emit ho kar boolean column restore par fail deta hai.
 const BOOL_F={
+  brands:["is_authorized","is_active"],
+  device_identifiers:["is_active"],
+  device_models:["is_active"],
+  service_types:["expects_fault","is_active"],
   client_contacts:["is_primary"],
   client_list:["login_allowed"],
   supplier_contact_persons:["is_primary"],
@@ -204,7 +215,7 @@ const EMPTY_STR={
 };
 
 // Datetime format — ALL tables use +05:30 (IST) since MariaDB stored IST local time
-const WITH_TZ=new Set(["mechanic_list","product_list","service_list","suppliers","lender_list","mechanic_commission_history","transaction_list","client_list","client_loans","client_payments","direct_sales","direct_sale_items","expense_list","inventory_list","loan_payments","mechanic_salary_history","attendance_list","advance_payments","message_list","messages","transaction_products","transaction_services","transaction_images","wp_template_history","activity_logs","payment_reminders","bom_templates","client_contacts","job_required_parts","location_zones","location_racks","location_bins","location_boxes","locations","product_locations","purchase_orders","purchase_order_items","stock_adjustments","stock_counts","supplier_contacts","supplier_contact_persons","supplier_contact_phones","supplier_payments"]);
+const WITH_TZ=new Set(["mechanic_list","product_list","service_list","suppliers","lender_list","mechanic_commission_history","transaction_list","client_list","client_loans","client_payments","direct_sales","direct_sale_items","expense_list","inventory_list","loan_payments","mechanic_salary_history","attendance_list","advance_payments","message_list","messages","transaction_products","transaction_services","transaction_images","wp_template_history","activity_logs","payment_reminders","bom_templates","client_contacts","job_required_parts","location_zones","location_racks","location_bins","location_boxes","locations","product_locations","purchase_orders","purchase_order_items","stock_adjustments","stock_counts","supplier_contacts","supplier_contact_persons","supplier_contact_phones","supplier_payments","brands","brand_job_counters","service_types","device_models","device_identifiers","staff_duty_schedule","user_passkeys"]);
 const DATE_ONLY=new Set(["date_paid","payment_date","curr_date","stock_date","loan_date","start_date","effective_date","payment_due_date","eta","expected_date","received_date"]);
 const DT_FIELDS=new Set(["date_created","date_updated","date_completed","date_added","last_edited_date","created_at","changed_at","reminder_date","read_at","delivered_at","deleted_at","counted_at"]);
 

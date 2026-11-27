@@ -7,22 +7,22 @@
 > recommendation accept. Koi decision na aaye to related stream blocked rahega (code tayyar ho
 > sakta hai, apply/merge nahi).
 
-| ID | Sawaal | Recommendation (OK = accept) | Abhi status | Block kya hai |
+| ID | Sawaal | Final decision | Abhi status | Aage ka kaam |
 |---|---|---|---|---|
-| **K1** | Default `service_center_mode` | `autonomous` (least surprising; switch safe) | ⏳ | A0, B |
-| **K2** | Brand required? | autonomous = optional; single/multi = required + "General / Unbranded" escape | ⏳ | A0, B2 |
-| **K3** | Final Service Type seed list | 6 existing + confirm extra ("Doorstep Visit"?) | ⏳ (DB me 8 type; `New Installation`/`PDI` faultless already) | A1 |
-| **K4** | Separator ` · ` | print/SMS-safe confirm; alternative ` / ` | ⏳ | A0, B4 |
-| **K5** | Public tracking me S/N | `showIdentifier=false` + derived `item` se public variant me S/N hataao | ⏳ | A0 |
-| **K6** | `showIdentifier` variant | sirf public variant; internal me hamesha dikhе | ⏳ | A0 |
-| **K7** | Service Type D1–D8 | `expects_fault` column; `fault NOT NULL` unchanged | ✅ effectively accepted — owner ne `20261126_service_type_expects_fault.sql` apply kiya | — |
-| **K8** | Per-brand numbering | global `job_id`/counter/index **unchanged**; additive `brand_job_no`; prefix `brands.prefix` (recommend) vs counter table | ⏳ | B1, B2 |
-| **K9** | Claim lifecycle | existing `warranty_claim_status` + CSV export; nayi `warranty_claims` table **nahi** | ⏳ | B3 |
-| **K10** | RPC lockdown | `reset_sequence` = service_role only; staff RPCs = authenticated + `is_frontend_staff()`/service_role | ✅ DB + UI verified: anon 7/7, matrix 9/9, guard 42501, staff smoke + 3 reports green (RPC 200); 42702 + 42804 dono fix,re-applied | Portal smoke + backup reset |
-| **K11** | Generated DB types adopt? | haan — one-time diff, phir CI gate | ⏳ | D6 |
-| **K12** | `JobsBody` split | tab-based modules, behaviour zero | ⏳ | E1 |
-| **K13** | G4–G14 adopt list | G4–G10 adopt; G11–G14 defer; G15 SMTP owner se blocked | ⏳ | C |
-| **K14** | Reviewer + CSP window | second reviewer available? CSP 2-week observe kab se? | ⏳ | D8/D9 |
+| **K1** | Default `service_center_mode` | `autonomous` | ✅ owner confirmed (28 Nov) | code me pehle se default hai |
+| **K2** | Brand required? | autonomous = optional; single/multi = required + **General / Unbranded** escape | ✅ agent best-practice apply | B2 UI/rules |
+| **K3** | Default Service Type | canonical seed **Repair**; code me `Repair Service` alias bhi default | ✅ owner confirmed (28 Nov) | alias + test done |
+| **K4** | Separator | ` · ` (print/SMS-safe) | ✅ agent best-practice apply | B4 print QA |
+| **K5** | Public tracking me S/N | `showIdentifier=false`; derived `item` se public variant me S/N hidden | ✅ agent best-practice apply | already in `/job-status` |
+| **K6** | `showIdentifier` variant | sirf public variant; internal me hamesha dikhe | ✅ agent best-practice apply | already default `true` |
+| **K7** | Service Type D1–D8 | `expects_fault` column; `fault NOT NULL` unchanged | ✅ owner applied migration | restore smoke baaki |
+| **K8** | Per-brand numbering | global `job_id`/counter/index **unchanged**; additive `brand_job_no`; prefix existing `brand_job_counters.prefix` → `brands.code` → `BR` | ✅ agent best-practice apply | migration prepared, owner apply baaki |
+| **K9** | Claim lifecycle | existing `warranty_claim_status` + CSV export; nayi `warranty_claims` table **nahi** | ✅ agent best-practice apply | B3 UI/export |
+| **K10** | RPC lockdown | `reset_sequence` = service_role only; staff RPCs = authenticated + `is_frontend_staff()`/service_role | ✅ DB + UI verified | Portal smoke + backup reset |
+| **K11** | Generated DB types adopt? | haan — one-time diff, phir CI gate | ✅ agent best-practice apply | D6 script/gate |
+| **K12** | `JobsBody` split | tab-based modules, behaviour zero | ✅ agent best-practice apply | E1 refactor |
+| **K13** | G4–G14 adopt list | G4–G10 adopt; G11–G14 defer; G15 SMTP owner approval tak blocked | ✅ agent best-practice apply | C stream |
+| **K14** | Reviewer + CSP window | har PR par second reviewer mandatory; CSP enforce 14 din clean observation ke baad | ✅ policy apply | named reviewer owner baaki |
 | **K15** | Final push strategy | ek batch push (docs/code/migrations alag local commits allowed); version bump alag approval se | ✅ agreed (owner standing instruction) | FINAL |
 
 ## Abhi turant kaam (decision se pehle bhi)

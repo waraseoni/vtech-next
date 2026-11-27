@@ -70,23 +70,23 @@
 
 ## 2. Decision register (owner sign-off — pehle ye, phir code)
 
-| ID | Decision | Recommendation | Blocking |
-|---|---|---|---|
-| **K1** | Default `service_center_mode` | `autonomous` (least surprising, switch safe) | A0, B |
-| **K2** | Brand required? | autonomous = optional; single/multi = required + "General / Unbranded" escape | A0 |
-| **K3** | Final service type seed list | 6 existing + confirm koi extra ("Doorstep Visit"?) | A0/A1 |
-| **K4** | Separator ` · ` | Print/SMS-safe confirm (alt ` / `) | A0 |
-| **K5** | Public tracking me S/N | `showIdentifier=false` + derived `item` me se S/N hataane ka public variant confirm | A0 |
-| **K6** | `showIdentifier` variant | device card me toggle? recommend **sirf public variant**, internal me hamesha dikhе | A0 |
-| **K7** | Service type D1–D8 | **`expects_fault` column; `fault` NOT NULL unchanged** | A1–A6 |
-| **K8** | Numbering (Vikalp B) | global `job_id` unchanged + `brand_job_no` additive; prefix kahan: `brands.prefix` (recommend) vs counter table | B1 |
-| **K9** | Claim lifecycle | `warranty_claim_status` column already hai → UI + CSV export; `warranty_claims` table mat banao (duplicate state) | B3 |
-| **K10** | RPC lockdown window + service_role-only list | `reset_sequence` = service_role only; dashboard/staff RPCs = authenticated + `is_frontend_staff()` guard | D1 |
-| **K11** | Generated DB types adopt? | Haan (one-time diff) — hand-written types drift kar rahe hain | D6 |
-| **K12** | JobsBody split approach | Tab-based components (recommended), behavior zero | E1 |
-| **K13** | G4–G14 me se kaun adopt? | G4–G10 adopt (customer facing + money), G11–G14 defer, G15 blocked (SMTP owner) | C |
-| **K14** | PR flow / second reviewer / CSP timing | Reviewer available? CSP 2-week observe window kab? | D8/D9 |
-| **K15** | Final commit strategy | Sab waves green → **ek batch commit** (docs+code+migrations alag commits allowed, push ek saath), version bump alag se approval se | FINAL |
+| ID | Decision | Final call | Status | Blocking |
+|---|---|---|---|---|
+| **K1** | Default `service_center_mode` | `autonomous` | ✅ owner 28 Nov | — |
+| **K2** | Brand required? | autonomous = optional; single/multi = required + General/Unbranded escape | ✅ best-practice apply | B2 |
+| **K3** | Final service type seed list | canonical `Repair`; `Repair Service` alias default bhi | ✅ owner 28 Nov | — |
+| **K4** | Separator ` · ` | ` · ` print/SMS-safe | ✅ best-practice apply | B4 |
+| **K5** | Public tracking me S/N | `showIdentifier=false`; public variant me S/N hidden | ✅ best-practice apply | done |
+| **K6** | `showIdentifier` variant | sirf public; internal hamesha visible | ✅ best-practice apply | done |
+| **K7** | Service type D1–D8 | `expects_fault`; `fault` NOT NULL unchanged | ✅ owner applied | restore smoke |
+| **K8** | Numbering (Vikalp B) | global `job_id` untouched + additive `brand_job_no`; prefix counter → `brands.code` → `BR` | ✅ best-practice apply | owner migration apply |
+| **K9** | Claim lifecycle | `warranty_claim_status` + CSV; nayi table nahi | ✅ best-practice apply | B3 |
+| **K10** | RPC lockdown | `reset_sequence` service_role-only; staff RPC guards | ✅ DB + UI verified | portal + backup reset |
+| **K11** | Generated DB types | haan — one-time diff + CI gate | ✅ best-practice apply | D6 |
+| **K12** | JobsBody split | tab-based, behaviour zero | ✅ best-practice apply | E1 |
+| **K13** | G4–G14 adopt list | G4–G10 adopt; G11–G14 defer; G15 blocked | ✅ best-practice apply | C |
+| **K14** | PR flow / CSP timing | second reviewer mandatory; CSP enforce 14 din clean observation ke baad | ✅ policy apply | named reviewer owner |
+| **K15** | Final commit strategy | sab waves green → ek batch push; version bump alag approval | ✅ agreed | FINAL |
 
 ---
 
@@ -127,9 +127,10 @@ Repair par fault ab bhi mandatory; deactivated type ka purana job edit me sahi d
 
 ## 4. Stream B — Brand/report/multi-brand (parent plan P4–P5 + Tier1–2)
 
-- [ ] **B1 — Per-brand numbering (Vikalp B, K8):** additive `brand_job_no`, atomic counter RPC,
+- [~] **B1 — Per-brand numbering (Vikalp B, K8):** additive `brand_job_no`, atomic counter RPC,
   partial unique index (`WHERE brand_id IS NOT NULL`), display `KMK#001 (Ref 28101)`.
-  **Global `job_id`/counter/index kabhi nahi chhue.** Fold-in + drift + owner apply.
+  **Global `job_id`/counter/index kabhi nahi chhue.** Migration `20261128_brand_job_no.sql`
+  prepared + full-schema fold-in; **owner apply baaki**. UI display/useStream B4 ke saath.
 - [ ] **B2 — Brand filter + switcher + coverage:** `jobListQueries.ts` ek hi source (RSC + client);
   dashboard, pending-jobs, reports; default **All (NULL sahit)** + "Untagged (legacy)" chip;
   coverage indicator `Brand-tagged: X / Y (Z%) · Untagged: …`; `get_jobs_stats()` RPC drift check.
@@ -185,9 +186,9 @@ Repair par fault ab bhi mandatory; deactivated type ka purana job edit me sahi d
   **42804 integer≠bigint** dono fix ho gaye (`#variable_conflict use_column` + 10 explicit casts),
   owner ne final patched migration re-apply kiya → `get_inventory_stock` HTTP **200**, koi 400/42501
   nahi. Baaki: portal smoke (client credentials) + backup sequence reset (owner).
-- [ ] **D2 — Pending migrations verify (P0-2):** read-only probes — profile RLS
-  (`is not distinct from`), `item_name` + index, master tables, `get_jobs_stats` naye columns,
-  `get_due_stats`/`get_stale_jobs`/`get_dashboard_*` exist + staff guard. Missing ho to owner apply.
+- [~] **D2 — Pending migrations verify (P0-2):** 28 Nov owner probes — `item_name` + index,
+  master tables, `get_jobs_stats`, `get_due_stats`/`get_stale_jobs`/`get_dashboard_*` ✅;
+  profiles `qual` expected, `with_check` null-safe query baaki; B1 `brand_job_no` apply baaki.
 - [ ] **D3 — Live admin auth restore:** asli backup se dry-run → confirm (`confirm: true`),
   custom/fake emails ke liye `setTempPasswords: true`, 218 auth-linked rows clear,
   current admin profile preserve. **Agent DB write nahi** — owner/browser confirm.

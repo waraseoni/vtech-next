@@ -5045,6 +5045,8 @@ CREATE TABLE IF NOT EXISTS public.device_identifiers (
 );
 
 ALTER TABLE public.transaction_list ADD COLUMN IF NOT EXISTS brand_id integer REFERENCES public.brands(id) ON DELETE SET NULL;
+-- K8/B1: additive per-brand job number. Global job_id/counter/index untouched.
+ALTER TABLE public.transaction_list ADD COLUMN IF NOT EXISTS brand_job_no text;
 ALTER TABLE public.transaction_list ADD COLUMN IF NOT EXISTS item_category text;
 ALTER TABLE public.transaction_list ADD COLUMN IF NOT EXISTS item_name text;
 ALTER TABLE public.transaction_list ADD COLUMN IF NOT EXISTS model text;
@@ -5057,6 +5059,9 @@ ALTER TABLE public.transaction_list ADD COLUMN IF NOT EXISTS warranty_claim_stat
 
 CREATE INDEX IF NOT EXISTS transaction_list_brand_id_idx
   ON public.transaction_list (brand_id) WHERE brand_id IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS transaction_list_brand_job_no_uniq
+  ON public.transaction_list (brand_id, brand_job_no)
+  WHERE brand_id IS NOT NULL AND brand_job_no IS NOT NULL;
 CREATE INDEX IF NOT EXISTS transaction_list_item_name_idx
   ON public.transaction_list (item_name) WHERE item_name IS NOT NULL;
 CREATE INDEX IF NOT EXISTS device_models_active_brand_idx
@@ -5065,6 +5070,55 @@ CREATE UNIQUE INDEX IF NOT EXISTS device_models_active_name_uniq
   ON public.device_models (coalesce(brand_id, 0), lower(btrim(name))) WHERE is_active;
 CREATE UNIQUE INDEX IF NOT EXISTS device_identifiers_value_norm_uniq
   ON public.device_identifiers (upper(btrim(value)));
+
+-- K8/B1 — atomic per-brand numbering. Prefix: counter.prefix → brands.code → BR.
+CREATE OR REPLACE FUNCTION public.next_brand_job_no(
+  p_brand_id integer,
+  p_prefix text default null
+)
+RETURNS text
+LANGUAGE plpgsql
+SECURITY DEFINER
+STABLE
+SET search_path = public
+AS $$
+declare
+  v_prefix text;
+  v_seq integer;
+begin
+  if not (
+    public.is_frontend_staff()
+    or coalesce(
+         nullif(current_setting('request.jwt.claims', true), '')::jsonb ->> 'role',
+         ''
+       ) = 'service_role'
+  ) then
+    raise exception 'permission denied for staff-only function' using errcode = '42501';
+  end if;
+
+  select coalesce(nullif(btrim(p_prefix), ''), nullif(btrim(b.code), ''), 'BR')
+    into v_prefix
+  from public.brands b
+  where b.id = p_brand_id
+    and b.is_active;
+  if not found then
+    raise exception 'active brand not found: %', p_brand_id using errcode = '23503';
+  end if;
+
+  insert into public.brand_job_counters (brand_id, last_sequence_number, prefix)
+  values (p_brand_id, 1, v_prefix)
+  on conflict (brand_id) do update
+     set last_sequence_number = brand_job_counters.last_sequence_number + 1,
+         prefix = coalesce(nullif(btrim(p_prefix), ''), brand_job_counters.prefix),
+         date_updated = now()
+  returning last_sequence_number into v_seq;
+
+  return v_prefix || '#' || lpad(v_seq::text, 3, '0');
+end;
+$$;
+
+REVOKE ALL ON FUNCTION public.next_brand_job_no(integer, text) FROM public, anon;
+GRANT EXECUTE ON FUNCTION public.next_brand_job_no(integer, text) TO authenticated, service_role;
 
 INSERT INTO public.service_types (name, sort_order, expects_fault) VALUES
   ('Repair', 0, true), ('New Installation', 10, false), ('Warranty Claim', 20, true),

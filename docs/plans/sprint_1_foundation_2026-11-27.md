@@ -1,8 +1,9 @@
 # Sprint 1 — Foundation, Security & Service Type (27 Nov 2026)
 
 > **Part of:** `master_completion_plan_2026-11-26.md` (W0 + W1 + W2).
-> **Status:** IN PROGRESS · A1/A2/A4–A7 + D1/D4/E2 code done (uncommitted) ·
-> D1 apply/D2/D3/A8 owner baaki · commit/push nahi (final sprint tak). **Effort:** ~8–10 working days.
+> **Status:** CODE COMPLETE + PUSHED (`015681b`, `cfc21fe`) · owner gates D2/D3/A8 +
+> restore/portal/sequence smoke baaki. K1–K15 final call lock (28 Nov); K8 migration prepared.
+> **Effort:** ~8–10 working days.
 > **Goal:** owner decisions lock + sabse bada security hole band + Service Type ka data aana shuru.
 
 ---
@@ -28,8 +29,8 @@
 ## 2. Aaj (27 Nov) — bina kisi approval/DB-write ke jo kar sakte hain
 
 1. [x] **Decision sheet ready** — `docs/plans/owner_decision_sheet_2026-11-27.md` (ek page,
-   K1–K15 + recommendation + status + kya block hai). K7/K15 effectively accepted; baaki owner
-   sign-off pending. Master §2 canonical rahta hai.
+   K1–K15 + final call + status + aage ka kaam). K1/K7/K10/K15 owner-confirmed; baaki
+   best-practice calls owner ne 28 Nov ko apply karne diye. Master §2 canonical rahta hai.
 2. [x] **Stale docs sync** — `service_center_data_model_plan`, `job_device_identity_ux_plan`,
    `pending_work` me "Rev 3 WIP/commit baaki" ko actual state ("committed `9e620ad`, pushed")
    se badla gaya.
@@ -84,15 +85,16 @@
 > **Aaj ke gates (D1/D4/E2/D11 ke baad):** `tsc --noEmit` ✓ · `eslint` (touched) ✓ ·
 > `vitest run` **77 files / 783 tests** ✓ · `verify:data` (schema:drift 35 OK +
 > backup:contract 60 tables/512 columns) ✓ · `next build` **139 pages** ✓ ·
-> touched files prettier ✓. Commit/push **nahi**.
+> touched files prettier ✓. Code/docs pushed (`015681b`, interactive guide `cfc21fe`).
 
 ---
 
 ## 3. Owner gates (code ke baad, ek hi window me)
 
-- [ ] K1–K7, K10, K15 decisions confirm
+- [x] K1–K15 final decision register lock (28 Nov: owner + best-practice calls)
 - [ ] D1 migration dev/staging par pehle → anon 401/403 probe + staff regression → live apply
-- [ ] D2 probes: missing migrations apply (item_name, master tables, `get_jobs_stats`, RPC guards)
+- [~] D2 probes (28 Nov): columns/tables/index/RPCs ✅ · profiles `qual` expected; `with_check`
+  null-safe query pending · B1 `brand_job_no` apply + verify pending
 - [x] A1 migration apply (owner) → `schema:drift` 34 OK ✓; restore smoke (`expects_fault` round-trip) baaki
 - [ ] D3 asli backup se browser dry-run → confirm checkbox → `setTempPasswords: true`;
       218 auth-linked rows clear, admin profile protected

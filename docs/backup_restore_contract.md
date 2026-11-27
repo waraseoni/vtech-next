@@ -5,7 +5,7 @@
 > canonical contract hai. `npm run backup:contract` isko migration DDL se compare
 > karta hai; mismatch par CI fail.
 
-Last synced: 27 Nov 2026 · Source: `supabase/migrations/*.sql`
+Last synced: 28 Nov 2026 · Source: `supabase/migrations/*.sql`
 
 ## Declared tables
 
@@ -515,6 +515,7 @@ Last synced: 27 Nov 2026 · Source: `supabase/migrations/*.sql`
 - `transaction_images.transaction_id`
 - `transaction_list.amount`
 - `transaction_list.brand_id`
+- `transaction_list.brand_job_no`
 - `transaction_list.client_name`
 - `transaction_list.code`
 - `transaction_list.date_completed`
