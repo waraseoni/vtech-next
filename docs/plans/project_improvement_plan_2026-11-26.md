@@ -202,13 +202,16 @@ chal sakte hain (alag files).
   ko CI me.
 - **Acceptance:** budget breach par PR fail; monthly trend visible.
 
-### P2-2. PR flow + second reviewer (bus factor)
+### P2-2. PR flow + second reviewer (bus factor) — DEFERRED (28 Nov 2026)
 
-- **Work:** `main` branch protection (require PR + 1 review + green CI); feature
-  branches; semantic-release same rahega. Reviewer na ho to at least
-  "self-review checklist" + 24h delay for risky changes.
-- **Acceptance:** direct push to `main` blocked; release notes me reviewer
-  field.
+- **Decision:** solo owner + agent setup me PR-required/approval gate fake tha
+  (author aur reviewer same account). Owner ne simple direct-`main` flow wapas
+  choose kiya; force-push/delete block rakha gaya. Feature branch sirf risky
+  experiments ke liye optional.
+- **Work (future, jab doosra human aaye):** `main` par PR required + 1 approval
+  + green CI enable karna; tab semantic-release same rahega.
+- **Acceptance (future):** direct push to `main` blocked; release notes me
+  reviewer field. Abhi compensation: local gates + owner oversight.
 
 ### P2-3. Lint/quality cleanup
 

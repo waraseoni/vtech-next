@@ -326,24 +326,28 @@ agent ke mutaliq hai; second-human bus factor abhi compensate hai, team badhne p
 - `.github/CODEOWNERS` → `* @waraseoni` (handle `origin` remote se liya gaya; galat ho to batayein).
 - `.github/pull_request_template.md` → reviewer field + golden-rule checklist.
 - Local commits direct `main` se hata kar `sprint1/owner-gates-2026-11-28` branch par rakhe gaye.
-  Branch push ho gaya aur **PR #1** open hai: <https://github.com/waraseoni/vtech-next/pull/1>.
-- `main` par branch protection API se applied: **PR required**, conversation resolution,
-  force-push/delete block. Approval count `0` hai kyunki PR author bhi `@waraseoni` hai — GitHub
-  self-approval count nahi karta. Second human available hone par yahan `1` set karna hai.
-- CI workflows (`ci.yml`, `e2e.yml`) already maujood hain aur PR/push par chalte hain.
-- Release workflow **owner-gated manual** hai: `release.yml` sirf `workflow_dispatch` par chalta
-  hai aur `.releaserc.json` me `@semantic-release/git` nahi hai — isliye woh protected `main`
-  par direct commit/push nahi karta. 28 Nov wali red run isi direct push (GH006) ki wajah thi;
-  failed run audit ke liye history me rakha gaya. Version/tag tabhi banega jab owner Actions me
-  "Run workflow" chalayega; `CHANGELOG.md`/`package.json` bump alag approved PR se.
+  **PR #1** open ho kar merge bhi hua (merge commit `92f5c36`):
+  <https://github.com/waraseoni/vtech-next/pull/1>.
+- 28 Nov ko PR-required protection try kiya gaya tha, lekin solo-owner + agent setup me ye fake gate
+  tha (author aur reviewer same account; self-approval GitHub count nahi karta). Owner decision ke
+  baad **PR requirement aur conversation resolution hata diye gaye**; force-push/delete block rakha
+  gaya. Ab agent local gates pass karke direct `main` par commit/push karta hai. Feature branch sirf
+  bade/risky experiments ke liye optional hai, required nahi.
+- CI workflows (`ci.yml`, `e2e.yml`) PR/push par chalte hain; inhe branch protection me required
+  check nahi banaya gaya (solo flow me deadlock se bachne ke liye).
+- Release workflow **push-trigger** wapas kiya gaya: `main` par push → semantic-release version bump,
+  `CHANGELOG.md`, `package.json`/lock, tag aur GitHub Release banata hai; Vercel usi push par deploy
+  hota hai. 28 Nov ka incomplete manual `v1.90.0` tag/release (bina version bump ke) hata diya gaya;
+  GH006 wali failed run audit ke liye history me rakhi gayi.
 
 **Compensating controls (second human ke bina):**
 
-1. Har change agent-authored PR se aata hai; owner PR par review karta hai (GitHub self-approval
-   count nahi karta — isliye approval enforcement 0 par hai, process-level review zinda hai).
+1. Agent local gates pass karke normal changes direct `main` par push karta hai; risky change ho to
+   feature branch/PR optional hai. Solo owner + agent me GitHub approval enforcement nahi rakha gaya
+   (self-approval fake gate tha) — owner oversight process-level hai.
 2. CI gates: `npm test`, `npm run typecheck`, `npm run lint`, `npm run verify:data`, `npm run build`.
 3. Golden-rule checklist: schema change → backup contract + AI context; secrets diff me nahi.
-4. Release notes me `reviewer: Vikram Jain` line.
+4. Owner approver `Vikram Jain (@waraseoni)` planning docs/PR bodies me recorded hai.
 
 **8b. CSP 14-din observation — start 28 Nov 2026, window end 11 Dec 2026, decision 12 Dec:**
 

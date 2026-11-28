@@ -1,16 +1,8 @@
 name: Release
 
-# Owner-gated: push par automatic release nahi. Version/tag banana hai to
-# Actions tab se "Run workflow" dabao. Isse branch protection (PR required)
-# se semantic-release ka direct git push block nahi hota aur version bump
-# owner ke explicit action ke bina nahi hota.
 on:
-  workflow_dispatch:
-    inputs:
-      reason:
-        description: "Owner approval note for this release"
-        required: true
-        type: string
+  push:
+    branches: [main]
 
 permissions:
   contents: write
@@ -19,7 +11,7 @@ permissions:
 
 jobs:
   release:
-    name: Semantic Release (owner-dispatched)
+    name: Semantic Release (version + changelog + GitHub Release)
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -37,10 +29,6 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # .releaserc.json me @semantic-release/git nahi hai — isliye ye step
-      # protected main par commit/push nahi karta. GitHub Release + tag API se
-      # bante hain; CHANGELOG.md/package.json repo me tabhi badhte hain jab
-      # owner alag se version-bump PR approve kare.
       - name: Run semantic-release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

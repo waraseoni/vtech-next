@@ -4,7 +4,7 @@
 
 ## Review
 
-- [ ] Reviewer: **Vikram Jain (`@waraseoni`)** — agent-authored change
+- [ ] Owner: **Vikram Jain (`@waraseoni`)** — agent-authored change (PR optional; local gates zaroori)
 - [ ] `npm test` green
 - [ ] `npm run typecheck` green
 - [ ] `npm run lint` green
@@ -15,9 +15,9 @@
 - [ ] Naya searchable identifier? → job list, navbar, public tracker, `get_jobs_stats()`, AI
 - [ ] Secrets / service-role keys diff me nahi
 - [ ] DB writes sirf test DB par, owner approval ke saath
-- [ ] Release notes me `reviewer: Vikram Jain`
+- [ ] Owner approver `Vikram Jain (@waraseoni)` recorded (planning doc / PR body)
 
 ## Release note
 
-- reviewer: Vikram Jain
-- version bump: alag approval tak nahi
+- owner approver: Vikram Jain (@waraseoni)
+- version bump: `main` push par semantic-release automatic (tag + CHANGELOG + package version)

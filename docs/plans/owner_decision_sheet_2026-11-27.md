@@ -23,7 +23,7 @@
 | **K12** | `JobsBody` split              | tab-based modules, behaviour zero                                                                                                        | ✅ agent best-practice apply           | E1 refactor                                                                                                     |
 | **K13** | G4–G14 adopt list             | G4–G10 adopt; G11–G14 defer; G15 SMTP owner approval tak blocked                                                                         | ✅ agent best-practice apply           | C stream                                                                                                        |
 | **K14** | Reviewer + CSP window         | agent-authored PR → Vikram Jain (`@waraseoni`) review + CI gates; CSP enforce 14 din clean observation ke baad                            | ✅ policy apply                        | reviewer = Vikram Jain · second human unavailable, team badhne par revisit                                      |
-| **K15** | Final push strategy           | ek batch push (docs/code/migrations alag local commits allowed); version bump alag approval se                                           | ✅ agreed (owner standing instruction) | FINAL                                                                                                           |
+| **K15** | Final push strategy           | normal changes direct `main` push (risky ho to PR optional); release push-trigger semantic-release — version/tag/CHANGELOG automatic    | ✅ revised 28 Nov by owner | PR approval enforcement hataaya (solo owner + agent me self-approval fake gate tha)                              |
 
 ## Abhi turant kaam (decision se pehle bhi)
 
@@ -45,5 +45,6 @@
 - K9 → B3 warranty expiry UI + claim transitions + export.
 - K11/K12/K13 → D6 / E1 / customer stream.
 
-**Commit/push:** nahi. Final batch sirf owner ke "ab sab ho gaya" par. Docs-only changes se
-version bump nahi.
+**Commit/push:** agent local gates pass karke direct `main` par push karta hai. `main` push par
+semantic-release version/tag/CHANGELOG banata hai; docs-only push par releasable commit na ho to
+version nahi badhta.
