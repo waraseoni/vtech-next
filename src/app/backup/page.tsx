@@ -5,7 +5,12 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { logger } from "@/lib/logger";
 import { downloadBlob } from "@/lib/nativePrint";
-import { type SupabaseTableSchema, countPkViolations } from "@/lib/backupSchema";
+import {
+  type SupabaseTableSchema,
+  buildSchemaSnapshot,
+  countPkViolations,
+  parseBackupVersion,
+} from "@/lib/backupSchema";
 import {
   BACKUP_TABLES_ORDERED,
   BACKUP_TABLES,
@@ -14,7 +19,11 @@ import {
   classifyRestoreError,
   restoreErrorHint,
 } from "@/lib/backupRestore";
-import { AUTH_LINKED_TABLES } from "@/lib/backupAuthRestore";
+import {
+  AUTH_LINKED_TABLES,
+  BROWSER_RESTORE_SKIP_TABLES,
+  isBrowserRestoreSkipped,
+} from "@/lib/backupAuthRestore";
 import { RESET_SEQUENCE_TABLES } from "@/lib/resetSequence";
 import { toast } from "@/lib/toast";
 import {
@@ -350,6 +359,8 @@ type BackupPreview = {
   totalTables: number;
   version: string;
   createdAt: string;
+  /** Legacy/unknown version warning — preview card me dikhaya jata hai. */
+  warning?: string | null;
 };
 type TableResult = {
   table: string;
@@ -403,6 +414,12 @@ export default function BackupPage() {
   const [loadedBackup, setLoadedBackup] = useState<BackupData | null>(null);
   const [diffData, setDiffData] = useState<DiffRow[] | null>(null);
   const [diffLoading, setDiffLoading] = useState(false);
+  // Removed-column fail+override (backup decision #2): default fail, explicit opt-in.
+  const [allowRemovedColumns, setAllowRemovedColumns] = useState(false);
+  // Auth-linked/RLS-only tables browser se nahi likhe jaate — default skip, admin
+  // restore alag section me. (28 Nov 2026 owner ke 8 FAIL report ke baad.)
+  const [skipProtectedTables, setSkipProtectedTables] = useState(true);
+  const [schemaMigrationIds, setSchemaMigrationIds] = useState<string[]>([]);
   const [repairing, setRepairing] = useState(false);
   const [serverBusy, setServerBusy] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
@@ -426,7 +443,12 @@ export default function BackupPage() {
   // Static lists (BACKUP_TABLES_ORDERED / TABLE_COLUMNS) sirf fallback hain.
   // Yahan se LIVE schema milta hai: saari tables, columns, PK aur generated.
   const fetchSchema = useCallback(async (): Promise<SupabaseTableSchema[]> => {
-    type SchemaResp = { ok?: boolean; tables?: SupabaseTableSchema[]; error?: string };
+    type SchemaResp = {
+      ok?: boolean;
+      tables?: SupabaseTableSchema[];
+      migration_ids?: string[];
+      error?: string;
+    };
     let json: SchemaResp | null = null;
     try {
       const res = await fetch("/api/backup/schema", { cache: "no-store" });
@@ -435,6 +457,7 @@ export default function BackupPage() {
       throw new Error("Live schema load nahi ho paya");
     }
     if (json?.ok && Array.isArray(json.tables)) {
+      setSchemaMigrationIds(Array.isArray(json.migration_ids) ? json.migration_ids : []);
       return json.tables;
     }
     throw new Error(json?.error || "Schema API failed");
@@ -539,15 +562,17 @@ export default function BackupPage() {
     setTaking(true);
     setProgress("Supabase se data fetch ho raha hai...");
     try {
+      const createdAt = new Date().toISOString();
       const backup: BackupData = {
         _meta: [
           {
-            version: "3.0",
-            created_at: new Date().toISOString(),
+            version: "4.0",
+            created_at: createdAt,
             tables: tableNames,
             app: "V-Tech Management System",
             table_order: liveOrdered,
             warnings: [],
+            schema_snapshot: buildSchemaSnapshot(schemaTables, schemaMigrationIds, createdAt),
           } as Record<string, unknown>,
         ] as unknown[],
       };
@@ -818,11 +843,13 @@ export default function BackupPage() {
       }
 
       const meta = backup._meta?.[0] as Record<string, unknown>;
-      if (!meta?.version) {
+      const versionInfo = parseBackupVersion(meta);
+      if (!versionInfo) {
         showToast("error", "Invalid backup file! V-Tech backup file use karo.");
         setRestoring(false);
         return;
       }
+      if (versionInfo.warning) showToast("info", versionInfo.warning);
 
       // Tables ko order ke hisab se group karo (live schema se)
       const orderedTables = [...liveOrdered].sort((a, b) => a.order - b.order);
@@ -845,7 +872,11 @@ export default function BackupPage() {
         // Sirf file + live schema check hota hai — koi DB write nahi (D5/D6).
         const issues: string[] = [];
         let rowsChecked = 0;
+        const skippedTables = orderedTables.filter(({ table }) =>
+          isBrowserRestoreSkipped(table, skipProtectedTables)
+        );
         for (const { table } of orderedTables) {
+          if (isBrowserRestoreSkipped(table, skipProtectedTables)) continue;
           const rows = backup[table] as Record<string, unknown>[] | undefined;
           if (!rows || rows.length === 0) continue;
           rowsChecked += rows.length;
@@ -862,7 +893,8 @@ export default function BackupPage() {
             }
           }
 
-          // 2) File me aise columns jo live schema me nahi → restore par strip honge
+          // 2) File me aise columns jo live schema me nahi → FAIL (explicit override
+          //    ke bina silent strip nahi). Decision #2: fail + explicit override.
           if (liveCols) {
             const liveSet = new Set(liveCols);
             const unknown = new Set<string>();
@@ -872,9 +904,14 @@ export default function BackupPage() {
               }
             }
             if (unknown.size > 0) {
-              issues.push(
-                `${table}: ${Array.from(unknown).join(", ")} column(s) live schema me nahi — restore par strip honge`
-              );
+              const cols = Array.from(unknown).join(", ");
+              if (allowRemovedColumns) {
+                console.warn(`${table}: removed columns override — strip: ${cols}`);
+              } else {
+                issues.push(
+                  `${table}: ${cols} column(s) live schema me nahi — restore FAIL (safe rehne ke liye "Removed columns drop karein" override enable karein)`
+                );
+              }
             }
           }
 
@@ -918,19 +955,51 @@ export default function BackupPage() {
           return;
         }
 
-        const totalRows = orderedTables.reduce(
+        console.debug(
+          `Dry run ok: ${rowsChecked} rows checked (${skippedTables.length} protected tables skipped)`
+        );
+        const restorable = orderedTables.filter(
+          ({ table }) => !isBrowserRestoreSkipped(table, skipProtectedTables)
+        );
+        const restorableRows = restorable.reduce(
           (s, { table }) => s + (backup[table]?.length || 0),
           0
         );
-        console.debug(
-          `Dry run ok: ${rowsChecked} rows checked across ${orderedTables.length} tables`
-        );
         showToast(
           "success",
-          `✅ Dry run PASSED! ${totalRows.toLocaleString()} rows in ${orderedTables.length} tables ready to restore.`
+          `✅ Dry run PASSED! ${restorableRows.toLocaleString()} rows in ${restorable.length} tables ready to restore.${
+            skippedTables.length ? ` ${skippedTables.length} auth/RLS tables skip.` : ""
+          }`
         );
         setRestoring(false);
         return;
+      }
+
+      // ── Step 0′: Real restore bhi removed-column policy enforce karta hai ──
+      // (Dry run skip karke "Restore Now" dabane par bhi koi data delete na ho.)
+      if (!allowRemovedColumns) {
+        const removedIssues: string[] = [];
+        for (const { table } of orderedTables) {
+          if (isBrowserRestoreSkipped(table, skipProtectedTables)) continue;
+          const rows = backup[table] as Record<string, unknown>[] | undefined;
+          const liveCols = colsOf(table);
+          if (!rows?.length || !liveCols) continue;
+          const liveSet = new Set(liveCols);
+          const unknown = new Set<string>();
+          for (const row of rows) {
+            for (const k of Object.keys(row)) if (!liveSet.has(k)) unknown.add(k);
+          }
+          if (unknown.size > 0) {
+            removedIssues.push(`${table}: ${Array.from(unknown).join(", ")}`);
+          }
+        }
+        if (removedIssues.length > 0) {
+          throw new Error(
+            `Restore blocked — live schema me naye/hataye gaye columns: ${removedIssues.join(
+              " | "
+            )}. Jaane-bujhkar drop karne ke liye "Removed columns drop karein" override enable karein.`
+          );
+        }
       }
 
       // Clear preview after successful restore start
@@ -973,8 +1042,10 @@ export default function BackupPage() {
       // Isliye sirf wahi tables clear karo jo backup file me maujood hain
       // (empty array = explicit clear; missing key = preserve).
       setProgress("Clearing existing data (reverse order)...");
-      const tablesInBackup = orderedTables.filter(({ table }) =>
-        Object.prototype.hasOwnProperty.call(backup, table)
+      const tablesInBackup = orderedTables.filter(
+        ({ table }) =>
+          Object.prototype.hasOwnProperty.call(backup, table) &&
+          !isBrowserRestoreSkipped(table, skipProtectedTables)
       );
       const reverseOrderedTables = [...tablesInBackup].reverse();
       for (const { table } of reverseOrderedTables) {
@@ -998,6 +1069,11 @@ export default function BackupPage() {
       }
 
       for (const { table } of orderedTables) {
+        if (isBrowserRestoreSkipped(table, skipProtectedTables)) {
+          setProgress(`${table}: protected — auth/RLS, skip`);
+          await new Promise((r) => setTimeout(r, 30));
+          continue;
+        }
         if (RESTORE_FREE_TABLES.includes(table)) {
           setProgress(`${table}: protected — restore-free, skip`);
           await new Promise((r) => setTimeout(r, 50));
@@ -1151,6 +1227,8 @@ export default function BackupPage() {
       setProgress("Post-restore verify (count compare) ho rahi hai...");
       const verifiedFails: { table: string; fileRows: number; dbRows: number }[] = [];
       for (const { table } of orderedTables) {
+        // Auth/RLS tables browser touch nahi karta — count verify bhi skip.
+        if (isBrowserRestoreSkipped(table, skipProtectedTables)) continue;
         // Restore-free tables live values preserve karte hain — count match nahi
         // hoga, isliye verify se bahar
         if (RESTORE_FREE_TABLES.includes(table)) continue;
@@ -1186,8 +1264,12 @@ export default function BackupPage() {
 
       setProgress("");
       setRestoreReport(tableResults);
+      const skippedCount = orderedTables.filter(({ table }) =>
+        isBrowserRestoreSkipped(table, skipProtectedTables)
+      ).length;
       clearLoaded(); // Diff panel clear karo restore ke baad
       const failedCount = tableResults.reduce((s, r) => s + r.failed, 0);
+      const skipNote = skippedCount ? ` · ${skippedCount} auth/RLS tables skip` : "";
       // Count mismatch ko "100% restored + count verified" mat bolo — warna
       // restore visually success dikhata hai jabki data file se mismatch hai.
       if (failedCount > 0 || verifiedFails.length > 0) {
@@ -1195,12 +1277,12 @@ export default function BackupPage() {
           "error",
           `⚠ ${totalRestored.toLocaleString()} restored, ${failedCount} failed${
             verifiedFails.length ? ` (+${verifiedFails.length} tables count mismatch)` : ""
-          } — report dekhein`
+          }${skipNote} — report dekhein`
         );
       } else {
         showToast(
           "success",
-          `✅ ${totalRestored.toLocaleString()} rows 100% restored + count verified!`
+          `✅ ${totalRestored.toLocaleString()} rows 100% restored + count verified!${skipNote}`
         );
       }
       refetchTableStats();
@@ -1265,17 +1347,21 @@ export default function BackupPage() {
     setDiffData(null);
     setLoadedBackup(null);
     setPreview(null);
+    setAllowRemovedColumns(false);
+    setSkipProtectedTables(true);
 
     try {
       const text = await file.text();
       const backup = JSON.parse(text) as BackupData;
       const meta = backup._meta?.[0] as Record<string, unknown>;
 
-      if (!meta?.version) {
+      const versionInfo = parseBackupVersion(meta);
+      if (!versionInfo) {
         showToast("error", "Invalid backup file! V-Tech backup file use karo.");
         setDiffLoading(false);
         return;
       }
+      if (versionInfo.warning) showToast("info", versionInfo.warning);
 
       // v3.0+ files me file ki apni table list hoti hai (live schema se) —
       // diff/preview usi se banao, static list se nahi
@@ -1298,8 +1384,9 @@ export default function BackupPage() {
         tables,
         totalRows,
         totalTables: tables.length,
-        version: String(meta.version || "unknown"),
+        version: versionInfo.version,
         createdAt: String(meta.created_at || "unknown"),
+        warning: versionInfo.warning,
       });
 
       // Compute diff: file rows vs current DB rows
@@ -1399,6 +1486,8 @@ export default function BackupPage() {
     setAuthConfirmed(false);
     setDiffData(null);
     setPreview(null);
+    setAllowRemovedColumns(false);
+    setSkipProtectedTables(true);
   };
 
   const onFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1996,6 +2085,12 @@ export default function BackupPage() {
                   </div>
                 </div>
 
+                {preview.warning && (
+                  <div className="px-4 py-2 bg-amber-500/10 border-b border-amber-500/20 text-[11px] text-amber-300">
+                    ⚠️ {preview.warning}
+                  </div>
+                )}
+
                 {/* Column headers */}
                 <div className="grid grid-cols-[1fr_80px_80px_70px] gap-0 px-3 py-1.5 bg-app border-b border-app-2">
                   <span className="text-[9px] font-black uppercase text-muted-2">Table</span>
@@ -2055,6 +2150,43 @@ export default function BackupPage() {
                     <span className="inline-block">—</span> Koi fark nahi
                   </span>
                 </div>
+
+                {/* Auth/RLS skip — 28 Nov owner ke 8 FAIL report ka fix */}
+                <label className="flex items-start gap-2 px-4 py-2.5 bg-emerald-500/5 border-t border-app-2 text-[11px] text-muted cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={skipProtectedTables}
+                    onChange={(e) => setSkipProtectedTables(e.target.checked)}
+                    disabled={restoring}
+                    className="accent-emerald-500 mt-0.5"
+                  />
+                  <span>
+                    <b className="text-emerald-300">Auth/RLS tables skip karein (recommended)</b>
+                    <br />
+                    {BROWSER_RESTORE_SKIP_TABLES.length} tables (8 auth-linked + ai_providers)
+                    browser se RLS/UUID mismatch ke chalte restore nahi hoti. Default ON par ye
+                    preserved rehti hain — unhe neeche <b>Admin Restore</b> se karein. OFF karne par
+                    purana wala `profiles/user_presence FAIL` wapas aayega.
+                  </span>
+                </label>
+
+                {/* Removed-column policy (decision #2): default FAIL, opt-in strip */}
+                <label className="flex items-start gap-2 px-4 py-2.5 bg-amber-500/5 border-t border-app-2 text-[11px] text-muted cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={allowRemovedColumns}
+                    onChange={(e) => setAllowRemovedColumns(e.target.checked)}
+                    disabled={restoring}
+                    className="accent-amber-500 mt-0.5"
+                  />
+                  <span>
+                    <b className="text-amber-300">Removed columns drop karein (override)</b>
+                    <br />
+                    File me maujood par live schema se hataaye gaye columns default me dry-run FAIL
+                    karte hain. Sirf jaane-bujhkar enable karein — enabled par ye columns strip ho
+                    jayenge (data loss ho sakta hai).
+                  </span>
+                </label>
 
                 {/* Action Buttons */}
                 <div className="flex gap-2 px-4 py-3 bg-app border-t border-app-2">

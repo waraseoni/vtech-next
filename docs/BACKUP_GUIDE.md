@@ -14,6 +14,18 @@
 > karo to backup me na hone wale **naye tables preserve** hote hain (delete
 > nahi); count mismatch ab error toast me dikhta hai, "100% verified" nahi.
 
+> ✅ **Live proof (28 Nov 2026, `.env.local` test DB):** fresh `4.0` backup se browser
+> `Restore Now` chalaya — **42 rows 100% restored + count verified**, 60 tables ka total
+> `108 → 108` (0 diff), 48/48 sequence reset `200`, `peek_next_job_id() = 28107`.
+> Auth-linked 8 tables aur RLS-only `ai_providers` is round-trip me untouched rahe.
+> Production/staging drill abhi owner approval ke baad hi chalana hai.
+>
+> 🔐 **Naya safe default (28 Nov):** `/backup` me **"Auth/RLS tables skip karein"** checkbox
+> default ON hai. Isse `profiles`, `user_presence` jaise 8 auth-linked tables aur RLS-only
+> `ai_providers` browser restore me FAIL nahi hote — preserved rehte hain. Inhe neeche
+> **Admin Restore (service-role)** se hi restore karein. Checkbox OFF karne par purana
+> RLS/UUID mismatch wala FAIL wapas aayega.
+
 ---
 
 # हिंदी गाइड
@@ -128,7 +140,7 @@ node scripts/supabase-restore.mjs backups/supabase/dumps/backup.sql --full
 ### रास्ता D — MariaDB Mirror से Failover (अगर Supabase टूट जाए और backup भी न हो)
 1. XAMPP → phpMyAdmin → `vtech_db` → Export → **SQL** फ़ॉर्मैट डाउनलोड करें।
 2. ब्राउज़र में खोलें: `/tools/vtech_mysql_converter.html`
-3. `.sql` फ़ाइल drop करें → **Convert & Download JSON** (v3.0 फ़ॉर्मैट बनेगा, 46 app tables)।
+3. `.sql` फ़ाइल drop करें → **Convert & Download JSON** (v4.0 फ़ॉर्मैट बनेगा, 46 app tables)।
 4. फिर `/backup` → Restore से उस JSON को restore करें (ऊपर रास्ता A)।
 
 ---
@@ -320,7 +332,7 @@ node scripts/supabase-restore.mjs backups/supabase/dumps/backup.sql --full
 ### Route D — Failover from the MariaDB mirror (if Supabase breaks AND no backup exists)
 1. XAMPP → phpMyAdmin → `vtech_db` → Export → **SQL** format, download.
 2. Open in a browser: `/tools/vtech_mysql_converter.html`
-3. Drop the `.sql` file → **Convert & Download JSON** (v3.0 format, 46 app tables).
+3. Drop the `.sql` file → **Convert & Download JSON** (v4.0 format, 46 app tables).
 4. Then restore that JSON via `/backup` → Restore (Route A above).
 
 ---
@@ -512,7 +524,7 @@ node scripts/supabase-restore.mjs backups/supabase/dumps/backup.sql --full
 ### Raasta D — MariaDB Mirror se Failover (Supabase toot gaya aur backup bhi nahi)
 1. XAMPP → phpMyAdmin → `vtech_db` → Export → **SQL** format download karo.
 2. Browser me kholo: `/tools/vtech_mysql_converter.html`
-3. `.sql` file drop karo → **Convert & Download JSON** (v3.0 format, 46 app tables).
+3. `.sql` file drop karo → **Convert & Download JSON** (v4.0 format, 46 app tables).
 4. Phir `/backup` → Restore se wo JSON restore karo (upar Raasta A).
 
 ---

@@ -615,6 +615,8 @@ Base messenger already live (`30aae41`). Ye round un requested features add kart
   - Converter v5: `public/tools/vtech_mysql_converter.html` — 46 app tables + v3.0, saare naye tables/casts, real data par verified (46 tables/10,175 rows exact).
   - Schedule: `schtasks /Create /TN "VTech Supabase Backup" /TR "node \"D:\next tech\vtech-next-frontend\scripts\supabase-json-backup.mjs\"" /SC DAILY /ST 02:00 /F`
   - 📖 Full guide (Hindi/English/Hinglish): `docs/BACKUP_GUIDE.md`.
+  - 🔄 2026-11-28: writers **format 4.0** par upgrade (schema_snapshot + migration_ids);
+    upar wale v3.0 references historical hain. Legacy 3.x files ab bhi warning ke saath padhte hain.
 - [x] Weekly off-site copy + "risky change se pehle fresh backup" = **ongoing routine** (guide §3 me documented, blocker nahi).
 - [x] Storage buckets: manual/Dashboard export cadence note = ongoing hygiene (guide §8 me documented).
 

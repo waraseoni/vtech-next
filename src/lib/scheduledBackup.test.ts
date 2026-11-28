@@ -7,6 +7,7 @@ import {
   deleteLocalBackup,
   readLocalBackup,
   BACKUP_DIR,
+  runScheduledBackup,
 } from "./scheduledBackup";
 
 describe("isBucketExistsError", () => {
@@ -84,5 +85,60 @@ describe("readLocalBackup", () => {
   it("missing file aur invalid name par throw karta hai", () => {
     expect(() => readLocalBackup("vtech_backup_missing_xyz.json")).toThrow();
     expect(() => readLocalBackup("../../package.json")).toThrow();
+  });
+});
+
+describe("runScheduledBackup format 4.0", () => {
+  it("writes version 4.0 with schema_snapshot + migration_ids", async () => {
+    const originalFetch = globalThis.fetch;
+    const spec = {
+      definitions: {
+        demo_table: {
+          required: ["id", "value"],
+          properties: {
+            id: { description: "Primary Key.<pk/>" },
+            value: { description: "" },
+          },
+        },
+      },
+    };
+    globalThis.fetch = (async (input: string | URL | Request) => {
+      const url = String(input);
+      if (url.endsWith("/rest/v1/")) {
+        return new Response(JSON.stringify(spec), { status: 200 });
+      }
+      if (url.includes("select=none")) {
+        return new Response("[]", {
+          status: 200,
+          headers: { "content-range": "0-0/1" },
+        });
+      }
+      if (url.includes("/rest/v1/demo_table?")) {
+        return new Response(JSON.stringify([{ id: 1, value: "x" }]), { status: 200 });
+      }
+      return new Response("{}", { status: 200 }); // storage upload
+    }) as typeof fetch;
+
+    let written = "";
+    try {
+      const result = await runScheduledBackup("https://example.invalid", "test-key");
+      expect(result.incomplete).toBe(false);
+      expect(result.tables).toBe(1);
+      written = result.file;
+      const json = JSON.parse(fs.readFileSync(result.file, "utf8"));
+      const meta = json._meta[0];
+      expect(meta.version).toBe("4.0");
+      expect(meta.schema_snapshot.tables.demo_table).toMatchObject({
+        cols: ["id", "value"],
+        pk: ["id"],
+        notNull: ["id", "value"],
+        generated: [],
+      });
+      expect(Array.isArray(meta.schema_snapshot.migration_ids)).toBe(true);
+      expect(json.demo_table).toEqual([{ id: 1, value: "x" }]);
+    } finally {
+      globalThis.fetch = originalFetch;
+      if (written) fs.rmSync(written, { force: true });
+    }
   });
 });

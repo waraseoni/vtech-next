@@ -595,6 +595,7 @@ Last synced: 28 Nov 2026 · Source: `supabase/migrations/*.sql`
 - `src/app/backup/page.tsx`
 - `src/lib/backupRestore.ts`
 - `src/lib/backupSchema.ts`
+- `src/lib/backupMigrationIds.ts`
 - `src/lib/backupAuthRestore.ts`
 - `src/lib/resetSequence.ts`
 - `src/lib/scheduledBackup.ts`
@@ -603,10 +604,19 @@ Last synced: 28 Nov 2026 · Source: `supabase/migrations/*.sql`
 - `public/tools/vtech_mysql_converter.html`
 - `docs/BACKUP_GUIDE.md`
 
-## Known legacy gaps (audit 27 Nov 2026 — abhi fix nahi)
+## Known gaps / decisions (28 Nov 2026 — format 4.0)
 
-- Backup JSON me **schema snapshot nahi** (`_meta.version = "3.0"` constant); rename/type-change/
-  removed-column detect nahi hote. Restore hamesha current live schema se validate karta hai.
+- ✅ Format 4.0: `_meta.schema_snapshot` (`captured_at`,
+  `tables.{cols,pk,notNull,generated}`, `migration_ids`) ab browser/server/CLI/converter
+  writers me likha jata hai. Legacy 3.x/2.x padhe jaate hain (warning + counts verify),
+  hard-block nahi.
+- ✅ Removed-column policy: file me maujood par live schema se hataaye gaye columns par
+  dry-run/real restore FAIL by default. Sirf explicit override (`/backup` checkbox /
+  `scripts/force-restore.cjs --allow-removed-columns`) par strip hote hain.
+- ✅ Browser restore skip list (`src/lib/backupAuthRestore.ts`): 8 auth-linked tables + RLS-only
+  `ai_providers` default ON par clear/upsert/count-verify se bahar rehte hain. Inhe sirf
+  service-role **Admin Restore** se restore karna hai. Reason: 28 Nov owner restore me
+  `profiles` (6) aur `user_presence` (2) RLS/UUID mismatch se FAIL hue the.
 - Grants / RLS policies / functions / triggers backup me nahi jaate — fresh DB par pehle migrations
   apply karna zaroori hai.
 - `public/tools/vtech_mysql_converter.html` ka 46-table list aur bool maps stale hain

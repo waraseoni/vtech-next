@@ -1,11 +1,16 @@
 // Server-side scheduled backup — /api/backup/scheduled + scripts ke liye shared logic.
 // Service-role se saari tables (schemas OpenAPI se live) paginated fetch karke
-// page-compatible v3.0 JSON server ke backups/ folder me likhta hai.
+// page-compatible v4.0 JSON server ke backups/ folder me likhta hai.
 // Disclaimer: sirf server local file write + read-only DB GET — restore jaisa koi write nahi.
 
 import fs from "node:fs";
 import path from "node:path";
-import { parseOpenApiToSchema, type SupabaseTableSchema } from "./backupSchema";
+import {
+  buildSchemaSnapshot,
+  parseOpenApiToSchema,
+  type SupabaseTableSchema,
+} from "./backupSchema";
+import { listMigrationIds } from "./backupMigrationIds";
 
 /** Server runtime me cwd = project root (backups/ wahi hota hai). */
 export const BACKUP_DIR = path.join(process.cwd(), "backups");
@@ -136,16 +141,18 @@ export async function runScheduledBackup(url: string, key: string): Promise<Sche
   const counts: Record<string, number> = {};
   let rows = 0;
 
+  const createdAt = new Date().toISOString();
   const backup: Record<string, unknown> = {
     _meta: [
       {
-        version: "3.0",
-        created_at: new Date().toISOString(),
+        version: "4.0",
+        created_at: createdAt,
         tables: tables.map((t) => t.name),
         app: "V-Tech Management System (server scheduled backup)",
         origin: "scheduledBackup.ts",
         table_order: tables.map((t) => ({ table: t.name })),
         warnings: [],
+        schema_snapshot: buildSchemaSnapshot(tables, listMigrationIds(), createdAt),
       },
     ],
   };

@@ -134,3 +134,15 @@ describe("AI brand filter awareness", () => {
     expect(fx.eqs).toContainEqual(["brand_id", 5]);
   });
 });
+
+// Backup/restore rule — AGENTS.md golden rule: AI ko nayi restore policy batani chahiye.
+describe("AI backup/restore awareness", () => {
+  it("prompt auth-linked skip aur Admin Restore route batata hai", () => {
+    const prompt = buildSystemPrompt("admin");
+
+    expect(prompt).toContain("/backup");
+    expect(prompt).toContain("Admin Restore");
+    expect(prompt).toContain("ai_providers");
+    expect(prompt).toContain("removed-column");
+  });
+});

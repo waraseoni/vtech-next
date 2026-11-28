@@ -85,13 +85,13 @@
 8. [x] **D11 golden rule** — schema change ke saath backup/restore update bina bole: `AGENTS.md` +
        DATA_MIGRATION_NOTES, `docs/backup_restore_contract.md`, `npm run backup:contract` CI gate,
        old-backup me na hone wale tables preserve, count mismatch → error toast.
-       Readiness roadmap: `plans/backup_restore_readiness_plan_2026-11-27.md` (B1–B20 pending).
+       Readiness roadmap: `plans/backup_restore_readiness_plan_2026-11-27.md` (W1/B1–B4 landed; B5–B20 partial/pending).
 
 > Inme se 1–8 sab **code/docs** hain — koi DB write, koi secret, koi commit nahi.
 >
-> **Latest gates (28 Nov):** `tsc --noEmit` ✓ · `eslint` ✓ ·
-> `vitest run` **80 files / 810 tests** ✓ · `verify:data` (schema:drift 40 OK +
-> backup:contract 60 tables/513 columns) ✓ · `next build` **139 pages** ✓ ·
+> **Latest gates (28 Nov, after backup format work):** `tsc --noEmit` ✓ · `eslint` ✓ ·
+> `vitest run` **80 files / 821 tests** ✓ · `verify:data` (schema:drift 40 OK +
+> backup:contract 60 tables/513 columns/11 surfaces) ✓ · `next build` **139 pages** ✓ ·
 > touched files prettier ✓. Push pending (local commits).
 
 ---
@@ -100,21 +100,46 @@
 
 - [x] K1–K15 final decision register lock (28 Nov: owner + best-practice calls)
 - [x] D1 migration applied + verified by owner: anon 7/7 401, matrix 9/9 `anon_ok=false`,
-      guard 42501, staff UI + 3 reports green. **Portal smoke + backup sequence reset baaki.**
-- [~] D2 probes (28 Nov): columns/tables/index/RPCs ✅ · profiles `qual` expected; `with_check`
-  null-safe query pending · B1 `brand_job_no` apply+verify ✅ · **mode-gate applied + verified
-  (`v`, `true`; test job `KMK#004`)**
-- [x] A1 migration apply (owner) → `schema:drift` OK; **restore smoke (`expects_fault` round-trip) baaki**
-- [ ] D3 asli backup se browser dry-run → confirm checkbox → `setTempPasswords: true`;
-      218 auth-linked rows clear, admin profile protected
-- [ ] A8 bulk-edit se legacy tagging run (coverage snapshot pehle/ baad)
-- [ ] Browser smoke: `/jobs/new`, `/jobs/[id]/edit`, `/jobs/bulk`, `/jobs/bulk-edit`,
-      `/settings/service-center`, navbar search — console errors 0
-- [ ] Push local commits → `origin/main`; version bump alag approval se
-- [ ] **K14** named second reviewer + CSP 14-din violation observation start (enforce baad me).
-- [ ] Backup readiness owner decisions: format `4.0` accept, purane files ke liye `legacy` mode
-      ya hard-block, removed-column par `fail + explicit override`, snapshot me migration IDs,
-      live restore drill ka environment/date.
+      guard 42501, staff UI + 3 reports green. **Portal smoke baaki**; backup sequence reset
+      test DB par verify ho gaya (48/48 route calls `200`).
+- [x] D2 probes: columns/tables/index/RPCs ✅ · **profiles UPDATE `with_check` verified (28 Nov)**:
+      dono policies me `NOT (role/client_id IS DISTINCT FROM get_my_*())` = `IS NOT DISTINCT FROM`
+      (coalesce nahi) · B1 `brand_job_no` apply+verify ✅ · mode-gate verified (`v`, `true`).
+      Admin profiles me 1 row `email=NULL, role=admin` dikha — D3 dry-run me admin profile protected
+      rehna chahiye; cleanup sirf owner approval se.
+- [x] A1: `fault is_nullable = NO` ✅; `expects_fault` values restore ke baad bhi wahi
+      (Repair=true, canonical New Installation=false, PDI=false, aliases=null). Full browser
+      `Restore Now` round-trip bhi test DB par chal gaya — values unchanged, `fault` column `NO`.
+- [x] D3 owner complete; agent ne read-only verify: profiles 6, user_presence 3, baaki
+      auth-linked tables 0, admin profile preserved (3 admin/developer rows unchanged).
+- [x] A8 test DB par tagging: job 1 → canonical `Repair` (id 9). Ab 8/8 service-tagged,
+      8/8 brand-tagged, untagged 0; 4 legacy `brand_job_no` NULL preserve. Save smoke ke baad
+      9/9 service-tagged, 8/9 brand-tagged (naya smoke job untagged, RPC: `untagged=1`).
+- [x] Browser smoke: `/jobs/new`, `/jobs/[id]/edit`, `/jobs/bulk`, `/jobs/bulk-edit`,
+  `/settings/service-center`, navbar search `KMK#004`, `/jobs?brand=5` (6/6),
+  `/jobs?brand=untagged` — **sab 0 console errors**. Actual save flows bhi agent ne test DB par
+  kiye: New Installation bina fault ✅ save (`/jobs/9/view`, `fault=""`), Repair bina fault ✅
+  block (`Fault description zaroori hai`, koi row create nahi). Details:
+  `owner_gates_runbook_2026-11-28.md`.
+- [x] Push local commits → `origin/main` (owner release `9ba5b74` = 1.88.0 ke upar rebase,
+      head `e76e33d` push hua); version bump alag approval se (owner ne 1.88.0 kiya)
+- [x] **K14** policy applied: agent-authored PR ka reviewer **Vikram Jain (`@waraseoni`)**; direct
+      `main` push feature branch se hata kar **PR #1** me gaya; `main` par PR-required protection
+      (conversation resolution + force-push/delete block) API se applied. Approval count `0` kyunki
+      PR author bhi `@waraseoni` hai — self-approval GitHub count nahi karta; second human mile to
+      `1` set karna hai. CSP observation **28 Nov–11 Dec** (14 din), decision 12 Dec. CI workflow
+      abhi nahi hai; add hote hi required checks wire karni hain.
+- [x] Backup readiness decisions (owner ne agent ko choose karne diya): format `4.0` + legacy
+      read, removed-column **fail + explicit override**, `schema_snapshot.migration_ids` tino
+      writers me, browser-verified. **Test DB par full `4.0` round-trip: 42 rows 100% restored
+      + count verified, 48/48 sequence resets `200`, `peek_next_job_id()=28107`.** Owner ke poori
+      file wale restore me 8 auth/RLS FAIL aaye (data safe); ab `/backup` me auth/RLS skip checkbox
+      default ON jo in 9 tables ko protected rakhta hai — poori 60-table file ke saath live proof:
+      dry-run 0 FAIL, `42 rows 100% restored · 9 skip`, counts 0 diff. Owner ne bhi same flow khud
+      repeat kiya — 0 error; Step 4 owner-confirmed close. Production drill abhi nahi chalaya.
+- [x] Gates 28 Nov: `verify:data` ✅ (40 migrations, 60 tables/513 cols/11 surfaces), typecheck ✅,
+      lint ✅ (0 errors), 821 tests ✅, build ✅ (139 pages, Turbopack warning fix hua), touched
+      prettier ✅.
 
 ---
 

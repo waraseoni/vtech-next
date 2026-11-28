@@ -507,7 +507,16 @@ async function doConvert(){
   const parsed=parseSQL(sqlContent);
   log(`✓ Parse done`,"ok");
 
-  const output={_meta:[{version:"3.0",created_at:new Date().toISOString(),tables:TABLES,app:"V-Tech Management System",origin:"vtech_mysql_converter.html",table_order:TABLES.map((t,i)=>({table:t,order:i+1})),warnings:[]}]};
+  // Format 4.0: converter ke paas live migrations nahi — snapshot SQL parse se banata hai,
+  // migration_ids khali (restore ke baad live DB verify zaroori).
+  const snapTables={};
+  for(const t of TABLES){
+    const seen=new Set();
+    for(const row of (parsed[t]||[])) for(const k of Object.keys(row)) seen.add(k);
+    snapTables[t]={cols:[...seen],pk:[],notNull:[],generated:[]};
+  }
+  const capturedAt=new Date().toISOString();
+  const output={_meta:[{version:"4.0",created_at:capturedAt,tables:TABLES,app:"V-Tech Management System",origin:"vtech_mysql_converter.html",table_order:TABLES.map((t,i)=>({table:t,order:i+1})),warnings:[],schema_snapshot:{captured_at:capturedAt,tables:snapTables,migration_ids:[]}}]};
   let total=0,empty=0;
 
   for(const table of TABLES){

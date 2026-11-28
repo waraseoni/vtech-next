@@ -1,6 +1,7 @@
 # Backup/Restore Readiness Plan — 27 Nov 2026
 
-_Status: **PLAN ONLY** — ye commit sirf plan save karta hai; implementation agle batch me._
+_Status (28 Nov 2026): **W1 LANDED locally** — format 4.0 + schema snapshot + migration IDs +
+removed-column fail/override. Baaki W2–W6 ka partial progress niche gate runbook me track hai._
 
 ## Objective
 
@@ -34,6 +35,12 @@ apne aap update honi chahiye (bina owner ke baar baar bataye).
 | B2 | Backup format version `4.0` | Purane `3.0`/`v2` files padhne ke liye backward-compatible reader rakho. Version constant nahi rahega. |
 | B3 | Restore validation snapshot-aware karo | Snapshot ho to rename/type-change/removed column detect karo; purana file ho to explicit `legacy` warning + owner confirmation. |
 | B4 | Removed-column policy | Dry-run me dikhao ki kaunse columns drop honge; silent data drop mat karo. |
+
+**W1 result (28 Nov 2026, local):** B1 ✅ (`buildSchemaSnapshot` shared helper; browser/server/CLI
++ converter writers), B2 ✅ (`4.0` writers + non-blocking legacy reader with warning), B3 ✅
+(version warning preview + toast; snapshot capture), B4 ✅ (dry-run **aur** real restore fail by
+default; opt-in checkbox / `--allow-removed-columns`). Tests:
+`src/lib/backupSchema.test.ts`, `src/lib/scheduledBackup.test.ts`.
 
 ### W2 — Restore correctness (P0)
 
@@ -85,18 +92,30 @@ apne aap update honi chahiye (bina owner ke baar baar bataye).
 5. CLI/server/converter aur browser tooling **ek hi contract** follow karte hain.
 6. `npm run verify:data` + CI green; owner staging me live drill confirm.
 
-## Owner decisions needed pehle
+## Owner decisions — final (28 Nov 2026, agent ko choose karne diya gaya)
 
-- Backup format `4.0` accept? Purane files ke liye `legacy` mode chalana hai ya hard-block?
-- Restore me removed-column ko **drop** kare ya **fail**? (Recommendation: fail + explicit override.)
-- JSON me schema snapshot ke saath **migration IDs** bhi store karein? (Recommendation: haan.)
-- Live restore drill kab aur kis environment me? (Agent live DB write nahi karega.)
+- ✅ **Format 4.0** — purane 3.x/2.x files `legacy` warning ke saath padhte hain (hard-block nahi):
+  disaster recovery me purana backup bhi kaam aana chahiye.
+- ✅ **Removed column → FAIL + explicit override** —silent drop sabse bada data-loss risk tha;
+  ab dry-run aur real restore dono fail karte hain, opt-in sirf checkbox / CLI flag se.
+- ✅ **Migration IDs haan** — local `supabase/migrations/*.sql` filenames snapshot me store (live DB
+  me migrations table nahi hai), taaki restore ke baad schema verify ho.
+- ✅ **Live restore drill (test DB)** — owner ne `.env.local` wali test DB par restore test ki
+  ijazat di. Fresh `4.0` backup → browser `Restore Now`: **42 rows 100% restored + count verified**,
+  60/60 table counts same (`108 → 108`), 48/48 sequence reset `200`, `peek_next_job_id()=28107`.
+  Auth-linked 8 tables + `ai_providers` is round-trip me preserve rahe. Production par abhi bhi
+  destructive restore nahi chalaya gaya.
+- ✅ **Auth/RLS skip default ON** — owner ke poori file wale restore me `profiles` (6) aur
+  `user_presence` (2) RLS/UUID mismatch se FAIL hue, par data safe raha. Ab browser restore
+  9 tables (8 auth-linked + `ai_providers`) ko auto-skip karta hai; inhe service-role Admin
+  Restore se hi restore karein.
 
 ## Standing rules (badalte nahi)
 
 - Schema/migration change → backup/restore surfaces usi kaam me update (`npm run verify:data`).
 - Commit/push sirf owner approval par; final version bump/release owner bole tabhi.
-- Secrets print nahi; service-role browser me nahi; agent live DB writes nahi.
+- Secrets print nahi; service-role browser me nahi. Agent sirf **test DB** par owner-ijazat se
+  read/write karta hai; prod URLs/DB kabhi touch nahi.
 - Masters deactivate-only; global `job_id`/counter/index untouched.
 
 ---

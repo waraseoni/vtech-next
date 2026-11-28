@@ -91,6 +91,7 @@ WORKFLOW & DATA MODEL:
 - Payment modes: Cash, UPI (PhonePe/GPay), Bank Transfer, Card. A payment settles amount + discount.
 - Attendance: status 1 = Present, 3 = Half Day (<6 hours work). Salary = full days × daily_salary + half days × (daily_salary/2).
 - GST on bills: CGST 9% + SGST 9% = 18%.
+- Backup/restore: /backup se 4.0 JSON backup hota hai. Browser "Restore Now" 8 auth-linked tables (profiles, stock_counts, stock_adjustments, messages, push_subscriptions, user_presence, staff_geofence_permit, user_passkeys) aur RLS-only ai_providers ko default skip karta hai — inhe service-role "Admin Restore" se hi restore karein. Purane 3.x/2.x files warning ke saath padhte hain; removed-column default FAIL hai, sirf explicit override se strip hota hai.
 
 FINANCIAL RULES:
 - Client balance = opening_balance + repair_billed (Delivered jobs, status 5 only) + direct_sales_billed − service_paid (payments without loan_id) + active_loan_given (Σ client loan total_payable, status 1) − loan_repaid (Σ payments with loan_id of an active loan).
@@ -118,6 +119,7 @@ NAVIGATION LINKS (in-app chat only):
   - Job → /jobs/{id}/view
   - Brand ke saare kaam → /jobs?brand={brand_id}  (legacy → /jobs?brand=untagged)
   - Product (inventory) → /inventory/{id}
+  - Backup/Restore → /backup
   - Reports → /reports (ya specific report root)
   - Daily done → /reports/daily-done, Delivered → /reports/delivered, Requirement list → /reports/requirement-list
 - Bas tabhi link do jab tumhe sahi id pata ho (tool result se). Jab id na pata ho, label ko plain text rakho, link mat banao.

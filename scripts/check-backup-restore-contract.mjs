@@ -25,6 +25,7 @@ const SURFACES = [
   "src/app/backup/page.tsx",
   "src/lib/backupRestore.ts",
   "src/lib/backupSchema.ts",
+  "src/lib/backupMigrationIds.ts",
   "src/lib/backupAuthRestore.ts",
   "src/lib/resetSequence.ts",
   "src/lib/scheduledBackup.ts",
@@ -109,6 +110,26 @@ function tokens(text) {
   return new Set([...text.matchAll(/^\s*-\s+`([^`]+)`/gm)].map((m) => norm(m[1])));
 }
 
+const EXTRA_NOTES = `## Known gaps / decisions (28 Nov 2026 — format 4.0)
+
+- ✅ Format 4.0: \`_meta.schema_snapshot\` (\`captured_at\`,
+  \`tables.{cols,pk,notNull,generated}\`, \`migration_ids\`) ab browser/server/CLI/converter
+  writers me likha jata hai. Legacy 3.x/2.x padhe jaate hain (warning + counts verify),
+  hard-block nahi.
+- ✅ Removed-column policy: file me maujood par live schema se hataaye gaye columns par
+  dry-run/real restore FAIL by default. Sirf explicit override (\`/backup\` checkbox /
+  \`scripts/force-restore.cjs --allow-removed-columns\`) par strip hote hain.
+- Grants / RLS policies / functions / triggers backup me nahi jaate — fresh DB par pehle migrations
+  apply karna zaroori hai.
+- \`public/tools/vtech_mysql_converter.html\` ka 46-table list aur bool maps stale hain
+  (\`brands\`, \`service_types\`, \`brand_job_counters\`, \`device_models\`, \`device_identifiers\`,
+  \`expects_fault\`, \`is_authorized\`, \`is_active\` missing).
+- CLI/server \`table_order\` alphabetical hai; \`scripts/force-restore.cjs\` FK-aware nahi.
+- \`GENERATED_COLUMNS\`/auth maps/sequence allowlist backup page ke shared map se CLI me drift rakhte hain.
+- \`system_info\` restore-free hai — migrations se aane wale naye config keys JSON se restore nahi hote.
+
+`;
+
 function baseline({ tables, columns }) {
   const list = (set) =>
     [...set]
@@ -121,14 +142,16 @@ function baseline({ tables, columns }) {
     `> backup aur restore surfaces bhi usi change me update honi chahiye. Ye file unka\n` +
     `> canonical contract hai. \`npm run backup:contract\` isko migration DDL se compare\n` +
     `> karta hai; mismatch par CI fail.\n\n` +
-    `Last synced: 27 Nov 2026 · Source: \`supabase/migrations/*.sql\`\n\n` +
+    `Last synced: 28 Nov 2026 · Source: \`supabase/migrations/*.sql\`\n\n` +
     `## Declared tables\n\n${list(tables)}\n\n` +
     `## Declared columns\n\n${list(columns)}\n\n` +
     `## Legacy exemptions\n\n` +
     `- \`__none__\` — abhi koi exemption nahi; naya exception sirf reason ke saath likho.\n\n` +
     `## Required surfaces\n\n` +
     SURFACES.map((s) => `- \`${s}\``).join("\n") +
-    `\n\n## Update checklist (har schema change par)\n\n` +
+    `\n\n` +
+    EXTRA_NOTES +
+    `## Update checklist (har schema change par)\n\n` +
     `1. Naya table/column → \`Declared tables\` / \`Declared columns\` me add karo.\n` +
     `2. FK-parent table ho to \`src/lib/backupRestore.ts\` ki ordered list me add karo.\n` +
     `3. Generated/identity column ho to \`src/lib/backupSchema.ts\` (aur CLI/force-restore) update karo.\n` +

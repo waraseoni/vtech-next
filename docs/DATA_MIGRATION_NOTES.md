@@ -101,8 +101,11 @@ Naya antar milte hi is table me add karo.
 Kyunki browser backup live OpenAPI schema se table/column/PK padhta hai,
 additive changes zyadatar apne aap chal jaate hain. Lekin ye kaafi nahi:
 
-- backup JSON me **schema snapshot nahi** hota (sirf rows + `_meta.version = 3.0`),
-  isliye rename/type-change/removed column detect nahi hote.
+- Backup JSON ab **format 4.0** hai: rows + `_meta.schema_snapshot` (`captured_at`,
+  `tables.{cols,pk,notNull,generated}`, `migration_ids`). Purane 3.x/2.x backup warning ke
+  saath padhe jaate hain. File me maujood par live schema se hataaye gaye columns par
+  restore **FAIL** karta hai; sirf explicit override (page checkbox /
+  `force-restore.cjs --allow-removed-columns`) par strip hote hain.
 - `src/lib/backupRestore.ts` ka FK-first table order, `backupSchema.ts` ka
   `GENERATED_COLUMNS`, `backupAuthRestore.ts` ke auth maps aur `resetSequence.ts`
   ki allowlist **hard-coded** hain.
