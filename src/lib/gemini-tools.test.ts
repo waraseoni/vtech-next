@@ -144,5 +144,7 @@ describe("AI backup/restore awareness", () => {
     expect(prompt).toContain("Admin Restore");
     expect(prompt).toContain("ai_providers");
     expect(prompt).toContain("removed-column");
+    expect(prompt).toContain("Generated identity PK");
+    expect(prompt).toContain("mechanic_id+effective_from");
   });
 });

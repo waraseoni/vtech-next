@@ -16,6 +16,7 @@ import {
   BACKUP_TABLES,
   normalizeTextFieldsForRestore,
   dedupeRowsByPk,
+  restoreConflictKey,
   classifyRestoreError,
   restoreErrorHint,
 } from "@/lib/backupRestore";
@@ -883,13 +884,19 @@ export default function BackupPage() {
 
           const liveCols = colsOf(table);
           const pk = pkOf(table);
-          const gens = new Set(genOf(table));
+          const generated = genOf(table);
+          const gens = new Set(generated);
+          // Generated identity PK (e.g. staff_duty_schedule.id) backup me hota hi
+          // nahi — uski jagah unique business key se uniqueness check karo.
+          const conflictKey = restoreConflictKey(table, pk, generated);
 
-          // 1) PK value present + unique — missing/dup PK = upsert merge ya fail
-          if (pk.length > 0) {
-            const badPk = countPkViolations(rows, pk);
+          // 1) Restore key present + unique — missing/dup = upsert merge ya fail
+          if (conflictKey.length > 0) {
+            const badPk = countPkViolations(rows, conflictKey);
             if (badPk > 0) {
-              issues.push(`${table}: ${badPk} rows me PK (${pk.join(",")}) missing/duplicate`);
+              issues.push(
+                `${table}: ${badPk} rows me restore key (${conflictKey.join(",")}) missing/duplicate`
+              );
             }
           }
 
@@ -1089,8 +1096,8 @@ export default function BackupPage() {
 
         // ── Strip GENERATED columns (DB auto-calculates these) ────────────────
         const genCols = genOf(table);
-        // ── Live schema PK (upsert onConflict + dedupe ke liye) ───────────────
-        const pk = pkOf(table);
+        // ── Live schema PK + generated identity fallback (upsert/dedupe ke liye)
+        const conflictKey = restoreConflictKey(table, pkOf(table), genCols);
         // ── Image columns jo is table mein hain (protection ke liye) ───────────
         const imgCols = (colsOf(table) ?? TABLE_COLUMNS[table] ?? []).filter((c) =>
           IMAGE_COLUMNS.includes(c)
@@ -1161,14 +1168,14 @@ export default function BackupPage() {
 
         // Step 2: Insert in batches of 25 (rate limit se bachne ke liye smaller batches)
         const batchSize = 25;
-        // Live PK columns ka onConflict — nikala hua composite PK (jaise
-        // spare_supplier) bhi sahi se upsert (update/insert) ho sake
-        const onConflict = pk.length ? { onConflict: pk.join(",") } : undefined;
+        // Live PK / generated-identity fallback ka onConflict — composite PK
+        // (spare_supplier) aur generated ID (staff_duty_schedule) dono sahi ho.
+        const onConflict = conflictKey.length ? { onConflict: conflictKey.join(",") } : undefined;
         for (let i = 0; i < rows.length; i += batchSize) {
           let batch = rows.slice(i, i + batchSize);
-          // Dedup within batch (single + composite PK) — "cannot affect row a
+          // Dedup within batch (single + composite key) — "cannot affect row a
           // second time" error se bachao
-          const deduped = dedupeRowsByPk(batch, pk);
+          const deduped = dedupeRowsByPk(batch, conflictKey);
           if (deduped.skipped > 0) {
             console.warn(`${table} batch ${i}: ${deduped.skipped} duplicates skipped`);
           }

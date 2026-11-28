@@ -165,6 +165,31 @@ export function dedupeRowsByPk<T extends Record<string, unknown>>(
   return { rows: out, skipped };
 }
 
+/**
+ * `generated always as identity` PK wali tables ka backup me ID nahi hota — DB
+ * insert par khud ID banata hai. Isliye dry-run/upsert ko raw PK (`id`) nahi,
+ * table ka unique business key use karna chahiye.
+ *
+ * Fallback key sirf un tables ke liye hai jahan DB me real UNIQUE constraint hai.
+ * Jahan nahi hai (e.g. staff_geofence_permit) wahan `[]` = plain insert, koi
+ * fake onConflict nahi.
+ */
+export const GENERATED_PK_CONFLICT_KEYS: Record<string, readonly string[]> = {
+  // migration 20261002_staff_duty_schedule.sql: UNIQUE (mechanic_id, effective_from)
+  staff_duty_schedule: ["mechanic_id", "effective_from"],
+};
+
+export function restoreConflictKey(
+  table: string,
+  pk: readonly string[],
+  generated: readonly string[]
+): string[] {
+  const gen = new Set(generated);
+  const usablePk = pk.filter((col) => !gen.has(col));
+  if (usablePk.length > 0) return usablePk;
+  return [...(GENERATED_PK_CONFLICT_KEYS[table] ?? [])];
+}
+
 export type RestoreErrorKind = "rls" | "fk" | "unique" | "identity" | "other";
 
 export function classifyRestoreError(message: string): RestoreErrorKind {
