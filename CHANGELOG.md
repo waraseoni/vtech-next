@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.90.3](https://github.com/waraseoni/vtech-next/compare/v1.90.2...v1.90.3) (2026-11-28)
+
+### Performance Improvements
+
+* **nav:** clients/jobs sub-pages ko instant kholne ke liye fixes ([105ddbc](https://github.com/waraseoni/vtech-next/commit/105ddbc34cf6727862f7ee0d8217d2e9e8555963))
+
 ## [1.90.2](https://github.com/waraseoni/vtech-next/compare/v1.90.1...v1.90.2) (2026-11-28)
 
 ### Bug Fixes
