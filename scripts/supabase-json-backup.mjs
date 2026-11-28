@@ -2,7 +2,7 @@
 /**
  * supabase-json-backup.mjs — free-tier off-site backup (CLI)
  *
- * /backup page ka jaisa JSON v3.0 backup banaata hai, par bina browser/app ke:
+ * /backup page ka jaisa JSON v4.0 backup banaata hai, par bina browser/app ke:
  *  - Service-role key (RLS bypass) se saari 51 public tables paginated fetch
  *  - OpenAPI schema se cols/pk live (hardcoded list nahi) — GENERATED cols skip
  *  - Har table par exact-count verify (silent data loss pakadne ke liye)
@@ -21,6 +21,33 @@ import { fileURLToPath } from "node:url";
 
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = path.resolve(SCRIPT_DIR, "..");
+
+/** Local migration IDs — snapshot me store (live DB me migrations table nahi). */
+function listMigrationIds() {
+  const dir = path.join(PROJECT_ROOT, "supabase", "migrations");
+  try {
+    return fs
+      .readdirSync(dir)
+      .filter((f) => f.endsWith(".sql"))
+      .sort()
+      .map((f) => f.replace(/\.sql$/, ""));
+  } catch {
+    return [];
+  }
+}
+
+function buildSchemaSnapshot(tables, migrationIds, capturedAt) {
+  const snapshot = {};
+  for (const t of tables) {
+    snapshot[t.name] = {
+      cols: [...t.cols],
+      pk: [...t.pk],
+      notNull: [...t.notNull],
+      generated: [...t.generated],
+    };
+  }
+  return { captured_at: capturedAt, tables: snapshot, migration_ids: [...migrationIds] };
+}
 
 // ── args ─────────────────────────────────────────────────────────────────────
 const args = process.argv.slice(2);
@@ -152,16 +179,18 @@ try {
   const counts = {};
   let total = 0;
 
+  const createdAt = new Date().toISOString();
   const backup = {
     _meta: [
       {
-        version: "3.0",
-        created_at: new Date().toISOString(),
+        version: "4.0",
+        created_at: createdAt,
         tables: tables.map((t) => t.name),
         app: "V-Tech Management System (CLI scheduled backup)",
         origin: "supabase-json-backup.mjs",
         table_order: tables.map((t) => ({ table: t.name })),
         warnings: [],
+        schema_snapshot: buildSchemaSnapshot(tables, listMigrationIds(), createdAt),
       },
     ],
   };

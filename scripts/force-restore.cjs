@@ -107,6 +107,11 @@ async function main() {
   console.log('  Service-role (RLS bypass), dynamic live-schema columns');
   console.log('========================================================');
 
+  const allowRemovedColumns = process.argv.includes('--allow-removed-columns');
+  if (allowRemovedColumns) {
+    console.log('⚠️  --allow-removed-columns: file ke obsolete columns DROP honge (data loss sambhav).');
+  }
+
   const env = readEnv();
   const supabaseUrl = env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseKey = env.SUPABASE_SERVICE_ROLE_KEY;
@@ -134,6 +139,12 @@ async function main() {
   const requested = positional.slice(1);
   let tableOrder = [];
   const meta = data._meta?.[0] || {};
+  const version = String(meta.version || '');
+  if (!version) throw new Error('Invalid backup file — _meta.version nahi mila.');
+  const major = Number.parseInt(version.split('.')[0], 10);
+  if (!Number.isFinite(major) || major < 4) {
+    console.warn(`⚠️  Legacy backup version "${version}" — schema_snapshot/migration IDs nahi hote. Counts verify karein.`);
+  }
   if (Array.isArray(meta.table_order)) {
     tableOrder = meta.table_order.map((t) => (typeof t === 'string' ? t : t?.table)).filter(Boolean);
   } else {
@@ -151,6 +162,27 @@ async function main() {
   console.log('🔎 Live schema fetch ho rahi hai...');
   const schema = await fetchLiveSchema(supabaseUrl, supabaseKey);
   const supabase = createClient(supabaseUrl, supabaseKey);
+
+  // ── Removed-column policy: default FAIL, explicit override hi strip karta hai ──
+  const removed = [];
+  for (const table of tables) {
+    const rows = data[table];
+    const live = schema[table];
+    if (!Array.isArray(rows) || !live || !live.cols?.length) continue;
+    const liveCols = new Set(live.cols);
+    const unknown = new Set();
+    for (const row of rows) {
+      for (const k of Object.keys(row || {})) if (!liveCols.has(k)) unknown.add(k);
+    }
+    if (unknown.size) removed.push(`${table}: ${Array.from(unknown).join(', ')}`);
+  }
+  if (removed.length && !allowRemovedColumns) {
+    throw new Error(
+      `Restore blocked — live schema me na hone wale columns: ${removed.join(' | ')}. ` +
+        'Jaane-bujhkar drop karne ke liye --allow-removed-columns flag use karein.'
+    );
+  }
+  if (removed.length) console.warn(`⚠️  Removed columns override — strip: ${removed.join(' | ')}`);
 
   const ok = await confirmQuestion(
     `LIVE database par ${tables.length} tables restore hongi (upsert = existing rows update honge). Continue?`

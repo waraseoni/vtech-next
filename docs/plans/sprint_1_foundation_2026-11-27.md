@@ -85,13 +85,13 @@
 8. [x] **D11 golden rule** — schema change ke saath backup/restore update bina bole: `AGENTS.md` +
        DATA_MIGRATION_NOTES, `docs/backup_restore_contract.md`, `npm run backup:contract` CI gate,
        old-backup me na hone wale tables preserve, count mismatch → error toast.
-       Readiness roadmap: `plans/backup_restore_readiness_plan_2026-11-27.md` (B1–B20 pending).
+       Readiness roadmap: `plans/backup_restore_readiness_plan_2026-11-27.md` (W1/B1–B4 landed; B5–B20 partial/pending).
 
 > Inme se 1–8 sab **code/docs** hain — koi DB write, koi secret, koi commit nahi.
 >
-> **Latest gates (28 Nov):** `tsc --noEmit` ✓ · `eslint` ✓ ·
-> `vitest run` **80 files / 810 tests** ✓ · `verify:data` (schema:drift 40 OK +
-> backup:contract 60 tables/513 columns) ✓ · `next build` **139 pages** ✓ ·
+> **Latest gates (28 Nov, after backup format work):** `tsc --noEmit` ✓ · `eslint` ✓ ·
+> `vitest run` **80 files / 818 tests** ✓ · `verify:data` (schema:drift 40 OK +
+> backup:contract 60 tables/513 columns/11 surfaces) ✓ · `next build` **139 pages** ✓ ·
 > touched files prettier ✓. Push pending (local commits).
 
 ---
@@ -106,21 +106,29 @@
       (coalesce nahi) · B1 `brand_job_no` apply+verify ✅ · mode-gate verified (`v`, `true`).
       Admin profiles me 1 row `email=NULL, role=admin` dikha — D3 dry-run me admin profile protected
       rehna chahiye; cleanup sirf owner approval se.
-- [x] A1 migration apply (owner) → `schema:drift` OK; restore smoke me `fault is_nullable = NO`
-      verified; **`service_types.expects_fault` values ka before/after output abhi pending**
-- [ ] D3 asli backup se browser dry-run → confirm checkbox → `setTempPasswords: true`;
-      218 auth-linked rows clear, admin profile protected
-- [ ] A8 bulk-edit se legacy tagging run (coverage snapshot pehle/ baad)
-- [~] Browser smoke: `/jobs/new`, `/jobs/[id]/edit`, `/jobs/bulk`, `/jobs/bulk-edit`,
+- [~] A1: `fault is_nullable = NO` ✅; `expects_fault` values restore ke baad bhi wahi
+      (Repair=true, canonical New Installation=false, PDI=false, aliases=null). Confirm
+      baaki: full `Restore Now` hua ya sirf auth restore.
+- [x] D3 owner complete; agent ne read-only verify: profiles 6, user_presence 3, baaki
+      auth-linked tables 0, admin profile preserved (3 admin/developer rows unchanged).
+- [x] A8 test DB par tagging: job 1 → canonical `Repair` (id 9). Ab 8/8 service-tagged,
+      8/8 brand-tagged, untagged 0; 4 legacy `brand_job_no` NULL preserve. Save smoke ke baad
+      9/9 service-tagged, 8/9 brand-tagged (naya smoke job untagged, RPC: `untagged=1`).
+- [x] Browser smoke: `/jobs/new`, `/jobs/[id]/edit`, `/jobs/bulk`, `/jobs/bulk-edit`,
   `/settings/service-center`, navbar search `KMK#004`, `/jobs?brand=5` (6/6),
-  `/jobs?brand=untagged` (0) — **sab 0 console errors**; actual save flows owner baaki
-  (agent ne koi DB write nahi kiya). Details: `owner_gates_runbook_2026-11-28.md`.
+  `/jobs?brand=untagged` — **sab 0 console errors**. Actual save flows bhi agent ne test DB par
+  kiye: New Installation bina fault ✅ save (`/jobs/9/view`, `fault=""`), Repair bina fault ✅
+  block (`Fault description zaroori hai`, koi row create nahi). Details:
+  `owner_gates_runbook_2026-11-28.md`.
 - [x] Push local commits → `origin/main` (owner release `9ba5b74` = 1.88.0 ke upar rebase,
       head `e76e33d` push hua); version bump alag approval se (owner ne 1.88.0 kiya)
 - [ ] **K14** named second reviewer + CSP 14-din violation observation start (enforce baad me).
-- [ ] Backup readiness owner decisions: format `4.0` accept, purane files ke liye `legacy` mode
-      ya hard-block, removed-column par `fail + explicit override`, snapshot me migration IDs,
-      live restore drill ka environment/date.
+- [x] Backup readiness decisions (owner ne agent ko choose karne diya): format `4.0` + legacy
+      read, removed-column **fail + explicit override**, `schema_snapshot.migration_ids` tino
+      writers me, browser-verified. **Live restore drill environment/date owner se pending.**
+- [x] Gates 28 Nov: `verify:data` ✅ (40 migrations, 60 tables/513 cols/11 surfaces), typecheck ✅,
+      lint ✅ (0 errors), 818 tests ✅, build ✅ (139 pages, Turbopack warning fix hua), touched
+      prettier ✅.
 
 ---
 

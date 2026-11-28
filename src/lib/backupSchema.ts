@@ -14,6 +14,76 @@ export interface SupabaseTableSchema {
   notNull: string[];
 }
 
+export interface BackupVersionInfo {
+  /** Raw value from `_meta.version` (e.g. "4.0"). */
+  version: string;
+  major: number;
+  /** Purane 3.x/2.x files — padhe jaate hain, par warning dikhti hai (hard-block nahi). */
+  isLegacy: boolean;
+  /** User ko dikhane ke liye message; null = clean 4.0. */
+  warning: string | null;
+}
+
+export interface BackupSchemaSnapshot {
+  captured_at: string;
+  tables: Record<string, { cols: string[]; pk: string[]; notNull: string[]; generated: string[] }>;
+  /** Local `supabase/migrations/*.sql` IDs (restore me DB verify ke liye). */
+  migration_ids: string[];
+}
+
+/**
+ * Backup version classify karo. 4.0 canonical hai; 3.x/2.x legacy me padhte hain
+ * (disaster recovery ko block nahi karna), par unknown/legacy par clear warning.
+ */
+export function parseBackupVersion(
+  meta: Record<string, unknown> | undefined | null
+): BackupVersionInfo | null {
+  if (!meta?.version) return null;
+  const version = String(meta.version);
+  const major = Number.parseInt(version.split(".")[0] ?? "", 10);
+  if (!Number.isFinite(major)) {
+    return {
+      version,
+      major: 0,
+      isLegacy: true,
+      warning: `Backup version "${version}" samajh nahi aaya — legacy mode me padha ja raha hai.`,
+    };
+  }
+  if (major >= 4) return { version, major, isLegacy: false, warning: null };
+  if (major === 3 || major === 2) {
+    return {
+      version,
+      major,
+      isLegacy: true,
+      warning: `Legacy backup format ${version} — 4.0 ka schema snapshot/migration IDs nahi hain. Restore chalega, par review zaroori.`,
+    };
+  }
+  return {
+    version,
+    major,
+    isLegacy: true,
+    warning: `Purana backup format ${version} — limited metadata; restore ke baad counts verify karein.`,
+  };
+}
+
+/** Backup `_meta.schema_snapshot` builder (browser + server CLI wahi shape). */
+export function buildSchemaSnapshot(
+  tables: SupabaseTableSchema[],
+  migrationIds: string[],
+  capturedAt: string = new Date().toISOString()
+): BackupSchemaSnapshot {
+  const snapshot: BackupSchemaSnapshot["tables"] = {};
+  for (const t of tables) {
+    snapshot[t.name] = {
+      cols: [...t.cols],
+      pk: [...t.pk],
+      notNull: [...t.notNull],
+      generated: [...t.generated],
+    };
+  }
+  return { captured_at: capturedAt, tables: snapshot, migration_ids: [...migrationIds] };
+}
+
 export interface SupabaseOpenApiLike {
   definitions?: Record<
     string,

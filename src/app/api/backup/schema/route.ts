@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/api-auth";
 import { parseOpenApiToSchema, type SupabaseTableSchema } from "@/lib/backupSchema";
+import { listMigrationIds } from "@/lib/backupMigrationIds";
 
 export const runtime = "nodejs";
 
@@ -30,7 +31,12 @@ export async function GET() {
     }
     const spec = await res.json();
     const tables: SupabaseTableSchema[] = parseOpenApiToSchema(spec);
-    return NextResponse.json({ ok: true, tables, count: tables.length });
+    return NextResponse.json({
+      ok: true,
+      tables,
+      count: tables.length,
+      migration_ids: listMigrationIds(),
+    });
   } catch (error) {
     console.error("backup schema fetch error:", error);
     return NextResponse.json(

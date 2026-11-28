@@ -1,5 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { parseOpenApiToSchema, GENERATED_COLUMNS, countPkViolations } from "./backupSchema";
+import {
+  parseOpenApiToSchema,
+  GENERATED_COLUMNS,
+  countPkViolations,
+  parseBackupVersion,
+  buildSchemaSnapshot,
+} from "./backupSchema";
 
 const spec = {
   definitions: {
@@ -95,6 +101,64 @@ describe("parseOpenApiToSchema", () => {
       },
     });
     expect(sds[0].generated).toEqual(["id"]);
+  });
+
+  describe("parseBackupVersion", () => {
+    it("accepts 4.0 without warning", () => {
+      expect(parseBackupVersion({ version: "4.0" })).toEqual({
+        version: "4.0",
+        major: 4,
+        isLegacy: false,
+        warning: null,
+      });
+    });
+
+    it("accepts future versions without warning", () => {
+      expect(parseBackupVersion({ version: "5.1" })?.isLegacy).toBe(false);
+    });
+
+    it("warns (but does not block) legacy 3.0", () => {
+      const info = parseBackupVersion({ version: "3.0" });
+      expect(info?.isLegacy).toBe(true);
+      expect(info?.warning).toContain("Legacy backup format 3.0");
+    });
+
+    it("warns for unparseable versions", () => {
+      expect(parseBackupVersion({ version: "unknown" })?.isLegacy).toBe(true);
+      expect(parseBackupVersion({ version: "unknown" })?.warning).toContain("samajh nahi aaya");
+    });
+
+    it("returns null when version missing", () => {
+      expect(parseBackupVersion({})).toBeNull();
+      expect(parseBackupVersion(null)).toBeNull();
+    });
+  });
+
+  describe("buildSchemaSnapshot", () => {
+    it("captures cols/pk/notNull/generated with migration IDs", () => {
+      const tables = parseOpenApiToSchema(spec);
+      const snap = buildSchemaSnapshot(
+        tables,
+        ["20260101000000_a", "20260102000000_b"],
+        "2026-11-28T00:00:00.000Z"
+      );
+      expect(snap.captured_at).toBe("2026-11-28T00:00:00.000Z");
+      expect(snap.migration_ids).toEqual(["20260101000000_a", "20260102000000_b"]);
+      expect(snap.tables.transaction_products).toEqual({
+        cols: ["transaction_id", "product_id", "qty", "price", "id"],
+        pk: ["id"],
+        notNull: ["transaction_id", "qty", "price", "id"],
+        generated: [],
+      });
+      expect(snap.tables.client_payments.generated).toEqual(["net_amount"]);
+    });
+
+    it("does not alias source table arrays", () => {
+      const tables = parseOpenApiToSchema(spec);
+      const snap = buildSchemaSnapshot(tables, []);
+      tables[0].cols.push("extra");
+      expect(snap.tables[tables[0].name].cols).not.toContain("extra");
+    });
   });
 
   describe("countPkViolations", () => {

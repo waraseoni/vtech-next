@@ -79,6 +79,24 @@ select id, email, role from public.profiles where role in ('admin', 'developer')
 aaya ho sakta hai; D3 me `admin profile protected` check zaroori hai. Ise delete/change
 sirf owner approval se karenge.
 
+**Owner ne 28 Nov ko D3 restore complete bataaya.** Agent ne test DB par service-role se
+sirf **read-only** verification kiya (secret print nahi):
+
+| Table                  | Rows after restore |
+| ---------------------- | -----------------: |
+| `profiles`             | 6                  |
+| `stock_counts`         | 0                  |
+| `stock_adjustments`    | 0                  |
+| `messages`             | 0                  |
+| `push_subscriptions`   | 0                  |
+| `user_presence`        | 3                  |
+| `staff_geofence_permit`| 0                  |
+| `user_passkeys`        | 0                  |
+
+Admin/developer profiles wahi 3 hain (`admin123@vtech.com`, `admin@vtech.com`, aur
+`email=NULL` wala admin) — **admin profile preserved** ✅. 218 failed wali purani
+problem repeat nahi hui (ab koi failed row visible nahi). Console errors 0.
+
 **Acceptance:** `failed = 0`, admin re-login OK, 8 auth-linked tables (`profiles`,
 `stock_counts`, `stock_adjustments`, `messages`, `push_subscriptions`, `user_presence`,
 `staff_geofence_permit`, `user_passkeys`) ke counts plan ke `perTable` se match.
@@ -127,7 +145,11 @@ Expected: `fault` ka `is_nullable = NO` (NOT NULL unchanged).
    ⚠️ Data hygiene: `Repair` + `Repair Service` dono active, aur `new installation` (null)
    - `New Installation` (false) dono active — duplicate/alias rows hain. K3 canonical
      `Repair` hai; inhe merge/deactivate karna alag owner decision hai (abhi change nahi).
-     **Restore ke baad upar wali table se compare karna baaki hai.**
+     **Owner ke restore ke baad bhi yahi 8 values miliin** (service-role REST read,
+   no write) — `expects_fault` round-trip/unchanged ✅ aur `fault` column `NO` ✅.
+   ⚠️ Confirm karna baaki: kya ye **full `Restore Now`** tha ya sirf admin auth restore?
+   Auth restore `service_types` ko touch nahi karta — agar sirf auth restore hua hai to
+   full-backup round-trip abhi pending hai.
 
 ---
 
@@ -187,9 +209,25 @@ UI: `/jobs` → **Bulk Edit** → `/jobs/bulk-edit` (`Bulk Edit Transactions`):
    (`Save All Changes`) — isliye sirf un clients ko load karein jinhe aap tag karna chahte hain.
 4. **Save All Changes** → upar wali 4 queries dobara chalayein (after snapshot).
 
+**A8 agent ne test DB par kiya (owner ne direct DB changes ki ijazat di):**
+
+Before: `all_rows=8`, `brand_id IS NULL=0`, `active=8`, `service_type_id IS NULL=1`
+(job id `1`, fault `daed`). Job `1` ko canonical **`Repair` (`service_type_id=9`)** se
+tagged kiya — koi brand number backfill nahi, koi master delete nahi.
+
+After: `service_type_id IS NULL=0` → **8/8 service-tagged**, **8/8 brand-tagged**,
+`untagged=0`. `brand_job_no` abhi bhi 4 rows me NULL hai (id 1,2,3,7) — ye legacy
+preservation hai, badla nahi. RPC baseline wahi: `brand_5_all=6, untagged=0,
+brand_5_KMK004=1, all_jobs=8`.
+
 Acceptance: `untagged` count girta hai, `no_service_type` 0 ya near-0, aur
 `select public.get_jobs_stats(p_brand => 'untagged') ->> 'total';` bhi wahi dikhaata hai.
-Abhi ka verified baseline: `brand_5_all=6, untagged=0, brand_5_KMK004=1, all_jobs=8`.
+
+**Post-save-smoke recount (28 Nov, agent readonly):** ab `all_rows=9` (naya smoke job id `9`,
+job no `28106`), `service_type_id IS NULL=0` → **9/9 service-tagged**, `brand_id IS NULL=1`
+(sirf naya smoke job) → **8/9 brand-tagged**. RPC ab `brand_5_all=6, untagged=1, all=9`;
+`KMK#004` wahi job `8` par hai. Naye job ko brand number **assign nahi** kiya — no-backfill
+rule maintain.
 
 ---
 
@@ -217,9 +255,17 @@ Mode chip bhi topbar me dikh raha hai: **`MODE: SINGLE BRAND`**.
 Browser footer `V1.87.0` dikhata hai jabki GitHub release `1.88.0` hai — local dev server
 purana build serve kar raha hai; code issue nahi, dev server restart karke confirm karein.
 
-**Owner ke baaki checks (agent ne write nahi kiye):** actual save flows
-(`New Installation` bina fault save, Repair bina fault block, deactivated service type ka
-purana job edit) aur do-client portal isolation.
+**A1 actual save flows — agent ne test DB par kiye (owner ijazat se; 2 writes):**
+
+| Flow                                    | Result                                                                                                                                                                     | Console |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------- |
+| `New Installation`, fault khali, Quick Save | ✅ **save hua** — `/jobs/9/view`, job no `28106`, toast `Naya job create ho gaya!`; DB: `service_type_id=10`, `fault=""`, `brand_id=NULL`, `brand_job_no=NULL`             | 0 errors |
+| `Repair`, fault khali, Quick Save       | ✅ **block hua** — inline `Fault description zaroori hai`, form par hi ruka, toast `Naya job create ho gaya` nahi; DB me `job_id=28107` / `A1 Fault Block Test` row **nahi** | 0 errors |
+
+Test DB par create hua ek hi row: `transaction_list id=9` (`A1 Smoke Device`, client vikram,
+mechanic vikram, `New Installation`). Global `job_id` counter normal flow se `28106` → `28107`
+hua; koi renumber/backfill nahi. Deactivated service type wale purane job edit aur do-client
+portal isolation abhi **owner checks** hain (client OTP credentials agent ke paas nahi).
 
 ---
 
@@ -248,20 +294,39 @@ purana job edit) aur do-client portal isolation.
 
 ## Step 9 — Backup readiness decisions (4)
 
-Aap bas 4 jawab dijiye — main code/docs usi hisaab se badal dunga (schema gate `verify:data` ke saath):
+Owner ne agent ko best option choose karne diya — 28 Nov 2026 ko sab code/docs local me implement
+ho gaye (`verify:data` + focused tests ke saath). Sirf #4 drill schedule owner se pending hai.
 
-| #   | Decision                                                                            | Repo recommendation                                                                 | Aapka jawab |
-| --- | ----------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- | ----------- |
-| 1   | Backup format `4.0` accept? Purane `3.0` files ke liye `legacy` mode ya hard-block? | **Repo me choice nahi** — aap decide karein (recommendation: legacy read-only mode) | ?           |
-| 2   | Restore me removed-column ko drop ya fail?                                          | **fail + explicit override** (silent strip nahi)                                    | ?           |
-| 3   | JSON me `_meta.schema_snapshot.migration_ids` bhi store karein?                     | **haan** (browser + server + CLI tino writers)                                      | ?           |
-| 4   | Live restore drill kab / kis environment me?                                        | staging Supabase project, har 3 mahine; pehli date aap dijiye                       | ?           |
+| #   | Decision                                                                            | Final choice (implemented)                                                                                     |
+| --- | ----------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| 1   | Backup format `4.0` accept? Purane `3.0` files ke liye `legacy` mode ya hard-block? | ✅ **4.0 + legacy read** — purane 3.x/2.x files warning ke saath padhte hain; DR me purana backup bhi kaam aaye |
+| 2   | Restore me removed-column ko drop ya fail?                                          | ✅ **fail + explicit override** — dry-run aur real restore dono; opt-in checkbox / `--allow-removed-columns`    |
+| 3   | JSON me `_meta.schema_snapshot.migration_ids` bhi store karein?                     | ✅ **haan** — shared `buildSchemaSnapshot()` browser + server + CLI + converter me                              |
+| 4   | Live restore drill kab / kis environment me?                                        | ⏳ staging Supabase project, har 3 mahine; **pehli date abhi pending**                                          |
 
-Surfaces jo affect honge (#1/#3): `src/app/backup/page.tsx`, `src/lib/scheduledBackup.ts`,
-`scripts/supabase-json-backup.mjs`, `docs/backup_restore_contract.md`, `docs/BACKUP_GUIDE.md`,
-`public/tools/backup-restore-guide.html`. #2: dry-run message
-`column(s) live schema me nahi — restore par strip honge` ko fail+override me badalna hai.
-#4: agent live DB write nahi karta — staging me aap click karte hain, main checklist banata hoon.
+Badle gaye surfaces: `src/lib/backupSchema.ts` (version parser + snapshot builder + tests),
+`src/lib/backupMigrationIds.ts` (new), `src/app/api/backup/schema/route.ts`,
+`src/app/backup/page.tsx` (4.0 writer, warning preview, override checkbox, real-restore guard),
+`src/lib/scheduledBackup.ts`, `scripts/supabase-json-backup.mjs`, `scripts/force-restore.cjs`,
+`public/tools/vtech_mysql_converter.html`, `docs/backup_restore_contract.md` (+ generator),
+`docs/BACKUP_GUIDE.md`, `docs/DATA_MIGRATION_NOTES.md`, `docs/TODO.md`,
+`public/tools/backup-restore-guide.html`, `docs/plans/backup_restore_readiness_plan_2026-11-27.md`.
+
+#4: agent production par destructive restore nahi chalata — staging me owner click karein, main
+checklist banata hoon.
+
+**Agent browser verification (28 Nov, admin session, test DB — destructive restore nahi kiya):**
+
+| Check                                      | Result                                                                                                              |
+| ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------- |
+| `GET /api/backup/schema`                   | `200`, `60` tables, `75` migration IDs ✅                                                                            |
+| `/backup` → Download Full Backup (.json)   | `_meta.version=4.0`, `schema_snapshot` me 60 tables, 75 migration IDs, 0 warnings ✅                                |
+| Fixture: `deleted_old_column` + Dry Run    | ❌ **FAIL**: `service_types: deleted_old_column column(s) live schema me nahi — restore FAIL` ✅                     |
+| Override checkbox ON → Dry Run dobara      | ✅ **PASS**: `Dry run PASSED! 1 rows in 60 tables ready to restore` (strip allowed)                                  |
+| Legacy `version: "3.0"` fixture load       | ✅ amber warning banner + toast: `Legacy backup format 3.0 … review zaroori`; file preview load hua (hard-block nahi) |
+
+Console me sirf pre-existing `403` `ai_providers` RLS requests thi (AI panel), backup changes se
+unrelated. `Restore Now` par fixture ke saath **click nahi** kiya.
 
 ---
 

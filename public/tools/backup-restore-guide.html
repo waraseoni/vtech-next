@@ -948,7 +948,7 @@ node scripts/supabase-restore.mjs backups/supabase/dumps/backup.sql --full</pre>
                   >
                   kholo.
                 </li>
-                <li>.sql drop → <b>Convert &amp; Download JSON</b> (v3.0, 46 tables).</li>
+                <li>.sql drop → <b>Convert &amp; Download JSON</b> (v4.0, 46 tables).</li>
                 <li>Us JSON ko <a data-route="/backup" href="#">/backup</a> → Restore karo.</li>
               </ol>
               <p>⚠️ Converter stale hai — naye tables/bool columns missing (plan B10).</p>
@@ -1270,7 +1270,9 @@ node scripts/supabase-restore.mjs backups/supabase/dumps/backup.sql --full</pre>
               <h2>Schema/DR gaps</h2>
               <ul>
                 <li>
-                  Backup JSON me <b>schema snapshot nahi</b> — rename/type change detect nahi.
+                  <b>Format 4.0</b> me <code class="inline">_meta.schema_snapshot</code> hota hai;
+                  legacy 3.x file warning ke saath padhti hai. File me maujood par live schema se
+                  hataaye gaye columns par restore <b>FAIL</b> (explicit override chhod kar).
                 </li>
                 <li><b>Grants / RLS / functions / triggers</b> backup me nahi jaate.</li>
                 <li>Storage images + <code class="inline">auth.users</code> alag hain.</li>
@@ -1328,7 +1330,7 @@ node scripts/supabase-restore.mjs backups/supabase/dumps/backup.sql --full</pre>
                 <tr>
                   <td>W1</td>
                   <td>B1–B4 schema snapshot + format 4.0 + removed-column policy</td>
-                  <td><span class="pill p-warn">Planned</span></td>
+                  <td><span class="pill p-ok">Landed</span></td>
                 </tr>
                 <tr>
                   <td>W2</td>
@@ -1384,18 +1386,15 @@ node scripts/supabase-restore.mjs backups/supabase/dumps/backup.sql --full</pre>
               class="card amber"
               data-search="owner decisions legacy mode removed column migration ids drill environment"
             >
-              <div class="kicker">Owner decisions</div>
-              <h2>Pehle in par sign-off</h2>
+              <div class="kicker">Owner decisions · 28 Nov 2026</div>
+              <h2>Final decisions</h2>
               <ol>
+                <li><b>Format 4.0</b> ✅ — purane 3.x/2.x files warning ke saath padhte hain (legacy mode, hard-block nahi).</li>
+                <li>Removed column par <b>FAIL + explicit override</b> ✅ (page checkbox / CLI flag).</li>
+                <li>Snapshot me <b>migration IDs</b> ✅ — browser + server + CLI tino writers.</li>
                 <li>
-                  Backup format <b>4.0</b> accept? Purane files ke liye legacy mode ya hard-block?
-                </li>
-                <li>
-                  Removed column par <b>drop</b> ya <b>fail</b>? (Recommendation: fail + override)
-                </li>
-                <li>Snapshot me <b>migration IDs</b> store karein? (Recommendation: haan)</li>
-                <li>
-                  Live restore drill kab aur kis environment me? (Agent live write nahi karega)
+                  Restore drill: environment/date owner se confirm karna baaki hai (agent production par
+                  destructive restore nahi chalata).
                 </li>
               </ol>
             </article>
