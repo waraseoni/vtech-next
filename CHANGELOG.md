@@ -1,5 +1,16 @@
 # CHANGELOG
 
+## [1.90.0](https://github.com/waraseoni/vtech-next/compare/v1.89.0...v1.90.0) (2026-11-28)
+
+### Features
+
+* **backup:** format 4.0 schema snapshot + fail-safe removed-column policy ([504f38f](https://github.com/waraseoni/vtech-next/commit/504f38f08e6f74098f9ccb2a0bb87e93df6abfac))
+
+### Bug Fixes
+
+* **backup:** skip auth/RLS tables in browser restore by default ([9366e70](https://github.com/waraseoni/vtech-next/commit/9366e704ada0b8e96083bed43819204c478f6626))
+* **backup:** validate generated identity PK by business key ([aa04861](https://github.com/waraseoni/vtech-next/commit/aa0486179d16f50ebe2f33cac798c17fa5a5269a))
+
 ## [1.89.0](https://github.com/waraseoni/vtech-next/compare/v1.88.0...v1.89.0) (2026-11-28)
 
 ### Features
