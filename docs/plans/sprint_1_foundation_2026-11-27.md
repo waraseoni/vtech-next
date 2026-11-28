@@ -111,8 +111,10 @@
 - [ ] D3 asli backup se browser dry-run → confirm checkbox → `setTempPasswords: true`;
       218 auth-linked rows clear, admin profile protected
 - [ ] A8 bulk-edit se legacy tagging run (coverage snapshot pehle/ baad)
-- [ ] Browser smoke: `/jobs/new`, `/jobs/[id]/edit`, `/jobs/bulk`, `/jobs/bulk-edit`,
-      `/settings/service-center`, navbar search — console errors 0
+- [~] Browser smoke: `/jobs/new`, `/jobs/[id]/edit`, `/jobs/bulk`, `/jobs/bulk-edit`,
+  `/settings/service-center`, navbar search `KMK#004`, `/jobs?brand=5` (6/6),
+  `/jobs?brand=untagged` (0) — **sab 0 console errors**; actual save flows owner baaki
+  (agent ne koi DB write nahi kiya). Details: `owner_gates_runbook_2026-11-28.md`.
 - [x] Push local commits → `origin/main` (owner release `9ba5b74` = 1.88.0 ke upar rebase,
       head `e76e33d` push hua); version bump alag approval se (owner ne 1.88.0 kiya)
 - [ ] **K14** named second reviewer + CSP 14-din violation observation start (enforce baad me).

@@ -107,8 +107,27 @@ Expected: `fault` ka `is_nullable = NO` (NOT NULL unchanged).
    (`⚠ … (+N tables count mismatch)` aa gaya to yahin rokein aur output bhejein).
 4. Step 1 ke dono queries dobara chalayein. Values bilkul wahi honi chahiye
    (`expects_fault` round-trip, `fault = NO`).
-   **Partial (28 Nov):** owner ne `fault is_nullable = NO` verify kiya ✅;
-   `service_types.expects_fault` values ka output abhi baaki hai.
+   **Partial (28 Nov):** owner ne `fault is_nullable = NO` verify kiya ✅.
+   `expects_fault` ka **pre-restore baseline** maine authenticated REST read se capture
+   kiya (koi DB write nahi) — `/rest/v1/service_types?select=id,name,sort_order,expects_fault,is_active`:
+
+   | id  | name                  | sort | expects_fault |
+   | --- | --------------------- | ---- | ------------- |
+   | 9   | Repair                | 0    | `true`        |
+   | 2   | Repair Service        | 0    | `null`        |
+   | 1   | new installation      | 2    | `null`        |
+   | 10  | New Installation      | 10   | `false`       |
+   | 11  | Warranty Claim        | 20   | `true`        |
+   | 12  | AMC / Service Visit   | 30   | `true`        |
+   | 13  | PDI / Delivery        | 40   | `false`       |
+   | 14  | Inspection / Estimate | 50   | `true`        |
+
+   Rule: `NULL`/`true` = fault required, sirf explicit `false` = optional. UI me yahi
+   `FAULT REQUIRED?` column `Required`/`Optional` dikhaata hai.
+   ⚠️ Data hygiene: `Repair` + `Repair Service` dono active, aur `new installation` (null)
+   - `New Installation` (false) dono active — duplicate/alias rows hain. K3 canonical
+     `Repair` hai; inhe merge/deactivate karna alag owner decision hai (abhi change nahi).
+     **Restore ke baad upar wali table se compare karna baaki hai.**
 
 ---
 
@@ -178,13 +197,29 @@ Abhi ka verified baseline: `brand_5_all=6, untagged=0, brand_5_KMK004=1, all_job
 
 Tequal routes, console 0 errors:
 
-- `/jobs/new` — New Installation bina fake fault ke save hota hai
-- `/jobs/[id]/edit` — Repair par fault mandatory; deactivated service type ka purana job edit hota hai
-- `/jobs/bulk` — per-row fault override
-- `/jobs/bulk-edit` — legacy tagging column
-- `/settings/service-center` — Service Types modal me "Fault required hai?" checkbox
-- Navbar search — brand number (`KMK#004`) se job milta hai
-- `/jobs?brand=5` → 6 rows, Quick Stats `Total 6`; `/jobs?brand=untagged` → 0
+**Agent-ne browser smoke 28 Nov ko kiya (login owner ne kiya; agent ne koi save/DB write nahi kiya):**
+
+| Route / check                   | Result                                                                                     | Console  |
+| ------------------------------- | ------------------------------------------------------------------------------------------ | -------- |
+| `/jobs/new`                     | form loaded, job no `28106`; dropdown me Repair / New Installation / PDI options ✅        | 0 errors |
+| Service Type = New Installation | label **`WORK DESCRIPTION / SCOPE (OPTIONAL)`**, placeholder `Kaam ka scope (optional)` ✅ | 0 errors |
+| Service Type = Repair           | label **`FAULT / COMPLAINT *`**, placeholder `e.g. Screen broken, Not charging` ✅         | 0 errors |
+| `/jobs/8/edit`                  | `Edit Job — 28105` loaded, Komaki / 69v6a prefill ✅                                       | 0 errors |
+| `/jobs/bulk`                    | `Bulk Job Sheet Entry`, per-row service type + brand controls ✅                           | 0 errors |
+| `/jobs/bulk-edit`               | `Bulk Edit Transactions`, `Source Client`, `Load`, `Save All Changes` ✅                   | 0 errors |
+| `/settings/service-center`      | Operating Mode + **FAULT REQUIRED?** column (`Required`/`Optional`) visible ✅             | 0 errors |
+| Navbar search `KMK#004`         | `1 RESULT — Job KMK#004 · #28105 — chrager · Komaki · 69v6a`; click → `/jobs/8/view` ✅    | 0 errors |
+| `/jobs?brand=5`                 | **6 records**, Quick Stats `TOTAL 6`, chip `Brand: Komaki` ✅                              | 0 errors |
+| `/jobs?brand=untagged`          | **0 records**, chip `Untagged (legacy)`, empty state ✅                                    | 0 errors |
+| `/jobs`                         | **8 records**, Quick Stats `TOTAL 8` ✅                                                    | 0 errors |
+
+Mode chip bhi topbar me dikh raha hai: **`MODE: SINGLE BRAND`**.
+Browser footer `V1.87.0` dikhata hai jabki GitHub release `1.88.0` hai — local dev server
+purana build serve kar raha hai; code issue nahi, dev server restart karke confirm karein.
+
+**Owner ke baaki checks (agent ne write nahi kiye):** actual save flows
+(`New Installation` bina fault save, Repair bina fault block, deactivated service type ka
+purana job edit) aur do-client portal isolation.
 
 ---
 
