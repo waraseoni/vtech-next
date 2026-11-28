@@ -1,6 +1,8 @@
 import { getServerSupabase } from "@/lib/api-auth";
 import {
   enrichJobRows,
+  normalizeBrandFilter,
+  queryBrandOptions,
   queryJobPage,
   queryJobSpots,
   queryJobStats,
@@ -53,6 +55,7 @@ export async function fetchJobsPageData(
     // snapshot bhi wahi.
     status: "" as const,
     spot: rawSpot && /^\d+$/.test(rawSpot) ? rawSpot : "",
+    brand: normalizeBrandFilter(first(sp.brand)),
   };
   const filters = {
     term: filterInputs.search.trim().toLowerCase(),
@@ -61,6 +64,7 @@ export async function fetchJobsPageData(
     hideDelivered: filterInputs.hideDelivered,
     status: filterInputs.status as number | "",
     spot: filterInputs.spot,
+    brand: filterInputs.brand,
   };
 
   // searchClients in-flight dedupe — per-request CLOSURE (module-level map
@@ -81,7 +85,7 @@ export async function fetchJobsPageData(
   const listP = (async () => {
     try {
       // PERF: exact count server par alag ~200 ms leta hai; `get_jobs_stats` ka
-      // `total` bilkul yahi filters (del_status=0 + term/date/status/spot) count
+      // `total` bilkul yahi filters (del_status=0 + term/date/status/spot/brand) count
       // karta hai, isliye page query count ke bina chalti hai aur total wahin se.
       const [{ rows }, stats] = await Promise.all([
         queryJobPage(
@@ -129,6 +133,15 @@ export async function fetchJobsPageData(
     }
   })();
 
+  const brandOptionsP = (async () => {
+    try {
+      return await queryBrandOptions(supabase);
+    } catch (e) {
+      logger.warn("Jobs brand options fetch failed:", e);
+      return [];
+    }
+  })();
+
   const sysInfoP = getFirmInfo();
 
   const mechP = (async (): Promise<Record<number, string>> => {
@@ -154,7 +167,13 @@ export async function fetchJobsPageData(
     }
   })();
 
-  const [list, jobSpots, sysInfo, mechNames] = await Promise.all([listP, spotsP, sysInfoP, mechP]);
+  const [list, jobSpots, brandOptions, sysInfo, mechNames] = await Promise.all([
+    listP,
+    spotsP,
+    brandOptionsP,
+    sysInfoP,
+    mechP,
+  ]);
 
   // List batch fail → seed absent (null) = client aaj jaisa khud fetch karega.
   if (!list) return null;
@@ -166,6 +185,7 @@ export async function fetchJobsPageData(
     stats: list.stats,
     openPartCounts: list.openPartCounts,
     jobSpots,
+    brandOptions,
     sysInfo,
     mechNames,
   };

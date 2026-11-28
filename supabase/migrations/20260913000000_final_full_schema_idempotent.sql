@@ -5218,13 +5218,17 @@ CREATE TRIGGER update_device_identifiers_timestamp BEFORE UPDATE ON public.devic
 -- `model`, `serial_no`, `brand_id`) aur `public.brands` ke baad aata hai —
 -- warna fresh DB par 42703 "column t.item_name does not exist" milta hai.
 -- ══════════════════════════════════════════════════════════════════════════════
+-- B2: 6-arg overload hata kar 7-arg brand-filter version banayi jaati hai.
+drop function if exists public.get_jobs_stats(text, text, text, boolean, int, text);
+
 create or replace function public.get_jobs_stats(
   p_term text default null,
   p_date_from text default null,
   p_date_to text default null,
   p_hide_delivered boolean default false,
   p_status int default null,
-  p_spot text default null
+  p_spot text default null,
+  p_brand text default null
 )
 returns jsonb
 language sql
@@ -5242,7 +5246,9 @@ as $$
            else ((p_date_to || 'T23:59:59+05:30')::timestamptz at time zone 'UTC') end as to_ts,
       coalesce(p_hide_delivered, false) as hide_delivered,
       p_status as filt_status,
-      case when coalesce(p_spot, '') ~ '^\d+$' then p_spot::int else null end as spot_id
+      case when coalesce(p_spot, '') ~ '^\d+$' then p_spot::int else null end as spot_id,
+      case when coalesce(p_brand, '') in ('', 'all') then null
+           else lower(btrim(p_brand)) end as brand
   ),
   filtered as (
     select t.status, coalesce(t.amount, 0) as amount
@@ -5254,6 +5260,11 @@ as $$
       and (not a.hide_delivered or t.status <> 5)
       and (a.filt_status is null or t.status = a.filt_status)
       and (a.spot_id is null or t.location_id = a.spot_id)
+      and (
+        a.brand is null
+        or (a.brand = 'untagged' and t.brand_id is null)
+        or (a.brand ~ '^\d+$' and t.brand_id = a.brand::int)
+      )
       and (
         a.pat is null
         or t.job_id ilike a.pat
@@ -5290,11 +5301,11 @@ as $$
   from filtered;
 $$;
 
-revoke all on function public.get_jobs_stats(text, text, text, boolean, int, text) from public;
-revoke all on function public.get_jobs_stats(text, text, text, boolean, int, text) from anon;
-grant execute on function public.get_jobs_stats(text, text, text, boolean, int, text)
+revoke all on function public.get_jobs_stats(text, text, text, boolean, int, text, text) from public;
+revoke all on function public.get_jobs_stats(text, text, text, boolean, int, text, text) from anon;
+grant execute on function public.get_jobs_stats(text, text, text, boolean, int, text, text)
   to authenticated;
-grant execute on function public.get_jobs_stats(text, text, text, boolean, int, text)
+grant execute on function public.get_jobs_stats(text, text, text, boolean, int, text, text)
   to service_role;
 
 NOTIFY pgrst, 'reload schema';

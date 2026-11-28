@@ -4,7 +4,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 // tool schema aur tool executor — teeno update honi chahiye (golden rule).
 const fx = vi.hoisted(() => ({
   ors: [] as string[],
+  eqs: [] as Array<[string, unknown]>,
+  iss: [] as Array<[string, unknown]>,
+  ins: [] as Array<[string, unknown]>,
   rows: [] as Record<string, unknown>[],
+  brandRows: [] as Record<string, unknown>[],
 }));
 
 vi.mock("@supabase/supabase-js", () => ({
@@ -12,17 +16,27 @@ vi.mock("@supabase/supabase-js", () => ({
     from: (table: string) => {
       const chain: Record<string, unknown> = {};
       chain.select = vi.fn(() => chain);
-      chain.eq = vi.fn(() => chain);
+      chain.eq = vi.fn((col: string, v: unknown) => {
+        fx.eqs.push([col, v]);
+        return chain;
+      });
+      chain.is = vi.fn((col: string, v: unknown) => {
+        fx.iss.push([col, v]);
+        return chain;
+      });
       chain.or = vi.fn((s: string) => {
         fx.ors.push(s);
         return chain;
       });
       chain.order = vi.fn(() => chain);
       chain.limit = vi.fn(() => chain);
-      chain.in = vi.fn(() => chain);
+      chain.in = vi.fn((col: string, v: unknown) => {
+        fx.ins.push([col, v]);
+        return chain;
+      });
       chain.then = (resolve: (v: unknown) => unknown, reject: (e: unknown) => unknown) =>
         Promise.resolve({
-          data: table === "transaction_list" ? fx.rows : [],
+          data: table === "transaction_list" ? fx.rows : table === "brands" ? fx.brandRows : [],
           error: null,
         }).then(resolve, reject);
       return chain;
@@ -46,7 +60,11 @@ const brandRow = {
 
 beforeEach(() => {
   fx.ors.length = 0;
+  fx.eqs.length = 0;
+  fx.iss.length = 0;
+  fx.ins.length = 0;
   fx.rows = [{ ...brandRow }];
+  fx.brandRows = [];
 });
 
 describe("AI search awareness", () => {
@@ -81,5 +99,38 @@ describe("AI search awareness", () => {
 
     expect(fx.ors[0]).toContain("brand_job_no.ilike.%Komaki%");
     expect(fx.ors[0]).toContain("item.ilike.%Komaki%");
+  });
+});
+
+// B2 — AI bhi brand filter se aware hona chahiye (AGENTS.md golden rule).
+describe("AI brand filter awareness", () => {
+  it("prompt aur get_recent_jobs schema brand filter batate hain", () => {
+    const prompt = buildSystemPrompt("staff");
+    const tool = geminiTools.find((t) => t.name === "get_recent_jobs");
+
+    expect(prompt).toContain("/jobs?brand=");
+    expect(prompt).toContain("untagged");
+    expect(tool?.description).toContain("brand");
+    expect(tool?.parameters.properties.brand.description).toContain("untagged");
+  });
+
+  it("brand id se us brand ke saare kaam laata hai", async () => {
+    await executeGeminiTool({ name: "get_recent_jobs", args: { brand: "5", limit: 10 } });
+
+    expect(fx.eqs).toContainEqual(["brand_id", 5]);
+  });
+
+  it("untagged legacy jobs ke liye brand_id IS NULL lagata hai", async () => {
+    await executeGeminiTool({ name: "get_recent_jobs", args: { brand: "untagged" } });
+
+    expect(fx.iss).toContainEqual(["brand_id", null]);
+  });
+
+  it("brand name/code pehle master se ID resolve hota hai", async () => {
+    fx.brandRows = [{ id: 5 }];
+    await executeGeminiTool({ name: "get_recent_jobs", args: { brand: "KMK" } });
+
+    expect(fx.ors).toContainEqual("name.ilike.%kmk%,code.ilike.%kmk%");
+    expect(fx.eqs).toContainEqual(["brand_id", 5]);
   });
 });

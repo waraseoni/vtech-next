@@ -1,6 +1,13 @@
 import { describe, it, expect, vi } from "vitest";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { jobSearchFilter, searchBrandsForTerm } from "./jobListQueries";
+import {
+  applyBrandFilter,
+  jobSearchFilter,
+  normalizeBrandFilter,
+  queryJobStats,
+  searchBrandsForTerm,
+  type JobListFilters,
+} from "./jobListQueries";
 
 // Device identity search — jobs list (RSC + client) ka single source. Universal
 // navbar search alag path hai, par usme bhi yahi 4 fields cover hone chahiye.
@@ -51,5 +58,63 @@ describe("searchBrandsForTerm", () => {
 
     await expect(searchBrandsForTerm(client, "nope")).resolves.toBe("-1");
     await expect(searchBrandsForTerm(client, "")).resolves.toBe("");
+  });
+});
+
+// B2 — brand switcher: RSC seed, client fetch, list query aur RPC stats ek hi
+// normalized value use karte hain. Drift = list aur Quick Stats alag dikhte hain.
+describe("brand filter — single source", () => {
+  it("URL value safe normalize hota hai", () => {
+    expect(normalizeBrandFilter("5")).toBe("5");
+    expect(normalizeBrandFilter(" 05 ")).toBe("5");
+    expect(normalizeBrandFilter("UNTAGGED")).toBe("untagged");
+    expect(normalizeBrandFilter("kmk")).toBe("");
+    expect(normalizeBrandFilter(null)).toBe("");
+  });
+
+  it("list query me brand_id gate lagta hai (All = no-op)", () => {
+    const eq = vi.fn();
+    const is = vi.fn();
+    const q = { eq, is };
+    applyBrandFilter(q, "5");
+    expect(eq).toHaveBeenCalledWith("brand_id", 5);
+    expect(is).not.toHaveBeenCalled();
+
+    applyBrandFilter(q, "untagged");
+    expect(is).toHaveBeenCalledWith("brand_id", null);
+
+    eq.mockClear();
+    is.mockClear();
+    applyBrandFilter(q, "");
+    expect(eq).not.toHaveBeenCalled();
+    expect(is).not.toHaveBeenCalled();
+  });
+
+  it("Quick Stats RPC ko bhi p_brand milta hai", async () => {
+    const rpc = vi.fn().mockResolvedValue({
+      data: { total: 4, pending: 1, progress: 0, completed: 3, totalAmt: 500 },
+      error: null,
+    });
+    const client = { rpc } as unknown as SupabaseClient;
+    const filters: JobListFilters = {
+      term: "",
+      dateFrom: "",
+      dateTo: "",
+      hideDelivered: false,
+      status: "",
+      spot: "",
+      brand: "untagged",
+    };
+
+    await queryJobStats(
+      client,
+      filters,
+      async () => "",
+      async () => ""
+    );
+    expect(rpc).toHaveBeenCalledWith(
+      "get_jobs_stats",
+      expect.objectContaining({ p_brand: "untagged" })
+    );
   });
 });

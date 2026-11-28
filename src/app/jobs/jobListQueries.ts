@@ -87,6 +87,34 @@ export interface JobSpot {
   count: number;
 }
 
+/** Brand switcher ka option — active masters + legacy "Untagged" chip. */
+export interface BrandOption {
+  id: number;
+  name: string;
+  code: string | null;
+}
+
+/**
+ * URL/RSC me brand filter ka safe shape. "" = All (NULL sahit), "untagged" =
+ * sirf legacy rows, digits = brand_id. Koi bhi aur value ignore (All).
+ */
+export function normalizeBrandFilter(value?: string | null): string {
+  const v = String(value ?? "")
+    .trim()
+    .toLowerCase();
+  if (v === "untagged") return "untagged";
+  return /^\d+$/.test(v) ? String(parseInt(v, 10)) : "";
+}
+
+export async function queryBrandOptions(supabase: SupabaseClient): Promise<BrandOption[]> {
+  const { data } = await supabase
+    .from("brands")
+    .select("id, name, code")
+    .eq("is_active", true)
+    .order("name", { ascending: true });
+  return (data || []) as BrandOption[];
+}
+
 /** Ek filter-snapshot — server seed + client state ka match-check isi se. */
 export interface JobListFilters {
   term: string; // lowercased/debounced search ("" = none)
@@ -95,6 +123,7 @@ export interface JobListFilters {
   hideDelivered: boolean;
   status: number | "";
   spot: string; // locations.id string ("" = none)
+  brand: string; // "" = All, "untagged" = NULL, digits = brand_id
 }
 
 /** RAW filter inputs (URL-shape) — seed snapshot + client lazy-init isi se compare. */
@@ -105,6 +134,7 @@ export interface JobListFilterInputs {
   hideDelivered: boolean;
   status: number | "";
   spot: string;
+  brand: string; // raw URL value; normalizeBrandFilter() client/server dono par
 }
 
 /** RSC seed — list state jo server first-paint par bhejta hai. */
@@ -114,6 +144,8 @@ export interface JobsListSeed {
   totalRows: number;
   stats: JobListStats;
   jobSpots: JobSpot[];
+  /** Brand switcher options — client ko doosra fetch nahi karna padta. */
+  brandOptions: BrandOption[];
   /** Open (status 0/1) required-part count per txn — Map ka serializable form. */
   openPartCounts: [number, number][];
 }
@@ -146,7 +178,8 @@ export function seedMatchesFilters(
     seed.dateTo === current.dateTo &&
     seed.hideDelivered === current.hideDelivered &&
     seed.status === current.status &&
-    seed.spot === current.spot
+    seed.spot === current.spot &&
+    seed.brand === current.brand
   );
 }
 
@@ -222,6 +255,25 @@ const defaultBrandResolver =
   (term) =>
     searchBrandsForTerm(supabase, term);
 
+/**
+ * List aur stats dono me yahi brand gate — drift se bachne ke liye single source.
+ * Supabase builder recursive generic hai; isliye structural cast use karte hain
+ * (warna TS2589). PostgREST `.eq/.is` filter builder ko mutate karke return karte
+ * hain — yahan return value ignore karke original query object hi passthrough.
+ */
+type BrandFilterable = {
+  eq: (column: string, value: number) => unknown;
+  is: (column: string, value: null) => unknown;
+};
+
+export function applyBrandFilter<T>(query: T, brand: string): T {
+  const q = query as unknown as BrandFilterable;
+  const value = normalizeBrandFilter(brand);
+  if (value === "untagged") q.is("brand_id", null);
+  else if (value) q.eq("brand_id", parseInt(value, 10));
+  return query;
+}
+
 function applyFilters(
   supabase: SupabaseClient,
   filters: JobListFilters,
@@ -241,6 +293,7 @@ function applyFilters(
   if (filters.hideDelivered) q = q.neq("status", 5);
   if (filters.status !== "") q = q.eq("status", filters.status);
   if (filters.spot) q = q.eq("location_id", parseInt(filters.spot));
+  q = applyBrandFilter(q, filters.brand);
   if (filters.term) q = q.or(jobSearchFilter(filters.term, matchedClientIds, matchedBrandIds));
   return q;
 }
@@ -329,6 +382,7 @@ export async function queryJobStats(
       p_hide_delivered: filters.hideDelivered,
       p_status: filters.status === "" ? null : filters.status,
       p_spot: filters.spot || null,
+      p_brand: normalizeBrandFilter(filters.brand) || null,
     });
     if (!error && data && typeof data === "object" && "total" in data) {
       const d = data as Record<string, number>;
@@ -377,6 +431,7 @@ export async function queryJobPage(
   if (filters.hideDelivered) query = query.neq("status", 5);
   if (filters.status !== "") query = query.eq("status", filters.status);
   if (filters.spot) query = query.eq("location_id", parseInt(filters.spot));
+  query = applyBrandFilter(query, filters.brand);
   if (term) query = query.or(jobSearchFilter(term, matchedClientIds, matchedBrandIds));
 
   const from = pageIndex * pageSize;

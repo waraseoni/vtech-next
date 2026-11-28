@@ -120,6 +120,7 @@ const STATUS_WA_KEY: Record<number, string> = {
 // Sprint 3 #12: list data-layer useJobList me — type wahin se
 import { useJobList, type Transaction } from "./useJobList";
 import { queryStaleJobs, type JobsPageSeed, type StaleJobItem } from "./jobListQueries";
+import { normalizeServiceCenterMode } from "@/lib/serviceCenterMode";
 
 type QuickClient = {
   id: number;
@@ -285,6 +286,8 @@ function JobsListContent({
     setStatusFilter,
     spotFilter,
     setSpotFilter,
+    brandFilter,
+    setBrandFilter,
     jobSpots,
     loadJobSpots,
     pageSize,
@@ -307,6 +310,41 @@ function JobsListContent({
   // layout). See docs/plans/perf_baseline.md Session 6 addendum.
   const [isMobile, setIsMobile] = useState(initialIsMobile);
   const sysInfo = initial?.sysInfo ?? {};
+
+  // B2 — Brand switcher: ek brand ke saare kaam dekhne ka persistent control.
+  // Autonomous me brand optional metadata (default All + legacy Untagged chip);
+  // single/multi me chip prominent (brand required hota hai). Options server seed
+  // se aate hain — client ko doosra master fetch nahi karna padta.
+  const brandOptions = initial?.brandOptions ?? [];
+  const brandProminent = normalizeServiceCenterMode(sysInfo.service_center_mode) !== "autonomous";
+  const brandFilterLabel =
+    brandFilter === "untagged"
+      ? "Untagged (legacy)"
+      : brandFilter
+        ? (brandOptions.find((b) => String(b.id) === brandFilter)?.name ?? `Brand #${brandFilter}`)
+        : "";
+  const brandFilterControl = (wide = false) => (
+    <div>
+      <label className="block text-[10px] font-bold text-muted-2 uppercase mb-1">Brand</label>
+      <select
+        value={brandFilter}
+        onChange={(e) => setBrandFilter(e.target.value)}
+        title="Ek brand ke saare kaam dekhne ke liye"
+        className={`bg-app border ${brandProminent && brandFilter ? "border-blue-500" : "border-app"} text-app-2 rounded-lg px-2.5 py-1.5 text-xs focus:border-blue-500 outline-none transition-all ${wide ? "w-full" : "max-w-[170px]"}`}
+      >
+        <option value="">All Brands</option>
+        <option value="untagged">Untagged (legacy)</option>
+        {brandOptions.map((b) => (
+          <option key={b.id} value={b.id}>
+            {b.code ? `${b.name} (${b.code})` : b.name}
+          </option>
+        ))}
+        {/^\d+$/.test(brandFilter) && !brandOptions.some((b) => String(b.id) === brandFilter) && (
+          <option value={brandFilter}>{brandFilterLabel}</option>
+        )}
+      </select>
+    </div>
+  );
 
   // (sysInfo ab server props se — mount effect hate, Phase 4 P2)
 
@@ -1141,6 +1179,7 @@ function JobsListContent({
     if (dateFrom) p.set("date_from", dateFrom);
     if (dateTo) p.set("date_to", dateTo);
     if (hideDelivered) p.set("hide_delivered", "1");
+    if (brandFilter) p.set("brand", brandFilter);
     syncJobsUrl(`?${p}`);
   };
 
@@ -1149,6 +1188,7 @@ function JobsListContent({
     if (dateFrom) p.set("date_from", dateFrom);
     if (dateTo) p.set("date_to", dateTo);
     if (hideDelivered) p.set("hide_delivered", "1");
+    if (brandFilter) p.set("brand", brandFilter);
     syncJobsUrl(`?${p}`);
     setShowFilterModal(false);
   };
@@ -1160,6 +1200,7 @@ function JobsListContent({
     setStatusFilter("");
     setLocalSearch("");
     setSpotFilter("");
+    setBrandFilter("");
     try {
       localStorage.removeItem("jobs_hide_delivered");
     } catch {}
@@ -2016,6 +2057,7 @@ function JobsListContent({
                   ))}
                 </select>
               </div>
+              {brandFilterControl()}
 
               <button
                 onClick={applyDesktopFilter}
@@ -2269,6 +2311,14 @@ function JobsListContent({
                 : dateFrom && dateTo
                   ? `${dateFrom} → ${dateTo}`
                   : dateFrom || dateTo}
+            </span>
+          </div>
+        )}
+        {/* Brand chip — chhupe filter ko mobile par bhi visible rakho */}
+        {brandFilterLabel && (
+          <div className="mt-2 text-center">
+            <span className="text-[10px] font-bold text-blue-400 bg-blue-500/10 border border-blue-500/20 px-2 py-1 rounded-lg">
+              Brand: {brandFilterLabel}
             </span>
           </div>
         )}
@@ -3100,6 +3150,7 @@ function JobsListContent({
                   ))}
                 </select>
               </div>
+              {brandFilterControl(true)}
               <button
                 onClick={clearDeliveredSpots}
                 disabled={spotCleaning || viewOnly}

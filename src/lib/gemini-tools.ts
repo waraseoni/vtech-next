@@ -83,6 +83,7 @@ BUSINESS FACTS:
 WORKFLOW & DATA MODEL:
 - Repair jobs live in transaction_list; client_name column stores the client id. Status: 0=Pending (kaam shuru nahi), 1=On-Progress (kaam chal raha), 2=Done (kaam pura), 3=Paid (bill chuka), 4=Cancelled, 5=Delivered (item mil gaya).
 - Job grand total = services (price) + products (qty × price). Job code = YYYYMMDD+daily sequence; job_id = global number. Column brand_job_no (sirf single/multi brand mode, e.g. KMK#004) bhi job_id ki tarah searchable hai — use get_job_details_by_id with that number.
+- Brand filter: /jobs?brand=<brand_id> ek brand ke SAARE kaam dikhata hai (autonomous me brand optional hai; single/multi me required). Legacy bina brand wale jobs ke liye /jobs?brand=untagged. Jab user pooche "brand X ke saare kaam", to get_recent_jobs ko brand param do (id/name/code ya 'untagged'), aur jawab me filtered list ka link bana do.
 - Revenue (repairs) = job amounts for Delivered (status 5) jobs, counted by date_completed. Cash In = client payments + walk-in direct sales.
 - Direct sales in direct_sales (code SALE + 6 digits); client_id 0/null means walk-in customer.
 - Stock: available = inventory quantities − items used in active jobs − direct sale items. Thresholds: ≤0 Out of Stock, ≤5 Low, else In stock. alert_quantity = reorder point.
@@ -115,6 +116,7 @@ NAVIGATION LINKS (in-app chat only):
 - Route map:
   - Client → /clients/{id}/view  (e.g. [Ramesh](/clients/12/view))
   - Job → /jobs/{id}/view
+  - Brand ke saare kaam → /jobs?brand={brand_id}  (legacy → /jobs?brand=untagged)
   - Product (inventory) → /inventory/{id}
   - Reports → /reports (ya specific report root)
   - Daily done → /reports/daily-done, Delivered → /reports/delivered, Requirement list → /reports/requirement-list
@@ -151,7 +153,7 @@ export const geminiTools: AiTool[] = [
   {
     name: "get_recent_jobs",
     description:
-      "Fetches the most recent jobs/transactions. Can filter by status (0=Pending, 1=In Progress, 2=Done, 3=Paid, 4=Cancelled, 5=Delivered).",
+      "Fetches the most recent jobs/transactions. Can filter by status (0=Pending, 1=In Progress, 2=Done, 3=Paid, 4=Cancelled, 5=Delivered) and by brand — use the brand filter when asked for all work of one brand (e.g. Komaki/KMK) or for legacy untagged jobs.",
     parameters: {
       type: "object",
       properties: {
@@ -162,6 +164,11 @@ export const geminiTools: AiTool[] = [
         status: {
           type: "integer",
           description: "Optional job status to filter by (0-5).",
+        },
+        brand: {
+          type: "string",
+          description:
+            "Optional brand filter for 'all work of brand X': brand id (e.g. '5'), name/code (e.g. 'Komaki' or 'KMK'), or 'untagged' for legacy jobs with no brand.",
         },
       },
       required: [],
@@ -388,13 +395,43 @@ export async function executeGeminiTool(
       const limit = Number(args?.limit) || 5;
       let query = supabase
         .from("transaction_list")
-        .select("job_id, client_name, item, fault, status, amount, date_created")
+        .select(
+          "job_id, brand_job_no, brand_id, client_name, item, fault, status, amount, date_created"
+        )
         .eq("del_status", 0)
         .order("date_created", { ascending: false })
         .limit(limit);
 
       if (args?.status !== undefined && args?.status !== "") {
         query = query.eq("status", Number(args.status));
+      }
+
+      // B2 — "ek brand ke saare kaam": UI ke /jobs?brand=<id>|untagged ka
+      // AI-side equivalent. Name/code ko pehle brand master se ID me badlo.
+      const brandArg = String(args?.brand ?? "")
+        .trim()
+        .toLowerCase();
+      if (brandArg === "untagged") {
+        query = query.is("brand_id", null);
+      } else if (/^\d+$/.test(brandArg)) {
+        query = query.eq("brand_id", Number(brandArg));
+      } else if (brandArg) {
+        const bTerm = safeOrTerm(brandArg);
+        const { data: brandRows } = await supabase
+          .from("brands")
+          .select("id")
+          .or(`name.ilike.%${bTerm}%,code.ilike.%${bTerm}%`);
+        const brandIds = (brandRows || []) as Array<{ id: number }>;
+        if (!brandIds.length) {
+          return { recent_jobs: [], message: `Brand '${brandArg}' nahi mila.` };
+        }
+        query =
+          brandIds.length === 1
+            ? query.eq("brand_id", brandIds[0].id)
+            : query.in(
+                "brand_id",
+                brandIds.map((b) => b.id)
+              );
       }
 
       const { data } = await query;

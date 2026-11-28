@@ -151,9 +151,16 @@ Repair par fault ab bhi mandatory; deactivated type ka purana job edit me sahi d
   navbar search, public tracker (`?brand_job_no=KMK%23004`), `get_jobs_stats()` RPC
   (`20261128_brand_job_no_search.sql`, **owner apply kar chuka**; verify output pending), aur AI (`get_job_details_by_id`
   ab brand number se bhi job dhoondhta hai; prompt/schema/test sync). Print/WA/report parity next.
-- [ ] **B2 — Brand filter + switcher + coverage:** `jobListQueries.ts` ek hi source (RSC + client);
-      dashboard, pending-jobs, reports; default **All (NULL sahit)** + "Untagged (legacy)" chip;
-      coverage indicator `Brand-tagged: X / Y (Z%) · Untagged: …`; `get_jobs_stats()` RPC drift check.
+- [~] **B2 — Brand filter + switcher + coverage (28 Nov):** `/jobs` par **Brand chip wired** —
+  `Brand: All / Untagged (legacy) / <brand>` desktop filter bar + mobile modal + mobile chip,
+  URL `?brand=<id>|untagged` deep-link, RSC seed aur client fetch ek hi
+  `jobListQueries.ts` source (normalize + `applyBrandFilter`). Autonomous me optional brand
+  (default All), single/multi me chip prominent. Quick Stats ke liye
+  `get_jobs_stats()` 6→7 arg (`p_brand`) migration
+  `20261128_jobs_stats_brand_filter.sql` taiyar + full schema fold-in; **owner apply pending**.
+  AI bhi is filter se aware (prompt + `get_recent_jobs.brand` + executor + tests) — D12 golden
+  rule ka doosra live example. **Baaki:** dashboard, pending-jobs, reports me yahi chip;
+  coverage indicator `Brand-tagged: X / Y (Z%) · Untagged: …`.
 - [ ] **B3 — Warranty + claims (K9):** `warranty_until` delivery par compute + view badge;
       `warranty_claim_status` update UI (`submitted→approved→rejected→paid`, paid par amount);
       `warranty_claim_no` register + CSV export (naya `api/export-brand-claims`).

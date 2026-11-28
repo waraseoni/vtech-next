@@ -14,6 +14,7 @@ import { fetchOpenPartCounts } from "@/lib/requiredParts";
 import { logger } from "@/lib/logger";
 import {
   enrichJobRows,
+  normalizeBrandFilter,
   queryJobPage,
   queryJobSpots,
   queryJobStats,
@@ -58,6 +59,7 @@ export function useJobList(initial?: JobsListSeed | null) {
   const urlDateFrom = searchParams.get("date_from") || "";
   const urlDateTo = searchParams.get("date_to") || "";
   const urlHideDelivered = searchParams.get("hide_delivered") === "1";
+  const urlBrand = normalizeBrandFilter(searchParams.get("brand"));
 
   // Filters
   // Lazy init from URL (?search=) — QR labels / spot-links isi se deep-link karte hain
@@ -93,6 +95,9 @@ export function useJobList(initial?: JobsListSeed | null) {
     const p = searchParams.get("spot");
     return p && /^\d+$/.test(p) ? p : "";
   });
+  // Brand switcher — URL ?brand=<id>|untagged. Autonomous me bhi available
+  // (optional device metadata), single/multi me required brand ka filter.
+  const [brandFilter, setBrandFilter] = useState<string>(urlBrand);
 
   // Debounced search — lazy init = localSearch: URL ?search= deep-link par
   // pehla fetch TURANT term ke saath (300ms flip ki wajah se duplicate refetch nahi).
@@ -111,6 +116,7 @@ export function useJobList(initial?: JobsListSeed | null) {
       hideDelivered,
       status: statusFilter,
       spot: spotFilter,
+      brand: brandFilter,
     })
       ? initial
       : null;
@@ -146,6 +152,7 @@ export function useJobList(initial?: JobsListSeed | null) {
     hideDelivered,
     status: statusFilter,
     spot: spotFilter,
+    brand: brandFilter,
   });
   const seedCoversFetch = (): boolean =>
     seedInputs !== null && seedMatchesFilters(seedInputs, fetchInputs());
@@ -212,6 +219,11 @@ export function useJobList(initial?: JobsListSeed | null) {
   useEffect(() => {
     setSpotFilter(urlSpot && /^\d+$/.test(urlSpot) ? urlSpot : "");
   }, [urlSpot]);
+  // Brand deep-link: /jobs?brand=5 | ?brand=untagged. Hash change par bhi chip
+  // UI update ho (sirf mount par nahi) — spot/search ki tarah hi.
+  useEffect(() => {
+    setBrandFilter(urlBrand);
+  }, [urlBrand]);
 
   // ── Client search (Step 1: foreign key filtering) — deduped wrapper ──────
   const searchClients = useCallback(async (term: string) => {
@@ -253,6 +265,7 @@ export function useJobList(initial?: JobsListSeed | null) {
           hideDelivered,
           status: statusFilter,
           spot: spotFilter,
+          brand: brandFilter,
         },
         searchClients,
         searchBrands
@@ -267,6 +280,7 @@ export function useJobList(initial?: JobsListSeed | null) {
     hideDelivered,
     statusFilter,
     spotFilter,
+    brandFilter,
     debouncedSearch,
     searchClients,
     searchBrands,
@@ -286,6 +300,7 @@ export function useJobList(initial?: JobsListSeed | null) {
           hideDelivered,
           status: statusFilter,
           spot: spotFilter,
+          brand: brandFilter,
         },
         pageIndex,
         pageSize,
@@ -315,6 +330,7 @@ export function useJobList(initial?: JobsListSeed | null) {
     hideDelivered,
     statusFilter,
     spotFilter,
+    brandFilter,
     debouncedSearch,
     pageIndex,
     pageSize,
@@ -338,7 +354,7 @@ export function useJobList(initial?: JobsListSeed | null) {
   // BUG FIX 3: Reset pageIndex on actual filter/search change
   useEffect(() => {
     setPageIndex(0);
-  }, [debouncedSearch, hideDelivered, statusFilter, spotFilter, dateFrom, dateTo]);
+  }, [debouncedSearch, hideDelivered, statusFilter, spotFilter, brandFilter, dateFrom, dateTo]);
 
   // We already have the paginated transactions from the server!
   const paginatedTransactions = transactions;
@@ -385,6 +401,8 @@ export function useJobList(initial?: JobsListSeed | null) {
     setStatusFilter,
     spotFilter,
     setSpotFilter,
+    brandFilter,
+    setBrandFilter,
     jobSpots,
     loadJobSpots,
     pageSize,

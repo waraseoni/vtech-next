@@ -67,11 +67,20 @@ const seedTxn = (id: number): Transaction => ({
 });
 
 const makeSeed = (hideDelivered = false): JobsListSeed => ({
-  filterInputs: { search: "", dateFrom: "", dateTo: "", hideDelivered, status: "", spot: "" },
+  filterInputs: {
+    search: "",
+    dateFrom: "",
+    dateTo: "",
+    hideDelivered,
+    status: "",
+    spot: "",
+    brand: "",
+  },
   transactions: [seedTxn(1)],
   totalRows: 1,
   stats: { total: 1, pending: 1, progress: 0, completed: 0, totalAmt: 100 },
   jobSpots: [{ id: 5, name: "Shelf A", count: 1 }],
+  brandOptions: [{ id: 5, name: "Komaki", code: "KMK" }],
   openPartCounts: [[1, 2]],
 });
 
@@ -144,6 +153,29 @@ describe("useJobList â€” RSC seed gate", () => {
       result.current.setStatusFilter(2);
     });
     await waitFor(() => expect(fx.queryJobPage).toHaveBeenCalled());
+  });
+
+  it("brand switcher change → list aur stats dono ko wahi brand filter milta hai", async () => {
+    const seed = makeSeed();
+    const { result } = renderHook(() => useJobList(seed));
+    await act(flush);
+
+    await act(async () => {
+      result.current.setBrandFilter("5");
+    });
+    await waitFor(() => expect(fx.queryJobPage).toHaveBeenCalled());
+
+    expect(fx.queryJobPage.mock.calls[0]?.[1]).toMatchObject({ brand: "5" });
+    expect(fx.queryJobStats.mock.calls[0]?.[1]).toMatchObject({ brand: "5" });
+  });
+
+  it("?brand=untagged deep-link mount par hi apply hota hai", async () => {
+    fx.search = "?brand=untagged";
+    const { result } = renderHook(() => useJobList(null));
+    await waitFor(() => expect(fx.queryJobPage).toHaveBeenCalled());
+
+    expect(result.current.brandFilter).toBe("untagged");
+    expect(fx.queryJobPage.mock.calls[0]?.[1]).toMatchObject({ brand: "untagged" });
   });
 
   it("hideDelivered: cookie se init + toggle par cookie mirror likhta hai", async () => {
