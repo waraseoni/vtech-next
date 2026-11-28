@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.90.2](https://github.com/waraseoni/vtech-next/compare/v1.90.1...v1.90.2) (2026-11-28)
+
+### Bug Fixes
+
+* **attendance:** stabilize light-theme mobile Chrome rendering ([84276a6](https://github.com/waraseoni/vtech-next/commit/84276a68fa195e323297bf616d7a56952d916ea7))
+
 ## [1.90.1](https://github.com/waraseoni/vtech-next/compare/v1.90.0...v1.90.1) (2026-11-28)
 
 ### Bug Fixes
