@@ -193,6 +193,7 @@ schtasks /Create /TN "VTech Supabase Backup" /TR "node \"D:\next tech\vtech-next
 | `INCOMPLETE` (exit 2) | किसी table का count mismatch | दोबारा चलाएँ; बार-बार हो तो Supabase/RLS जाँचें |
 | Cloud upload fail (exit 3) | Storage permission/bucket | सर्विस-role key, bucket `backups` जाँचें |
 | Dry Run FAIL | PK/null मिसमैच | warning पढ़ें, फ़ाइल सही है क्या देखें; restore न करें |
+| `staff_duty_schedule: ... PK (id) missing/duplicate` | generated identity `id` backup में होता ही नहीं | नया dry-run `mechanic_id+effective_from` check करता है; दोबारा Dry Run चलाएँ |
 | MariaDB sync नहीं चल रहा | galat path / XAMPP बंद | path ठीक करें, XAMPP (Apache/MySQL) चालू करें |
 | Converter में table missing | नया table बना | converter v5+ अपडेट चाहिए |
 
@@ -385,6 +386,7 @@ schtasks /Create /TN "VTech Supabase Backup" /TR "node \"D:\next tech\vtech-next
 | `INCOMPLETE` (exit 2) | a table's count mismatched | re-run; if repeated, check Supabase/RLS |
 | Cloud upload fail (exit 3) | Storage permission/bucket | verify service-role key and `backups` bucket |
 | Dry Run FAIL | PK/null mismatch | read warning, verify the file; do not restore |
+| `staff_duty_schedule: ... PK (id) missing/duplicate` | generated identity `id` is intentionally absent from backups | new dry-run checks `mechanic_id+effective_from`; re-run Dry Run |
 | MariaDB sync not running | wrong path / XAMPP off | fix path, start XAMPP (Apache/MySQL) |
 | Table missing in converter | new table added | update converter (v5+) |
 
@@ -577,6 +579,7 @@ schtasks /Create /TN "VTech Supabase Backup" /TR "node \"D:\next tech\vtech-next
 | `INCOMPLETE` (exit 2) | kisi table ka count mismatch | dobara chalao; baar-baar ho to Supabase/RLS check karo |
 | Cloud upload fail (exit 3) | Storage permission/bucket | service-role key aur `backups` bucket check karo |
 | Dry Run FAIL | PK/null mismatch | warning padho, file sahi hai kya dekho; restore mat karo |
+| `staff_duty_schedule: ... PK (id) missing/duplicate` | generated identity `id` backup me jaan-bujhkar nahi hota | naya dry-run `mechanic_id+effective_from` check karta hai; Dry Run dobara chalao |
 | MariaDB sync nahi chal raha | galat path / XAMPP band | path theek karo, XAMPP (Apache/MySQL) chalu karo |
 | Converter me table missing | naya table bana | converter update karo (v5+) |
 

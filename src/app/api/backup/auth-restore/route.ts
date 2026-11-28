@@ -5,6 +5,7 @@ import { getAdminSupabase } from "@/lib/admin-supabase";
 import {
   AUTH_LINKED_TABLES,
   AUTH_TABLE_PK,
+  AUTH_GENERATED_COLUMNS,
   type AuthLinkedTable,
   type AuthUserLike,
   buildAuthUuidRemap,
@@ -12,7 +13,11 @@ import {
   filterRowsToColumns,
 } from "@/lib/backupAuthRestore";
 import { parseOpenApiToSchema, type SupabaseOpenApiLike } from "@/lib/backupSchema";
-import { dedupeRowsByPk, normalizeTextFieldsForRestore } from "@/lib/backupRestore";
+import {
+  dedupeRowsByPk,
+  normalizeTextFieldsForRestore,
+  restoreConflictKey,
+} from "@/lib/backupRestore";
 
 export const runtime = "nodejs";
 
@@ -214,15 +219,22 @@ export async function POST(req: NextRequest) {
     if (cols?.length) rows = filterRowsToColumns(rows, cols);
     rows = rows.map((r) => normalizeTextFieldsForRestore(r));
 
-    const pk = AUTH_TABLE_PK[table];
-    const dedup = dedupeRowsByPk(rows, pk);
+    // Generated identity PK (staff_geofence_permit.id) backup me nahi hota —
+    // us par fake onConflict nahi lagao, plain insert karo.
+    const conflictKey = restoreConflictKey(
+      table,
+      AUTH_TABLE_PK[table],
+      AUTH_GENERATED_COLUMNS[table] ?? []
+    );
+    const upsertOpts = conflictKey.length ? { onConflict: conflictKey.join(",") } : undefined;
+    const dedup = dedupeRowsByPk(rows, conflictKey);
     const errors = new Set<string>();
     let restored = 0;
 
     const batchSize = 50;
     for (let i = 0; i < dedup.rows.length; i += batchSize) {
       const batch = dedup.rows.slice(i, i + batchSize);
-      const { error } = await supabase.from(table).upsert(batch, { onConflict: pk.join(",") });
+      const { error } = await supabase.from(table).upsert(batch, upsertOpts);
       if (!error) {
         restored += batch.length;
         continue;
@@ -230,9 +242,7 @@ export async function POST(req: NextRequest) {
       errors.add(error.message);
       // Batch fail → row-by-row taaki ek bad row baaki rows na roke.
       for (const row of batch) {
-        const { error: rowErr } = await supabase
-          .from(table)
-          .upsert(row, { onConflict: pk.join(",") });
+        const { error: rowErr } = await supabase.from(table).upsert(row, upsertOpts);
         if (!rowErr) restored++;
         else errors.add(rowErr.message);
       }

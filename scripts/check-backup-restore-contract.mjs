@@ -119,6 +119,10 @@ const EXTRA_NOTES = `## Known gaps / decisions (28 Nov 2026 — format 4.0)
 - ✅ Removed-column policy: file me maujood par live schema se hataaye gaye columns par
   dry-run/real restore FAIL by default. Sirf explicit override (\`/backup\` checkbox /
   \`scripts/force-restore.cjs --allow-removed-columns\`) par strip hote hain.
+- ✅ Generated identity PK (\`staff_duty_schedule.id\`, \`staff_geofence_permit.id\`) backup me strip
+  hota hai. Dry-run/upsert ab \`restoreConflictKey()\` se raw PK ki jagah business UNIQUE key
+  (\`staff_duty_schedule\`: \`mechanic_id\` + \`effective_from\`) ya plain insert use karte hain.
+  Generated column ke liye \`PK (id) missing/duplicate\` ab galat error nahi.
 - Grants / RLS policies / functions / triggers backup me nahi jaate — fresh DB par pehle migrations
   apply karna zaroori hai.
 - \`public/tools/vtech_mysql_converter.html\` ka 46-table list aur bool maps stale hain

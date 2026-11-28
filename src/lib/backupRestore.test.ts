@@ -3,9 +3,11 @@ import {
   BACKUP_TABLES_ORDERED,
   normalizeTextFieldsForRestore,
   dedupeRowsByPk,
+  restoreConflictKey,
   classifyRestoreError,
   restoreErrorHint,
 } from "./backupRestore";
+import { countPkViolations } from "./backupSchema";
 
 const orderOf = (table: string) =>
   BACKUP_TABLES_ORDERED.findIndex((entry) => entry.table === table);
@@ -109,6 +111,34 @@ describe("dedupeRowsByPk", () => {
   it("does nothing for tables without a PK", () => {
     const rows = [{ v: 1 }, { v: 1 }];
     expect(dedupeRowsByPk(rows, []).rows).toEqual(rows);
+  });
+});
+
+describe("restoreConflictKey", () => {
+  it("uses the business UNIQUE key when the PK is generated identity", () => {
+    expect(restoreConflictKey("staff_duty_schedule", ["id"], ["id"])).toEqual([
+      "mechanic_id",
+      "effective_from",
+    ]);
+  });
+
+  it("keeps a normal PK when generated columns are not part of it", () => {
+    expect(restoreConflictKey("client_payments", ["id"], ["net_amount"])).toEqual(["id"]);
+  });
+
+  it("returns no fake conflict key when no business UNIQUE exists", () => {
+    expect(restoreConflictKey("staff_geofence_permit", ["id"], ["id"])).toEqual([]);
+  });
+
+  it("does not flag generated-id duty rows as missing PK", () => {
+    const rows = [
+      { mechanic_id: 1, effective_from: "2026-11-01", duty_start: "10:00" },
+      { mechanic_id: 2, effective_from: "2026-11-01", duty_start: "11:00" },
+      { mechanic_id: 3, effective_from: "2026-11-02", duty_start: "12:00" },
+    ];
+    const key = restoreConflictKey("staff_duty_schedule", ["id"], ["id"]);
+    expect(countPkViolations(rows, key)).toBe(0);
+    expect(countPkViolations([...rows, { ...rows[0] }], key)).toBe(1);
   });
 });
 
