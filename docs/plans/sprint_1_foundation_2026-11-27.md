@@ -127,8 +127,9 @@
       `main` push feature branch se hata kar **PR #1** me gaya; `main` par PR-required protection
       (conversation resolution + force-push/delete block) API se applied. Approval count `0` kyunki
       PR author bhi `@waraseoni` hai — self-approval GitHub count nahi karta; second human mile to
-      `1` set karna hai. CSP observation **28 Nov–11 Dec** (14 din), decision 12 Dec. CI workflow
-      abhi nahi hai; add hote hi required checks wire karni hain.
+      `1` set karna hai. CSP observation **28 Nov–11 Dec** (14 din), decision 12 Dec. CI/E2E workflows
+      (`ci.yml`, `e2e.yml`) already chalte hain; Release ab **owner-dispatched manual** hai
+      (`workflow_dispatch`, bina `@semantic-release/git`) — push par automatic version bump nahi.
 - [x] Backup readiness decisions (owner ne agent ko choose karne diya): format `4.0` + legacy
       read, removed-column **fail + explicit override**, `schema_snapshot.migration_ids` tino
       writers me, browser-verified. **Test DB par full `4.0` round-trip: 42 rows 100% restored
