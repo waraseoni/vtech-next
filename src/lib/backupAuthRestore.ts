@@ -17,6 +17,18 @@ export const AUTH_LINKED_TABLES = [
 
 export type AuthLinkedTable = (typeof AUTH_LINKED_TABLES)[number];
 
+/**
+ * Browser restore se skip hone wali tables. 8 auth-linked tables ko service-role +
+ * UUID remap chahiye; `ai_providers` RLS-only hai aur browser se read/write nahi hoti.
+ * Ye tables protected rehti hain — unhe neeche "Admin Restore" section se restore karein.
+ */
+export const BROWSER_RESTORE_SKIP_TABLES = [...AUTH_LINKED_TABLES, "ai_providers"] as const;
+
+/** UI default ON — skipped tables ko clear/upsert/count-verify sab se bahar rakhta hai. */
+export function isBrowserRestoreSkipped(table: string, skip: boolean): boolean {
+  return skip && (BROWSER_RESTORE_SKIP_TABLES as readonly string[]).includes(table);
+}
+
 /** Upsert/delete ke liye PK — live schema se verify kiya gaya. */
 export const AUTH_TABLE_PK: Record<AuthLinkedTable, string[]> = {
   profiles: ["id"],

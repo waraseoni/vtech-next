@@ -105,6 +105,10 @@ default; opt-in checkbox / `--allow-removed-columns`). Tests:
   60/60 table counts same (`108 → 108`), 48/48 sequence reset `200`, `peek_next_job_id()=28107`.
   Auth-linked 8 tables + `ai_providers` is round-trip me preserve rahe. Production par abhi bhi
   destructive restore nahi chalaya gaya.
+- ✅ **Auth/RLS skip default ON** — owner ke poori file wale restore me `profiles` (6) aur
+  `user_presence` (2) RLS/UUID mismatch se FAIL hue, par data safe raha. Ab browser restore
+  9 tables (8 auth-linked + `ai_providers`) ko auto-skip karta hai; inhe service-role Admin
+  Restore se hi restore karein.
 
 ## Standing rules (badalte nahi)
 

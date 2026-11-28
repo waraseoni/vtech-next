@@ -189,6 +189,27 @@ Isliye ab test DB par **backup → restore → count verify → sequence reset**
 Sirf CLI/converter ka live restore abhi unit-test level hai; auth-linked tables ka restore owner ke
 D3 me already ho chuka hai aur is round-trip me unhe touch hi nahi kiya gaya.
 
+**Owner ke `43 restored / 8 failed` report ka exact reason aur fix:** owner ne poori backup file
+use ki jisme 8 auth-linked tables (`profiles=6`, `user_presence=3` me se 2) bhi thi. Browser
+restore inhe RLS/UUID mismatch ke chalte likh nahi sakta — wo 8 FAIL expected the. Agent ne apne
+round-trip me ye tables file se pehle hi hata diye the, isliye error nahi aaya. Failed restore ke
+baad bhi DB counts wahi rahe (`profiles=6`, `user_presence=3`, total `108`, 0 diff) — koi data
+delete/overwrite nahi hua. Ab `/backup` me **"Auth/RLS tables skip karein"** checkbox default ON
+hai: ye 9 tables (8 auth-linked + `ai_providers`) clear/upsert/verify se bahar rakhti hai. Inhe
+service-role **Admin Restore** se hi restore karein. Owner ko ab poori file load karke bhi
+`Restore Now` chalana safe hai — skip ON rehna chahiye.
+
+**Fix ka live proof (agent, aapki jaisi poori 60-table file ke saath):**
+
+| Check | Result |
+| --- | --- |
+| New checkbox default | ✅ `Auth/RLS tables skip karein (recommended)` = checked |
+| Dry Run | ✅ `97 rows in 51 tables ready to restore. 9 auth/RLS tables skip.` — 0 FAIL |
+| Real `Restore Now` | ✅ `42 rows 100% restored + count verified! · 9 auth/RLS tables skip` — 0 FAIL |
+| Sequence reset | 48/48 route calls `200` |
+| Counts after | `108 → 108`, backup vs DB **0 diff**; `profiles=6`, `user_presence=3`, `ai_providers=2` preserved |
+| Console | Sirf pre-existing `ai_providers` 403; koi naya restore error nahi |
+
 ---
 
 ## Step 5 — Portal smoke (client credentials chahiye)

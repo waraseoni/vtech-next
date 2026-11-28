@@ -1,6 +1,8 @@
 import { describe, it, expect } from "vitest";
 import {
   AUTH_LINKED_TABLES,
+  BROWSER_RESTORE_SKIP_TABLES,
+  isBrowserRestoreSkipped,
   buildAuthUuidRemap,
   remapAuthRows,
   filterRowsToColumns,
@@ -126,5 +128,19 @@ describe("AUTH_LINKED_TABLES", () => {
       "staff_geofence_permit",
       "user_passkeys",
     ]);
+  });
+});
+
+describe("browser restore skip list", () => {
+  it("includes auth-linked tables plus RLS-only ai_providers", () => {
+    expect(BROWSER_RESTORE_SKIP_TABLES).toEqual([...AUTH_LINKED_TABLES, "ai_providers"]);
+  });
+
+  it("skips only when the option is enabled", () => {
+    expect(isBrowserRestoreSkipped("profiles", true)).toBe(true);
+    expect(isBrowserRestoreSkipped("user_presence", true)).toBe(true);
+    expect(isBrowserRestoreSkipped("ai_providers", true)).toBe(true);
+    expect(isBrowserRestoreSkipped("transaction_list", true)).toBe(false);
+    expect(isBrowserRestoreSkipped("profiles", false)).toBe(false);
   });
 });

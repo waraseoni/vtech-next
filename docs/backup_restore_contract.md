@@ -613,6 +613,10 @@ Last synced: 28 Nov 2026 · Source: `supabase/migrations/*.sql`
 - ✅ Removed-column policy: file me maujood par live schema se hataaye gaye columns par
   dry-run/real restore FAIL by default. Sirf explicit override (`/backup` checkbox /
   `scripts/force-restore.cjs --allow-removed-columns`) par strip hote hain.
+- ✅ Browser restore skip list (`src/lib/backupAuthRestore.ts`): 8 auth-linked tables + RLS-only
+  `ai_providers` default ON par clear/upsert/count-verify se bahar rehte hain. Inhe sirf
+  service-role **Admin Restore** se restore karna hai. Reason: 28 Nov owner restore me
+  `profiles` (6) aur `user_presence` (2) RLS/UUID mismatch se FAIL hue the.
 - Grants / RLS policies / functions / triggers backup me nahi jaate — fresh DB par pehle migrations
   apply karna zaroori hai.
 - `public/tools/vtech_mysql_converter.html` ka 46-table list aur bool maps stale hain

@@ -19,6 +19,12 @@
 > `108 → 108` (0 diff), 48/48 sequence reset `200`, `peek_next_job_id() = 28107`.
 > Auth-linked 8 tables aur RLS-only `ai_providers` is round-trip me untouched rahe.
 > Production/staging drill abhi owner approval ke baad hi chalana hai.
+>
+> 🔐 **Naya safe default (28 Nov):** `/backup` me **"Auth/RLS tables skip karein"** checkbox
+> default ON hai. Isse `profiles`, `user_presence` jaise 8 auth-linked tables aur RLS-only
+> `ai_providers` browser restore me FAIL nahi hote — preserved rehte hain. Inhe neeche
+> **Admin Restore (service-role)** se hi restore karein. Checkbox OFF karne par purana
+> RLS/UUID mismatch wala FAIL wapas aayega.
 
 ---
 

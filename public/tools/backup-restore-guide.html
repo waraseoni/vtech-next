@@ -1395,6 +1395,10 @@ node scripts/supabase-restore.mjs backups/supabase/dumps/backup.sql --full</pre>
                 <li>Removed column par <b>FAIL + explicit override</b> ✅ (page checkbox / CLI flag).</li>
                 <li>Snapshot me <b>migration IDs</b> ✅ — browser + server + CLI tino writers.</li>
                 <li>
+                  <b>Auth/RLS skip</b> ✅ default ON — 8 auth-linked tables + ai_providers browser
+                  restore me preserved; service-role <b>Admin Restore</b> se hi restore hoti hain.
+                </li>
+                <li>
                   Restore drill: <b>test DB par chal gaya</b> (42 rows 100% verified, 48/48 sequence
                   reset, next job id 28107). Production par agent destructive restore nahi chalata.
                 </li>
