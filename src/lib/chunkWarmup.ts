@@ -40,9 +40,9 @@ export function warmChunksOnIdle(
     const id = ric(warm, { timeout: timeoutMs });
     return () => {
       cancelled = true;
-      (
-        window as unknown as { cancelIdleCallback?: (handle: number) => void }
-      ).cancelIdleCallback?.(id);
+      (window as unknown as { cancelIdleCallback?: (handle: number) => void }).cancelIdleCallback?.(
+        id
+      );
     };
   }
 
