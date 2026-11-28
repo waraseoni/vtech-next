@@ -55,6 +55,12 @@ const nextConfig: NextConfig = {
   reactCompiler: true,
   turbopack: {},
   experimental: {
+    // NOTE (nav audit, 29 Nov 2026): `staleTimes.dynamic` (30s) ek tempting
+    // shortcut hai — Back/Forward instant ho jata hai — par is app me clients/
+    // jobs list RSC seed se `useState(initial)` banti hai, isliye 30s tak purana
+    // balance/status dikh sakta hai. Money app me ye acceptable nahi, isliye
+    // default (0s) hi rakha hai. Speed `loading.tsx` + streamed seeds + chunk
+    // warm-up se aati hai, stale cache se nahi.
     // Dev me source maps off → compile ka kaam/memory kam, page load aur startup tez.
     // (Sentry build-time upload pehle hi disabled hai; runtime error tracking unchanged.)
     turbopackSourceMaps: false,

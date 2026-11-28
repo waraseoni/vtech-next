@@ -34,7 +34,6 @@ import {
   CheckSquare,
   Square,
 } from "lucide-react";
-import WaPreviewModal from "@/components/WaPreviewModal";
 import { safeImageSrc } from "@/lib/image-utils";
 import { substituteTemplate, firmVars, resolveTemplate } from "@/lib/whatsapp";
 import { toast } from "@/lib/toast";
@@ -47,6 +46,7 @@ import {
   type ClientContactLite,
 } from "./clientListHelpers";
 import dynamic from "next/dynamic";
+import { warmChunksOnIdle } from "@/lib/chunkWarmup";
 
 const ClientChart = dynamic(() => import("@/app/clients/components/ClientChart"), {
   ssr: false,
@@ -56,6 +56,12 @@ const ClientChart = dynamic(() => import("@/app/clients/components/ClientChart")
     </div>
   ),
 });
+
+// NAV PERF (audit, 29 Nov 2026): WaPreviewModal pehle STATIC import tha, isliye
+// uska pura bundle clients list ke first paint me aata tha — modal kholne par
+// kuch nahi hota tha par list slow khulti thi. Ab JobsBody ki tarah on-demand +
+// idle warm-up: pehla open bhi instant (chunk pehle se download ho chuka).
+const WaPreviewModal = dynamic(() => import("@/components/WaPreviewModal"), { ssr: false });
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type SortField = "name" | "balance" | "date_created" | "total_paid";
@@ -123,6 +129,17 @@ export default function ClientsBody({
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
   }, []);
+
+  // NAV PERF (audit, 29 Nov 2026): WhatsApp modal + chart chunk idle par warm —
+  // pehla open/preview bhi instant.
+  useEffect(
+    () =>
+      warmChunksOnIdle([
+        () => import("@/components/WaPreviewModal"),
+        () => import("@/app/clients/components/ClientChart"),
+      ]),
+    []
+  );
 
   const handleDelete = async (id: number, name: string) => {
     if (!requireAdmin(userRole, "delete")) return;

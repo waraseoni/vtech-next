@@ -36,11 +36,22 @@ const CUSTOM_CACHE: RuntimeCaching[] = [
   //    tha → chunk 404 → loader atak jata tha.
   {
     matcher: ({ request }) => request.mode === "navigate",
-    handler: async ({ request }) => {
+    handler: async ({ request, event }) => {
       // RSC soft-nav requests (carry _rsc= param + RSC:1 header) — let
       // NetworkOnly handler below take care of them. Passing { cache } options
       // alongside a Request object causes "Error in input stream" on Firefox.
       if (request.headers.get("RSC") === "1") return fetch(request);
+      // PERF (nav audit, 29 Nov 2026): `navigationPreload: true` hai, isliye
+      // browser navigation request pehle hi shuru kar deta hai. Pehle ye handler
+      // preload ko IGNORE karke apna `fetch()` karta tha → har hard navigation
+      // par 2 requests (ek discard). Ab preload response use hota hai; available
+      // na ho / fail ho to niche wala normal path chalta hai.
+      try {
+        const preloaded = await (event as FetchEvent).preloadResponse;
+        if (preloaded && (preloaded.ok || preloaded.status === 304)) return preloaded;
+      } catch {
+        /* preload fail — normal path */
+      }
       try {
         const res = await fetch(new Request(request, { cache: "no-store" }));
         if (res && (res.ok || res.status === 304)) return res;
@@ -61,15 +72,18 @@ const CUSTOM_CACHE: RuntimeCaching[] = [
     handler: new NetworkOnly(),
   },
   // ✅ /_next/static/**/*.js — content-hashed URLs, cache karne me safe (fast loads)
-  //    PERF (lightning A4): maxEntries 64→128 — build me ~151 client chunks hain,
-  //    64 par LRU eviction har reload par re-download karta tha.
+  //    PERF (lightning A4): maxEntries 64→128.
+  //    PERF (nav audit, 29 Nov 2026): 128→256 — production build me ~200 JS
+  //    chunks hote hain, isliye 128 par LRU har kuch navigations me kuch chunks
+  //    evict kar deta tha aur wo dobara network se aate the (first-click slow,
+  //    second fast — "kabhi jaldi kabhi der" ka ek source).
   {
     matcher: /\/_next\/static.+\.js$/i,
     handler: new CacheFirst({
       cacheName: "next-static-js-assets",
       plugins: [
         new ExpirationPlugin({
-          maxEntries: 128,
+          maxEntries: 256,
           maxAgeSeconds: 1440 * 60,
           maxAgeFrom: "last-used",
         }),

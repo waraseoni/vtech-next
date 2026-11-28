@@ -32,3 +32,29 @@ export async function loadStaffSeed<T>(
 
   return seedPromise;
 }
+
+/** Auth gate only (server-side redirect — Suspense boundary ke bahar call karein). */
+export async function requireStaffSeedAuth(): Promise<void> {
+  const session = await requireStaffWithRole();
+  if (!session) redirect("/login");
+}
+
+/**
+ * Seed data only (auth already done) — `SeedStream` ke liye.
+ *
+ * NAV PERF (audit, 29 Nov 2026): page/layout me `await loadStaffSeed(...)` karne
+ * se RSC headers DB ke baad flush hote the. Ab promise Suspense ke andar resolve
+ * hoti hai → skeleton turant stream hota hai.
+ */
+export async function fetchStaffSeedData<T>(
+  label: string,
+  loader: (supabase: SupabaseClient) => Promise<T>
+): Promise<T | null> {
+  try {
+    const supabase = await getServerSupabase();
+    return await loader(supabase);
+  } catch (e) {
+    logger.warn(`${label} seed fetch failed — client fetch karega:`, e);
+    return null;
+  }
+}

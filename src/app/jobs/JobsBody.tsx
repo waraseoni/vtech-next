@@ -93,6 +93,7 @@ const JobPreviewPanel = dynamic(() => import("./JobPreviewPanel").then((m) => m.
 import { substituteTemplate, firmVars, resolveTemplate } from "@/lib/whatsapp";
 import { logActivities } from "@/lib/activity";
 import { claimBrandJobNo, getNextJobId, bumpJobCounter } from "@/lib/jobIdCounter";
+import { warmChunksOnIdle } from "@/lib/chunkWarmup";
 import { safeImageSrc } from "@/lib/image-utils";
 import { JOB_STATUS } from "@/lib/status-colors";
 import { logger } from "@/lib/logger";
@@ -425,6 +426,19 @@ function JobsListContent({
   useEffect(() => {
     localStorage.setItem("transactions_view", mobileView);
   }, [mobileView]);
+
+  // NAV PERF (audit, 29 Nov 2026): dynamic modals/panel ke chunks idle par warm
+  // karo — pehla open bhi instant (pehle pehla open chunk download ka wait
+  // karta tha, dusra instant hota tha → "kabhi jaldi, kabhi der").
+  useEffect(
+    () =>
+      warmChunksOnIdle([
+        () => import("@/components/WaPreviewModal"),
+        () => import("@/components/JobSpotPicker"),
+        () => import("./JobPreviewPanel"),
+      ]),
+    []
+  );
 
   // ── Mechanic names (job id/code ke neeche assigned mechanic dikhane ke liye) ──
   // Server props se (Phase 4 P2) — mount effect hate.

@@ -1,14 +1,27 @@
-import { loadJobsAuxSeed } from "@/lib/server-jobs-aux-seed";
+import { Layers } from "lucide-react";
+import PageLoader from "@/components/PageLoader";
+import { SeedStream } from "@/components/SeedStream";
 import { fetchBulkJobSeed } from "../jobsAuxQueries";
+import { fetchJobsAuxSeedData, requireJobsAuxSeedAuth } from "@/lib/server-jobs-aux-seed";
 import { JobAuxSeedProvider } from "../JobAuxSeed";
 
+// NAV PERF (audit, 29 Nov 2026): seed Suspense ke andar stream hota hai.
 export const dynamic = "force-dynamic";
 
 export default async function BulkJobLayout({ children }: { children: React.ReactNode }) {
-  const seed = await loadJobsAuxSeed("Bulk job", fetchBulkJobSeed);
+  await requireJobsAuxSeedAuth();
+  const seedPromise = fetchJobsAuxSeedData("Bulk job", fetchBulkJobSeed);
+
   return (
-    <JobAuxSeedProvider seed={seed ? { kind: "bulk", data: seed } : null}>
-      {children}
-    </JobAuxSeedProvider>
+    <SeedStream
+      promise={seedPromise}
+      fallback={<PageLoader icon={Layers} label="Loading bulk entry..." tone="cyan" />}
+    >
+      {(seed) => (
+        <JobAuxSeedProvider seed={seed ? { kind: "bulk", data: seed } : null}>
+          {children}
+        </JobAuxSeedProvider>
+      )}
+    </SeedStream>
   );
 }
