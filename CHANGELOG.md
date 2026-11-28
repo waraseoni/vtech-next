@@ -1,5 +1,20 @@
 # CHANGELOG
 
+## [1.89.0](https://github.com/waraseoni/vtech-next/compare/v1.88.0...v1.89.0) (2026-11-28)
+
+### Features
+
+* **brand:** lock decisions and prepare additive per-brand numbering ([54a646b](https://github.com/waraseoni/vtech-next/commit/54a646b52923dc09415d707e278c658b0dce2fcf))
+* **brands:** add persistent brand switcher for all jobs of one brand ([ea6ce28](https://github.com/waraseoni/vtech-next/commit/ea6ce280ad78fb937ddaebc9c743298026887090))
+* **brand:** scope brand numbering to single and multi brand modes ([d337224](https://github.com/waraseoni/vtech-next/commit/d3372241fbacdcaf0eb83212e538fa533085638e))
+* **brand:** wire per-brand job numbers into create and display flows ([69a5460](https://github.com/waraseoni/vtech-next/commit/69a5460a39163579cd22056c410a611b3ee9015d)), closes [PREFIX#001](https://github.com/waraseoni/PREFIX/issues/001)
+* **search:** make brand number searchable across jobs, public tracker and AI ([b032549](https://github.com/waraseoni/vtech-next/commit/b0325498b09b6235dc6ecfe53241ce8609fc0177))
+* **ui:** show service center mode in persistent topbar ([d848f1e](https://github.com/waraseoni/vtech-next/commit/d848f1e53f82d81eddca53d0419619e58b38cfd1))
+
+### Bug Fixes
+
+* **brand:** make brand counter RPC volatile and fail loudly ([8b573aa](https://github.com/waraseoni/vtech-next/commit/8b573aae0610b4d33a916c7e2831b856273ca242))
+
 ## [1.88.0](https://github.com/waraseoni/vtech-next/compare/v1.87.0...v1.88.0) (2026-11-26)
 
 ### Features
