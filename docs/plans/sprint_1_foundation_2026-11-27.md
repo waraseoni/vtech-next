@@ -124,9 +124,11 @@
 - [x] Push local commits → `origin/main` (owner release `9ba5b74` = 1.88.0 ke upar rebase,
       head `e76e33d` push hua); version bump alag approval se (owner ne 1.88.0 kiya)
 - [x] **K14** policy applied: agent-authored PR ka reviewer **Vikram Jain (`@waraseoni`)**; direct
-      `main` push ko feature branch + PR flow me badla (`sprint1/owner-gates-2026-11-28` taiyar,
-      push approval baaki). CSP observation **28 Nov–11 Dec** (14 din), enforcement decision 12 Dec.
-      Second human nahi — compensating controls: owner review + CI gates + PR template.
+      `main` push feature branch se hata kar **PR #1** me gaya; `main` par PR-required protection
+      (conversation resolution + force-push/delete block) API se applied. Approval count `0` kyunki
+      PR author bhi `@waraseoni` hai — self-approval GitHub count nahi karta; second human mile to
+      `1` set karna hai. CSP observation **28 Nov–11 Dec** (14 din), decision 12 Dec. CI workflow
+      abhi nahi hai; add hote hi required checks wire karni hain.
 - [x] Backup readiness decisions (owner ne agent ko choose karne diya): format `4.0` + legacy
       read, removed-column **fail + explicit override**, `schema_snapshot.migration_ids` tino
       writers me, browser-verified. **Test DB par full `4.0` round-trip: 42 rows 100% restored

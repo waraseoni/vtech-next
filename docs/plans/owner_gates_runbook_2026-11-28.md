@@ -326,13 +326,17 @@ agent ke mutaliq hai; second-human bus factor abhi compensate hai, team badhne p
 - `.github/CODEOWNERS` → `* @waraseoni` (handle `origin` remote se liya gaya; galat ho to batayein).
 - `.github/pull_request_template.md` → reviewer field + golden-rule checklist.
 - Local commits direct `main` se hata kar `sprint1/owner-gates-2026-11-28` branch par rakhe gaye.
-  Push abhi nahi hua — owner approval ke baad branch push + PR kholna hai.
-- Owner UI me apply karne ke liye recommended settings: `main` par **PR required**, **1 approval**,
-  **CI green**, direct push block, CODEOWNERS auto-request.
+  Branch push ho gaya aur **PR #1** open hai: <https://github.com/waraseoni/vtech-next/pull/1>.
+- `main` par branch protection API se applied: **PR required**, conversation resolution,
+  force-push/delete block. Approval count `0` hai kyunki PR author bhi `@waraseoni` hai — GitHub
+  self-approval count nahi karta. Second human available hone par yahan `1` set karna hai.
+- Repo me abhi CI workflow nahi hai; jab add ho to `required_status_checks` me `npm test`,
+  `typecheck`, `lint`, `verify:data`, `build` daalna hai.
 
 **Compensating controls (second human ke bina):**
 
-1. Har change agent-authored PR se aata hai; owner explicit approve karta hai.
+1. Har change agent-authored PR se aata hai; owner PR par review karta hai (GitHub self-approval
+   count nahi karta — isliye approval enforcement 0 par hai, process-level review zinda hai).
 2. CI gates: `npm test`, `npm run typecheck`, `npm run lint`, `npm run verify:data`, `npm run build`.
 3. Golden-rule checklist: schema change → backup contract + AI context; secrets diff me nahi.
 4. Release notes me `reviewer: Vikram Jain` line.
