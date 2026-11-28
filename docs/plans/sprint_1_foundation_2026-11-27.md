@@ -101,16 +101,20 @@
 - [x] K1–K15 final decision register lock (28 Nov: owner + best-practice calls)
 - [x] D1 migration applied + verified by owner: anon 7/7 401, matrix 9/9 `anon_ok=false`,
       guard 42501, staff UI + 3 reports green. **Portal smoke + backup sequence reset baaki.**
-- [~] D2 probes (28 Nov): columns/tables/index/RPCs ✅ · profiles `qual` expected; `with_check`
-  null-safe query pending · B1 `brand_job_no` apply+verify ✅ · **mode-gate applied + verified
-  (`v`, `true`; test job `KMK#004`)**
-- [x] A1 migration apply (owner) → `schema:drift` OK; **restore smoke (`expects_fault` round-trip) baaki**
+- [x] D2 probes: columns/tables/index/RPCs ✅ · **profiles UPDATE `with_check` verified (28 Nov)**:
+      dono policies me `NOT (role/client_id IS DISTINCT FROM get_my_*())` = `IS NOT DISTINCT FROM`
+      (coalesce nahi) · B1 `brand_job_no` apply+verify ✅ · mode-gate verified (`v`, `true`).
+      Admin profiles me 1 row `email=NULL, role=admin` dikha — D3 dry-run me admin profile protected
+      rehna chahiye; cleanup sirf owner approval se.
+- [x] A1 migration apply (owner) → `schema:drift` OK; restore smoke me `fault is_nullable = NO`
+      verified; **`service_types.expects_fault` values ka before/after output abhi pending**
 - [ ] D3 asli backup se browser dry-run → confirm checkbox → `setTempPasswords: true`;
       218 auth-linked rows clear, admin profile protected
 - [ ] A8 bulk-edit se legacy tagging run (coverage snapshot pehle/ baad)
 - [ ] Browser smoke: `/jobs/new`, `/jobs/[id]/edit`, `/jobs/bulk`, `/jobs/bulk-edit`,
       `/settings/service-center`, navbar search — console errors 0
-- [ ] Push local commits → `origin/main`; version bump alag approval se
+- [x] Push local commits → `origin/main` (owner release `9ba5b74` = 1.88.0 ke upar rebase,
+      head `e76e33d` push hua); version bump alag approval se (owner ne 1.88.0 kiya)
 - [ ] **K14** named second reviewer + CSP 14-din violation observation start (enforce baad me).
 - [ ] Backup readiness owner decisions: format `4.0` accept, purane files ke liye `legacy` mode
       ya hard-block, removed-column par `fail + explicit override`, snapshot me migration IDs,

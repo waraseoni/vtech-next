@@ -39,6 +39,11 @@ DISTINCT FROM NULL = false` hone se `/profile` save 42501 deta tha.)
 Reference: `supabase/migrations/20261122_profiles_self_update_rls_fix.sql:55-84`.
 Agar coalesce wala output aaye to stale migration re-apply karna padega — output paste karein.
 
+**Owner output (28 Nov) ✅ verified:** dono policies ka `with_check` me
+`NOT (role IS DISTINCT FROM get_my_role())` aur `NOT (client_id IS DISTINCT FROM
+get_my_client_id())` tha — PostgreSQL ka yahi `IS NOT DISTINCT FROM` rendering hai.
+`qual = (id = auth.uid())` bhi expected. D2 close.
+
 ---
 
 ## Step 2 — D3: live admin auth restore dry-run
@@ -69,6 +74,11 @@ Panel sirf tab dikhta hai jab uploaded backup me auth-linked rows hon.
 select id, email, role from public.profiles where role in ('admin', 'developer');
 ```
 
+**Note:** abhi `profiles` me 3 admin/developer rows hain — `admin123@vtech.com` (admin),
+`admin@vtech.com` (developer), aur ek **email NULL wala admin row**. Ye purane backup se
+aaya ho sakta hai; D3 me `admin profile protected` check zaroori hai. Ise delete/change
+sirf owner approval se karenge.
+
 **Acceptance:** `failed = 0`, admin re-login OK, 8 auth-linked tables (`profiles`,
 `stock_counts`, `stock_adjustments`, `messages`, `push_subscriptions`, `user_presence`,
 `staff_geofence_permit`, `user_passkeys`) ke counts plan ke `perTable` se match.
@@ -97,6 +107,8 @@ Expected: `fault` ka `is_nullable = NO` (NOT NULL unchanged).
    (`⚠ … (+N tables count mismatch)` aa gaya to yahin rokein aur output bhejein).
 4. Step 1 ke dono queries dobara chalayein. Values bilkul wahi honi chahiye
    (`expects_fault` round-trip, `fault = NO`).
+   **Partial (28 Nov):** owner ne `fault is_nullable = NO` verify kiya ✅;
+   `service_types.expects_fault` values ka output abhi baaki hai.
 
 ---
 
