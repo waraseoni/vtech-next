@@ -1,9 +1,9 @@
 # Sprint 1 — Foundation, Security & Service Type (27 Nov 2026)
 
 > **Part of:** `master_completion_plan_2026-11-26.md` (W0 + W1 + W2).
-> **Status:** CODE COMPLETE. `origin/main = 015681b`; 11 local commits **push pending**
+> **Status:** CODE COMPLETE. `origin/main = 015681b`; 13+ local commits **push pending**
 > (`cfc21fe`, `2a73c47`, `e9a5a16`, `a6c9f8d`, `a57f28a`, `589e014`, `a293d99`,
-> `1ad4095`, `02160ff`, `483efe6`, `38c1fca` + abhi ka brand-filter commit). K1–K15 lock.
+> `1ad4095`, `02160ff`, `483efe6`, `38c1fca`, `700e320`, `3500fb0`). K1–K15 lock.
 > Sprint 1 owner gates D2 (with_check), D3, A1 restore smoke, A8, portal/backup smoke pending.
 > Brand numbering code wired; `20261128_brand_job_no_mode_gate.sql` applied + verified by owner
 > (`provolatile=v`, `mode_gated=true`; test job `KMK#004`, counter `(KMK,4)`, 4 unique numbers).
@@ -90,9 +90,9 @@
 > Inme se 1–8 sab **code/docs** hain — koi DB write, koi secret, koi commit nahi.
 >
 > **Latest gates (28 Nov):** `tsc --noEmit` ✓ · `eslint` ✓ ·
-> `vitest run` **79 files / 793 tests** ✓ · `verify:data` (schema:drift 38 OK +
+> `vitest run` **80 files / 810 tests** ✓ · `verify:data` (schema:drift 40 OK +
 > backup:contract 60 tables/513 columns) ✓ · `next build` **139 pages** ✓ ·
-> touched files prettier ✓. Push pending (6 local commits).
+> touched files prettier ✓. Push pending (local commits).
 
 ---
 
@@ -110,7 +110,11 @@
 - [ ] A8 bulk-edit se legacy tagging run (coverage snapshot pehle/ baad)
 - [ ] Browser smoke: `/jobs/new`, `/jobs/[id]/edit`, `/jobs/bulk`, `/jobs/bulk-edit`,
       `/settings/service-center`, navbar search — console errors 0
-- [ ] Push 6 local commits → `origin/main`; version bump alag approval se
+- [ ] Push local commits → `origin/main`; version bump alag approval se
+- [ ] **K14** named second reviewer + CSP 14-din violation observation start (enforce baad me).
+- [ ] Backup readiness owner decisions: format `4.0` accept, purane files ke liye `legacy` mode
+      ya hard-block, removed-column par `fail + explicit override`, snapshot me migration IDs,
+      live restore drill ka environment/date.
 
 ---
 
