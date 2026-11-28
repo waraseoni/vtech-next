@@ -811,7 +811,7 @@ export default function DailyAttendance({
                 </span>
                 <Users size={13} className="text-blue-400" />
               </div>
-              <p className="text-lg font-black text-white">{totalStaff}</p>
+              <p className="text-lg font-black text-app dark:text-white">{totalStaff}</p>
               <p className="text-[9px] text-muted">{displayDate.split(",")[0]}</p>
             </div>
             <div className="bg-panel border border-emerald-500/20 rounded-xl p-2.5 sm:p-3">
@@ -1002,7 +1002,9 @@ export default function DailyAttendance({
                               eager={idx < 4}
                             />
                             <div className="min-w-0 truncate">
-                              <p className="text-white font-bold text-xs truncate">{mech.name}</p>
+                              <p className="text-app dark:text-white font-bold text-xs truncate">
+                                {mech.name}
+                              </p>
                               <p className="text-[10px] text-muted font-medium">
                                 {mech.designation}
                               </p>
@@ -1145,7 +1147,9 @@ export default function DailyAttendance({
                         eager={idx < 2}
                       />
                       <div className="min-w-0">
-                        <p className="text-white font-black text-sm truncate">{mech.name}</p>
+                        <p className="text-app dark:text-white font-black text-sm truncate">
+                          {mech.name}
+                        </p>
                         <p className="text-[10px] text-muted font-medium">{mech.designation}</p>
                         {dutyMap[mech.id] && (
                           <p className="text-[10px] font-bold text-indigo-300">

@@ -1959,11 +1959,17 @@ export default function RootClient({
           </header>
         )}
 
-        {/* ── Live IST clock — floating pill (mobile only, fixed top-right) ── */}
+        {/* ── Live IST clock — floating pill (mobile only, fixed top-right) ──
+            FIX (Android Chrome flicker): ye pill fixed hai aur content ke upar
+            baithta hai. Pehle har second seconds text + `animate-pulse` repaint
+            karte the → compositor layer content ke upar stale paint kar deta
+            tha (check-in button gayab lagta tha, tap par wapas aata tha).
+            Ab minute precision + koi animation nahi + pointer-events-none
+            (taaki neeche ke buttons ke taps ye pill na khaye). */}
         {!isAiPage && (
-          <div className="fixed top-16 right-3 z-30 md:hidden">
+          <div className="pointer-events-none fixed top-16 right-3 z-30 md:hidden">
             <div className="shadow-lg shadow-black/40">
-              <LiveClock />
+              <LiveClock showSeconds={false} pulse={false} />
             </div>
           </div>
         )}

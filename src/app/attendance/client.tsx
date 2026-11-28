@@ -25,26 +25,9 @@ function AttendanceContent({ initial }: { initial?: AttendanceSeed | null }) {
   const [mechanicId, setMechanicId] = useState<number | null>(initial?.mechanicId ?? null);
   const [loading, setLoading] = useState(!seedReady);
 
-  // Live IST Time
-  const [liveTime, setLiveTime] = useState("");
-
-  useEffect(() => {
-    const updateLiveTime = () => {
-      const now = new Date();
-      setLiveTime(
-        new Intl.DateTimeFormat("en-IN", {
-          timeZone: "Asia/Kolkata",
-          hour: "2-digit",
-          minute: "2-digit",
-          second: "2-digit",
-          hour12: true,
-        }).format(now)
-      );
-    };
-    updateLiveTime();
-    const interval = setInterval(updateLiveTime, 1000);
-    return () => clearInterval(interval);
-  }, []);
+  // Live IST Time — apna chhota component (neeche `LiveIstPill`) use hota hai.
+  // Pehle ye state `AttendanceContent` me thi, jisse har second poora
+  // <DailyAttendance> tree (mechanic rows + hours calc) re-render hota tha.
 
   // Server seed pehli render cover karta hai — mount par dobara profile fetch nahi.
   const seededRef = useRef(seedReady);
@@ -112,12 +95,7 @@ function AttendanceContent({ initial }: { initial?: AttendanceSeed | null }) {
               <h1 className="text-base sm:text-lg font-black text-app dark:text-white tracking-tight">
                 Attendance Hub
               </h1>
-              {liveTime && (
-                <div className="flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                  <span>{liveTime} IST</span>
-                </div>
-              )}
+              <LiveIstPill />
             </div>
             <p className="text-[11px] text-muted-2 dark:text-muted font-medium">
               Daily staff check-in/out, GPS geofence punch & monthly attendance register
@@ -180,6 +158,40 @@ export default function AttendancePage({ initial }: { initial?: AttendanceSeed |
       >
         <AttendanceContent initial={initial} />
       </Suspense>
+    </div>
+  );
+}
+
+// ── Live IST pill — self-contained state ────────────────────────
+// Sirf ye chhota pill har second re-render hota hai; parent `AttendanceContent`
+// aur poora <DailyAttendance> tree (mechanic rows + hours calc) nahi. Pehle
+// parent ki `liveTime` state har second poora daily view re-render karti thi.
+function LiveIstPill() {
+  const [time, setTime] = useState("");
+
+  useEffect(() => {
+    const fmt = new Intl.DateTimeFormat("en-IN", {
+      timeZone: "Asia/Kolkata",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: true,
+    });
+    const tick = () => setTime(fmt.format(new Date()));
+    tick();
+    const interval = setInterval(tick, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  if (!time) return null;
+
+  return (
+    <div className="flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400">
+      {/* Static dot — `animate-pulse` hata diya: continuous opacity animation
+          Android Chrome me pill ko composited layer banati hai aur page ke
+          doosre hisson ka paint stale kar deti hai. */}
+      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+      <span>{time} IST</span>
     </div>
   );
 }
