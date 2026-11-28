@@ -149,7 +149,7 @@ Repair par fault ab bhi mandatory; deactivated type ka purana job edit me sahi d
   Mode change par na backfill na
   renumber; purana `brand_job_no` preserved. Search parity wired: jobs list (`jobSearchFilter`),
   navbar search, public tracker (`?brand_job_no=KMK%23004`), `get_jobs_stats()` RPC
-  (`20261128_brand_job_no_search.sql`, **owner apply kar chuka**; verify output pending), aur AI (`get_job_details_by_id`
+  (`20261128_brand_job_no_search.sql`, **owner apply + verify** — `p_brand=5, p_term=KMK#004` → 1), aur AI (`get_job_details_by_id`
   ab brand number se bhi job dhoondhta hai; prompt/schema/test sync). Print/WA/report parity next.
 - [~] **B2 — Brand filter + switcher + coverage (28 Nov):** `/jobs` par **Brand chip wired** —
   `Brand: All / Untagged (legacy) / <brand>` desktop filter bar + mobile modal + mobile chip,
@@ -157,7 +157,9 @@ Repair par fault ab bhi mandatory; deactivated type ka purana job edit me sahi d
   `jobListQueries.ts` source (normalize + `applyBrandFilter`). Autonomous me optional brand
   (default All), single/multi me chip prominent. Quick Stats ke liye
   `get_jobs_stats()` 6→7 arg (`p_brand`) migration
-  `20261128_jobs_stats_brand_filter.sql` taiyar + full schema fold-in; **owner apply pending**.
+  `20261128_jobs_stats_brand_filter.sql` + full schema fold-in; **owner apply + verify**:
+  `brand_5_all=6, untagged=0, brand_5_KMK004=1, all_jobs=8` (brand 1 ke 2 legacy rows `brand_id`
+  tagged hain par `brand_job_no` NULL — unme se koi `brand_id IS NULL` nahi).
   AI bhi is filter se aware (prompt + `get_recent_jobs.brand` + executor + tests) — D12 golden
   rule ka doosra live example. **Baaki:** dashboard, pending-jobs, reports me yahi chip;
   coverage indicator `Brand-tagged: X / Y (Z%) · Untagged: …`.

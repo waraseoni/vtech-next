@@ -7,10 +7,10 @@
 > Sprint 1 owner gates D2 (with_check), D3, A1 restore smoke, A8, portal/backup smoke pending.
 > Brand numbering code wired; `20261128_brand_job_no_mode_gate.sql` applied + verified by owner
 > (`provolatile=v`, `mode_gated=true`; test job `KMK#004`, counter `(KMK,4)`, 4 unique numbers).
-> Brand-number search jobs list/navbar/public/AI me wired; `get_jobs_stats()` search migration
-> owner apply kar chuka (verify pending); D12 AI-context golden rule add. `/jobs?brand=<id>|untagged`
-> switcher (B2) wired in list + Quick Stats RPC migration pending owner apply; AI `get_recent_jobs`
-> bhi brand se filter karta hai. **Effort:** ~8–10 working days.
+> Brand-number search jobs list/navbar/public/AI me wired; dono `get_jobs_stats()` migrations
+> owner apply + verify (brand_5_all=6, untagged=0, brand_5_KMK004=1, all_jobs=8); D12 AI-context
+> golden rule add. `/jobs?brand=<id>|untagged` switcher (B2) wired in list + Quick Stats; AI
+> `get_recent_jobs` bhi brand se filter karta hai. **Effort:** ~8–10 working days.
 > **Goal:** owner decisions lock + sabse bada security hole band + Service Type ka data aana shuru.
 
 ---
