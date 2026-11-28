@@ -100,15 +100,16 @@
 
 - [x] K1–K15 final decision register lock (28 Nov: owner + best-practice calls)
 - [x] D1 migration applied + verified by owner: anon 7/7 401, matrix 9/9 `anon_ok=false`,
-      guard 42501, staff UI + 3 reports green. **Portal smoke + backup sequence reset baaki.**
+      guard 42501, staff UI + 3 reports green. **Portal smoke baaki**; backup sequence reset
+      test DB par verify ho gaya (48/48 route calls `200`).
 - [x] D2 probes: columns/tables/index/RPCs ✅ · **profiles UPDATE `with_check` verified (28 Nov)**:
       dono policies me `NOT (role/client_id IS DISTINCT FROM get_my_*())` = `IS NOT DISTINCT FROM`
       (coalesce nahi) · B1 `brand_job_no` apply+verify ✅ · mode-gate verified (`v`, `true`).
       Admin profiles me 1 row `email=NULL, role=admin` dikha — D3 dry-run me admin profile protected
       rehna chahiye; cleanup sirf owner approval se.
-- [~] A1: `fault is_nullable = NO` ✅; `expects_fault` values restore ke baad bhi wahi
-      (Repair=true, canonical New Installation=false, PDI=false, aliases=null). Confirm
-      baaki: full `Restore Now` hua ya sirf auth restore.
+- [x] A1: `fault is_nullable = NO` ✅; `expects_fault` values restore ke baad bhi wahi
+      (Repair=true, canonical New Installation=false, PDI=false, aliases=null). Full browser
+      `Restore Now` round-trip bhi test DB par chal gaya — values unchanged, `fault` column `NO`.
 - [x] D3 owner complete; agent ne read-only verify: profiles 6, user_presence 3, baaki
       auth-linked tables 0, admin profile preserved (3 admin/developer rows unchanged).
 - [x] A8 test DB par tagging: job 1 → canonical `Repair` (id 9). Ab 8/8 service-tagged,
@@ -125,7 +126,9 @@
 - [ ] **K14** named second reviewer + CSP 14-din violation observation start (enforce baad me).
 - [x] Backup readiness decisions (owner ne agent ko choose karne diya): format `4.0` + legacy
       read, removed-column **fail + explicit override**, `schema_snapshot.migration_ids` tino
-      writers me, browser-verified. **Live restore drill environment/date owner se pending.**
+      writers me, browser-verified. **Test DB par full `4.0` round-trip: 42 rows 100% restored
+      + count verified, 48/48 sequence resets `200`, `peek_next_job_id()=28107`.** Production
+      drill abhi nahi chalaya (owner ne sirf test DB ijazat di).
 - [x] Gates 28 Nov: `verify:data` ✅ (40 migrations, 60 tables/513 cols/11 surfaces), typecheck ✅,
       lint ✅ (0 errors), 818 tests ✅, build ✅ (139 pages, Turbopack warning fix hua), touched
       prettier ✅.

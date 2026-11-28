@@ -1288,18 +1288,20 @@ node scripts/supabase-restore.mjs backups/supabase/dumps/backup.sql --full</pre>
               data-search="current state partial ready browser live schema legacy gaps"
             >
               <div class="kicker">Truth</div>
-              <h2>Abhi “fully ready” nahi</h2>
+              <h2>Test DB par round-trip proof mil gaya</h2>
               <p>
                 <span class="pill p-ok">Ready</span> Browser live-schema path + golden-rule gate +
-                old-backup preserve + error toast.
+                old-backup preserve + error toast + <b>fresh 4.0 → Restore Now → count verify</b>
+                (42 rows, 0 fail, 0 mismatch).
               </p>
               <p>
-                <span class="pill p-warn">Partial</span> Additive columns/tables, auth restore,
-                sequence reset.
+                <span class="pill p-warn">Partial</span> Auth restore owner ke D3 me hua; is
+                round-trip me auth tables touch nahi hue. CLI/converter live restore abhi
+                unit-test level hai.
               </p>
               <p>
-                <span class="pill p-bad">Pending</span> Schema snapshot, converter parity, CLI FK
-                order, dynamic auth/sequence maps.
+                <span class="pill p-bad">Pending</span> Production/staging drill (owner approval
+                ke baad), CLI FK order + converter parity live smoke.
               </p>
             </article>
           </div>
@@ -1350,7 +1352,7 @@ node scripts/supabase-restore.mjs backups/supabase/dumps/backup.sql --full</pre>
                 <tr>
                   <td>W5</td>
                   <td>B13–B15 DR semantics + RLS guard + drill</td>
-                  <td><span class="pill p-warn">Planned</span></td>
+                  <td><span class="pill p-warn">Partial — test DB drill done</span></td>
                 </tr>
                 <tr>
                   <td>W6</td>
@@ -1393,8 +1395,8 @@ node scripts/supabase-restore.mjs backups/supabase/dumps/backup.sql --full</pre>
                 <li>Removed column par <b>FAIL + explicit override</b> ✅ (page checkbox / CLI flag).</li>
                 <li>Snapshot me <b>migration IDs</b> ✅ — browser + server + CLI tino writers.</li>
                 <li>
-                  Restore drill: environment/date owner se confirm karna baaki hai (agent production par
-                  destructive restore nahi chalata).
+                  Restore drill: <b>test DB par chal gaya</b> (42 rows 100% verified, 48/48 sequence
+                  reset, next job id 28107). Production par agent destructive restore nahi chalata.
                 </li>
               </ol>
             </article>

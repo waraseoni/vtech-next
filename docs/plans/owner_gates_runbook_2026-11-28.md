@@ -147,9 +147,9 @@ Expected: `fault` ka `is_nullable = NO` (NOT NULL unchanged).
      `Repair` hai; inhe merge/deactivate karna alag owner decision hai (abhi change nahi).
      **Owner ke restore ke baad bhi yahi 8 values miliin** (service-role REST read,
    no write) — `expects_fault` round-trip/unchanged ✅ aur `fault` column `NO` ✅.
-   ⚠️ Confirm karna baaki: kya ye **full `Restore Now`** tha ya sirf admin auth restore?
-   Auth restore `service_types` ko touch nahi karta — agar sirf auth restore hua hai to
-   full-backup round-trip abhi pending hai.
+   ⚠️ Owner ke D3 ke baad ye confirm nahi tha ki full `Restore Now` hua ya sirf auth restore.
+   Auth restore `service_types` ko touch nahi karta — ye gap Step 4 ke agent round-trip se
+   close ho gaya; `service_types` values full browser restore ke baad bhi wahi miliin.
 
 ---
 
@@ -166,6 +166,28 @@ SELECT setval('table_name_id_seq', (SELECT MAX(id) FROM table_name) + 1, false);
 ```
 
 Direct anon/authenticated `reset_sequence` RPC ab block hai (D1) — 403/42501 expected.
+
+**Full round-trip — agent ne test DB par chalaya (owner ki ijazat, 28 Nov):**
+
+Target sirf `.env.local` wala test project (`gzopjezdrnarplfcijyv`) tha; prod URL touch nahi hua.
+
+| Cheez | Result |
+| --- | --- |
+| Fresh server backup | `vtech_backup_2026-11-28T04-13-09.json` · `4.0` · 60 tables · 108 rows · 75 migration IDs · 0 mismatch |
+| Restore file scope | 8 auth-linked tables + `ai_providers` (RLS-only) bahar rakhe → 51 tables / 97 rows; baaki sab waisa hi |
+| Dry Run | ✅ `97 rows in 60 tables ready to restore`, 0 issue |
+| Real `Restore Now` | ✅ **`42 rows 100% restored + count verified!`**, 0 failed, 0 count mismatch |
+| Counts before → after | `108 → 108`, 60/60 tables; backup-file counts vs DB = **0 diff** |
+| Auth-linked tables | `profiles=6`, `user_presence=3`, baaki 6 tables `0` — bilkul unchanged |
+| Protected/RLS tables | `system_info=55` untouched, `ai_providers=2` untouched |
+| Sequence reset | 48/48 `POST /api/admin/reset-sequence` → `200`; `transaction_list → next_id=10`, `service_types → next_id=15`, `profiles → SKIP (no sequence found)` |
+| Global job counter | `job_id_counter.last_job_id=28106`; `peek_next_job_id()` ab `28107` |
+| Invariants | `service_types` 8 values wahi (`Repair=true`, `New Installation=false`, PDI=false, aliases=null); `KMK#004` job 8 par; job 9 `fault=""`; koi backfill/renumber nahi |
+| Console | Sirf pre-existing `ai_providers` 403 (AI panel) — restore se koi naya error nahi |
+
+Isliye ab test DB par **backup → restore → count verify → sequence reset** ka poora proof hai.
+Sirf CLI/converter ka live restore abhi unit-test level hai; auth-linked tables ka restore owner ke
+D3 me already ho chuka hai aur is round-trip me unhe touch hi nahi kiya gaya.
 
 ---
 

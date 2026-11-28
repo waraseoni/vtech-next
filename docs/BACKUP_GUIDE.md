@@ -14,6 +14,12 @@
 > karo to backup me na hone wale **naye tables preserve** hote hain (delete
 > nahi); count mismatch ab error toast me dikhta hai, "100% verified" nahi.
 
+> ✅ **Live proof (28 Nov 2026, `.env.local` test DB):** fresh `4.0` backup se browser
+> `Restore Now` chalaya — **42 rows 100% restored + count verified**, 60 tables ka total
+> `108 → 108` (0 diff), 48/48 sequence reset `200`, `peek_next_job_id() = 28107`.
+> Auth-linked 8 tables aur RLS-only `ai_providers` is round-trip me untouched rahe.
+> Production/staging drill abhi owner approval ke baad hi chalana hai.
+
 ---
 
 # हिंदी गाइड

@@ -100,8 +100,11 @@ default; opt-in checkbox / `--allow-removed-columns`). Tests:
   ab dry-run aur real restore dono fail karte hain, opt-in sirf checkbox / CLI flag se.
 - ✅ **Migration IDs haan** — local `supabase/migrations/*.sql` filenames snapshot me store (live DB
   me migrations table nahi hai), taaki restore ke baad schema verify ho.
-- ⏳ **Live restore drill** — environment + date owner se confirm karna baaki hai. Agent production
-  par destructive restore nahi chalata; test DB par read/verification aur limited tagged write ho chuka hai.
+- ✅ **Live restore drill (test DB)** — owner ne `.env.local` wali test DB par restore test ki
+  ijazat di. Fresh `4.0` backup → browser `Restore Now`: **42 rows 100% restored + count verified**,
+  60/60 table counts same (`108 → 108`), 48/48 sequence reset `200`, `peek_next_job_id()=28107`.
+  Auth-linked 8 tables + `ai_providers` is round-trip me preserve rahe. Production par abhi bhi
+  destructive restore nahi chalaya gaya.
 
 ## Standing rules (badalte nahi)
 
