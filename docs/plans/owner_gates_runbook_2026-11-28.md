@@ -318,24 +318,33 @@ portal isolation abhi **owner checks** hain (client OTP credentials agent ke paa
 
 ## Step 8 — K14 reviewer + CSP observation
 
-**8a. Named reviewer (aap sirf naam bhejiye, main docs me likh dunga):**
+**8a. Reviewer — final (28 Nov):** dusra human available nahi hai, isliye fake naam nahi rakha.
+Policy: **agent likhega, Vikram Jain (`@waraseoni`) review/approve karega**. Ye "second reviewer"
+agent ke mutaliq hai; second-human bus factor abhi compensate hai, team badhne par revisit.
 
-- `docs/plans/master_completion_plan_2026-11-26.md` K14 row → `named reviewer owner baaki` ko naam se replace.
-- `docs/plans/owner_decision_sheet_2026-11-27.md` K14 row → wahi naam.
-- Policy: har PR par second reviewer mandatory, release notes me reviewer field.
-- **Gap:** repo me `.github/` / CODEOWNERS / branch protection nahi hai — abhi direct push
-  main par chal jata hai. Name confirm karte hi main ye config propose kar dunga.
+- `master_completion_plan` + `owner_decision_sheet` ke K14 rows me yahi naam likha gaya.
+- `.github/CODEOWNERS` → `* @waraseoni` (handle `origin` remote se liya gaya; galat ho to batayein).
+- `.github/pull_request_template.md` → reviewer field + golden-rule checklist.
+- Local commits direct `main` se hata kar `sprint1/owner-gates-2026-11-28` branch par rakhe gaye.
+  Push abhi nahi hua — owner approval ke baad branch push + PR kholna hai.
+- Owner UI me apply karne ke liye recommended settings: `main` par **PR required**, **1 approval**,
+  **CI green**, direct push block, CODEOWNERS auto-request.
 
-**8b. CSP 14-din observation (sirf dekhna hai, enforce NA):**
+**Compensating controls (second human ke bina):**
 
-- `next.config.ts:109` me abhi `Content-Security-Policy-Report-Only` header hai,
-  directives me `report-uri /api/csp-report` + `Reporting-Endpoints: csp-endpoint=...`.
-- Sink: `POST /api/csp-report` → 204; violations **Vercel function logs** me
-  `console.warn("[csp-report]", …)` ke taur par dikhte hain. Koi violations table/endpoint nahi.
-- Roz 2 minute: Vercel logs me `[csp-report]` lines count karein (directive + path ke hisaab se).
-  14 din tak record rakhein. Target: production me violation rate ~0.
-- **Abhi enforce mat karein.** 14 din clean hone ke baad hi `Report-Only` → `Content-Security-Policy`
-  (single-line flip, rollback wahi line wapas). Print routes ka nonce CSP alag se already enforced hai.
+1. Har change agent-authored PR se aata hai; owner explicit approve karta hai.
+2. CI gates: `npm test`, `npm run typecheck`, `npm run lint`, `npm run verify:data`, `npm run build`.
+3. Golden-rule checklist: schema change → backup contract + AI context; secrets diff me nahi.
+4. Release notes me `reviewer: Vikram Jain` line.
+
+**8b. CSP 14-din observation — start 28 Nov 2026, window end 11 Dec 2026, decision 12 Dec:**
+
+- `next.config.ts:109` me abhi bhi `Content-Security-Policy-Report-Only` hai — **enforce nahi**.
+- Sink: `POST /api/csp-report` → 204; violations Vercel function logs me `[csp-report]`.
+- Roz ~2 min logs dekhein aur `docs/plans/csp_observation_log_2026-11-28.md` me record karein.
+- Target: ~0 violations. 14 din clean hone ke baad hi `Content-Security-Policy-Report-Only` →
+  `Content-Security-Policy` (one-line flip, rollback wahi line). Print routes ka nonce CSP pehle se
+  enforced hai.
 
 ---
 

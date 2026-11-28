@@ -123,7 +123,10 @@
   `owner_gates_runbook_2026-11-28.md`.
 - [x] Push local commits → `origin/main` (owner release `9ba5b74` = 1.88.0 ke upar rebase,
       head `e76e33d` push hua); version bump alag approval se (owner ne 1.88.0 kiya)
-- [ ] **K14** named second reviewer + CSP 14-din violation observation start (enforce baad me).
+- [x] **K14** policy applied: agent-authored PR ka reviewer **Vikram Jain (`@waraseoni`)**; direct
+      `main` push ko feature branch + PR flow me badla (`sprint1/owner-gates-2026-11-28` taiyar,
+      push approval baaki). CSP observation **28 Nov–11 Dec** (14 din), enforcement decision 12 Dec.
+      Second human nahi — compensating controls: owner review + CI gates + PR template.
 - [x] Backup readiness decisions (owner ne agent ko choose karne diya): format `4.0` + legacy
       read, removed-column **fail + explicit override**, `schema_snapshot.migration_ids` tino
       writers me, browser-verified. **Test DB par full `4.0` round-trip: 42 rows 100% restored

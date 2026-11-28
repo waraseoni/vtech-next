@@ -89,7 +89,7 @@
 | **K11** | Generated DB types            | haan — one-time diff + CI gate                                                             | ✅ best-practice apply | D6                    |
 | **K12** | JobsBody split                | tab-based, behaviour zero                                                                  | ✅ best-practice apply | E1                    |
 | **K13** | G4–G14 adopt list             | G4–G10 adopt; G11–G14 defer; G15 blocked                                                   | ✅ best-practice apply | C                     |
-| **K14** | PR flow / CSP timing          | second reviewer mandatory; CSP enforce 14 din clean observation ke baad                    | ✅ policy apply        | named reviewer owner  |
+| **K14** | PR flow / CSP timing          | agent-authored PR → Vikram Jain (`@waraseoni`) review; CSP enforce 14 din clean observation ke baad | ✅ policy apply        | reviewer = Vikram Jain · second human nahi (compensating controls) |
 | **K15** | Final commit strategy         | sab waves green → ek batch push; version bump alag approval                                | ✅ agreed              | FINAL                 |
 
 ---

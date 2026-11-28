@@ -9,8 +9,9 @@
 | Topic                                              | Canonical doc                                       | Status                                                               |
 | -------------------------------------------------- | --------------------------------------------------- | -------------------------------------------------------------------- |
 | **Saara pending kaam / scope / decision register** | `plans/master_completion_plan_2026-11-26.md`        | live · 4 sprint me split                                             |
-| **Owner decisions (ek-page sign-off sheet)**       | `plans/owner_decision_sheet_2026-11-27.md`          | K7/K15 accepted, baaki pending                                       |
-| **Owner gates runbook (step-by-step)**             | `plans/owner_gates_runbook_2026-11-28.md`           | live · D2/D3/A1/A8/K14 + backup decisions                            |
+| **Owner decisions (ek-page sign-off sheet)**       | `plans/owner_decision_sheet_2026-11-27.md`          | K1–K15 locked · K14 reviewer = Vikram Jain                            |
+| **Owner gates runbook (step-by-step)**             | `plans/owner_gates_runbook_2026-11-28.md`           | live · D2/D3/A1/A8 done · K14 policy applied · backup done            |
+| **CSP observation (Report-Only)**                  | `plans/csp_observation_log_2026-11-28.md`          | 28 Nov–11 Dec · enforce decision 12 Dec                               |
 | **Backup/Restore schema contract (golden rule)**   | `backup_restore_contract.md`                        | live · `npm run backup:contract` CI gate                             |
 | **Backup/Restore readiness plan (B0–B20)**         | `plans/backup_restore_readiness_plan_2026-11-27.md` | W1 landed · test DB full round-trip verified ✅                       |
 | **Interactive backup/restore guide**               | `../public/tools/backup-restore-guide.html`         | live · `/tools/backup-restore-guide.html`                            |
