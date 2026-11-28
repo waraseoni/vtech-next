@@ -330,8 +330,12 @@ agent ke mutaliq hai; second-human bus factor abhi compensate hai, team badhne p
 - `main` par branch protection API se applied: **PR required**, conversation resolution,
   force-push/delete block. Approval count `0` hai kyunki PR author bhi `@waraseoni` hai — GitHub
   self-approval count nahi karta. Second human available hone par yahan `1` set karna hai.
-- Repo me abhi CI workflow nahi hai; jab add ho to `required_status_checks` me `npm test`,
-  `typecheck`, `lint`, `verify:data`, `build` daalna hai.
+- CI workflows (`ci.yml`, `e2e.yml`) already maujood hain aur PR/push par chalte hain.
+- Release workflow **owner-gated manual** hai: `release.yml` sirf `workflow_dispatch` par chalta
+  hai aur `.releaserc.json` me `@semantic-release/git` nahi hai — isliye woh protected `main`
+  par direct commit/push nahi karta. 28 Nov wali red run isi direct push (GH006) ki wajah thi;
+  failed run audit ke liye history me rakha gaya. Version/tag tabhi banega jab owner Actions me
+  "Run workflow" chalayega; `CHANGELOG.md`/`package.json` bump alag approved PR se.
 
 **Compensating controls (second human ke bina):**
 
