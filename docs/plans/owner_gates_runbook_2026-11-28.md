@@ -210,6 +210,10 @@ service-role **Admin Restore** se hi restore karein. Owner ko ab poori file load
 | Counts after | `108 → 108`, backup vs DB **0 diff**; `profiles=6`, `user_presence=3`, `ai_providers=2` preserved |
 | Console | Sirf pre-existing `ai_providers` 403; koi naya restore error nahi |
 
+**Owner confirmation (28 Nov, fix ke baad):** aapne poori 60-table file ke saath upar wale
+5 steps khud repeat kiye — Dry Run aur `Restore Now` dono me **0 error**, expected `9 auth/RLS
+tables skip` message mila. Isse Step 4 owner-level par bhi **close** hai.
+
 ---
 
 ## Step 5 — Portal smoke (client credentials chahiye)

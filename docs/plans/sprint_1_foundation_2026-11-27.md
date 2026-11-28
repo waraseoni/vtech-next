@@ -130,7 +130,8 @@
       + count verified, 48/48 sequence resets `200`, `peek_next_job_id()=28107`.** Owner ke poori
       file wale restore me 8 auth/RLS FAIL aaye (data safe); ab `/backup` me auth/RLS skip checkbox
       default ON jo in 9 tables ko protected rakhta hai — poori 60-table file ke saath live proof:
-      dry-run 0 FAIL, `42 rows 100% restored · 9 skip`, counts 0 diff. Production drill abhi nahi chalaya.
+      dry-run 0 FAIL, `42 rows 100% restored · 9 skip`, counts 0 diff. Owner ne bhi same flow khud
+      repeat kiya — 0 error; Step 4 owner-confirmed close. Production drill abhi nahi chalaya.
 - [x] Gates 28 Nov: `verify:data` ✅ (40 migrations, 60 tables/513 cols/11 surfaces), typecheck ✅,
       lint ✅ (0 errors), 821 tests ✅, build ✅ (139 pages, Turbopack warning fix hua), touched
       prettier ✅.
