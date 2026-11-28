@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.90.1](https://github.com/waraseoni/vtech-next/compare/v1.90.0...v1.90.1) (2026-11-28)
+
+### Bug Fixes
+
+* **attendance:** stop mobile Chrome flicker over check-in/KPI band ([631b7d5](https://github.com/waraseoni/vtech-next/commit/631b7d5211249daceab615ef4090a1decb650cc4))
+
 ## [1.90.0](https://github.com/waraseoni/vtech-next/compare/v1.89.0...v1.90.0) (2026-11-28)
 
 ### Features
